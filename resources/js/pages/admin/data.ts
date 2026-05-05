@@ -61,19 +61,6 @@ export interface Homework {
     total: number;
 }
 
-export type Role = 'admin' | 'teacher' | 'student' | 'parent';
-export type Screen =
-    | 'dashboard'
-    | 'students'
-    | 'teachers'
-    | 'classes'
-    | 'attendance'
-    | 'grades'
-    | 'homework'
-    | 'fees'
-    | 'addStudent';
-export type Lang = 'kh' | 'en';
-
 export const STUDENTS: Student[] = [
     { id: 1, nameKh: 'សុខ ដារា',    nameEn: 'Sokh Dara',     level: 'Intermediate 2', cls: 'Intermediate 2', attendance: 92, fees: 'Paid',    amt: 25, grade: { speaking: 82, listening: 75, reading: 88, writing: 70 }, village: 'Kampong Trabek', province: 'Prey Veng' },
     { id: 2, nameKh: 'ចាន់ ស្រីណា', nameEn: 'Chan Sreyna',   level: 'Beginner 1',     cls: 'Beginner 1',     attendance: 78, fees: 'Unpaid',  amt: 25, grade: { speaking: 65, listening: 70, reading: 60, writing: 55 }, village: 'Baray',          province: 'Kampong Thom' },
@@ -108,9 +95,9 @@ export const PAYMENTS: Payment[] = [
 ];
 
 export const HOMEWORK: Homework[] = [
-    { id: 1, titleKh: 'សរសេរអំពីគ្រួសារ',       titleEn: 'Write about your family',   cls: 'Beginner 1',     due: '2026-05-06', done: 12, total: 18 },
-    { id: 2, titleKh: 'Present Perfect លំហាត់',  titleEn: 'Present Perfect exercises', cls: 'Intermediate 2', due: '2026-05-08', done: 8,  total: 22 },
-    { id: 3, titleKh: 'អានអត្ថបទ និងឆ្លើយ',     titleEn: 'Read & answer questions',   cls: 'Advanced 1',     due: '2026-05-11', done: 14, total: 15 },
+    { id: 1, titleKh: 'សរសេរអំពីគ្រួសារ',      titleEn: 'Write about your family',   cls: 'Beginner 1',     due: '2026-05-06', done: 12, total: 18 },
+    { id: 2, titleKh: 'Present Perfect លំហាត់', titleEn: 'Present Perfect exercises', cls: 'Intermediate 2', due: '2026-05-08', done: 8,  total: 22 },
+    { id: 3, titleKh: 'អានអត្ថបទ និងឆ្លើយ',    titleEn: 'Read & answer questions',   cls: 'Advanced 1',     due: '2026-05-11', done: 14, total: 15 },
 ];
 
 export const avg = (s: Student): number =>

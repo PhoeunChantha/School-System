@@ -1,0 +1,257 @@
+import { useState } from 'react';
+import AdminShell from '@/pages/admin/shell';
+import { CLASSES, type Teacher } from '@/pages/admin/data';
+import { TEACHERS as INITIAL_TEACHERS } from '@/pages/admin/data';
+import { KH, Avatar, Badge } from '@/pages/admin/ui';
+import { toast } from 'sonner';
+
+type View = 'list' | 'add' | 'edit';
+
+export default function TeachersPage() {
+    const [view, setView]             = useState<View>('list');
+    const [teachers, setTeachers]     = useState<Teacher[]>(INITIAL_TEACHERS);
+    const [search, setSearch]         = useState('');
+    const [editing, setEditing]       = useState<Teacher | null>(null);
+    const [deleteTarget, setDeleteTarget] = useState<Teacher | null>(null);
+    const [scheduleTarget, setScheduleTarget] = useState<Teacher | null>(null);
+
+    const handleEdit   = (t: Teacher) => { setEditing(t); setView('edit'); };
+    const handleDelete = (t: Teacher) => setDeleteTarget(t);
+    const confirmDelete = () => {
+        if (deleteTarget) setTeachers(prev => prev.filter(t => t.id !== deleteTarget.id));
+        setDeleteTarget(null);
+    };
+
+    const q = search.toLowerCase();
+    const filtered = teachers.filter(t =>
+        !q ||
+        t.nameKh.includes(search) ||
+        t.nameEn.toLowerCase().includes(q) ||
+        t.subject.toLowerCase().includes(q) ||
+        t.phone.includes(search)
+    );
+
+    return (
+        <AdminShell>
+
+            {/* List view */}
+            {view === 'list' && (
+                <div className="fade-in" style={{ padding: 24, display: 'flex', flexDirection: 'column', gap: 16 }}>
+                    {/* Toolbar */}
+                    <div style={{ display: 'flex', alignItems: 'center', flexWrap: 'wrap', gap: 12 }}>
+                        {/* Search */}
+                        <input
+                            value={search}
+                            onChange={e => setSearch(e.target.value)}
+                            className="f-input"
+                            style={{ maxWidth: 260 }}
+                            placeholder="🔍  Search teachers..."
+                        />
+                        {/* Stats */}
+                        <div style={{ display: 'flex', gap: 8 }}>
+                            {[
+                                { l: 'Total',  v: teachers.length, c: '#3b82f6' },
+                                { l: 'Active', v: teachers.filter(t => t.status === 'active').length, c: '#10b981' },
+                            ].map((s, i) => (
+                                <div key={i} style={{ background: 'white', borderRadius: 10, padding: '8px 14px', border: '1px solid #e8edf5', display: 'flex', gap: 8, alignItems: 'center' }}>
+                                    <div style={{ width: 8, height: 8, borderRadius: '50%', background: s.c }} />
+                                    <span style={{ fontSize: 11, color: '#64748b' }}>{s.l}</span>
+                                    <span style={{ fontWeight: 800, fontSize: 15, color: '#1e293b' }}>{s.v}</span>
+                                </div>
+                            ))}
+                        </div>
+                        <button onClick={() => setView('add')} style={{ marginLeft: 'auto', background: '#2563eb', color: 'white', border: 'none', borderRadius: 10, padding: '9px 18px', fontWeight: 700, fontSize: 13, cursor: 'pointer' }}>
+                            + Add Teacher
+                        </button>
+                    </div>
+
+                    {/* Empty state */}
+                    {filtered.length === 0 && (
+                        <div style={{ textAlign: 'center', padding: '60px 0', color: '#94a3b8', fontSize: 14 }}>
+                            <div style={{ fontSize: 32, marginBottom: 8 }}>🔍</div>
+                            No teachers found for <strong>"{search}"</strong>
+                        </div>
+                    )}
+
+                    {/* Teacher cards */}
+                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill,minmax(300px,1fr))', gap: 16 }}>
+                        {filtered.map(t => (
+                            <div key={t.id} className="card" style={{ padding: 24 }}>
+                                <div style={{ display: 'flex', alignItems: 'center', gap: 14, marginBottom: 16 }}>
+                                    <Avatar name={t.nameEn} size={56} />
+                                    <div style={{ flex: 1, minWidth: 0 }}>
+                                        <KH style={{ fontWeight: 800, fontSize: 16, display: 'block', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{t.nameKh}</KH>
+                                        <div style={{ fontSize: 13, color: '#64748b' }}>{t.nameEn}</div>
+                                        <div style={{ fontSize: 12, color: '#94a3b8' }}>{t.subject}</div>
+                                    </div>
+                                    <Badge type={t.status === 'active' ? 'green' : 'gray'}>{t.status}</Badge>
+                                </div>
+
+                                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10, marginBottom: 14 }}>
+                                    {[{ l: 'Classes', v: t.classes, c: '#3b82f6' }, { l: 'Students', v: t.students, c: '#8b5cf6' }].map(s => (
+                                        <div key={s.l} style={{ background: '#f8fafc', borderRadius: 10, padding: '10px 12px', textAlign: 'center' }}>
+                                            <div style={{ fontSize: 20, fontWeight: 800, color: s.c }}>{s.v}</div>
+                                            <div style={{ fontSize: 11, color: '#94a3b8' }}>{s.l}</div>
+                                        </div>
+                                    ))}
+                                </div>
+
+                                <div style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '10px 12px', background: '#f8fafc', borderRadius: 10, marginBottom: 12 }}>
+                                    <span>📞</span>
+                                    <span style={{ fontSize: 13, fontWeight: 600, color: '#374151', flex: 1 }}>{t.phone}</span>
+                                </div>
+
+                                <div style={{ display: 'flex', gap: 8 }}>
+                                    <button onClick={() => setScheduleTarget(t)}
+                                        style={{ flex: 1, background: '#f0fdf4', color: '#16a34a', border: '1px solid #bbf7d0', borderRadius: 8, padding: '8px', cursor: 'pointer', fontWeight: 700, fontSize: 12 }}>
+                                        📅 Schedule
+                                    </button>
+                                    <button onClick={() => handleEdit(t)}
+                                        style={{ flex: 1, background: '#eff6ff', color: '#2563eb', border: '1px solid #bfdbfe', borderRadius: 8, padding: '8px', cursor: 'pointer', fontWeight: 700, fontSize: 12 }}>
+                                        ✏️ Edit
+                                    </button>
+                                    <button onClick={() => handleDelete(t)}
+                                        style={{ flex: 1, background: '#fff1f2', color: '#ef4444', border: '1px solid #fecaca', borderRadius: 8, padding: '8px', cursor: 'pointer', fontWeight: 700, fontSize: 12 }}>
+                                        🗑️ Delete
+                                    </button>
+                                </div>
+                            </div>
+                        ))}
+                    </div>
+                </div>
+            )}
+
+            {/* Add / Edit form */}
+            {(view === 'add' || view === 'edit') && (
+                <TeacherForm
+                    mode={view}
+                    teacher={editing ?? undefined}
+                    onBack={() => { setView('list'); setEditing(null); }}
+                />
+            )}
+
+            {/* Schedule modal */}
+            {scheduleTarget && (
+                <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.45)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 200, padding: 16 }}
+                    onClick={e => { if (e.target === e.currentTarget) setScheduleTarget(null); }}>
+                    <div style={{ background: 'white', borderRadius: 20, padding: 28, maxWidth: 480, width: '100%', boxShadow: '0 24px 60px rgba(0,0,0,0.15)' }}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: 14, marginBottom: 20 }}>
+                            <Avatar name={scheduleTarget.nameEn} size={48} />
+                            <div>
+                                <KH style={{ fontWeight: 800, fontSize: 16, display: 'block' }}>{scheduleTarget.nameKh}</KH>
+                                <div style={{ fontSize: 12, color: '#94a3b8' }}>{scheduleTarget.subject}</div>
+                            </div>
+                            <button onClick={() => setScheduleTarget(null)} style={{ marginLeft: 'auto', background: '#f1f5f9', border: 'none', borderRadius: 8, width: 32, height: 32, cursor: 'pointer', fontSize: 16, color: '#64748b' }}>✕</button>
+                        </div>
+
+                        <div style={{ marginBottom: 16 }}>
+                            <div style={{ fontSize: 12, fontWeight: 700, color: '#64748b', marginBottom: 10 }}>CLASS SCHEDULE</div>
+                            {CLASSES.filter(c => c.teacher === scheduleTarget.nameEn).map(cls => (
+                                <div key={cls.id} style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '10px 14px', background: '#f8fafc', borderRadius: 10, marginBottom: 8, border: '1px solid #e8edf5' }}>
+                                    <div style={{ width: 38, height: 38, borderRadius: 8, background: '#eff6ff', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 16, flexShrink: 0 }}>🏫</div>
+                                    <div style={{ flex: 1 }}>
+                                        <div style={{ fontWeight: 700, fontSize: 13, color: '#1e293b' }}>{cls.name}</div>
+                                        <div style={{ fontSize: 11, color: '#94a3b8' }}>{cls.days}</div>
+                                    </div>
+                                    <div style={{ textAlign: 'right', flexShrink: 0 }}>
+                                        <div style={{ fontSize: 12, fontWeight: 700, color: '#3b82f6' }}>{cls.time}</div>
+                                        <div style={{ fontSize: 11, color: '#94a3b8' }}>Room {cls.room} · {cls.count} students</div>
+                                    </div>
+                                </div>
+                            ))}
+                            {CLASSES.filter(c => c.teacher === scheduleTarget.nameEn).length === 0 && (
+                                <div style={{ textAlign: 'center', padding: '20px', color: '#94a3b8', fontSize: 13 }}>No classes assigned yet.</div>
+                            )}
+                        </div>
+
+                        <button onClick={() => setScheduleTarget(null)}
+                            style={{ width: '100%', background: '#2563eb', color: 'white', border: 'none', borderRadius: 10, padding: '11px', fontWeight: 700, cursor: 'pointer' }}>
+                            Close
+                        </button>
+                    </div>
+                </div>
+            )}
+
+            {/* Delete confirmation modal */}
+            {deleteTarget && (
+                <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.45)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 200, padding: 16 }}
+                    onClick={e => { if (e.target === e.currentTarget) setDeleteTarget(null); }}>
+                    <div style={{ background: 'white', borderRadius: 20, padding: 32, maxWidth: 420, width: '100%', boxShadow: '0 24px 60px rgba(0,0,0,0.15)' }}>
+                        <div style={{ textAlign: 'center', marginBottom: 20 }}>
+                            <div style={{ width: 56, height: 56, borderRadius: '50%', background: '#fee2e2', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 26, margin: '0 auto 14px' }}>🗑️</div>
+                            <div style={{ fontSize: 18, fontWeight: 800, color: '#1e293b', marginBottom: 6 }}>Remove Teacher?</div>
+                            <div style={{ fontSize: 13, color: '#64748b', lineHeight: 1.5 }}>
+                                Are you sure you want to remove{' '}
+                                <KH style={{ fontWeight: 700, color: '#1e293b' }}>{deleteTarget.nameKh}</KH>
+                                {' '}({deleteTarget.nameEn})? This action cannot be undone.
+                            </div>
+                        </div>
+                        <div style={{ display: 'flex', gap: 10 }}>
+                            <button onClick={() => setDeleteTarget(null)} style={{ flex: 1, background: '#f1f5f9', color: '#64748b', border: 'none', borderRadius: 10, padding: '11px', fontWeight: 700, cursor: 'pointer', fontSize: 14 }}>Cancel</button>
+                            <button onClick={confirmDelete} style={{ flex: 1, background: '#ef4444', color: 'white', border: 'none', borderRadius: 10, padding: '11px', fontWeight: 700, cursor: 'pointer', fontSize: 14 }}>Yes, Remove</button>
+                        </div>
+                    </div>
+                </div>
+            )}
+        </AdminShell>
+    );
+}
+
+// ── Add / Edit Teacher form ──
+interface FormProps { mode: 'add' | 'edit'; teacher?: Teacher; onBack: () => void; }
+
+function TeacherForm({ mode, teacher, onBack }: FormProps) {
+    const isEdit = mode === 'edit';
+
+    const handleSave = () => {
+        toast.success(isEdit ? 'Teacher updated successfully!' : 'Teacher added successfully!', {
+            description: isEdit ? `${teacher?.nameEn} has been updated.` : 'New teacher has been created.',
+        });
+        onBack();
+    };
+
+    return (
+        <div className="fade-in" style={{ padding: 24 }}>
+            <div className="card" style={{ padding: 28, maxWidth: 600, margin: '0 auto' }}>
+                {/* Header */}
+                <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 24 }}>
+                    <div style={{ width: 40, height: 40, borderRadius: 10, background: isEdit ? '#eff6ff' : '#f0fdf4', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 20 }}>
+                        {isEdit ? '✏️' : '👩‍🏫'}
+                    </div>
+                    <div>
+                        <div style={{ fontWeight: 800, fontSize: 16, color: '#1e293b' }}>{isEdit ? 'Edit Teacher' : 'Add New Teacher'}</div>
+                        {isEdit && teacher && <div style={{ fontSize: 12, color: '#94a3b8' }}>{teacher.nameEn}</div>}
+                    </div>
+                </div>
+
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16 }}>
+                    <div className="f-group"><label className="f-label">ឈ្មោះ (ខ្មែរ) *</label><input className="f-input" placeholder="ឧ. គ្រូ វុទ្ធី" defaultValue={teacher?.nameKh} /></div>
+                    <div className="f-group"><label className="f-label">English Name *</label><input className="f-input" placeholder="e.g. Mr. Vuthy" defaultValue={teacher?.nameEn} /></div>
+                    <div className="f-group" style={{ gridColumn: '1/-1' }}>
+                        <label className="f-label">Subject / មុខវិជ្ជា *</label>
+                        <select className="f-input" defaultValue={teacher?.subject}>
+                            <option value="">Select subject...</option>
+                            {['English Grammar', 'Conversation', 'Writing Skills', 'Listening Skills', 'Reading Comprehension', 'Pronunciation'].map(s => <option key={s}>{s}</option>)}
+                        </select>
+                    </div>
+                    <div className="f-group"><label className="f-label">Phone / ទូរស័ព្ទ</label><input type="tel" className="f-input" placeholder="0xx-xxx-xxx" defaultValue={teacher?.phone} /></div>
+                    <div className="f-group"><label className="f-label">Status / ស្ថានភាព</label>
+                        <select className="f-input" defaultValue={teacher?.status}>
+                            <option value="active">Active</option>
+                            <option value="inactive">Inactive</option>
+                        </select>
+                    </div>
+                    <div className="f-group"><label className="f-label">Number of Classes</label><input type="number" className="f-input" defaultValue={teacher?.classes ?? 1} min={0} /></div>
+                    <div className="f-group"><label className="f-label">Telegram Username</label><input className="f-input" placeholder="@username" /></div>
+                </div>
+
+                <div style={{ display: 'flex', gap: 12, marginTop: 8 }}>
+                    <button onClick={onBack} style={{ background: '#f1f5f9', color: '#64748b', border: 'none', borderRadius: 10, padding: '12px 20px', fontWeight: 700, cursor: 'pointer' }}>← Cancel</button>
+                    <button onClick={handleSave} style={{ flex: 1, background: isEdit ? '#2563eb' : '#10b981', color: 'white', border: 'none', borderRadius: 10, padding: '12px', fontWeight: 700, fontSize: 14, cursor: 'pointer', fontFamily: "'Noto Sans Khmer',sans-serif" }}>
+                        {isEdit ? '✓ Update Teacher' : '✓ Save Teacher'}
+                    </button>
+                </div>
+            </div>
+        </div>
+    );
+}

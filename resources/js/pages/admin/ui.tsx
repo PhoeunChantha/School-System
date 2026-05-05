@@ -1,36 +1,24 @@
 import type { CSSProperties, ReactNode } from 'react';
 import type { Student } from './data';
 
-// ── Khmer text wrapper ──
-interface KHProps {
-    children: ReactNode;
-    className?: string;
-    style?: CSSProperties;
-}
+interface KHProps { children: ReactNode; className?: string; style?: CSSProperties; }
 export function KH({ children, className = '', style }: KHProps) {
     return <span className={`font-khmer ${className}`} style={style}>{children}</span>;
 }
 
-// ── Colour avatar ──
 interface AvatarProps { name: string; size?: number; }
 export function Avatar({ name, size = 36 }: AvatarProps) {
     const clean = (name || '').replace(/[ក-៿\s]/g, '').trim();
-    const initials = clean.split(' ').filter(Boolean).map(w => w[0]).join('').slice(0, 2).toUpperCase()
-        || (name || '?')[0];
+    const initials = clean.split(' ').filter(Boolean).map(w => w[0]).join('').slice(0, 2).toUpperCase() || (name || '?')[0];
     const pal = ['#3b82f6', '#8b5cf6', '#10b981', '#f59e0b', '#ef4444', '#06b6d4', '#6366f1', '#f97316'];
     const bg = pal[(name || '').charCodeAt(0) % pal.length];
     return (
-        <div style={{
-            width: size, height: size, background: bg, borderRadius: '50%',
-            display: 'flex', alignItems: 'center', justifyContent: 'center',
-            color: 'white', fontWeight: 700, fontSize: Math.max(10, size * 0.36), flexShrink: 0,
-        }}>
+        <div style={{ width: size, height: size, background: bg, borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'white', fontWeight: 700, fontSize: Math.max(10, size * 0.36), flexShrink: 0 }}>
             {initials}
         </div>
     );
 }
 
-// ── Progress bar ──
 interface PBarProps { value: number; max?: number; color?: string; height?: number; }
 export function PBar({ value, max = 100, color = '#3b82f6', height = 6 }: PBarProps) {
     const pct = Math.min(100, Math.round((value / max) * 100));
@@ -43,14 +31,12 @@ export function PBar({ value, max = 100, color = '#3b82f6', height = 6 }: PBarPr
     );
 }
 
-// ── Colour badge ──
 export type BadgeType = 'green' | 'red' | 'amber' | 'blue' | 'purple' | 'gray';
 interface BadgeProps { type?: BadgeType; children: ReactNode; }
 export function Badge({ type = 'blue', children }: BadgeProps) {
     return <span className={`badge badge-${type}`}>{children}</span>;
 }
 
-// ── Fee status badge ──
 interface FeeTagProps { status: Student['fees']; }
 export function FeeTag({ status }: FeeTagProps) {
     if (status === 'Paid')    return <Badge type="green">✓ Paid</Badge>;
@@ -59,7 +45,6 @@ export function FeeTag({ status }: FeeTagProps) {
     return null;
 }
 
-// ── Score colour chip ──
 interface ScoreChipProps { score: number; }
 export function ScoreChip({ score }: ScoreChipProps) {
     const type: BadgeType = score >= 75 ? 'green' : score >= 50 ? 'blue' : score >= 35 ? 'amber' : 'red';
