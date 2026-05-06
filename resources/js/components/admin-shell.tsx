@@ -1,5 +1,5 @@
 import '@/pages/admin/admin.css';
-import { useState, type ReactNode } from 'react';
+import { useEffect, useState, type ReactNode } from 'react';
 import { Head, Link, router, usePage } from '@inertiajs/react';
 import { type SharedData } from '@/types';
 import { KH, Avatar } from '@/pages/admin/ui';
@@ -34,6 +34,15 @@ const NAV: NavEntry[] = [
     { id: 'homework',   icon: '📝',  label: 'កិច្ចការ',    sub: 'Homework',   href: '/admin/homework' },
     { group: 'ហិរញ្ញ / Finance' },
     { id: 'fee',        icon: '💳',  label: 'ការទូទាត់',  sub: 'Fees',       href: '/admin/fee' },
+    { group: 'ការប្រឡង / Exam' },
+    { id: 'exam',          icon: '📄',  label: 'ប្រឡង',         sub: 'Exams',          href: '/admin/exam' },
+    { group: 'រាយការណ៍ / Reports' },
+    { id: 'reports',       icon: '📊',  label: 'រាយការណ៍',       sub: 'Reports',        href: '/admin/reports' },
+    { id: 'certs',         icon: '🏆',  label: 'វិញ្ញាបនបត្រ',   sub: 'Certificates',   href: '/admin/certs' },
+    { id: 'honor-roll',    icon: '🥇',  label: 'តារាងកិត្តិយស',  sub: 'Honor Roll',     href: '/admin/honor-roll' },
+    { group: 'ផ្សេងៗ / Other' },
+    { id: 'notifications', icon: '🔔',  label: 'ការជូនដំណឹង',   sub: 'Notifications',  href: '/admin/notifications' },
+    { id: 'settings',      icon: '⚙️',  label: 'កំណត់',           sub: 'Settings',       href: '/admin/settings' },
 ];
 
 const MOBILE_NAV = [
@@ -41,6 +50,7 @@ const MOBILE_NAV = [
     { id: 'students',   icon: '👥', lk: 'សិស្ស',   href: '/admin/students' },
     { id: 'attendance', icon: '📋', lk: 'វត្តមាន', href: '/admin/attendance' },
     { id: 'fee',        icon: '💳', lk: 'ថ្លៃ',    href: '/admin/fee' },
+    { id: 'exam',       icon: '📄', lk: 'ប្រឡង',  href: '/admin/exam' },
 ];
 
 const PAGE_TITLES: Record<string, { kh: string; en: string }> = {
@@ -51,7 +61,13 @@ const PAGE_TITLES: Record<string, { kh: string; en: string }> = {
     attendance: { kh: 'វត្តមាន',      en: 'Attendance' },
     grades:     { kh: 'ពិន្ទុ',        en: 'Grades' },
     homework:   { kh: 'កិច្ចការ',      en: 'Homework' },
-    fee:        { kh: 'ការទូទាត់',     en: 'Fees' },
+    fee:           { kh: 'ការទូទាត់',    en: 'Fees' },
+    exam:          { kh: 'ប្រឡង',        en: 'Exams' },
+    reports:       { kh: 'រាយការណ៍',    en: 'Reports' },
+    certs:         { kh: 'វិញ្ញាបនបត្រ', en: 'Certificates' },
+    'honor-roll':  { kh: 'តារាងកិត្តិយស', en: 'Honor Roll' },
+    notifications: { kh: 'ការជូនដំណឹង', en: 'Notifications' },
+    settings:      { kh: 'កំណត់',        en: 'Settings' },
 };
 
 interface AdminShellProps { children: ReactNode; }
@@ -61,6 +77,12 @@ export default function AdminShell({ children }: AdminShellProps) {
     const user = props.auth?.user;
     const [collapsed, setCollapsed] = useState(false);
     const [mobileOpen, setMobileOpen] = useState(false);
+    const [lang, setLang] = useState<'kh' | 'en'>('kh');
+    const [dark, setDark] = useState(false);
+
+    useEffect(() => {
+        document.querySelector('.admin-wrap')?.classList.toggle('dark', dark);
+    }, [dark]);
 
     const segments = url.split('/').filter(Boolean);
     const active = segments[1] ?? 'dashboard';
@@ -133,6 +155,23 @@ export default function AdminShell({ children }: AdminShellProps) {
                         <KH style={{ fontWeight: 800, fontSize: 18, color: '#1e293b', display: 'block', lineHeight: 1.2 }}>{title.kh}</KH>
                         <div style={{ fontSize: 11, color: '#94a3b8' }}>{title.en}</div>
                     </div>
+
+                    {/* Lang toggle */}
+                    <div style={{ display: 'flex', gap: 2, background: '#f1f5f9', borderRadius: 8, padding: 2, flexShrink: 0 }}>
+                        {(['kh', 'en'] as const).map(l => (
+                            <button key={l} onClick={() => setLang(l)}
+                                style={{ padding: '4px 10px', borderRadius: 6, border: 'none', cursor: 'pointer', fontSize: 11, fontWeight: 700, transition: 'all 0.15s', background: lang === l ? 'white' : 'transparent', color: lang === l ? '#2563eb' : '#94a3b8', boxShadow: lang === l ? '0 1px 3px rgba(0,0,0,0.08)' : 'none' }}>
+                                {l === 'kh' ? 'ខ្មែរ' : 'EN'}
+                            </button>
+                        ))}
+                    </div>
+
+                    {/* Dark mode toggle */}
+                    <button onClick={() => setDark(d => !d)}
+                        style={{ background: 'none', border: 'none', cursor: 'pointer', padding: '6px', fontSize: 18, flexShrink: 0 }}
+                        title="Toggle dark mode">
+                        {dark ? '☀️' : '🌙'}
+                    </button>
 
                     <button style={{ position: 'relative', background: 'none', border: 'none', cursor: 'pointer', padding: '6px' }}>
                         <span style={{ fontSize: 20 }}>🔔</span>

@@ -154,3 +154,18 @@
 @media (min-width: 769px) {
   .admin-wrap .mobile-only { display: none !important; }
 }
+
+/* ── Dark mode ── */
+.admin-wrap.dark { background: #0f172a; color: #f1f5f9; }
+.admin-wrap.dark .card,
+.admin-wrap.dark .stat-card { background: #1e293b; border-color: #334155; }
+.admin-wrap.dark .topbar { background: #1e293b; border-color: #334155; }
+.admin-wrap.dark .topbar .text-title { color: #f1f5f9 !important; }
+.admin-wrap.dark .data-table th { color: #64748b; border-color: #334155; }
+.admin-wrap.dark .data-table td { color: #cbd5e1; border-color: #1e293b; }
+.admin-wrap.dark .data-table tbody tr:hover { background: #0f172a; }
+.admin-wrap.dark .pbar { background: #1e293b; }
+.admin-wrap.dark .f-input { background: #0f172a; border-color: #334155; color: #f1f5f9; }
+.admin-wrap.dark .f-input:focus { background: #1e293b; }
+.admin-wrap.dark .f-label { color: #94a3b8; }
+.admin-wrap.dark .mobile-bottom-nav { background: #1e293b; border-color: #334155; }

@@ -1,8 +1,38 @@
-import { useState } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import AdminShell from '@/pages/admin/shell';
 import { STUDENTS, CLASSES, type Student, avg } from '@/pages/admin/data';
-import { KH, Avatar, PBar, Badge, FeeTag, ScoreChip } from '@/pages/admin/ui';
+import { KH, Avatar, PBar, Badge, FeeTag, ScoreChip, Pagination } from '@/pages/admin/ui';
 import { toast } from 'sonner';
+
+// ── Sort options ──────────────────────────────────────────
+type OrderKey = 'name-asc' | 'name-desc' | 'attend-desc' | 'attend-asc' | 'score-desc' | 'score-asc' | 'level-asc' | 'fee-asc' | 'province-asc';
+const ORDER_OPTIONS: { value: OrderKey; label: string }[] = [
+    { value: 'name-asc',     label: 'Name A → Z' },
+    { value: 'name-desc',    label: 'Name Z → A' },
+    { value: 'attend-desc',  label: 'Attendance ↓ Highest' },
+    { value: 'attend-asc',   label: 'Attendance ↑ Lowest' },
+    { value: 'score-desc',   label: 'Score ↓ Highest' },
+    { value: 'score-asc',    label: 'Score ↑ Lowest' },
+    { value: 'level-asc',    label: 'Level' },
+    { value: 'fee-asc',      label: 'Fee Status' },
+    { value: 'province-asc', label: 'Province' },
+];
+function sortStudents(list: Student[], order: OrderKey): Student[] {
+    return [...list].sort((a, b) => {
+        switch (order) {
+            case 'name-asc':     return a.nameEn.localeCompare(b.nameEn);
+            case 'name-desc':    return b.nameEn.localeCompare(a.nameEn);
+            case 'attend-desc':  return b.attendance - a.attendance;
+            case 'attend-asc':   return a.attendance - b.attendance;
+            case 'score-desc':   return avg(b) - avg(a);
+            case 'score-asc':    return avg(a) - avg(b);
+            case 'level-asc':    return a.level.localeCompare(b.level);
+            case 'fee-asc':      return a.fees.localeCompare(b.fees);
+            case 'province-asc': return a.province.localeCompare(b.province);
+            default:             return 0;
+        }
+    });
+}
 
 type View = 'list' | 'add' | 'edit';
 
@@ -85,20 +115,37 @@ interface ListProps {
     onDelete: (s: Student) => void;
 }
 function StudentsList({ students, search, setSearch, filter, setFilter, selected, setSelected, onAdd, onEdit, onDelete }: ListProps) {
-    const filtered = students.filter(s => {
-        const ms = !search || s.nameKh.includes(search) || s.nameEn.toLowerCase().includes(search.toLowerCase());
-        const mf = filter === 'all'
-            || (filter === 'atrisk' && (s.attendance < 70 || s.fees === 'Unpaid'))
-            || s.level.toLowerCase().includes(filter.toLowerCase());
-        return ms && mf;
-    });
+    const [orderBy, setOrderBy] = useState<OrderKey>('name-asc');
+    const [page,    setPage]    = useState(1);
+    const [perPage, setPerPage] = useState(5);
+
+    // Reset to page 1 whenever filters/search/order change
+    useEffect(() => { setPage(1); }, [search, filter, orderBy, perPage]);
+
+    const filtered = useMemo(() => {
+        const base = students.filter(s => {
+            const ms = !search || s.nameKh.includes(search) || s.nameEn.toLowerCase().includes(search.toLowerCase());
+            const mf = filter === 'all'
+                || (filter === 'atrisk' && (s.attendance < 70 || s.fees === 'Unpaid'))
+                || s.level.toLowerCase().includes(filter.toLowerCase());
+            return ms && mf;
+        });
+        return sortStudents(base, orderBy);
+    }, [students, search, filter, orderBy]);
+
+    const paginated = useMemo(
+        () => filtered.slice((page - 1) * perPage, page * perPage),
+        [filtered, page, perPage],
+    );
 
     return (
         <div className="fade-in" style={{ padding: 24, display: 'flex', flexDirection: 'column', gap: 16 }}>
             {/* Toolbar */}
             <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap', alignItems: 'center' }}>
                 <input value={search} onChange={e => setSearch(e.target.value)} className="f-input"
-                    style={{ maxWidth: 280 }} placeholder="🔍  ស្វែងរក / Search students..." />
+                    style={{ maxWidth: 260 }} placeholder="🔍  ស្វែងរក / Search students..." />
+
+                {/* Level filter */}
                 <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
                     {[{ id: 'all', l: 'All' }, { id: 'Beginner', l: 'Beginner' }, { id: 'Intermediate', l: 'Intermediate' }, { id: 'Advanced', l: 'Advanced' }, { id: 'atrisk', l: '⚠ At-Risk' }].map(f => (
                         <button key={f.id} onClick={() => setFilter(f.id)}
@@ -107,6 +154,7 @@ function StudentsList({ students, search, setSearch, filter, setFilter, selected
                         </button>
                     ))}
                 </div>
+
                 <button onClick={onAdd} style={{ marginLeft: 'auto', background: '#2563eb', color: 'white', border: 'none', borderRadius: 10, padding: '9px 18px', fontWeight: 700, fontSize: 13, cursor: 'pointer' }}>
                     + Add Student
                 </button>
@@ -130,6 +178,29 @@ function StudentsList({ students, search, setSearch, filter, setFilter, selected
 
             {/* Table */}
             <div className="card" style={{ overflowX: 'auto' }}>
+                {/* Sort + per-page controls — top-left of table */}
+                <div style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '12px 16px', borderBottom: '1px solid #f1f5f9' }}>
+                    <span style={{ fontSize: 11, fontWeight: 700, color: '#94a3b8', whiteSpace: 'nowrap' }}>Sort by</span>
+                    <select value={orderBy} onChange={e => setOrderBy(e.target.value as OrderKey)}
+                        style={{ padding: '5px 10px', borderRadius: 8, border: '1.5px solid #e2e8f0', background: 'white', color: '#374151', fontSize: 12, fontWeight: 700, cursor: 'pointer', outline: 'none' }}>
+                        {ORDER_OPTIONS.map(o => (
+                            <option key={o.value} value={o.value}>{o.label}</option>
+                        ))}
+                    </select>
+
+                    <div style={{ width: 1, height: 18, background: '#e2e8f0', margin: '0 2px' }} />
+
+                    <select value={perPage} onChange={e => { setPerPage(Number(e.target.value)); setPage(1); }}
+                        style={{ padding: '5px 10px', borderRadius: 8, border: '1.5px solid #e2e8f0', background: 'white', color: '#374151', fontSize: 12, fontWeight: 700, cursor: 'pointer', outline: 'none' }}>
+                        {[5, 10, 25, 50].map(n => (
+                            <option key={n} value={n}>{n} per page</option>
+                        ))}
+                    </select>
+
+                    <span style={{ fontSize: 11, color: '#94a3b8', marginLeft: 4 }}>
+                        {filtered.length} result{filtered.length !== 1 ? 's' : ''}
+                    </span>
+                </div>
                 <table className="data-table">
                     <thead><tr>
                         <th>Student / សិស្ស</th><th>Level</th><th>Class</th><th>Attendance</th>
@@ -137,7 +208,7 @@ function StudentsList({ students, search, setSearch, filter, setFilter, selected
                         <th>Fee</th><th>Province</th><th>Actions</th>
                     </tr></thead>
                     <tbody>
-                        {filtered.map(s => (
+                        {paginated.map(s => (
                             <tr key={s.id} style={{ cursor: 'pointer' }} onClick={() => setSelected(s === selected ? null : s)}>
                                 <td><div style={{ display: 'flex', alignItems: 'center', gap: 10 }}><Avatar name={s.nameEn} size={34} /><div><KH style={{ fontWeight: 700, fontSize: 13, display: 'block' }}>{s.nameKh}</KH><div style={{ fontSize: 11, color: '#94a3b8' }}>{s.nameEn}</div></div></div></td>
                                 <td><Badge type="blue">{s.level}</Badge></td>
@@ -165,6 +236,14 @@ function StudentsList({ students, search, setSearch, filter, setFilter, selected
                         ))}
                     </tbody>
                 </table>
+                <Pagination
+                    total={filtered.length}
+                    page={page}
+                    perPage={perPage}
+                    onPageChange={setPage}
+                    onPerPageChange={setPerPage}
+                    showPerPage={false}
+                />
             </div>
 
             {/* Detail panel */}

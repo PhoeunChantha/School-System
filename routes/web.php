@@ -26,7 +26,13 @@ Route::prefix('admin')->name('admin.')->group(function () {
     Route::get('/attendance', fn() => Inertia::render('admin/attendance/index'))->name('attendance');
     Route::get('/grades',     fn() => Inertia::render('admin/grades/index'))->name('grades');
     Route::get('/homework',   fn() => Inertia::render('admin/homework/index'))->name('homework');
-    Route::get('/fee',        fn() => Inertia::render('admin/fee/index'))->name('fee');
+    Route::get('/fee',           fn() => Inertia::render('admin/fee/index'))->name('fee');
+    Route::get('/exam',          fn() => Inertia::render('admin/exam/index'))->name('exam');
+    Route::get('/reports',       fn() => Inertia::render('admin/reports/index'))->name('reports');
+    Route::get('/certs',         fn() => Inertia::render('admin/certs/index'))->name('certs');
+    Route::get('/honor-roll',    fn() => Inertia::render('admin/honor-roll/index'))->name('honor-roll');
+    Route::get('/notifications', fn() => Inertia::render('admin/notifications/index'))->name('notifications');
+    Route::get('/settings',      fn() => Inertia::render('admin/settings/index'))->name('settings');
 });
 
 require __DIR__.'/settings.php';
