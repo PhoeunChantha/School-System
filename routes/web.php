@@ -1,5 +1,7 @@
 <?php
 
+use App\Http\Controllers\Backends\SchoolClassController;
+use App\Http\Controllers\Backends\TeacherController;
 use Illuminate\Support\Facades\Route;
 use Inertia\Inertia;
 use Laravel\Fortify\Features;
@@ -21,8 +23,14 @@ Route::prefix('admin')->name('admin.')->group(function () {
     Route::get('/',           fn() => redirect()->route('dashboard'));
     Route::get('/dashboard',  fn() => redirect()->route('dashboard'))->name('dashboard');
     Route::get('/students',   fn() => Inertia::render('admin/students/index'))->name('students');
-    Route::get('/teachers',   fn() => Inertia::render('admin/teachers/index'))->name('teachers');
-    Route::get('/classes',    fn() => Inertia::render('admin/classes/index'))->name('classes');
+    Route::get('/teachers', [TeacherController::class, 'index'])->name('teachers');
+    Route::post('/teachers', [TeacherController::class, 'store'])->name('teachers.store');
+    Route::put('/teachers/{teacher}', [TeacherController::class, 'update'])->name('teachers.update');
+    Route::delete('/teachers/{teacher}', [TeacherController::class, 'destroy'])->name('teachers.destroy');
+    Route::get('/classes', [SchoolClassController::class, 'index'])->name('classes');
+    Route::post('/classes', [SchoolClassController::class, 'store'])->name('classes.store');
+    Route::put('/classes/{schoolClass}', [SchoolClassController::class, 'update'])->name('classes.update');
+    Route::delete('/classes/{schoolClass}', [SchoolClassController::class, 'destroy'])->name('classes.destroy');
     Route::get('/attendance', fn() => Inertia::render('admin/attendance/index'))->name('attendance');
     Route::get('/grades',     fn() => Inertia::render('admin/grades/index'))->name('grades');
     Route::get('/homework',   fn() => Inertia::render('admin/homework/index'))->name('homework');

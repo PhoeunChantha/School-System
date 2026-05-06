@@ -1,15 +1,40 @@
-import { useState } from 'react';
+import { FormEvent, useState } from 'react';
+import { destroy, store, update } from '@/actions/App/Http/Controllers/Backends/TeacherController';
 import AdminShell from '@/pages/admin/shell';
-import { CLASSES, type Teacher } from '@/pages/admin/data';
-import { TEACHERS as INITIAL_TEACHERS } from '@/pages/admin/data';
 import { KH, Avatar, Badge } from '@/pages/admin/ui';
+import { router, useForm } from '@inertiajs/react';
 import { toast } from 'sonner';
 
 type View = 'list' | 'add' | 'edit';
 
-export default function TeachersPage() {
+interface TeacherSchedule {
+    id: number;
+    name: string;
+    time: string;
+    room: string;
+    count: number;
+    days: string;
+}
+
+interface Teacher {
+    id: number;
+    nameKh: string;
+    nameEn: string;
+    subject: string;
+    classes: number;
+    students: number;
+    phone: string;
+    telegramUsername: string | null;
+    status: 'active' | 'inactive';
+    schedule: TeacherSchedule[];
+}
+
+interface TeachersPageProps {
+    teachers: Teacher[];
+}
+
+export default function TeachersPage({ teachers }: TeachersPageProps) {
     const [view, setView]             = useState<View>('list');
-    const [teachers, setTeachers]     = useState<Teacher[]>(INITIAL_TEACHERS);
     const [search, setSearch]         = useState('');
     const [editing, setEditing]       = useState<Teacher | null>(null);
     const [deleteTarget, setDeleteTarget] = useState<Teacher | null>(null);
@@ -18,8 +43,17 @@ export default function TeachersPage() {
     const handleEdit   = (t: Teacher) => { setEditing(t); setView('edit'); };
     const handleDelete = (t: Teacher) => setDeleteTarget(t);
     const confirmDelete = () => {
-        if (deleteTarget) setTeachers(prev => prev.filter(t => t.id !== deleteTarget.id));
-        setDeleteTarget(null);
+        if (!deleteTarget) return;
+
+        router.delete(destroy.url(deleteTarget.id), {
+            preserveScroll: true,
+            onSuccess: () => {
+                toast.success('Teacher deleted successfully!', {
+                    description: `${deleteTarget.nameEn} has been removed.`,
+                });
+                setDeleteTarget(null);
+            },
+        });
     };
 
     const q = search.toLowerCase();
@@ -146,7 +180,7 @@ export default function TeachersPage() {
 
                         <div style={{ marginBottom: 16 }}>
                             <div style={{ fontSize: 12, fontWeight: 700, color: '#64748b', marginBottom: 10 }}>CLASS SCHEDULE</div>
-                            {CLASSES.filter(c => c.teacher === scheduleTarget.nameEn).map(cls => (
+                            {scheduleTarget.schedule.map(cls => (
                                 <div key={cls.id} style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '10px 14px', background: '#f8fafc', borderRadius: 10, marginBottom: 8, border: '1px solid #e8edf5' }}>
                                     <div style={{ width: 38, height: 38, borderRadius: 8, background: '#eff6ff', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 16, flexShrink: 0 }}>🏫</div>
                                     <div style={{ flex: 1 }}>
@@ -159,7 +193,7 @@ export default function TeachersPage() {
                                     </div>
                                 </div>
                             ))}
-                            {CLASSES.filter(c => c.teacher === scheduleTarget.nameEn).length === 0 && (
+                            {scheduleTarget.schedule.length === 0 && (
                                 <div style={{ textAlign: 'center', padding: '20px', color: '#94a3b8', fontSize: 13 }}>No classes assigned yet.</div>
                             )}
                         </div>
@@ -202,17 +236,51 @@ interface FormProps { mode: 'add' | 'edit'; teacher?: Teacher; onBack: () => voi
 
 function TeacherForm({ mode, teacher, onBack }: FormProps) {
     const isEdit = mode === 'edit';
+    const { data, setData, post, put, processing, errors, transform } = useForm({
+        name_kh: teacher?.nameKh ?? '',
+        name_en: teacher?.nameEn ?? '',
+        subject: teacher?.subject ?? '',
+        phone: teacher?.phone ?? '',
+        telegram_username: teacher?.telegramUsername ?? '',
+        status: teacher?.status ?? 'active',
+    });
 
-    const handleSave = () => {
-        toast.success(isEdit ? 'Teacher updated successfully!' : 'Teacher added successfully!', {
-            description: isEdit ? `${teacher?.nameEn} has been updated.` : 'New teacher has been created.',
-        });
-        onBack();
+    const submit = (event: FormEvent<HTMLFormElement>) => {
+        event.preventDefault();
+
+        transform(formData => ({
+            ...formData,
+            subject: formData.subject || null,
+            phone: formData.phone || null,
+            telegram_username: formData.telegram_username || null,
+        }));
+
+        const options = {
+            preserveScroll: true,
+            onSuccess: () => {
+                toast.success(isEdit ? 'Teacher updated successfully!' : 'Teacher added successfully!', {
+                    description: isEdit ? `${data.name_en} has been updated.` : 'New teacher has been created.',
+                });
+                onBack();
+            },
+        };
+
+        if (isEdit && teacher) {
+            put(update.url(teacher.id), options);
+
+            return;
+        }
+
+        post(store.url(), options);
     };
+
+    const inputError = (message?: string) => message ? (
+        <div style={{ color: '#ef4444', fontSize: 11, marginTop: 4 }}>{message}</div>
+    ) : null;
 
     return (
         <div className="fade-in" style={{ padding: 24 }}>
-            <div className="card" style={{ padding: 28, maxWidth: 600, margin: '0 auto' }}>
+            <form className="card" onSubmit={submit} style={{ padding: 28, maxWidth: 600, margin: '0 auto' }}>
                 {/* Header */}
                 <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 24 }}>
                     <div style={{ width: 40, height: 40, borderRadius: 10, background: isEdit ? '#eff6ff' : '#f0fdf4', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 20 }}>
@@ -225,33 +293,51 @@ function TeacherForm({ mode, teacher, onBack }: FormProps) {
                 </div>
 
                 <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16 }}>
-                    <div className="f-group"><label className="f-label">ឈ្មោះ (ខ្មែរ) *</label><input className="f-input" placeholder="ឧ. គ្រូ វុទ្ធី" defaultValue={teacher?.nameKh} /></div>
-                    <div className="f-group"><label className="f-label">English Name *</label><input className="f-input" placeholder="e.g. Mr. Vuthy" defaultValue={teacher?.nameEn} /></div>
+                    <div className="f-group">
+                        <label className="f-label">ឈ្មោះ (ខ្មែរ) *</label>
+                        <input className="f-input" placeholder="ឧ. គ្រូ វុទ្ធី" value={data.name_kh} onChange={e => setData('name_kh', e.target.value)} />
+                        {inputError(errors.name_kh)}
+                    </div>
+                    <div className="f-group">
+                        <label className="f-label">English Name *</label>
+                        <input className="f-input" placeholder="e.g. Mr. Vuthy" value={data.name_en} onChange={e => setData('name_en', e.target.value)} />
+                        {inputError(errors.name_en)}
+                    </div>
                     <div className="f-group" style={{ gridColumn: '1/-1' }}>
                         <label className="f-label">Subject / មុខវិជ្ជា *</label>
-                        <select className="f-input" defaultValue={teacher?.subject}>
+                        <select className="f-input" value={data.subject} onChange={e => setData('subject', e.target.value)}>
                             <option value="">Select subject...</option>
                             {['English Grammar', 'Conversation', 'Writing Skills', 'Listening Skills', 'Reading Comprehension', 'Pronunciation'].map(s => <option key={s}>{s}</option>)}
                         </select>
+                        {inputError(errors.subject)}
                     </div>
-                    <div className="f-group"><label className="f-label">Phone / ទូរស័ព្ទ</label><input type="tel" className="f-input" placeholder="0xx-xxx-xxx" defaultValue={teacher?.phone} /></div>
-                    <div className="f-group"><label className="f-label">Status / ស្ថានភាព</label>
-                        <select className="f-input" defaultValue={teacher?.status}>
+                    <div className="f-group">
+                        <label className="f-label">Phone / ទូរស័ព្ទ</label>
+                        <input type="tel" className="f-input" placeholder="0xx-xxx-xxx" value={data.phone} onChange={e => setData('phone', e.target.value)} />
+                        {inputError(errors.phone)}
+                    </div>
+                    <div className="f-group">
+                        <label className="f-label">Status / ស្ថានភាព</label>
+                        <select className="f-input" value={data.status} onChange={e => setData('status', e.target.value as 'active' | 'inactive')}>
                             <option value="active">Active</option>
                             <option value="inactive">Inactive</option>
                         </select>
+                        {inputError(errors.status)}
                     </div>
-                    <div className="f-group"><label className="f-label">Number of Classes</label><input type="number" className="f-input" defaultValue={teacher?.classes ?? 1} min={0} /></div>
-                    <div className="f-group"><label className="f-label">Telegram Username</label><input className="f-input" placeholder="@username" /></div>
+                    <div className="f-group" style={{ gridColumn: '1/-1' }}>
+                        <label className="f-label">Telegram Username</label>
+                        <input className="f-input" placeholder="@username" value={data.telegram_username} onChange={e => setData('telegram_username', e.target.value)} />
+                        {inputError(errors.telegram_username)}
+                    </div>
                 </div>
 
                 <div style={{ display: 'flex', gap: 12, marginTop: 8 }}>
-                    <button onClick={onBack} style={{ background: '#f1f5f9', color: '#64748b', border: 'none', borderRadius: 10, padding: '12px 20px', fontWeight: 700, cursor: 'pointer' }}>← Cancel</button>
-                    <button onClick={handleSave} style={{ flex: 1, background: isEdit ? '#2563eb' : '#10b981', color: 'white', border: 'none', borderRadius: 10, padding: '12px', fontWeight: 700, fontSize: 14, cursor: 'pointer', fontFamily: "'Noto Sans Khmer',sans-serif" }}>
-                        {isEdit ? '✓ Update Teacher' : '✓ Save Teacher'}
+                    <button type="button" onClick={onBack} style={{ background: '#f1f5f9', color: '#64748b', border: 'none', borderRadius: 10, padding: '12px 20px', fontWeight: 700, cursor: 'pointer' }}>← Cancel</button>
+                    <button type="submit" disabled={processing} style={{ flex: 1, background: isEdit ? '#2563eb' : '#10b981', color: 'white', border: 'none', borderRadius: 10, padding: '12px', fontWeight: 700, fontSize: 14, cursor: 'pointer', fontFamily: "'Noto Sans Khmer',sans-serif" }}>
+                        {processing ? 'Saving...' : isEdit ? '✓ Update Teacher' : '✓ Save Teacher'}
                     </button>
                 </div>
-            </div>
+            </form>
         </div>
     );
 }

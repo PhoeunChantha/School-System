@@ -1,11 +1,46 @@
-import { useState, useEffect, useMemo } from 'react';
+import { FormEvent, useEffect, useMemo, useState } from 'react';
+import { destroy, store, update } from '@/actions/App/Http/Controllers/Backends/SchoolClassController';
 import AdminShell from '@/pages/admin/shell';
-import { CLASSES as INITIAL_CLASSES, TEACHERS, type SchoolClass } from '@/pages/admin/data';
 import { Badge, Pagination } from '@/pages/admin/ui';
-import { Link } from '@inertiajs/react';
+import { Link, router, useForm } from '@inertiajs/react';
 import { toast } from 'sonner';
 
 type View = 'list' | 'add' | 'edit';
+type Weekday = 'Mon' | 'Tue' | 'Wed' | 'Thu' | 'Fri' | 'Sat' | 'Sun';
+
+interface SchoolClass {
+    id: number;
+    levelId: number | null;
+    teacherId: number | null;
+    name: string;
+    teacher: string;
+    time: string;
+    room: string;
+    count: number;
+    days: string;
+    startsAt: string | null;
+    endsAt: string | null;
+    capacity: number | null;
+    monthlyFee: string | null;
+    status: 'active' | 'inactive';
+}
+
+interface LevelOption {
+    id: number;
+    name: string;
+    monthly_fee: string;
+}
+
+interface TeacherOption {
+    id: number;
+    name_en: string;
+}
+
+interface ClassesPageProps {
+    classes: SchoolClass[];
+    levels: LevelOption[];
+    teachers: TeacherOption[];
+}
 
 // ── Sort options ──────────────────────────────────────────
 type OrderKey = 'name-asc' | 'name-desc' | 'teacher-asc' | 'students-desc' | 'students-asc' | 'room-asc';
@@ -31,9 +66,8 @@ function sortClasses(list: SchoolClass[], order: OrderKey): SchoolClass[] {
     });
 }
 
-export default function ClassesPage() {
+export default function ClassesPage({ classes, levels, teachers }: ClassesPageProps) {
     const [view, setView]                 = useState<View>('list');
-    const [classes, setClasses]           = useState<SchoolClass[]>(INITIAL_CLASSES);
     const [search, setSearch]             = useState('');
     const [editing, setEditing]           = useState<SchoolClass | null>(null);
     const [deleteTarget, setDeleteTarget] = useState<SchoolClass | null>(null);
@@ -44,8 +78,17 @@ export default function ClassesPage() {
     const handleEdit   = (cls: SchoolClass) => { setEditing(cls); setView('edit'); };
     const handleDelete = (cls: SchoolClass) => setDeleteTarget(cls);
     const confirmDelete = () => {
-        if (deleteTarget) setClasses(prev => prev.filter(c => c.id !== deleteTarget.id));
-        setDeleteTarget(null);
+        if (!deleteTarget) return;
+
+        router.delete(destroy.url(deleteTarget.id), {
+            preserveScroll: true,
+            onSuccess: () => {
+                toast.success('Class deleted successfully!', {
+                    description: `${deleteTarget.name} has been removed.`,
+                });
+                setDeleteTarget(null);
+            },
+        });
     };
 
     useEffect(() => { setPage(1); }, [search, orderBy, perPage]);
@@ -200,6 +243,8 @@ export default function ClassesPage() {
                 <ClassForm
                     mode={view}
                     cls={editing ?? undefined}
+                    levels={levels}
+                    teachers={teachers}
                     onBack={() => { setView('list'); setEditing(null); }}
                 />
             )}
@@ -235,21 +280,70 @@ export default function ClassesPage() {
 }
 
 // ── Add / Edit Class form ─────────────────────────────────
-interface FormProps { mode: 'add' | 'edit'; cls?: SchoolClass; onBack: () => void; }
+interface FormProps {
+    mode: 'add' | 'edit';
+    cls?: SchoolClass;
+    levels: LevelOption[];
+    teachers: TeacherOption[];
+    onBack: () => void;
+}
 
-function ClassForm({ mode, cls, onBack }: FormProps) {
+function ClassForm({ mode, cls, levels, teachers, onBack }: FormProps) {
     const isEdit = mode === 'edit';
+    const initialDays = (cls?.days.split(' ').filter(Boolean) ?? []) as Weekday[];
+    const { data, setData, post, put, processing, errors, transform } = useForm({
+        level_id: (cls?.levelId ?? null) as number | null,
+        teacher_id: (cls?.teacherId ?? null) as number | null,
+        name: cls?.name ?? '',
+        room: cls?.room ?? '',
+        starts_at: cls?.startsAt?.slice(0, 5) ?? '',
+        ends_at: cls?.endsAt?.slice(0, 5) ?? '',
+        days: initialDays,
+        capacity: cls?.capacity ?? 20,
+        academic_year: String(new Date().getFullYear()),
+        status: cls?.status ?? 'active',
+    });
 
-    const handleSave = () => {
-        toast.success(isEdit ? 'Class updated successfully!' : 'Class added successfully!', {
-            description: isEdit ? `${cls?.name} has been updated.` : 'New class has been created.',
-        });
-        onBack();
+    const selectedLevel = levels.find(level => level.id === data.level_id);
+
+    const submit = (event: FormEvent<HTMLFormElement>) => {
+        event.preventDefault();
+
+        transform(formData => ({
+            ...formData,
+            level_id: formData.level_id || null,
+            teacher_id: formData.teacher_id || null,
+            starts_at: formData.starts_at || null,
+            ends_at: formData.ends_at || null,
+            capacity: formData.capacity || null,
+        }));
+
+        const options = {
+            preserveScroll: true,
+            onSuccess: () => {
+                toast.success(isEdit ? 'Class updated successfully!' : 'Class added successfully!', {
+                    description: isEdit ? `${data.name} has been updated.` : 'New class has been created.',
+                });
+                onBack();
+            },
+        };
+
+        if (isEdit && cls) {
+            put(update.url(cls.id), options);
+
+            return;
+        }
+
+        post(store.url(), options);
+    };
+
+    const toggleDay = (day: Weekday) => {
+        setData('days', data.days.includes(day) ? data.days.filter(value => value !== day) : [...data.days, day]);
     };
 
     return (
         <div className="fade-in" style={{ padding: 24 }}>
-            <div className="card" style={{ padding: 28, maxWidth: 600, margin: '0 auto' }}>
+            <form className="card" onSubmit={submit} style={{ padding: 28, maxWidth: 600, margin: '0 auto' }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 24 }}>
                     <div style={{ width: 40, height: 40, borderRadius: 10, background: isEdit ? '#eff6ff' : '#f0fdf4', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 20 }}>
                         {isEdit ? '✏️' : '🏫'}
@@ -263,64 +357,83 @@ function ClassForm({ mode, cls, onBack }: FormProps) {
                 <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16 }}>
                     <div className="f-group" style={{ gridColumn: '1/-1' }}>
                         <label className="f-label">Class Name / ឈ្មោះថ្នាក់ *</label>
-                        <select className="f-input" defaultValue={cls?.name}>
+                        <select
+                            className="f-input"
+                            value={data.level_id ?? ''}
+                            onChange={e => {
+                                const level = levels.find(item => item.id === Number(e.target.value));
+
+                                setData(data => ({
+                                    ...data,
+                                    level_id: level?.id ?? null,
+                                    name: level?.name ?? '',
+                                }));
+                            }}
+                        >
                             <option value="">Select level...</option>
-                            {['Beginner 1', 'Beginner 2', 'Intermediate 1', 'Intermediate 2', 'Advanced 1', 'Advanced 2'].map(l => (
-                                <option key={l}>{l}</option>
+                            {levels.map(level => (
+                                <option key={level.id} value={level.id}>{level.name}</option>
                             ))}
                         </select>
+                        {errors.name && <div style={{ color: '#ef4444', fontSize: 11, marginTop: 4 }}>{errors.name}</div>}
                     </div>
                     <div className="f-group">
                         <label className="f-label">Teacher / គ្រូ *</label>
-                        <select className="f-input" defaultValue={cls?.teacher}>
+                        <select className="f-input" value={data.teacher_id ?? ''} onChange={e => setData('teacher_id', e.target.value ? Number(e.target.value) : null)}>
                             <option value="">Select teacher...</option>
-                            {TEACHERS.map(t => <option key={t.id}>{t.nameEn}</option>)}
+                            {teachers.map(teacher => <option key={teacher.id} value={teacher.id}>{teacher.name_en}</option>)}
                         </select>
+                        {errors.teacher_id && <div style={{ color: '#ef4444', fontSize: 11, marginTop: 4 }}>{errors.teacher_id}</div>}
                     </div>
                     <div className="f-group">
                         <label className="f-label">Room / បន្ទប់ *</label>
-                        <input className="f-input" placeholder="e.g. A1" defaultValue={cls?.room} />
+                        <input className="f-input" placeholder="e.g. A1" value={data.room} onChange={e => setData('room', e.target.value)} />
+                        {errors.room && <div style={{ color: '#ef4444', fontSize: 11, marginTop: 4 }}>{errors.room}</div>}
                     </div>
                     <div className="f-group">
                         <label className="f-label">Start Time / ម៉ោងចាប់ផ្ដើម</label>
-                        <input type="time" className="f-input" defaultValue="07:30" />
+                        <input type="time" className="f-input" value={data.starts_at} onChange={e => setData('starts_at', e.target.value)} />
+                        {errors.starts_at && <div style={{ color: '#ef4444', fontSize: 11, marginTop: 4 }}>{errors.starts_at}</div>}
                     </div>
                     <div className="f-group">
                         <label className="f-label">End Time / ម៉ោងបញ្ចប់</label>
-                        <input type="time" className="f-input" defaultValue="09:00" />
+                        <input type="time" className="f-input" value={data.ends_at} onChange={e => setData('ends_at', e.target.value)} />
+                        {errors.ends_at && <div style={{ color: '#ef4444', fontSize: 11, marginTop: 4 }}>{errors.ends_at}</div>}
                     </div>
                     <div className="f-group" style={{ gridColumn: '1/-1' }}>
                         <label className="f-label">Days / ថ្ងៃ *</label>
                         <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
-                            {['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'].map(day => (
+                            {(['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'] as Weekday[]).map(day => (
                                 <label key={day} style={{ display: 'flex', alignItems: 'center', gap: 6, cursor: 'pointer', background: '#f8fafc', borderRadius: 8, padding: '6px 12px', border: '1.5px solid #e2e8f0', fontSize: 12, fontWeight: 700 }}>
-                                    <input type="checkbox" defaultChecked={cls?.days.includes(day)} style={{ accentColor: '#2563eb' }} />
+                                    <input type="checkbox" checked={data.days.includes(day)} onChange={() => toggleDay(day)} style={{ accentColor: '#2563eb' }} />
                                     {day}
                                 </label>
                             ))}
                         </div>
+                        {errors.days && <div style={{ color: '#ef4444', fontSize: 11, marginTop: 4 }}>{errors.days}</div>}
                     </div>
                     <div className="f-group">
                         <label className="f-label">Max Students</label>
-                        <input type="number" className="f-input" defaultValue={cls?.count ?? 20} min={1} max={50} />
+                        <input type="number" className="f-input" value={data.capacity} min={1} max={200} onChange={e => setData('capacity', Number(e.target.value))} />
+                        {errors.capacity && <div style={{ color: '#ef4444', fontSize: 11, marginTop: 4 }}>{errors.capacity}</div>}
                     </div>
                     <div className="f-group">
                         <label className="f-label">Monthly Fee (USD)</label>
-                        <input type="number" className="f-input" defaultValue={25} min={0} />
+                        <input type="number" className="f-input" value={selectedLevel?.monthly_fee ?? ''} min={0} readOnly />
                     </div>
                 </div>
 
                 <div style={{ display: 'flex', gap: 12, marginTop: 8 }}>
-                    <button onClick={onBack}
+                    <button type="button" onClick={onBack}
                         style={{ background: '#f1f5f9', color: '#64748b', border: 'none', borderRadius: 10, padding: '12px 20px', fontWeight: 700, cursor: 'pointer' }}>
                         ← Cancel
                     </button>
-                    <button onClick={handleSave}
+                    <button type="submit" disabled={processing}
                         style={{ flex: 1, background: isEdit ? '#2563eb' : '#10b981', color: 'white', border: 'none', borderRadius: 10, padding: '12px', fontWeight: 700, fontSize: 14, cursor: 'pointer', fontFamily: "'Noto Sans Khmer',sans-serif" }}>
-                        {isEdit ? '✓ Update Class' : '✓ Save Class'}
+                        {processing ? 'Saving...' : isEdit ? '✓ Update Class' : '✓ Save Class'}
                     </button>
                 </div>
-            </div>
+            </form>
         </div>
     );
 }
