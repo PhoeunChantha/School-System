@@ -1,8 +1,36 @@
-import { useState, useMemo } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import AdminShell from '@/pages/admin/shell';
 import { STUDENTS, CLASSES } from '@/pages/admin/data';
-import { KH, Avatar, Badge, PBar } from '@/pages/admin/ui';
+import { KH, Avatar, Badge, PBar, Pagination } from '@/pages/admin/ui';
 import { toast } from 'sonner';
+
+// ── Sort helpers ──────────────────────────────────────────
+type HistOrderKey =
+    | 'name-asc' | 'name-desc'
+    | 'status-present' | 'status-absent'
+    | 'rate-desc' | 'rate-asc'
+    | 'present-desc' | 'absent-desc'
+    | 'class-asc';
+
+const SINGLE_DAY_ORDERS: { value: HistOrderKey; label: string }[] = [
+    { value: 'name-asc',       label: 'Name A → Z' },
+    { value: 'name-desc',      label: 'Name Z → A' },
+    { value: 'status-present', label: 'Present First' },
+    { value: 'status-absent',  label: 'Absent First' },
+    { value: 'rate-desc',      label: 'Overall Rate ↓' },
+    { value: 'rate-asc',       label: 'Overall Rate ↑' },
+    { value: 'class-asc',      label: 'Class' },
+];
+
+const MULTI_DAY_ORDERS: { value: HistOrderKey; label: string }[] = [
+    { value: 'name-asc',      label: 'Name A → Z' },
+    { value: 'name-desc',     label: 'Name Z → A' },
+    { value: 'rate-desc',     label: 'Rate ↓ Highest' },
+    { value: 'rate-asc',      label: 'Rate ↑ Lowest' },
+    { value: 'present-desc',  label: 'Present ↓ Most' },
+    { value: 'absent-desc',   label: 'Absent ↓ Most' },
+    { value: 'class-asc',     label: 'Class' },
+];
 
 type AttStatus = 'present' | 'absent' | 'unmarked';
 type PageTab   = 'mark' | 'history';
@@ -82,6 +110,9 @@ export default function AttendancePage() {
     const [customDate, setCustomDate] = useState('');
     const [histClass, setHistClass]   = useState<string>('all');
     const [expandedStudent, setExpandedStudent] = useState<number | null>(null);
+    const [histOrderBy, setHistOrderBy] = useState<HistOrderKey>('name-asc');
+    const [histPage,    setHistPage]    = useState(1);
+    const [histPerPage, setHistPerPage] = useState(5);
 
     const [from, to] = rangeFor(quick, customDate);
     const days = useMemo(() => schoolDays(from, to), [from.toISOString(), to.toISOString()]);
@@ -99,6 +130,31 @@ export default function AttendancePage() {
         const rate         = days.length ? Math.round((presentCount / days.length) * 100) : 0;
         return { student: s, records, presentCount, absentCount, rate };
     }), [histStudents, days]);
+
+    // Reset page when range, class, or order changes
+    useEffect(() => { setHistPage(1); }, [quick, customDate, histClass, histOrderBy, histPerPage, isSingleDay]);
+
+    // Sorted summaries
+    const sortedSummaries = useMemo(() => [...studentSummaries].sort((a, b) => {
+        switch (histOrderBy) {
+            case 'name-asc':       return a.student.nameEn.localeCompare(b.student.nameEn);
+            case 'name-desc':      return b.student.nameEn.localeCompare(a.student.nameEn);
+            case 'status-present': return (historicalStatus(a.student.id, days[0] ?? '') === 'present' ? 0 : 1) - (historicalStatus(b.student.id, days[0] ?? '') === 'present' ? 0 : 1);
+            case 'status-absent':  return (historicalStatus(a.student.id, days[0] ?? '') === 'absent' ? 0 : 1) - (historicalStatus(b.student.id, days[0] ?? '') === 'absent' ? 0 : 1);
+            case 'rate-desc':      return b.rate - a.rate;
+            case 'rate-asc':       return a.rate - b.rate;
+            case 'present-desc':   return b.presentCount - a.presentCount;
+            case 'absent-desc':    return b.absentCount - a.absentCount;
+            case 'class-asc':      return a.student.cls.localeCompare(b.student.cls);
+            default:               return 0;
+        }
+    }), [studentSummaries, histOrderBy, days]);
+
+    // Paginated slice
+    const paginatedSummaries = useMemo(
+        () => sortedSummaries.slice((histPage - 1) * histPerPage, histPage * histPerPage),
+        [sortedSummaries, histPage, histPerPage],
+    );
 
     // ── Quick date label helper ───────────────────────────
     const rangeLabel = (() => {
@@ -267,18 +323,28 @@ export default function AttendancePage() {
                                 {/* Single-day view: simple status list */}
                                 {isSingleDay && days.length === 1 && (
                                     <div className="card" style={{ overflowX: 'auto' }}>
-                                        <div style={{ padding: '16px 20px 0', marginBottom: 4 }}>
-                                            <KH style={{ fontWeight: 800, fontSize: 15, display: 'block' }}>វត្តមានប្រចាំថ្ងៃ</KH>
-                                            <div style={{ fontSize: 12, color: '#94a3b8', marginBottom: 12 }}>
-                                                {new Date(days[0]).toLocaleDateString('en-US', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}
-                                            </div>
+                                        {/* Sort + per-page */}
+                                        <div style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '12px 16px', borderBottom: '1px solid #f1f5f9' }}>
+                                            <span style={{ fontSize: 11, fontWeight: 700, color: '#94a3b8', whiteSpace: 'nowrap' }}>Sort by</span>
+                                            <select value={histOrderBy} onChange={e => setHistOrderBy(e.target.value as HistOrderKey)}
+                                                style={{ padding: '5px 10px', borderRadius: 8, border: '1.5px solid #e2e8f0', background: 'white', color: '#374151', fontSize: 12, fontWeight: 700, cursor: 'pointer', outline: 'none' }}>
+                                                {SINGLE_DAY_ORDERS.map(o => <option key={o.value} value={o.value}>{o.label}</option>)}
+                                            </select>
+                                            <div style={{ width: 1, height: 18, background: '#e2e8f0', margin: '0 2px' }} />
+                                            <select value={histPerPage} onChange={e => { setHistPerPage(Number(e.target.value)); setHistPage(1); }}
+                                                style={{ padding: '5px 10px', borderRadius: 8, border: '1.5px solid #e2e8f0', background: 'white', color: '#374151', fontSize: 12, fontWeight: 700, cursor: 'pointer', outline: 'none' }}>
+                                                {[5, 10, 25, 50].map(n => <option key={n} value={n}>{n} per page</option>)}
+                                            </select>
+                                            <span style={{ fontSize: 11, color: '#94a3b8', marginLeft: 4 }}>
+                                                {sortedSummaries.length} student{sortedSummaries.length !== 1 ? 's' : ''}
+                                            </span>
                                         </div>
                                         <table className="data-table">
                                             <thead><tr>
                                                 <th>Student / សិស្ស</th><th>Class</th><th>Province</th><th>Status</th><th>Overall Rate</th>
                                             </tr></thead>
                                             <tbody>
-                                                {studentSummaries.map(({ student: s, records }) => {
+                                                {paginatedSummaries.map(({ student: s, records }) => {
                                                     const st = records[0]?.status ?? 'absent';
                                                     return (
                                                         <tr key={s.id}>
@@ -304,15 +370,28 @@ export default function AttendancePage() {
                                                 })}
                                             </tbody>
                                         </table>
+                                        <Pagination total={sortedSummaries.length} page={histPage} perPage={histPerPage} onPageChange={setHistPage} onPerPageChange={setHistPerPage} showPerPage={false} />
                                     </div>
                                 )}
 
                                 {/* Multi-day view: summary per student + expandable day-by-day */}
                                 {!isSingleDay && (
                                     <div className="card" style={{ overflowX: 'auto' }}>
-                                        <div style={{ padding: '16px 20px 0', marginBottom: 4 }}>
-                                            <KH style={{ fontWeight: 800, fontSize: 15, display: 'block' }}>សង្ខេបវត្តមាន</KH>
-                                            <div style={{ fontSize: 12, color: '#94a3b8', marginBottom: 12 }}>Click a row to see day-by-day breakdown</div>
+                                        {/* Sort + per-page */}
+                                        <div style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '12px 16px', borderBottom: '1px solid #f1f5f9' }}>
+                                            <span style={{ fontSize: 11, fontWeight: 700, color: '#94a3b8', whiteSpace: 'nowrap' }}>Sort by</span>
+                                            <select value={histOrderBy} onChange={e => setHistOrderBy(e.target.value as HistOrderKey)}
+                                                style={{ padding: '5px 10px', borderRadius: 8, border: '1.5px solid #e2e8f0', background: 'white', color: '#374151', fontSize: 12, fontWeight: 700, cursor: 'pointer', outline: 'none' }}>
+                                                {MULTI_DAY_ORDERS.map(o => <option key={o.value} value={o.value}>{o.label}</option>)}
+                                            </select>
+                                            <div style={{ width: 1, height: 18, background: '#e2e8f0', margin: '0 2px' }} />
+                                            <select value={histPerPage} onChange={e => { setHistPerPage(Number(e.target.value)); setHistPage(1); }}
+                                                style={{ padding: '5px 10px', borderRadius: 8, border: '1.5px solid #e2e8f0', background: 'white', color: '#374151', fontSize: 12, fontWeight: 700, cursor: 'pointer', outline: 'none' }}>
+                                                {[5, 10, 25, 50].map(n => <option key={n} value={n}>{n} per page</option>)}
+                                            </select>
+                                            <span style={{ fontSize: 11, color: '#94a3b8', marginLeft: 4 }}>
+                                                {sortedSummaries.length} student{sortedSummaries.length !== 1 ? 's' : ''}
+                                            </span>
                                         </div>
                                         <table className="data-table">
                                             <thead><tr>
@@ -320,7 +399,7 @@ export default function AttendancePage() {
                                                 <th>✓ Present</th><th>✗ Absent</th><th>Rate</th><th>Trend</th>
                                             </tr></thead>
                                             <tbody>
-                                                {studentSummaries.map(({ student: s, records, presentCount, absentCount, rate }) => (
+                                                {paginatedSummaries.map(({ student: s, records, presentCount, absentCount, rate }) => (
                                                     <>
                                                         <tr key={s.id} style={{ cursor: 'pointer' }} onClick={() => setExpandedStudent(expandedStudent === s.id ? null : s.id)}>
                                                             <td><div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
@@ -384,6 +463,7 @@ export default function AttendancePage() {
                                                 ))}
                                             </tbody>
                                         </table>
+                                        <Pagination total={sortedSummaries.length} page={histPage} perPage={histPerPage} onPageChange={setHistPage} onPerPageChange={setHistPerPage} showPerPage={false} />
                                     </div>
                                 )}
                             </>

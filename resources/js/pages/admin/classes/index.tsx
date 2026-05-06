@@ -1,18 +1,45 @@
-import { useState } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import AdminShell from '@/pages/admin/shell';
 import { CLASSES as INITIAL_CLASSES, TEACHERS, type SchoolClass } from '@/pages/admin/data';
-import { Badge } from '@/pages/admin/ui';
+import { Badge, Pagination } from '@/pages/admin/ui';
 import { Link } from '@inertiajs/react';
 import { toast } from 'sonner';
 
 type View = 'list' | 'add' | 'edit';
 
+// ── Sort options ──────────────────────────────────────────
+type OrderKey = 'name-asc' | 'name-desc' | 'teacher-asc' | 'students-desc' | 'students-asc' | 'room-asc';
+const ORDER_OPTIONS: { value: OrderKey; label: string }[] = [
+    { value: 'name-asc',      label: 'Name A → Z' },
+    { value: 'name-desc',     label: 'Name Z → A' },
+    { value: 'teacher-asc',   label: 'Teacher A → Z' },
+    { value: 'students-desc', label: 'Students ↓ Most' },
+    { value: 'students-asc',  label: 'Students ↑ Least' },
+    { value: 'room-asc',      label: 'Room' },
+];
+function sortClasses(list: SchoolClass[], order: OrderKey): SchoolClass[] {
+    return [...list].sort((a, b) => {
+        switch (order) {
+            case 'name-asc':      return a.name.localeCompare(b.name);
+            case 'name-desc':     return b.name.localeCompare(a.name);
+            case 'teacher-asc':   return a.teacher.localeCompare(b.teacher);
+            case 'students-desc': return b.count - a.count;
+            case 'students-asc':  return a.count - b.count;
+            case 'room-asc':      return a.room.localeCompare(b.room);
+            default:              return 0;
+        }
+    });
+}
+
 export default function ClassesPage() {
-    const [view, setView]           = useState<View>('list');
-    const [classes, setClasses]     = useState<SchoolClass[]>(INITIAL_CLASSES);
-    const [search, setSearch]       = useState('');
-    const [editing, setEditing]     = useState<SchoolClass | null>(null);
+    const [view, setView]                 = useState<View>('list');
+    const [classes, setClasses]           = useState<SchoolClass[]>(INITIAL_CLASSES);
+    const [search, setSearch]             = useState('');
+    const [editing, setEditing]           = useState<SchoolClass | null>(null);
     const [deleteTarget, setDeleteTarget] = useState<SchoolClass | null>(null);
+    const [orderBy, setOrderBy]           = useState<OrderKey>('name-asc');
+    const [page, setPage]                 = useState(1);
+    const [perPage, setPerPage]           = useState(5);
 
     const handleEdit   = (cls: SchoolClass) => { setEditing(cls); setView('edit'); };
     const handleDelete = (cls: SchoolClass) => setDeleteTarget(cls);
@@ -21,19 +48,29 @@ export default function ClassesPage() {
         setDeleteTarget(null);
     };
 
-    const q = search.toLowerCase();
-    const filtered = classes.filter(c =>
-        !q ||
-        c.name.toLowerCase().includes(q) ||
-        c.teacher.toLowerCase().includes(q) ||
-        c.room.toLowerCase().includes(q) ||
-        c.days.toLowerCase().includes(q)
+    useEffect(() => { setPage(1); }, [search, orderBy, perPage]);
+
+    const filtered = useMemo(() => {
+        const q = search.toLowerCase();
+        const base = classes.filter(c =>
+            !q ||
+            c.name.toLowerCase().includes(q) ||
+            c.teacher.toLowerCase().includes(q) ||
+            c.room.toLowerCase().includes(q) ||
+            c.days.toLowerCase().includes(q)
+        );
+        return sortClasses(base, orderBy);
+    }, [classes, search, orderBy]);
+
+    const paginated = useMemo(
+        () => filtered.slice((page - 1) * perPage, page * perPage),
+        [filtered, page, perPage],
     );
 
     return (
         <AdminShell>
 
-            {/* List view */}
+            {/* ── List view ── */}
             {view === 'list' && (
                 <div className="fade-in" style={{ padding: 24, display: 'flex', flexDirection: 'column', gap: 16 }}>
 
@@ -48,8 +85,8 @@ export default function ClassesPage() {
                         />
                         <div style={{ display: 'flex', gap: 8 }}>
                             {[
-                                { l: 'Total',   v: classes.length,                                              c: '#3b82f6' },
-                                { l: 'Students',v: classes.reduce((a, c) => a + c.count, 0),                   c: '#8b5cf6' },
+                                { l: 'Total',    v: classes.length,                              c: '#3b82f6' },
+                                { l: 'Students', v: classes.reduce((a, c) => a + c.count, 0),   c: '#8b5cf6' },
                             ].map((s, i) => (
                                 <div key={i} style={{ background: 'white', borderRadius: 10, padding: '8px 14px', border: '1px solid #e8edf5', display: 'flex', gap: 8, alignItems: 'center' }}>
                                     <div style={{ width: 8, height: 8, borderRadius: '50%', background: s.c }} />
@@ -75,6 +112,31 @@ export default function ClassesPage() {
                     {/* Table */}
                     {filtered.length > 0 && (
                         <div className="card" style={{ overflowX: 'auto' }}>
+
+                            {/* Sort + per-page controls */}
+                            <div style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '12px 16px', borderBottom: '1px solid #f1f5f9' }}>
+                                <span style={{ fontSize: 11, fontWeight: 700, color: '#94a3b8', whiteSpace: 'nowrap' }}>Sort by</span>
+                                <select value={orderBy} onChange={e => setOrderBy(e.target.value as OrderKey)}
+                                    style={{ padding: '5px 10px', borderRadius: 8, border: '1.5px solid #e2e8f0', background: 'white', color: '#374151', fontSize: 12, fontWeight: 700, cursor: 'pointer', outline: 'none' }}>
+                                    {ORDER_OPTIONS.map(o => (
+                                        <option key={o.value} value={o.value}>{o.label}</option>
+                                    ))}
+                                </select>
+
+                                <div style={{ width: 1, height: 18, background: '#e2e8f0', margin: '0 2px' }} />
+
+                                <select value={perPage} onChange={e => { setPerPage(Number(e.target.value)); setPage(1); }}
+                                    style={{ padding: '5px 10px', borderRadius: 8, border: '1.5px solid #e2e8f0', background: 'white', color: '#374151', fontSize: 12, fontWeight: 700, cursor: 'pointer', outline: 'none' }}>
+                                    {[5, 10, 25, 50].map(n => (
+                                        <option key={n} value={n}>{n} per page</option>
+                                    ))}
+                                </select>
+
+                                <span style={{ fontSize: 11, color: '#94a3b8', marginLeft: 4 }}>
+                                    {filtered.length} result{filtered.length !== 1 ? 's' : ''}
+                                </span>
+                            </div>
+
                             <table className="data-table">
                                 <thead><tr>
                                     <th>Class / ថ្នាក់</th>
@@ -86,7 +148,7 @@ export default function ClassesPage() {
                                     <th>Actions</th>
                                 </tr></thead>
                                 <tbody>
-                                    {filtered.map(cls => (
+                                    {paginated.map(cls => (
                                         <tr key={cls.id}>
                                             <td><span style={{ fontWeight: 700, fontSize: 14 }}>{cls.name}</span></td>
                                             <td style={{ fontSize: 13, color: '#64748b' }}>{cls.teacher}</td>
@@ -119,12 +181,21 @@ export default function ClassesPage() {
                                     ))}
                                 </tbody>
                             </table>
+
+                            <Pagination
+                                total={filtered.length}
+                                page={page}
+                                perPage={perPage}
+                                onPageChange={setPage}
+                                onPerPageChange={setPerPage}
+                                showPerPage={false}
+                            />
                         </div>
                     )}
                 </div>
             )}
 
-            {/* Add / Edit form */}
+            {/* ── Add / Edit form ── */}
             {(view === 'add' || view === 'edit') && (
                 <ClassForm
                     mode={view}
@@ -133,7 +204,7 @@ export default function ClassesPage() {
                 />
             )}
 
-            {/* Delete confirmation modal */}
+            {/* ── Delete confirmation modal ── */}
             {deleteTarget && (
                 <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.45)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 200, padding: 16 }}
                     onClick={e => { if (e.target === e.currentTarget) setDeleteTarget(null); }}>
@@ -163,7 +234,7 @@ export default function ClassesPage() {
     );
 }
 
-// ── Add / Edit Class form ──
+// ── Add / Edit Class form ─────────────────────────────────
 interface FormProps { mode: 'add' | 'edit'; cls?: SchoolClass; onBack: () => void; }
 
 function ClassForm({ mode, cls, onBack }: FormProps) {
@@ -179,7 +250,6 @@ function ClassForm({ mode, cls, onBack }: FormProps) {
     return (
         <div className="fade-in" style={{ padding: 24 }}>
             <div className="card" style={{ padding: 28, maxWidth: 600, margin: '0 auto' }}>
-                {/* Header */}
                 <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 24 }}>
                     <div style={{ width: 40, height: 40, borderRadius: 10, background: isEdit ? '#eff6ff' : '#f0fdf4', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 20 }}>
                         {isEdit ? '✏️' : '🏫'}
