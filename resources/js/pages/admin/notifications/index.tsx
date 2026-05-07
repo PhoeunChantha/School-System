@@ -1,149 +1,430 @@
-import { useState } from 'react';
+import { destroy, markAllRead, markRead, store, update } from '@/actions/App/Http/Controllers/Backends/NotificationController';
+import {
+    Sheet,
+    SheetContent,
+    SheetDescription,
+    SheetHeader,
+    SheetTitle,
+} from '@/components/ui/sheet';
 import AdminShell from '@/pages/admin/shell';
-import { KH, Badge } from '@/pages/admin/ui';
+import { Badge, KH } from '@/pages/admin/ui';
+import { router, useForm } from '@inertiajs/react';
+import { Bell, Check, Edit3, Plus, Trash2 } from 'lucide-react';
+import { FormEvent, useMemo, useState } from 'react';
+import type { CSSProperties } from 'react';
 import { toast } from 'sonner';
 
-type NotifCategory = 'all' | 'attendance' | 'fees' | 'homework' | 'system';
+type NotificationCategory = 'attendance' | 'fees' | 'homework' | 'system';
+type NotificationSeverity = 'info' | 'warning' | 'urgent';
+type CategoryFilter = NotificationCategory | 'all';
+type DrawerMode = 'create' | 'edit';
 
-interface Notification {
+interface NotificationItem {
     id: number;
-    category: Exclude<NotifCategory, 'all'>;
-    icon: string;
+    category: NotificationCategory;
     titleKh: string;
     title: string;
     body: string;
-    time: string;
+    severity: NotificationSeverity;
+    studentId: number | null;
+    studentName: string;
+    userId: number | null;
+    userName: string;
     read: boolean;
-    priority: 'high' | 'normal';
+    time: string;
+    createdAt: string;
 }
 
-const INITIAL_NOTIFS: Notification[] = [
-    { id: 1,  category: 'attendance', icon: '📋', titleKh: 'វត្តមានទាប',       title: 'Low Attendance Alert',      body: 'ទូច ចន្ទ (Touch Chantha) attendance dropped to 45% — immediate action required.',       time: '10 min ago', read: false, priority: 'high' },
-    { id: 2,  category: 'attendance', icon: '📋', titleKh: 'វត្តមានទាប',       title: 'Low Attendance Alert',      body: 'ហេង វណ្ណៈ (Heng Vanna) attendance at 65% — below the 70% threshold.',                 time: '25 min ago', read: false, priority: 'high' },
-    { id: 3,  category: 'fees',       icon: '💳', titleKh: 'ថ្លៃមិនទាន់បង់',  title: 'Payment Overdue',           body: 'ចាន់ ស្រីណា (Chan Sreyna) — May 2026 fee of $25 is overdue.',                          time: '1 hour ago', read: false, priority: 'high' },
-    { id: 4,  category: 'fees',       icon: '💳', titleKh: 'ការទូទាត់ថ្មី',    title: 'Payment Received',          body: 'ម៉ែន ពិសី (Men Pisey) paid $25 via ABA on May 01, 2026.',                              time: '2 hours ago', read: true,  priority: 'normal' },
-    { id: 5,  category: 'homework',   icon: '📝', titleKh: 'កិច្ចការផុតកំណត',  title: 'Homework Due Tomorrow',     body: '"Write about your family" (Beginner 1) is due tomorrow — 6 submissions pending.',     time: '3 hours ago', read: false, priority: 'high' },
-    { id: 6,  category: 'homework',   icon: '📝', titleKh: 'ការដាក់ស្នើថ្មី',  title: 'New Submissions',           body: '5 new homework submissions for "Present Perfect exercises" (Intermediate 2).',        time: '4 hours ago', read: true,  priority: 'normal' },
-    { id: 7,  category: 'system',     icon: '⚙️', titleKh: 'ធ្វើបច្ចុប្បន្នភាព', title: 'System Updated',            body: 'School Management System updated to version 4.0. New features: Reports, Certificates.', time: '1 day ago',  read: true,  priority: 'normal' },
-    { id: 8,  category: 'attendance', icon: '📋', titleKh: 'របាយការណ៍ប្រចាំថ្ងៃ','title': 'Daily Attendance Summary', body: 'Today: 85% average attendance across all classes. 2 classes below threshold.',           time: '1 day ago',  read: true,  priority: 'normal' },
-    { id: 9,  category: 'fees',       icon: '💳', titleKh: 'ការសង្ខេបប្រចាំខែ', title: 'Monthly Fee Summary',       body: 'May 2026: $105 collected, $450 outstanding from 3 students.',                          time: '2 days ago', read: true,  priority: 'normal' },
-    { id: 10, category: 'system',     icon: '🔔', titleKh: 'ថ្ងៃឈប់សម្រាក',     title: 'Upcoming Holiday',          body: 'Visak Bochea Day — May 12, 2026. Classes suspended. Attendance not required.',         time: '3 days ago', read: true,  priority: 'normal' },
-];
+interface StudentOption {
+    id: number;
+    nameKh: string;
+    nameEn: string;
+}
 
-const CATEGORY_LABELS: Record<Exclude<NotifCategory, 'all'>, { kh: string; color: string; bg: string }> = {
-    attendance: { kh: 'វត្តមាន', color: '#2563eb', bg: '#eff6ff' },
-    fees:       { kh: 'ថ្លៃ',    color: '#d97706', bg: '#fffbeb' },
-    homework:   { kh: 'ការងារ',   color: '#7c3aed', bg: '#f5f3ff' },
-    system:     { kh: 'ប្រព័ន្ធ', color: '#64748b', bg: '#f1f5f9' },
+interface UserOption {
+    id: number;
+    name: string;
+    email: string;
+}
+
+interface NotificationsPageProps {
+    notifications: NotificationItem[];
+    students: StudentOption[];
+    users: UserOption[];
+    summary: {
+        notificationCount: number;
+        unreadCount: number;
+        urgentCount: number;
+        readCount: number;
+    };
+}
+
+interface NotificationFormData {
+    category: NotificationCategory;
+    title_kh: string;
+    title: string;
+    body: string;
+    severity: NotificationSeverity;
+    student_id: number | null;
+    user_id: number | null;
+    is_read: boolean;
+}
+
+const CATEGORY_LABELS: Record<NotificationCategory, { kh: string; label: string; color: string; bg: string }> = {
+    attendance: { kh: 'វត្តមាន', label: 'Attendance', color: '#2563eb', bg: '#eff6ff' },
+    fees: { kh: 'ថ្លៃ', label: 'Fees', color: '#d97706', bg: '#fffbeb' },
+    homework: { kh: 'ការងារ', label: 'Homework', color: '#7c3aed', bg: '#f5f3ff' },
+    system: { kh: 'ប្រព័ន្ធ', label: 'System', color: '#64748b', bg: '#f1f5f9' },
 };
 
-export default function NotificationsPage() {
-    const [notifs, setNotifs]     = useState<Notification[]>(INITIAL_NOTIFS);
-    const [category, setCategory] = useState<NotifCategory>('all');
+const severityType = {
+    info: 'blue',
+    warning: 'amber',
+    urgent: 'red',
+} as const;
 
-    const unreadCount = notifs.filter(n => !n.read).length;
+const emptyForm: NotificationFormData = {
+    category: 'system',
+    title_kh: '',
+    title: '',
+    body: '',
+    severity: 'info',
+    student_id: null,
+    user_id: null,
+    is_read: false,
+};
 
-    const displayed = category === 'all' ? notifs : notifs.filter(n => n.category === category);
+export default function NotificationsPage({ notifications, students, users, summary }: NotificationsPageProps) {
+    const [category, setCategory] = useState<CategoryFilter>('all');
+    const [drawerMode, setDrawerMode] = useState<DrawerMode | null>(null);
+    const [editingNotification, setEditingNotification] = useState<NotificationItem | null>(null);
+    const [deleteTarget, setDeleteTarget] = useState<NotificationItem | null>(null);
 
-    const markRead = (id: number) =>
-        setNotifs(prev => prev.map(n => n.id === id ? { ...n, read: true } : n));
+    const { data, setData, post, put, processing, errors, reset } = useForm<NotificationFormData>(emptyForm);
 
-    const markAllRead = () => {
-        setNotifs(prev => prev.map(n => ({ ...n, read: true })));
-        toast.success('All notifications marked as read.');
-    };
+    const displayed = useMemo(
+        () => category === 'all' ? notifications : notifications.filter(notification => notification.category === category),
+        [category, notifications],
+    );
 
-    const deleteNotif = (id: number) => {
-        setNotifs(prev => prev.filter(n => n.id !== id));
-        toast.success('Notification removed.');
-    };
-
-    const CATEGORIES: { id: NotifCategory; label: string; icon: string }[] = [
-        { id: 'all',        label: `All (${notifs.length})`,                                     icon: '🔔' },
-        { id: 'attendance', label: `Attendance (${notifs.filter(n => n.category === 'attendance').length})`, icon: '📋' },
-        { id: 'fees',       label: `Fees (${notifs.filter(n => n.category === 'fees').length})`,      icon: '💳' },
-        { id: 'homework',   label: `Homework (${notifs.filter(n => n.category === 'homework').length})`, icon: '📝' },
-        { id: 'system',     label: `System (${notifs.filter(n => n.category === 'system').length})`,   icon: '⚙️' },
+    const categories: { id: CategoryFilter; label: string }[] = [
+        { id: 'all', label: `All (${notifications.length})` },
+        ...Object.entries(CATEGORY_LABELS).map(([id, meta]) => ({
+            id: id as NotificationCategory,
+            label: `${meta.label} (${notifications.filter(notification => notification.category === id).length})`,
+        })),
     ];
+
+    const openCreateDrawer = () => {
+        reset();
+        setData(emptyForm);
+        setEditingNotification(null);
+        setDrawerMode('create');
+    };
+
+    const openEditDrawer = (notification: NotificationItem) => {
+        setData({
+            category: notification.category,
+            title_kh: notification.titleKh,
+            title: notification.title,
+            body: notification.body,
+            severity: notification.severity,
+            student_id: notification.studentId,
+            user_id: notification.userId,
+            is_read: notification.read,
+        });
+        setEditingNotification(notification);
+        setDrawerMode('edit');
+    };
+
+    const closeDrawer = () => {
+        setDrawerMode(null);
+        setEditingNotification(null);
+    };
+
+    const submitNotification = (event: FormEvent<HTMLFormElement>) => {
+        event.preventDefault();
+
+        const options = {
+            preserveScroll: true,
+            onSuccess: () => {
+                toast.success(drawerMode === 'edit' ? 'Notification updated.' : 'Notification created.');
+                closeDrawer();
+            },
+        };
+
+        if (drawerMode === 'edit' && editingNotification) {
+            put(update.url(editingNotification.id), options);
+            return;
+        }
+
+        post(store.url(), options);
+    };
+
+    const markNotificationRead = (notification: NotificationItem) => {
+        if (notification.read) {
+            return;
+        }
+
+        router.put(markRead.url(notification.id), {}, {
+            preserveScroll: true,
+            onSuccess: () => toast.success('Notification marked as read.'),
+        });
+    };
+
+    const markEveryNotificationRead = () => {
+        router.put(markAllRead.url(), {}, {
+            preserveScroll: true,
+            onSuccess: () => toast.success('All notifications marked as read.'),
+        });
+    };
+
+    const confirmDelete = () => {
+        if (!deleteTarget) {
+            return;
+        }
+
+        router.delete(destroy.url(deleteTarget.id), {
+            preserveScroll: true,
+            onSuccess: () => {
+                toast.success('Notification deleted.');
+                setDeleteTarget(null);
+            },
+        });
+    };
 
     return (
         <AdminShell>
             <div className="fade-in" style={{ padding: 24, display: 'flex', flexDirection: 'column', gap: 16 }}>
-
-                {/* Header */}
                 <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 12 }}>
                     <div>
                         <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-                            <div style={{ fontWeight: 800, fontSize: 18, color: '#1e293b' }}>🔔 Notifications</div>
-                            {unreadCount > 0 && (
-                                <span style={{ background: '#ef4444', color: 'white', borderRadius: 99, padding: '2px 8px', fontSize: 11, fontWeight: 700 }}>
-                                    {unreadCount} new
+                            <div style={{ fontWeight: 800, fontSize: 18, color: '#1e293b' }}>Notifications</div>
+                            {summary.unreadCount > 0 && (
+                                <span style={{ background: '#ef4444', color: 'white', borderRadius: 99, padding: '2px 8px', fontSize: 11, fontWeight: 800 }}>
+                                    {summary.unreadCount} new
                                 </span>
                             )}
                         </div>
-                        <KH style={{ fontSize: 12, color: '#94a3b8', display: 'block' }}>ការជូនដំណឹង · School Notifications</KH>
+                        <KH style={{ fontSize: 12, color: '#94a3b8', display: 'block' }}>ការជូនដំណឹង · School notifications</KH>
                     </div>
-                    {unreadCount > 0 && (
-                        <button onClick={markAllRead}
-                            style={{ background: '#f0fdf4', color: '#16a34a', border: '1px solid #bbf7d0', borderRadius: 8, padding: '8px 16px', fontWeight: 700, fontSize: 12, cursor: 'pointer' }}>
-                            ✓ Mark All as Read
+                    <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+                        {summary.unreadCount > 0 && (
+                            <button onClick={markEveryNotificationRead} style={buttonStyle('#f0fdf4', '#16a34a', '#bbf7d0')}>
+                                <Check size={15} />
+                                Mark All Read
+                            </button>
+                        )}
+                        <button onClick={openCreateDrawer} style={buttonStyle('#2563eb', 'white', '#2563eb')}>
+                            <Plus size={15} />
+                            Add Notification
                         </button>
-                    )}
+                    </div>
                 </div>
 
-                {/* Category filter */}
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill,minmax(150px,1fr))', gap: 12 }}>
+                    {[
+                        { label: 'Total', value: summary.notificationCount, color: '#3b82f6', bg: '#eff6ff' },
+                        { label: 'Unread', value: summary.unreadCount, color: '#ef4444', bg: '#fff1f2' },
+                        { label: 'Urgent', value: summary.urgentCount, color: '#f59e0b', bg: '#fffbeb' },
+                        { label: 'Read', value: summary.readCount, color: '#10b981', bg: '#f0fdf4' },
+                    ].map(card => (
+                        <div key={card.label} style={{ background: card.bg, border: `1px solid ${card.color}30`, borderRadius: 14, padding: 16 }}>
+                            <div style={{ color: card.color, fontSize: 24, fontWeight: 900 }}>{card.value}</div>
+                            <div style={{ color: card.color, opacity: 0.72, fontSize: 11 }}>{card.label}</div>
+                        </div>
+                    ))}
+                </div>
+
                 <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
-                    {CATEGORIES.map(c => (
-                        <button key={c.id} onClick={() => setCategory(c.id)}
-                            style={{ padding: '7px 14px', borderRadius: 8, border: '1.5px solid', cursor: 'pointer', fontSize: 12, fontWeight: 700, borderColor: category === c.id ? '#3b82f6' : '#e2e8f0', background: category === c.id ? '#eff6ff' : 'white', color: category === c.id ? '#2563eb' : '#64748b' }}>
-                            {c.icon} {c.label}
+                    {categories.map(option => (
+                        <button key={option.id} onClick={() => setCategory(option.id)}
+                            style={{ padding: '7px 14px', borderRadius: 8, border: '1.5px solid', cursor: 'pointer', fontSize: 12, fontWeight: 800, borderColor: category === option.id ? '#3b82f6' : '#e2e8f0', background: category === option.id ? '#eff6ff' : 'white', color: category === option.id ? '#2563eb' : '#64748b' }}>
+                            {option.label}
                         </button>
                     ))}
                 </div>
 
-                {/* Notifications list */}
                 <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
                     {displayed.length === 0 && (
                         <div style={{ textAlign: 'center', padding: '60px 0', color: '#94a3b8' }}>
-                            <div style={{ fontSize: 40, marginBottom: 12 }}>🔔</div>
-                            <div style={{ fontWeight: 700 }}>No notifications</div>
+                            <Bell size={38} style={{ margin: '0 auto 12px' }} />
+                            <div style={{ fontWeight: 800 }}>No notifications</div>
                         </div>
                     )}
-                    {displayed.map(n => {
-                        const cat = CATEGORY_LABELS[n.category];
+                    {displayed.map(notification => {
+                        const cat = CATEGORY_LABELS[notification.category];
                         return (
-                            <div key={n.id}
-                                style={{ background: n.read ? 'white' : '#f8faff', border: `1px solid ${n.read ? '#e8edf5' : '#bfdbfe'}`, borderRadius: 14, padding: '16px 20px', display: 'flex', gap: 14, alignItems: 'flex-start', cursor: 'pointer', transition: 'all 0.15s' }}
-                                onClick={() => markRead(n.id)}>
-                                {/* Icon */}
-                                <div style={{ width: 44, height: 44, borderRadius: 12, background: n.priority === 'high' ? '#fff1f2' : cat.bg, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 20, flexShrink: 0 }}>
-                                    {n.priority === 'high' ? '⚠️' : n.icon}
-                                </div>
+                            <div key={notification.id}
+                                style={{ background: notification.read ? 'white' : '#f8faff', border: `1px solid ${notification.read ? '#e8edf5' : '#bfdbfe'}`, borderRadius: 14, padding: '16px 18px', display: 'flex', gap: 14, alignItems: 'flex-start' }}>
+                                <button onClick={() => markNotificationRead(notification)}
+                                    style={{ width: 44, height: 44, borderRadius: 12, border: 'none', background: notification.severity === 'urgent' ? '#fff1f2' : cat.bg, color: notification.severity === 'urgent' ? '#ef4444' : cat.color, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, cursor: notification.read ? 'default' : 'pointer' }}
+                                    title={notification.read ? 'Read' : 'Mark as read'}>
+                                    {notification.read ? <Check size={19} /> : <Bell size={19} />}
+                                </button>
 
-                                {/* Content */}
                                 <div style={{ flex: 1, minWidth: 0 }}>
                                     <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 4, flexWrap: 'wrap' }}>
-                                        <KH style={{ fontWeight: 700, fontSize: 13, color: '#1e293b' }}>{n.titleKh}</KH>
-                                        <span style={{ fontSize: 12, color: '#64748b' }}>— {n.title}</span>
-                                        {!n.read && <span style={{ width: 8, height: 8, borderRadius: '50%', background: '#3b82f6', display: 'inline-block', flexShrink: 0 }} />}
-                                        {n.priority === 'high' && <Badge type="red">Urgent</Badge>}
-                                        <span style={{ fontSize: 11, background: cat.bg, color: cat.color, padding: '1px 7px', borderRadius: 99, fontWeight: 700 }}>
+                                        {notification.titleKh && <KH style={{ fontWeight: 800, fontSize: 13, color: '#1e293b' }}>{notification.titleKh}</KH>}
+                                        <span style={{ fontSize: 13, color: '#1e293b', fontWeight: 800 }}>{notification.title}</span>
+                                        {!notification.read && <span style={{ width: 8, height: 8, borderRadius: '50%', background: '#3b82f6', display: 'inline-block', flexShrink: 0 }} />}
+                                        <Badge type={severityType[notification.severity]}>{notification.severity}</Badge>
+                                        <span style={{ fontSize: 11, background: cat.bg, color: cat.color, padding: '1px 7px', borderRadius: 99, fontWeight: 800 }}>
                                             <KH>{cat.kh}</KH>
                                         </span>
                                     </div>
-                                    <div style={{ fontSize: 13, color: '#64748b', lineHeight: 1.5 }}>{n.body}</div>
-                                    <div style={{ fontSize: 11, color: '#94a3b8', marginTop: 6 }}>{n.time}</div>
+                                    <div style={{ fontSize: 13, color: '#64748b', lineHeight: 1.5 }}>{notification.body || '-'}</div>
+                                    <div style={{ fontSize: 11, color: '#94a3b8', marginTop: 6 }}>
+                                        {notification.time}
+                                        {notification.studentName && ` · Student: ${notification.studentName}`}
+                                        {notification.userName && ` · User: ${notification.userName}`}
+                                    </div>
                                 </div>
 
-                                {/* Delete */}
-                                <button onClick={e => { e.stopPropagation(); deleteNotif(n.id); }}
-                                    style={{ background: 'none', border: 'none', color: '#cbd5e1', cursor: 'pointer', fontSize: 16, padding: '4px', flexShrink: 0, lineHeight: 1 }}
-                                    title="Dismiss">✕</button>
+                                <div style={{ display: 'flex', gap: 6, flexShrink: 0 }}>
+                                    <button onClick={() => openEditDrawer(notification)} style={iconButton('#eff6ff', '#2563eb', '#bfdbfe')} title="Edit">
+                                        <Edit3 size={14} />
+                                    </button>
+                                    <button onClick={() => setDeleteTarget(notification)} style={iconButton('#fff1f2', '#ef4444', '#fecaca')} title="Delete">
+                                        <Trash2 size={14} />
+                                    </button>
+                                </div>
                             </div>
                         );
                     })}
                 </div>
             </div>
+
+            <Sheet open={drawerMode !== null} onOpenChange={(open) => { if (!open) closeDrawer(); }}>
+                <SheetContent side="right" className="w-full gap-0 overflow-y-auto p-0 sm:max-w-[520px]">
+                    {drawerMode && (
+                        <form onSubmit={submitNotification} className="flex min-h-full flex-col bg-white">
+                            <SheetHeader className="border-b border-slate-200 px-6 py-5 text-left">
+                                <SheetTitle className="text-lg font-black text-slate-800">
+                                    {drawerMode === 'create' ? 'Add Notification' : 'Edit Notification'}
+                                </SheetTitle>
+                                <SheetDescription>
+                                    {drawerMode === 'create' ? 'Create a school notification' : editingNotification?.title}
+                                </SheetDescription>
+                            </SheetHeader>
+
+                            <div style={{ padding: 24, display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16 }}>
+                                <Field label="Category" error={errors.category}>
+                                    <select style={fieldStyle} value={data.category} onChange={event => setData('category', event.target.value as NotificationCategory)}>
+                                        {Object.entries(CATEGORY_LABELS).map(([id, meta]) => <option key={id} value={id}>{meta.label}</option>)}
+                                    </select>
+                                </Field>
+                                <Field label="Severity" error={errors.severity}>
+                                    <select style={fieldStyle} value={data.severity} onChange={event => setData('severity', event.target.value as NotificationSeverity)}>
+                                        <option value="info">Info</option>
+                                        <option value="warning">Warning</option>
+                                        <option value="urgent">Urgent</option>
+                                    </select>
+                                </Field>
+                                <Field label="Khmer Title" error={errors.title_kh} wide>
+                                    <input style={fieldStyle} value={data.title_kh} onChange={event => setData('title_kh', event.target.value)} />
+                                </Field>
+                                <Field label="Title" error={errors.title} wide>
+                                    <input style={fieldStyle} value={data.title} onChange={event => setData('title', event.target.value)} />
+                                </Field>
+                                <Field label="Body" error={errors.body} wide>
+                                    <textarea style={{ ...fieldStyle, minHeight: 118, resize: 'vertical' }} value={data.body} onChange={event => setData('body', event.target.value)} />
+                                </Field>
+                                <Field label="Student" error={errors.student_id}>
+                                    <select style={fieldStyle} value={data.student_id ?? ''} onChange={event => setData('student_id', Number(event.target.value) || null)}>
+                                        <option value="">No student</option>
+                                        {students.map(student => <option key={student.id} value={student.id}>{student.nameEn}</option>)}
+                                    </select>
+                                </Field>
+                                <Field label="User" error={errors.user_id}>
+                                    <select style={fieldStyle} value={data.user_id ?? ''} onChange={event => setData('user_id', Number(event.target.value) || null)}>
+                                        <option value="">No user</option>
+                                        {users.map(user => <option key={user.id} value={user.id}>{user.name}</option>)}
+                                    </select>
+                                </Field>
+                                <label style={{ gridColumn: '1 / -1', display: 'flex', alignItems: 'center', gap: 10, fontSize: 13, fontWeight: 800, color: '#64748b' }}>
+                                    <input type="checkbox" checked={data.is_read} onChange={event => setData('is_read', event.target.checked)} />
+                                    Mark as read
+                                </label>
+                            </div>
+
+                            <div style={{ marginTop: 'auto', padding: 24, borderTop: '1px solid #e2e8f0', display: 'flex', gap: 10 }}>
+                                <button type="button" onClick={closeDrawer} style={{ flex: 1, background: '#f1f5f9', color: '#64748b', border: 'none', borderRadius: 10, padding: '12px', fontWeight: 800, cursor: 'pointer' }}>Cancel</button>
+                                <button disabled={processing} type="submit" style={{ flex: 2, background: processing ? '#93c5fd' : '#2563eb', color: 'white', border: 'none', borderRadius: 10, padding: '12px', fontWeight: 800, cursor: processing ? 'default' : 'pointer' }}>
+                                    {drawerMode === 'create' ? 'Save Notification' : 'Save Changes'}
+                                </button>
+                            </div>
+                        </form>
+                    )}
+                </SheetContent>
+            </Sheet>
+
+            {deleteTarget && (
+                <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.45)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 230, padding: 16 }}>
+                    <div style={{ background: 'white', borderRadius: 20, padding: 30, maxWidth: 420, width: '100%', boxShadow: '0 24px 60px rgba(0,0,0,0.15)' }}>
+                        <div style={{ textAlign: 'center', marginBottom: 20 }}>
+                            <div style={{ fontSize: 18, fontWeight: 800, color: '#1e293b', marginBottom: 6 }}>Delete Notification?</div>
+                            <div style={{ fontSize: 13, color: '#64748b', lineHeight: 1.5 }}>Remove <strong>{deleteTarget.title}</strong>?</div>
+                        </div>
+                        <div style={{ display: 'flex', gap: 10 }}>
+                            <button onClick={() => setDeleteTarget(null)} style={{ flex: 1, background: '#f1f5f9', color: '#64748b', border: 'none', borderRadius: 10, padding: '11px', fontWeight: 700, cursor: 'pointer', fontSize: 14 }}>Cancel</button>
+                            <button onClick={confirmDelete} style={{ flex: 1, background: '#ef4444', color: 'white', border: 'none', borderRadius: 10, padding: '11px', fontWeight: 700, cursor: 'pointer', fontSize: 14 }}>Delete</button>
+                        </div>
+                    </div>
+                </div>
+            )}
         </AdminShell>
     );
 }
+
+function Field({ label, error, children, wide = false }: { label: string; error?: string; children: React.ReactNode; wide?: boolean }) {
+    return (
+        <div style={{ gridColumn: wide ? '1 / -1' : undefined }}>
+            <label style={{ display: 'block', fontSize: 12, fontWeight: 800, color: '#64748b', marginBottom: 6 }}>{label}</label>
+            {children}
+            {error && <div className="field-error">{error}</div>}
+        </div>
+    );
+}
+
+function buttonStyle(background: string, color: string, border: string): CSSProperties {
+    return {
+        background,
+        color,
+        border: `1px solid ${border}`,
+        borderRadius: 9,
+        padding: '8px 14px',
+        fontWeight: 800,
+        fontSize: 12,
+        cursor: 'pointer',
+        display: 'inline-flex',
+        alignItems: 'center',
+        gap: 7,
+    };
+}
+
+function iconButton(background: string, color: string, border: string): CSSProperties {
+    return {
+        background,
+        color,
+        border: `1px solid ${border}`,
+        borderRadius: 7,
+        padding: '6px 9px',
+        cursor: 'pointer',
+        display: 'inline-flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+    };
+}
+
+const fieldStyle: CSSProperties = {
+    width: '100%',
+    minHeight: 42,
+    background: '#f8fafc',
+    border: '1.5px solid #e2e8f0',
+    borderRadius: 10,
+    padding: '10px 14px',
+    fontSize: 14,
+    color: '#1e293b',
+    outline: 'none',
+};

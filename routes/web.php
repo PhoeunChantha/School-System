@@ -1,12 +1,18 @@
 <?php
 
+use App\Http\Controllers\Backends\ActivityLogController;
 use App\Http\Controllers\Backends\AttendanceSessionController;
+use App\Http\Controllers\Backends\LevelController;
 use App\Http\Controllers\Backends\CertificateController;
 use App\Http\Controllers\Backends\ExamController;
+use App\Http\Controllers\Backends\ExamResultController;
 use App\Http\Controllers\Backends\FeeChargeController;
 use App\Http\Controllers\Backends\GradeRecordController;
 use App\Http\Controllers\Backends\HomeworkAssignmentController;
+use App\Http\Controllers\Backends\HomeworkSubmissionController;
+use App\Http\Controllers\Backends\NotificationController;
 use App\Http\Controllers\Backends\SchoolClassController;
+use App\Http\Controllers\Backends\SchoolSettingController;
 use App\Http\Controllers\Backends\StudentController;
 use App\Http\Controllers\Backends\TeacherController;
 use Illuminate\Support\Facades\Route;
@@ -29,6 +35,10 @@ Route::middleware(['auth', 'verified'])->group(function () {
 Route::prefix('admin')->name('admin.')->group(function () {
     Route::get('/', fn () => redirect()->route('dashboard'));
     Route::get('/dashboard', fn () => redirect()->route('dashboard'))->name('dashboard');
+    Route::get('/levels', [LevelController::class, 'index'])->name('levels');
+    Route::post('/levels', [LevelController::class, 'store'])->name('levels.store');
+    Route::put('/levels/{level}', [LevelController::class, 'update'])->name('levels.update');
+    Route::delete('/levels/{level}', [LevelController::class, 'destroy'])->name('levels.destroy');
     Route::get('/students', [StudentController::class, 'index'])->name('students');
     Route::get('/students/create', [StudentController::class, 'create'])->name('students.create');
     Route::post('/students', [StudentController::class, 'store'])->name('students.store');
@@ -57,6 +67,10 @@ Route::prefix('admin')->name('admin.')->group(function () {
     Route::get('/homework/{homeworkAssignment}/edit', [HomeworkAssignmentController::class, 'edit'])->name('homework.edit');
     Route::put('/homework/{homeworkAssignment}', [HomeworkAssignmentController::class, 'update'])->name('homework.update');
     Route::delete('/homework/{homeworkAssignment}', [HomeworkAssignmentController::class, 'destroy'])->name('homework.destroy');
+    Route::get('/homework-submissions', [HomeworkSubmissionController::class, 'index'])->name('homework-submissions');
+    Route::post('/homework-submissions', [HomeworkSubmissionController::class, 'store'])->name('homework-submissions.store');
+    Route::put('/homework-submissions/{homeworkSubmission}', [HomeworkSubmissionController::class, 'update'])->name('homework-submissions.update');
+    Route::delete('/homework-submissions/{homeworkSubmission}', [HomeworkSubmissionController::class, 'destroy'])->name('homework-submissions.destroy');
     Route::get('/fee', [FeeChargeController::class, 'index'])->name('fee');
     Route::get('/fee/create', [FeeChargeController::class, 'create'])->name('fee.create');
     Route::post('/fee', [FeeChargeController::class, 'store'])->name('fee.store');
@@ -68,14 +82,28 @@ Route::prefix('admin')->name('admin.')->group(function () {
     Route::post('/exam', [ExamController::class, 'store'])->name('exam.store');
     Route::put('/exam/{exam}', [ExamController::class, 'update'])->name('exam.update');
     Route::delete('/exam/{exam}', [ExamController::class, 'destroy'])->name('exam.destroy');
+    Route::get('/exam-results', [ExamResultController::class, 'index'])->name('exam-results');
+    Route::post('/exam-results', [ExamResultController::class, 'store'])->name('exam-results.store');
+    Route::put('/exam-results/{examResult}', [ExamResultController::class, 'update'])->name('exam-results.update');
+    Route::delete('/exam-results/{examResult}', [ExamResultController::class, 'destroy'])->name('exam-results.destroy');
     Route::get('/reports', fn () => Inertia::render('admin/reports/index'))->name('reports');
     Route::get('/certs', [CertificateController::class, 'index'])->name('certs');
     Route::post('/certs', [CertificateController::class, 'store'])->name('certs.store');
     Route::put('/certs/{certificate}', [CertificateController::class, 'update'])->name('certs.update');
     Route::delete('/certs/{certificate}', [CertificateController::class, 'destroy'])->name('certs.destroy');
     Route::get('/honor-roll', fn () => Inertia::render('admin/honor-roll/index'))->name('honor-roll');
-    Route::get('/notifications', fn () => Inertia::render('admin/notifications/index'))->name('notifications');
-    Route::get('/settings', fn () => Inertia::render('admin/settings/index'))->name('settings');
+    Route::get('/notifications', [NotificationController::class, 'index'])->name('notifications');
+    Route::post('/notifications', [NotificationController::class, 'store'])->name('notifications.store');
+    Route::put('/notifications/{notification}', [NotificationController::class, 'update'])->name('notifications.update');
+    Route::put('/notifications/{notification}/read', [NotificationController::class, 'markRead'])->name('notifications.read');
+    Route::put('/notifications-read', [NotificationController::class, 'markAllRead'])->name('notifications.read-all');
+    Route::delete('/notifications/{notification}', [NotificationController::class, 'destroy'])->name('notifications.destroy');
+    Route::get('/activity-logs', [ActivityLogController::class, 'index'])->name('activity-logs');
+    Route::post('/activity-logs', [ActivityLogController::class, 'store'])->name('activity-logs.store');
+    Route::put('/activity-logs/{activityLog}', [ActivityLogController::class, 'update'])->name('activity-logs.update');
+    Route::delete('/activity-logs/{activityLog}', [ActivityLogController::class, 'destroy'])->name('activity-logs.destroy');
+    Route::get('/settings', [SchoolSettingController::class, 'index'])->name('settings');
+    Route::put('/settings/{group}', [SchoolSettingController::class, 'update'])->name('settings.update');
 });
 
 require __DIR__.'/settings.php';
