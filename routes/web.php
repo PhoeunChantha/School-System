@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Controllers\Backends\AttendanceSessionController;
 use App\Http\Controllers\Backends\FeeChargeController;
 use App\Http\Controllers\Backends\GradeRecordController;
 use App\Http\Controllers\Backends\HomeworkAssignmentController;
@@ -40,7 +41,10 @@ Route::prefix('admin')->name('admin.')->group(function () {
     Route::post('/classes', [SchoolClassController::class, 'store'])->name('classes.store');
     Route::put('/classes/{schoolClass}', [SchoolClassController::class, 'update'])->name('classes.update');
     Route::delete('/classes/{schoolClass}', [SchoolClassController::class, 'destroy'])->name('classes.destroy');
-    Route::get('/attendance', fn () => Inertia::render('admin/attendance/index'))->name('attendance');
+    Route::get('/attendance', [AttendanceSessionController::class, 'index'])->name('attendance');
+    Route::post('/attendance', [AttendanceSessionController::class, 'store'])->name('attendance.store');
+    Route::put('/attendance/{attendanceSession}', [AttendanceSessionController::class, 'update'])->name('attendance.update');
+    Route::delete('/attendance/{attendanceSession}', [AttendanceSessionController::class, 'destroy'])->name('attendance.destroy');
     Route::get('/grades', [GradeRecordController::class, 'index'])->name('grades');
     Route::post('/grades', [GradeRecordController::class, 'store'])->name('grades.store');
     Route::put('/grades/{gradeRecord}', [GradeRecordController::class, 'update'])->name('grades.update');

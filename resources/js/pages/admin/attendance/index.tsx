@@ -1,476 +1,499 @@
-import { useState, useEffect, useMemo } from 'react';
+import { destroy, store, update } from '@/actions/App/Http/Controllers/Backends/AttendanceSessionController';
+import {
+    Dialog,
+    DialogContent,
+    DialogDescription,
+    DialogHeader,
+    DialogTitle,
+} from '@/components/ui/dialog';
 import AdminShell from '@/pages/admin/shell';
-import { STUDENTS, CLASSES } from '@/pages/admin/data';
-import { KH, Avatar, Badge, PBar, Pagination } from '@/pages/admin/ui';
+import { Avatar, Badge, KH, Pagination } from '@/pages/admin/ui';
+import { router, useForm } from '@inertiajs/react';
+import { FormEvent, useEffect, useMemo, useState } from 'react';
 import { toast } from 'sonner';
 
-// ── Sort helpers ──────────────────────────────────────────
-type HistOrderKey =
-    | 'name-asc' | 'name-desc'
-    | 'status-present' | 'status-absent'
-    | 'rate-desc' | 'rate-asc'
-    | 'present-desc' | 'absent-desc'
-    | 'class-asc';
+type AttendanceStatus = 'present' | 'absent' | 'late' | 'excused';
+type ModalMode = 'create' | 'edit';
+type OrderKey = 'date-desc' | 'date-asc' | 'class-asc' | 'present-desc' | 'absent-desc';
 
-const SINGLE_DAY_ORDERS: { value: HistOrderKey; label: string }[] = [
-    { value: 'name-asc',       label: 'Name A → Z' },
-    { value: 'name-desc',      label: 'Name Z → A' },
-    { value: 'status-present', label: 'Present First' },
-    { value: 'status-absent',  label: 'Absent First' },
-    { value: 'rate-desc',      label: 'Overall Rate ↓' },
-    { value: 'rate-asc',       label: 'Overall Rate ↑' },
-    { value: 'class-asc',      label: 'Class' },
+interface AttendanceStudent {
+    id: number;
+    nameKh: string;
+    nameEn: string;
+    province: string;
+}
+
+interface AttendanceClass {
+    id: number;
+    name: string;
+    students: AttendanceStudent[];
+}
+
+interface AttendanceRecordItem {
+    id: number;
+    studentId: number;
+    studentNameKh: string;
+    studentNameEn: string;
+    province: string;
+    status: AttendanceStatus;
+    note: string;
+}
+
+interface AttendanceSessionItem {
+    id: number;
+    schoolClassId: number;
+    className: string;
+    attendanceDate: string;
+    period: string;
+    markedAt: string;
+    presentCount: number;
+    absentCount: number;
+    lateCount: number;
+    excusedCount: number;
+    records: AttendanceRecordItem[];
+}
+
+interface AttendanceFormRecord {
+    student_id: number;
+    status: AttendanceStatus;
+    note: string;
+}
+
+interface AttendanceFormData {
+    school_class_id: number | null;
+    attendance_date: string;
+    period: string;
+    records: AttendanceFormRecord[];
+}
+
+interface AttendancePageProps {
+    sessions: AttendanceSessionItem[];
+    classes: AttendanceClass[];
+    summary: {
+        sessionCount: number;
+        presentCount: number;
+        absentCount: number;
+        lateCount: number;
+        excusedCount: number;
+    };
+}
+
+const ORDER_OPTIONS: { value: OrderKey; label: string }[] = [
+    { value: 'date-desc', label: 'Newest First' },
+    { value: 'date-asc', label: 'Oldest First' },
+    { value: 'class-asc', label: 'Class A -> Z' },
+    { value: 'present-desc', label: 'Present Most' },
+    { value: 'absent-desc', label: 'Absent Most' },
 ];
 
-const MULTI_DAY_ORDERS: { value: HistOrderKey; label: string }[] = [
-    { value: 'name-asc',      label: 'Name A → Z' },
-    { value: 'name-desc',     label: 'Name Z → A' },
-    { value: 'rate-desc',     label: 'Rate ↓ Highest' },
-    { value: 'rate-asc',      label: 'Rate ↑ Lowest' },
-    { value: 'present-desc',  label: 'Present ↓ Most' },
-    { value: 'absent-desc',   label: 'Absent ↓ Most' },
-    { value: 'class-asc',     label: 'Class' },
+const PERIODS = [
+    { value: 'morning', label: 'Morning' },
+    { value: 'afternoon', label: 'Afternoon' },
+    { value: 'evening', label: 'Evening' },
+    { value: 'full_day', label: 'Full Day' },
 ];
 
-type AttStatus = 'present' | 'absent' | 'unmarked';
-type PageTab   = 'mark' | 'history';
-type QuickRange = 'yesterday' | 'week' | 'month' | 'lastmonth' | 'custom';
+const STATUS_OPTIONS: { value: AttendanceStatus; label: string; color: string; bg: string; border: string }[] = [
+    { value: 'present', label: 'Present', color: '#16a34a', bg: '#f0fdf4', border: '#bbf7d0' },
+    { value: 'absent', label: 'Absent', color: '#dc2626', bg: '#fff1f2', border: '#fecaca' },
+    { value: 'late', label: 'Late', color: '#d97706', bg: '#fffbeb', border: '#fde68a' },
+    { value: 'excused', label: 'Excused', color: '#2563eb', bg: '#eff6ff', border: '#bfdbfe' },
+];
 
-// ── Deterministic historical attendance ───────────────────
-// Produces a stable present/absent for any (studentId, dateString) pair,
-// biased by the student's overall attendance rate.
-function historicalStatus(studentId: number, dateStr: string): 'present' | 'absent' {
-    const student = STUDENTS.find(s => s.id === studentId)!;
-    const n = parseInt(dateStr.replace(/-/g, ''), 10);
-    const hash = Math.abs((studentId * 1_009 + n * 37) % 100);
-    return hash < student.attendance ? 'present' : 'absent';
+const fieldStyle = {
+    width: '100%',
+    minHeight: 42,
+    background: '#f8fafc',
+    border: '1.5px solid #e2e8f0',
+    borderRadius: 10,
+    padding: '10px 14px',
+    fontSize: 14,
+    fontFamily: 'inherit',
+    outline: 'none',
+    color: '#1e293b',
+};
+
+const labelStyle = {
+    display: 'block',
+    fontSize: 12,
+    fontWeight: 700,
+    color: '#64748b',
+    marginBottom: 6,
+};
+
+function today(): string {
+    return new Date().toISOString().slice(0, 10);
 }
 
-// ── Produce school-day dates (Mon–Sat) in a range ────────
-function schoolDays(from: Date, to: Date): string[] {
-    const days: string[] = [];
-    const cur = new Date(from);
-    const TODAY = new Date('2026-05-06');
-    while (cur <= to && cur < TODAY) {
-        if (cur.getDay() !== 0) { // skip Sundays
-            days.push(cur.toISOString().slice(0, 10));
+function periodLabel(period: string): string {
+    return PERIODS.find(item => item.value === period)?.label ?? period;
+}
+
+function sortSessions(list: AttendanceSessionItem[], order: OrderKey): AttendanceSessionItem[] {
+    return [...list].sort((a, b) => {
+        switch (order) {
+            case 'date-desc': return b.attendanceDate.localeCompare(a.attendanceDate);
+            case 'date-asc': return a.attendanceDate.localeCompare(b.attendanceDate);
+            case 'class-asc': return a.className.localeCompare(b.className);
+            case 'present-desc': return b.presentCount - a.presentCount;
+            case 'absent-desc': return b.absentCount - a.absentCount;
+            default: return 0;
         }
-        cur.setDate(cur.getDate() + 1);
-    }
-    return days;
+    });
 }
 
-const TODAY      = new Date('2026-05-06');
-const YESTERDAY  = new Date('2026-05-05');
-const WEEK_START = new Date('2026-04-30');   // last 7 school days
-const MONTH_START = new Date('2026-05-01');  // this month so far
-const LAST_MONTH_START = new Date('2026-04-01');
-const LAST_MONTH_END   = new Date('2026-04-30');
+export default function AttendancePage({ sessions, classes, summary }: AttendancePageProps) {
+    const [selectedClass, setSelectedClass] = useState<number | 'all'>('all');
+    const [orderBy, setOrderBy] = useState<OrderKey>('date-desc');
+    const [page, setPage] = useState(1);
+    const [perPage, setPerPage] = useState(5);
+    const [modalMode, setModalMode] = useState<ModalMode | null>(null);
+    const [editingSession, setEditingSession] = useState<AttendanceSessionItem | null>(null);
+    const [deleteTarget, setDeleteTarget] = useState<AttendanceSessionItem | null>(null);
 
-function rangeFor(q: QuickRange, custom: string): [Date, Date] {
-    if (q === 'yesterday')  return [YESTERDAY, YESTERDAY];
-    if (q === 'week')       return [WEEK_START, YESTERDAY];
-    if (q === 'month')      return [MONTH_START, YESTERDAY];
-    if (q === 'lastmonth')  return [LAST_MONTH_START, LAST_MONTH_END];
-    const d = custom ? new Date(custom) : YESTERDAY;
-    return [d, d];
-}
+    const firstClass = classes[0];
 
-function fmtDate(d: Date): string {
-    return d.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
-}
+    const { data, setData, post, put, processing, errors, reset } = useForm<AttendanceFormData>({
+        school_class_id: firstClass?.id ?? null,
+        attendance_date: today(),
+        period: 'morning',
+        records: firstClass?.students.map(student => ({
+            student_id: student.id,
+            status: 'present',
+            note: '',
+        })) ?? [],
+    });
 
-// ─────────────────────────────────────────────────────────
-export default function AttendancePage() {
-    const [tab, setTab]           = useState<PageTab>('mark');
+    useEffect(() => { setPage(1); }, [selectedClass, orderBy, perPage]);
 
-    // ── Mark tab state ────────────────────────────────────
-    const [selClass, setSelClass] = useState(0);
-    const [statuses, setStatuses] = useState<Record<number, AttStatus>>({});
-    const [saved, setSaved]       = useState(false);
+    const filtered = useMemo(() => {
+        const base = sessions.filter(session => selectedClass === 'all' || session.schoolClassId === selectedClass);
 
-    const toggle = (id: number) =>
-        setStatuses(p => ({ ...p, [id]: p[id] === 'present' ? 'absent' : p[id] === 'absent' ? 'unmarked' : 'present' }));
-    const markAll = () => {
-        const a: Record<number, AttStatus> = {};
-        STUDENTS.forEach(s => { a[s.id] = 'present'; });
-        setStatuses(a);
-    };
-    const save = () => {
-        setSaved(true);
-        toast.success('Attendance saved!', { description: 'May 06, 2026' });
-        setTimeout(() => setSaved(false), 2500);
-    };
+        return sortSessions(base, orderBy);
+    }, [orderBy, selectedClass, sessions]);
 
-    const present = Object.values(statuses).filter(v => v === 'present').length;
-    const absent  = Object.values(statuses).filter(v => v === 'absent').length;
-
-    // ── History tab state ─────────────────────────────────
-    const [quick, setQuick]       = useState<QuickRange>('yesterday');
-    const [customDate, setCustomDate] = useState('');
-    const [histClass, setHistClass]   = useState<string>('all');
-    const [expandedStudent, setExpandedStudent] = useState<number | null>(null);
-    const [histOrderBy, setHistOrderBy] = useState<HistOrderKey>('name-asc');
-    const [histPage,    setHistPage]    = useState(1);
-    const [histPerPage, setHistPerPage] = useState(5);
-
-    const [from, to] = rangeFor(quick, customDate);
-    const days = useMemo(() => schoolDays(from, to), [from.toISOString(), to.toISOString()]);
-    const isSingleDay = days.length <= 1;
-
-    const histStudents = histClass === 'all'
-        ? STUDENTS
-        : STUDENTS.filter(s => s.cls === histClass);
-
-    // Build per-student summary for the selected period
-    const studentSummaries = useMemo(() => histStudents.map(s => {
-        const records = days.map(d => ({ date: d, status: historicalStatus(s.id, d) }));
-        const presentCount = records.filter(r => r.status === 'present').length;
-        const absentCount  = records.length - presentCount;
-        const rate         = days.length ? Math.round((presentCount / days.length) * 100) : 0;
-        return { student: s, records, presentCount, absentCount, rate };
-    }), [histStudents, days]);
-
-    // Reset page when range, class, or order changes
-    useEffect(() => { setHistPage(1); }, [quick, customDate, histClass, histOrderBy, histPerPage, isSingleDay]);
-
-    // Sorted summaries
-    const sortedSummaries = useMemo(() => [...studentSummaries].sort((a, b) => {
-        switch (histOrderBy) {
-            case 'name-asc':       return a.student.nameEn.localeCompare(b.student.nameEn);
-            case 'name-desc':      return b.student.nameEn.localeCompare(a.student.nameEn);
-            case 'status-present': return (historicalStatus(a.student.id, days[0] ?? '') === 'present' ? 0 : 1) - (historicalStatus(b.student.id, days[0] ?? '') === 'present' ? 0 : 1);
-            case 'status-absent':  return (historicalStatus(a.student.id, days[0] ?? '') === 'absent' ? 0 : 1) - (historicalStatus(b.student.id, days[0] ?? '') === 'absent' ? 0 : 1);
-            case 'rate-desc':      return b.rate - a.rate;
-            case 'rate-asc':       return a.rate - b.rate;
-            case 'present-desc':   return b.presentCount - a.presentCount;
-            case 'absent-desc':    return b.absentCount - a.absentCount;
-            case 'class-asc':      return a.student.cls.localeCompare(b.student.cls);
-            default:               return 0;
-        }
-    }), [studentSummaries, histOrderBy, days]);
-
-    // Paginated slice
-    const paginatedSummaries = useMemo(
-        () => sortedSummaries.slice((histPage - 1) * histPerPage, histPage * histPerPage),
-        [sortedSummaries, histPage, histPerPage],
+    const paginated = useMemo(
+        () => filtered.slice((page - 1) * perPage, page * perPage),
+        [filtered, page, perPage],
     );
 
-    // ── Quick date label helper ───────────────────────────
-    const rangeLabel = (() => {
-        if (quick === 'yesterday')  return 'Yesterday · May 05, 2026';
-        if (quick === 'week')       return 'Last 7 Days · Apr 30 – May 05';
-        if (quick === 'month')      return 'This Month · May 1–5, 2026';
-        if (quick === 'lastmonth')  return 'Last Month · April 2026';
-        if (quick === 'custom' && customDate) return `Custom · ${fmtDate(new Date(customDate))}`;
-        return 'Select a date';
-    })();
+    const selectedClassStudents = useMemo(
+        () => classes.find(schoolClass => schoolClass.id === data.school_class_id)?.students ?? [],
+        [classes, data.school_class_id],
+    );
 
-    const QUICK_BTNS: { id: QuickRange; label: string }[] = [
-        { id: 'yesterday', label: 'Yesterday' },
-        { id: 'week',      label: 'Last 7 Days' },
-        { id: 'month',     label: 'This Month' },
-        { id: 'lastmonth', label: 'Last Month' },
-        { id: 'custom',    label: 'Custom Date' },
-    ];
+    const openCreateModal = () => {
+        const schoolClass = selectedClass === 'all'
+            ? firstClass
+            : classes.find(item => item.id === selectedClass) ?? firstClass;
+
+        reset();
+        setData({
+            school_class_id: schoolClass?.id ?? null,
+            attendance_date: today(),
+            period: 'morning',
+            records: schoolClass?.students.map(student => ({
+                student_id: student.id,
+                status: 'present',
+                note: '',
+            })) ?? [],
+        });
+        setEditingSession(null);
+        setModalMode('create');
+    };
+
+    const openEditModal = (session: AttendanceSessionItem) => {
+        setData({
+            school_class_id: session.schoolClassId,
+            attendance_date: session.attendanceDate,
+            period: session.period,
+            records: session.records.map(record => ({
+                student_id: record.studentId,
+                status: record.status,
+                note: record.note,
+            })),
+        });
+        setEditingSession(session);
+        setModalMode('edit');
+    };
+
+    const closeModal = () => {
+        setModalMode(null);
+        setEditingSession(null);
+    };
+
+    const changeClass = (classId: number) => {
+        const schoolClass = classes.find(item => item.id === classId);
+
+        setData(current => ({
+            ...current,
+            school_class_id: classId,
+            records: schoolClass?.students.map(student => ({
+                student_id: student.id,
+                status: 'present',
+                note: '',
+            })) ?? [],
+        }));
+    };
+
+    const setRecordStatus = (studentId: number, status: AttendanceStatus) => {
+        setData(current => ({
+            ...current,
+            records: current.records.map(record => record.student_id === studentId ? { ...record, status } : record),
+        }));
+    };
+
+    const setRecordNote = (studentId: number, note: string) => {
+        setData(current => ({
+            ...current,
+            records: current.records.map(record => record.student_id === studentId ? { ...record, note } : record),
+        }));
+    };
+
+    const markAll = (status: AttendanceStatus) => {
+        setData(current => ({
+            ...current,
+            records: current.records.map(record => ({ ...record, status })),
+        }));
+    };
+
+    const submitAttendance = (event: FormEvent<HTMLFormElement>) => {
+        event.preventDefault();
+
+        const options = {
+            preserveScroll: true,
+            onSuccess: () => {
+                toast.success(modalMode === 'edit' ? 'Attendance updated.' : 'Attendance created.');
+                closeModal();
+            },
+        };
+
+        if (modalMode === 'edit' && editingSession) {
+            put(update.url(editingSession.id), options);
+            return;
+        }
+
+        post(store.url(), options);
+    };
+
+    const confirmDelete = () => {
+        if (!deleteTarget) return;
+
+        router.delete(destroy.url(deleteTarget.id), {
+            preserveScroll: true,
+            onSuccess: () => {
+                toast.success('Attendance deleted.');
+                setDeleteTarget(null);
+            },
+        });
+    };
+
+    const modalCounts = data.records.reduce<Record<AttendanceStatus, number>>((counts, record) => ({
+        ...counts,
+        [record.status]: counts[record.status] + 1,
+    }), { present: 0, absent: 0, late: 0, excused: 0 });
 
     return (
         <AdminShell>
             <div className="fade-in" style={{ padding: 24, display: 'flex', flexDirection: 'column', gap: 16 }}>
+                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12, flexWrap: 'wrap' }}>
+                    <div>
+                        <KH style={{ fontWeight: 800, fontSize: 18, color: '#1e293b', display: 'block' }}>Attendance</KH>
+                        <div style={{ fontSize: 12, color: '#94a3b8', marginTop: 2 }}>Track daily class attendance</div>
+                    </div>
+                    <button onClick={openCreateModal} style={{ background: '#2563eb', color: 'white', border: 'none', borderRadius: 10, padding: '9px 18px', fontWeight: 700, fontSize: 13, cursor: 'pointer' }}>
+                        + Mark Attendance
+                    </button>
+                </div>
 
-                {/* ── Page tabs ── */}
-                <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
-                    {([
-                        { id: 'mark',    label: '✏️ Mark Attendance',    sub: 'Today · May 06, 2026' },
-                        { id: 'history', label: '📅 Attendance History',  sub: 'View past records' },
-                    ] as const).map(t => (
-                        <button key={t.id} onClick={() => setTab(t.id)}
-                            style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-start', padding: '10px 18px', borderRadius: 10, border: '1.5px solid', cursor: 'pointer', transition: 'all 0.15s', borderColor: tab === t.id ? '#3b82f6' : '#e2e8f0', background: tab === t.id ? '#eff6ff' : 'white', textAlign: 'left' }}>
-                            <span style={{ fontSize: 13, fontWeight: 700, color: tab === t.id ? '#2563eb' : '#374151' }}>{t.label}</span>
-                            <span style={{ fontSize: 10, color: '#94a3b8', marginTop: 1 }}>{t.sub}</span>
-                        </button>
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill,minmax(150px,1fr))', gap: 12 }}>
+                    {[
+                        { label: 'Sessions', value: summary.sessionCount, color: '#3b82f6', bg: '#eff6ff' },
+                        { label: 'Present', value: summary.presentCount, color: '#10b981', bg: '#f0fdf4' },
+                        { label: 'Absent', value: summary.absentCount, color: '#ef4444', bg: '#fff1f2' },
+                        { label: 'Late', value: summary.lateCount, color: '#f59e0b', bg: '#fffbeb' },
+                    ].map(card => (
+                        <div key={card.label} style={{ background: card.bg, border: `1px solid ${card.color}30`, borderRadius: 14, padding: 16 }}>
+                            <div style={{ color: card.color, fontSize: 24, fontWeight: 900 }}>{card.value}</div>
+                            <div style={{ color: card.color, opacity: 0.7, fontSize: 11 }}>{card.label}</div>
+                        </div>
                     ))}
                 </div>
 
-                {/* ══════════════════════════════════════════════════
-                    MARK ATTENDANCE TAB
-                ══════════════════════════════════════════════════ */}
-                {tab === 'mark' && (
-                    <>
-                        <div className="card" style={{ padding: 20 }}>
-                            <div style={{ display: 'flex', alignItems: 'center', flexWrap: 'wrap', gap: 12, marginBottom: 16 }}>
-                                <div style={{ flex: 1 }}>
-                                    <KH style={{ fontWeight: 800, fontSize: 16, display: 'block' }}>គ្រប់គ្រងវត្តមាន</KH>
-                                    <div style={{ fontSize: 12, color: '#94a3b8' }}>Attendance · May 06, 2026 (Today)</div>
-                                </div>
-                                <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
-                                    {CLASSES.map((cls, i) => (
-                                        <button key={i} onClick={() => setSelClass(i)}
-                                            style={{ padding: '7px 14px', borderRadius: 8, border: '1.5px solid', cursor: 'pointer', fontSize: 12, fontWeight: 700, transition: 'all 0.15s', borderColor: selClass === i ? '#3b82f6' : '#e2e8f0', background: selClass === i ? '#eff6ff' : 'white', color: selClass === i ? '#2563eb' : '#64748b' }}>
-                                            {cls.name}
-                                        </button>
-                                    ))}
-                                </div>
-                            </div>
-                            <div style={{ display: 'flex', gap: 16, alignItems: 'center', flexWrap: 'wrap' }}>
-                                <div style={{ display: 'flex', gap: 16 }}>
-                                    <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}><div style={{ width: 12, height: 12, borderRadius: 3, background: '#10b981' }} /><span style={{ fontSize: 13, fontWeight: 700, color: '#10b981' }}>Present: {present}</span></div>
-                                    <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}><div style={{ width: 12, height: 12, borderRadius: 3, background: '#ef4444' }} /><span style={{ fontSize: 13, fontWeight: 700, color: '#ef4444' }}>Absent: {absent}</span></div>
-                                    <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}><div style={{ width: 12, height: 12, borderRadius: 3, background: '#e2e8f0' }} /><span style={{ fontSize: 13, color: '#94a3b8' }}>Unmarked: {STUDENTS.length - present - absent}</span></div>
-                                </div>
-                                <div style={{ marginLeft: 'auto', display: 'flex', gap: 8 }}>
-                                    <button onClick={markAll} style={{ background: '#f0fdf4', color: '#16a34a', border: '1.5px solid #bbf7d0', borderRadius: 8, padding: '7px 16px', fontWeight: 700, fontSize: 12, cursor: 'pointer' }}>✓ Mark All Present</button>
-                                    <button onClick={save} style={{ background: saved ? '#10b981' : '#2563eb', color: 'white', border: 'none', borderRadius: 8, padding: '7px 16px', fontWeight: 700, fontSize: 12, cursor: 'pointer', transition: 'background 0.2s' }}>
-                                        {saved ? '✓ Saved!' : '💾 Save'}
-                                    </button>
-                                </div>
-                            </div>
-                        </div>
+                <div className="card" style={{ overflowX: 'auto' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '12px 16px', borderBottom: '1px solid #f1f5f9', flexWrap: 'wrap' }}>
+                        <span style={{ fontSize: 11, fontWeight: 700, color: '#94a3b8', whiteSpace: 'nowrap' }}>Sort by</span>
+                        <select value={orderBy} onChange={event => setOrderBy(event.target.value as OrderKey)} style={{ padding: '7px 10px', borderRadius: 8, border: '1.5px solid #e2e8f0', background: 'white', color: '#374151', fontSize: 12, fontWeight: 700, cursor: 'pointer', outline: 'none' }}>
+                            {ORDER_OPTIONS.map(option => <option key={option.value} value={option.value}>{option.label}</option>)}
+                        </select>
+                        <div style={{ width: 1, height: 18, background: '#e2e8f0', margin: '0 2px' }} />
+                        <select value={perPage} onChange={event => setPerPage(Number(event.target.value))} style={{ padding: '7px 10px', borderRadius: 8, border: '1.5px solid #e2e8f0', background: 'white', color: '#374151', fontSize: 12, fontWeight: 700, cursor: 'pointer', outline: 'none' }}>
+                            {[5, 10, 25, 50].map(size => <option key={size} value={size}>{size} per page</option>)}
+                        </select>
+                        <select value={selectedClass} onChange={event => setSelectedClass(event.target.value === 'all' ? 'all' : Number(event.target.value))} style={{ padding: '7px 10px', borderRadius: 8, border: '1.5px solid #e2e8f0', background: 'white', color: '#374151', fontSize: 12, fontWeight: 700, cursor: 'pointer', outline: 'none' }}>
+                            <option value="all">All classes</option>
+                            {classes.map(schoolClass => <option key={schoolClass.id} value={schoolClass.id}>{schoolClass.name}</option>)}
+                        </select>
+                        <span style={{ fontSize: 11, color: '#94a3b8' }}>{filtered.length} result{filtered.length !== 1 ? 's' : ''}</span>
+                    </div>
 
-                        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill,minmax(260px,1fr))', gap: 12 }}>
-                            {STUDENTS.map(s => {
-                                const st = statuses[s.id] ?? 'unmarked';
-                                const bg = st === 'present' ? '#f0fdf4' : st === 'absent' ? '#fff1f2' : 'white';
-                                const border = st === 'present' ? '#86efac' : st === 'absent' ? '#fca5a5' : '#e8edf5';
-                                return (
-                                    <div key={s.id} onClick={() => toggle(s.id)}
-                                        style={{ background: bg, border: `2px solid ${border}`, borderRadius: 14, padding: 14, cursor: 'pointer', transition: 'all 0.15s', display: 'flex', alignItems: 'center', gap: 12 }}>
-                                        <Avatar name={s.nameEn} size={40} />
-                                        <div style={{ flex: 1, minWidth: 0 }}>
-                                            <KH style={{ fontWeight: 700, fontSize: 13, display: 'block', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{s.nameKh}</KH>
-                                            <div style={{ fontSize: 11, color: '#94a3b8' }}>{s.nameEn} · {s.level}</div>
-                                            {s.attendance < 70 && <Badge type="amber">⚠ Low ({s.attendance}%)</Badge>}
+                    <table className="data-table">
+                        <thead>
+                            <tr>
+                                <th>Date</th>
+                                <th>Class</th>
+                                <th>Period</th>
+                                <th>Present</th>
+                                <th>Absent</th>
+                                <th>Late</th>
+                                <th>Excused</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {paginated.length === 0 ? (
+                                <tr>
+                                    <td colSpan={8} style={{ padding: '34px 24px', textAlign: 'center', color: '#64748b', fontSize: 14, fontWeight: 700 }}>
+                                        Data not found
+                                    </td>
+                                </tr>
+                            ) : paginated.map(session => (
+                                <tr key={session.id}>
+                                    <td>
+                                        <div style={{ fontSize: 13, fontWeight: 800, color: '#1e293b' }}>{session.attendanceDate}</div>
+                                        <div style={{ fontSize: 11, color: '#94a3b8' }}>{session.markedAt || 'Not marked'}</div>
+                                    </td>
+                                    <td style={{ fontSize: 12, color: '#64748b', fontWeight: 700 }}>{session.className}</td>
+                                    <td><Badge type="blue">{periodLabel(session.period)}</Badge></td>
+                                    <td style={{ color: '#16a34a', fontWeight: 900 }}>{session.presentCount}</td>
+                                    <td style={{ color: '#dc2626', fontWeight: 900 }}>{session.absentCount}</td>
+                                    <td style={{ color: '#d97706', fontWeight: 900 }}>{session.lateCount}</td>
+                                    <td style={{ color: '#2563eb', fontWeight: 900 }}>{session.excusedCount}</td>
+                                    <td>
+                                        <div style={{ display: 'flex', gap: 6 }}>
+                                            <button onClick={() => openEditModal(session)} style={{ background: '#eff6ff', color: '#2563eb', border: '1px solid #bfdbfe', borderRadius: 7, padding: '5px 10px', cursor: 'pointer', fontSize: 11, fontWeight: 700 }}>Edit</button>
+                                            <button onClick={() => setDeleteTarget(session)} style={{ background: '#fff1f2', color: '#ef4444', border: '1px solid #fecaca', borderRadius: 7, padding: '5px 10px', cursor: 'pointer', fontSize: 11, fontWeight: 700 }}>Delete</button>
                                         </div>
-                                        <div style={{ width: 36, height: 36, borderRadius: 10, background: st === 'present' ? '#10b981' : st === 'absent' ? '#ef4444' : '#f1f5f9', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 18, fontWeight: 700, color: st !== 'unmarked' ? 'white' : '#cbd5e1', transition: 'all 0.15s', flexShrink: 0 }}>
-                                            {st === 'present' ? '✓' : st === 'absent' ? '✗' : '·'}
-                                        </div>
-                                    </div>
-                                );
-                            })}
-                        </div>
-                    </>
-                )}
+                                    </td>
+                                </tr>
+                            ))}
+                        </tbody>
+                    </table>
+                    {filtered.length > 0 && <Pagination total={filtered.length} page={page} perPage={perPage} onPageChange={setPage} onPerPageChange={setPerPage} showPerPage={false} />}
+                </div>
+            </div>
 
-                {/* ══════════════════════════════════════════════════
-                    HISTORY TAB
-                ══════════════════════════════════════════════════ */}
-                {tab === 'history' && (
-                    <>
-                        {/* Filters */}
-                        <div className="card" style={{ padding: 20 }}>
-                            <div style={{ display: 'flex', alignItems: 'center', flexWrap: 'wrap', gap: 12, marginBottom: 16 }}>
-                                <div style={{ flex: 1 }}>
-                                    <KH style={{ fontWeight: 800, fontSize: 15, display: 'block' }}>ប្រវត្តិវត្តមាន</KH>
-                                    <div style={{ fontSize: 12, color: '#94a3b8' }}>{rangeLabel} · {days.length} school day{days.length !== 1 ? 's' : ''}</div>
+            <Dialog
+                open={modalMode !== null}
+                onOpenChange={(open) => {
+                    if (!open) {
+                        closeModal();
+                    }
+                }}
+            >
+                <DialogContent className="max-h-[90vh] overflow-y-auto p-0 sm:max-w-4xl">
+                    {modalMode && (
+                        <form onSubmit={submitAttendance} className="bg-white">
+                            <DialogHeader className="border-b border-slate-200 px-6 py-5">
+                                <DialogTitle className="text-lg font-black text-slate-800">
+                                    {modalMode === 'create' ? 'Mark Attendance' : 'Edit Attendance'}
+                                </DialogTitle>
+                                <DialogDescription>
+                                    {modalMode === 'create' ? 'Create a class attendance session' : `${editingSession?.className} on ${editingSession?.attendanceDate}`}
+                                </DialogDescription>
+                            </DialogHeader>
+
+                            <div style={{ padding: 24, display: 'grid', gridTemplateColumns: 'repeat(3,minmax(0,1fr))', gap: 16 }}>
+                                <div>
+                                    <label style={labelStyle}>Class *</label>
+                                    <select disabled={modalMode === 'edit'} style={{ ...fieldStyle, opacity: modalMode === 'edit' ? 0.7 : 1 }} value={data.school_class_id ?? ''} onChange={event => changeClass(Number(event.target.value))}>
+                                        {classes.map(schoolClass => <option key={schoolClass.id} value={schoolClass.id}>{schoolClass.name}</option>)}
+                                    </select>
+                                    {errors.school_class_id && <div className="field-error">{errors.school_class_id}</div>}
                                 </div>
-                                {/* Class filter */}
-                                <select value={histClass} onChange={e => setHistClass(e.target.value)}
-                                    className="f-input" style={{ width: 'auto', padding: '7px 12px', fontSize: 12, fontWeight: 700 }}>
-                                    <option value="all">All Classes</option>
-                                    {CLASSES.map(c => <option key={c.id} value={c.name}>{c.name}</option>)}
-                                </select>
+                                <div>
+                                    <label style={labelStyle}>Date *</label>
+                                    <input type="date" style={fieldStyle} value={data.attendance_date} onChange={event => setData('attendance_date', event.target.value)} />
+                                    {errors.attendance_date && <div className="field-error">{errors.attendance_date}</div>}
+                                </div>
+                                <div>
+                                    <label style={labelStyle}>Period *</label>
+                                    <select style={fieldStyle} value={data.period} onChange={event => setData('period', event.target.value)}>
+                                        {PERIODS.map(period => <option key={period.value} value={period.value}>{period.label}</option>)}
+                                    </select>
+                                    {errors.period && <div className="field-error">{errors.period}</div>}
+                                </div>
                             </div>
 
-                            {/* Quick range buttons */}
-                            <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', alignItems: 'center' }}>
-                                {QUICK_BTNS.map(b => (
-                                    <button key={b.id} onClick={() => { setQuick(b.id); if (b.id !== 'custom') setCustomDate(''); }}
-                                        style={{ padding: '7px 14px', borderRadius: 8, border: '1.5px solid', cursor: 'pointer', fontSize: 12, fontWeight: 700, transition: 'all 0.15s', borderColor: quick === b.id ? '#3b82f6' : '#e2e8f0', background: quick === b.id ? '#eff6ff' : 'white', color: quick === b.id ? '#2563eb' : '#64748b' }}>
-                                        {b.label}
+                            <div style={{ padding: '0 24px 16px', display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
+                                <span style={{ fontSize: 12, fontWeight: 800, color: '#64748b' }}>Mark all</span>
+                                {STATUS_OPTIONS.map(status => (
+                                    <button key={status.value} type="button" onClick={() => markAll(status.value)} style={{ background: status.bg, color: status.color, border: `1px solid ${status.border}`, borderRadius: 8, padding: '7px 12px', fontSize: 12, fontWeight: 800, cursor: 'pointer' }}>
+                                        {status.label}
                                     </button>
                                 ))}
-                                {quick === 'custom' && (
-                                    <input type="date" className="f-input" value={customDate} max="2026-05-05"
-                                        onChange={e => setCustomDate(e.target.value)}
-                                        style={{ width: 'auto', padding: '7px 12px', fontSize: 12 }} />
-                                )}
+                                <span style={{ marginLeft: 'auto', fontSize: 11, color: '#94a3b8' }}>
+                                    {modalCounts.present} present / {modalCounts.absent} absent / {modalCounts.late} late
+                                </span>
                             </div>
-                        </div>
 
-                        {days.length === 0 && (
-                            <div style={{ textAlign: 'center', padding: '60px 0', color: '#94a3b8' }}>
-                                <div style={{ fontSize: 40, marginBottom: 12 }}>📅</div>
-                                <div style={{ fontWeight: 700, marginBottom: 4 }}>No school days in this range</div>
-                                <div style={{ fontSize: 13 }}>Select a different period.</div>
-                            </div>
-                        )}
-
-                        {days.length > 0 && (
-                            <>
-                                {/* Summary stats */}
-                                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill,minmax(140px,1fr))', gap: 12 }}>
-                                    {(() => {
-                                        const allRecords = studentSummaries.flatMap(s => s.records);
-                                        const totalPresent = allRecords.filter(r => r.status === 'present').length;
-                                        const totalAbsent  = allRecords.length - totalPresent;
-                                        const overallRate  = allRecords.length ? Math.round((totalPresent / allRecords.length) * 100) : 0;
-                                        const atRiskCount  = studentSummaries.filter(s => s.rate < 70).length;
-                                        return [
-                                            { lk: 'ចូលរៀន',   l: 'Present',    v: totalPresent,  c: '#10b981', bg: '#f0fdf4' },
-                                            { lk: 'អវត្តមាន',  l: 'Absent',     v: totalAbsent,   c: '#ef4444', bg: '#fff1f2' },
-                                            { lk: 'អត្រា',    l: 'Rate',       v: `${overallRate}%`, c: '#2563eb', bg: '#eff6ff' },
-                                            { lk: 'ត្រូវការជំនួយ', l: 'At-Risk', v: atRiskCount, c: '#f59e0b', bg: '#fffbeb' },
-                                        ].map((s, i) => (
-                                            <div key={i} style={{ background: s.bg, borderRadius: 12, padding: '14px 16px', border: `1px solid ${s.c}20` }}>
-                                                <div style={{ fontSize: 22, fontWeight: 800, color: s.c, marginBottom: 2 }}>{s.v}</div>
-                                                <KH style={{ fontSize: 11, color: s.c, display: 'block', opacity: 0.8 }}>{s.lk}</KH>
-                                                <div style={{ fontSize: 10, color: s.c, opacity: 0.6 }}>{s.l}</div>
+                            <div style={{ padding: '0 24px 24px' }}>
+                                <div style={{ border: '1px solid #e2e8f0', borderRadius: 14, overflow: 'hidden' }}>
+                                    {selectedClassStudents.length === 0 ? (
+                                        <div style={{ padding: 28, textAlign: 'center', color: '#64748b', fontWeight: 700 }}>Data not found</div>
+                                    ) : selectedClassStudents.map(student => {
+                                        const record = data.records.find(item => item.student_id === student.id);
+                                        return (
+                                            <div key={student.id} style={{ display: 'grid', gridTemplateColumns: 'minmax(210px,1fr) minmax(280px,1.4fr) minmax(160px,.8fr)', gap: 12, alignItems: 'center', padding: 12, borderBottom: '1px solid #f1f5f9' }}>
+                                                <div style={{ display: 'flex', alignItems: 'center', gap: 10, minWidth: 0 }}>
+                                                    <Avatar name={student.nameEn} size={34} />
+                                                    <div style={{ minWidth: 0 }}>
+                                                        <KH style={{ fontWeight: 800, fontSize: 13, display: 'block' }}>{student.nameKh}</KH>
+                                                        <div style={{ fontSize: 11, color: '#94a3b8', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{student.nameEn}</div>
+                                                    </div>
+                                                </div>
+                                                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, minmax(0,1fr))', gap: 6 }}>
+                                                    {STATUS_OPTIONS.map(status => {
+                                                        const active = record?.status === status.value;
+                                                        return (
+                                                            <button key={status.value} type="button" onClick={() => setRecordStatus(student.id, status.value)} style={{ minHeight: 34, background: active ? status.bg : 'white', color: active ? status.color : '#64748b', border: `1.5px solid ${active ? status.border : '#e2e8f0'}`, borderRadius: 8, fontSize: 11, fontWeight: 800, cursor: 'pointer' }}>
+                                                                {status.label}
+                                                            </button>
+                                                        );
+                                                    })}
+                                                </div>
+                                                <input placeholder="Note" style={{ ...fieldStyle, minHeight: 36, padding: '8px 10px', fontSize: 12 }} value={record?.note ?? ''} onChange={event => setRecordNote(student.id, event.target.value)} />
                                             </div>
-                                        ));
-                                    })()}
+                                        );
+                                    })}
                                 </div>
+                            </div>
 
-                                {/* Single-day view: simple status list */}
-                                {isSingleDay && days.length === 1 && (
-                                    <div className="card" style={{ overflowX: 'auto' }}>
-                                        {/* Sort + per-page */}
-                                        <div style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '12px 16px', borderBottom: '1px solid #f1f5f9' }}>
-                                            <span style={{ fontSize: 11, fontWeight: 700, color: '#94a3b8', whiteSpace: 'nowrap' }}>Sort by</span>
-                                            <select value={histOrderBy} onChange={e => setHistOrderBy(e.target.value as HistOrderKey)}
-                                                style={{ padding: '5px 10px', borderRadius: 8, border: '1.5px solid #e2e8f0', background: 'white', color: '#374151', fontSize: 12, fontWeight: 700, cursor: 'pointer', outline: 'none' }}>
-                                                {SINGLE_DAY_ORDERS.map(o => <option key={o.value} value={o.value}>{o.label}</option>)}
-                                            </select>
-                                            <div style={{ width: 1, height: 18, background: '#e2e8f0', margin: '0 2px' }} />
-                                            <select value={histPerPage} onChange={e => { setHistPerPage(Number(e.target.value)); setHistPage(1); }}
-                                                style={{ padding: '5px 10px', borderRadius: 8, border: '1.5px solid #e2e8f0', background: 'white', color: '#374151', fontSize: 12, fontWeight: 700, cursor: 'pointer', outline: 'none' }}>
-                                                {[5, 10, 25, 50].map(n => <option key={n} value={n}>{n} per page</option>)}
-                                            </select>
-                                            <span style={{ fontSize: 11, color: '#94a3b8', marginLeft: 4 }}>
-                                                {sortedSummaries.length} student{sortedSummaries.length !== 1 ? 's' : ''}
-                                            </span>
-                                        </div>
-                                        <table className="data-table">
-                                            <thead><tr>
-                                                <th>Student / សិស្ស</th><th>Class</th><th>Province</th><th>Status</th><th>Overall Rate</th>
-                                            </tr></thead>
-                                            <tbody>
-                                                {paginatedSummaries.map(({ student: s, records }) => {
-                                                    const st = records[0]?.status ?? 'absent';
-                                                    return (
-                                                        <tr key={s.id}>
-                                                            <td><div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-                                                                <Avatar name={s.nameEn} size={32} />
-                                                                <div><KH style={{ fontWeight: 700, fontSize: 13, display: 'block' }}>{s.nameKh}</KH><div style={{ fontSize: 11, color: '#94a3b8' }}>{s.nameEn}</div></div>
-                                                            </div></td>
-                                                            <td style={{ fontSize: 12, color: '#64748b' }}>{s.cls}</td>
-                                                            <td style={{ fontSize: 12, color: '#64748b' }}>{s.province}</td>
-                                                            <td>
-                                                                <span style={{ display: 'inline-flex', alignItems: 'center', gap: 6, padding: '4px 12px', borderRadius: 99, fontWeight: 700, fontSize: 12, background: st === 'present' ? '#dcfce7' : '#fee2e2', color: st === 'present' ? '#16a34a' : '#dc2626' }}>
-                                                                    {st === 'present' ? '✓ Present' : '✗ Absent'}
-                                                                </span>
-                                                            </td>
-                                                            <td>
-                                                                <div style={{ display: 'flex', alignItems: 'center', gap: 8, minWidth: 100 }}>
-                                                                    <div style={{ flex: 1 }}><PBar value={s.attendance} color={s.attendance >= 80 ? 'green' : 'red'} /></div>
-                                                                    <span style={{ fontSize: 12, fontWeight: 700, color: s.attendance >= 80 ? '#10b981' : '#ef4444', width: 36 }}>{s.attendance}%</span>
-                                                                </div>
-                                                            </td>
-                                                        </tr>
-                                                    );
-                                                })}
-                                            </tbody>
-                                        </table>
-                                        <Pagination total={sortedSummaries.length} page={histPage} perPage={histPerPage} onPageChange={setHistPage} onPerPageChange={setHistPerPage} showPerPage={false} />
-                                    </div>
-                                )}
+                            <div style={{ padding: 24, borderTop: '1px solid #e2e8f0', display: 'flex', gap: 10 }}>
+                                <button type="button" onClick={closeModal} style={{ flex: 1, background: '#f1f5f9', color: '#64748b', border: 'none', borderRadius: 10, padding: '12px', fontWeight: 800, cursor: 'pointer' }}>Cancel</button>
+                                <button disabled={processing || data.records.length === 0} type="submit" style={{ flex: 2, background: processing || data.records.length === 0 ? '#93c5fd' : '#2563eb', color: 'white', border: 'none', borderRadius: 10, padding: '12px', fontWeight: 800, cursor: processing || data.records.length === 0 ? 'default' : 'pointer' }}>
+                                    {modalMode === 'create' ? 'Save Attendance' : 'Save Changes'}
+                                </button>
+                            </div>
+                        </form>
+                    )}
+                </DialogContent>
+            </Dialog>
 
-                                {/* Multi-day view: summary per student + expandable day-by-day */}
-                                {!isSingleDay && (
-                                    <div className="card" style={{ overflowX: 'auto' }}>
-                                        {/* Sort + per-page */}
-                                        <div style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '12px 16px', borderBottom: '1px solid #f1f5f9' }}>
-                                            <span style={{ fontSize: 11, fontWeight: 700, color: '#94a3b8', whiteSpace: 'nowrap' }}>Sort by</span>
-                                            <select value={histOrderBy} onChange={e => setHistOrderBy(e.target.value as HistOrderKey)}
-                                                style={{ padding: '5px 10px', borderRadius: 8, border: '1.5px solid #e2e8f0', background: 'white', color: '#374151', fontSize: 12, fontWeight: 700, cursor: 'pointer', outline: 'none' }}>
-                                                {MULTI_DAY_ORDERS.map(o => <option key={o.value} value={o.value}>{o.label}</option>)}
-                                            </select>
-                                            <div style={{ width: 1, height: 18, background: '#e2e8f0', margin: '0 2px' }} />
-                                            <select value={histPerPage} onChange={e => { setHistPerPage(Number(e.target.value)); setHistPage(1); }}
-                                                style={{ padding: '5px 10px', borderRadius: 8, border: '1.5px solid #e2e8f0', background: 'white', color: '#374151', fontSize: 12, fontWeight: 700, cursor: 'pointer', outline: 'none' }}>
-                                                {[5, 10, 25, 50].map(n => <option key={n} value={n}>{n} per page</option>)}
-                                            </select>
-                                            <span style={{ fontSize: 11, color: '#94a3b8', marginLeft: 4 }}>
-                                                {sortedSummaries.length} student{sortedSummaries.length !== 1 ? 's' : ''}
-                                            </span>
-                                        </div>
-                                        <table className="data-table">
-                                            <thead><tr>
-                                                <th>Student / សិស្ស</th><th>Class</th>
-                                                <th>✓ Present</th><th>✗ Absent</th><th>Rate</th><th>Trend</th>
-                                            </tr></thead>
-                                            <tbody>
-                                                {paginatedSummaries.map(({ student: s, records, presentCount, absentCount, rate }) => (
-                                                    <>
-                                                        <tr key={s.id} style={{ cursor: 'pointer' }} onClick={() => setExpandedStudent(expandedStudent === s.id ? null : s.id)}>
-                                                            <td><div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-                                                                <Avatar name={s.nameEn} size={32} />
-                                                                <div>
-                                                                    <KH style={{ fontWeight: 700, fontSize: 13, display: 'block' }}>{s.nameKh}</KH>
-                                                                    <div style={{ fontSize: 11, color: '#94a3b8' }}>{s.nameEn}</div>
-                                                                </div>
-                                                                <span style={{ fontSize: 10, color: '#94a3b8', marginLeft: 4 }}>
-                                                                    {expandedStudent === s.id ? '▲' : '▼'}
-                                                                </span>
-                                                            </div></td>
-                                                            <td style={{ fontSize: 12, color: '#64748b' }}>{s.cls}</td>
-                                                            <td><span style={{ fontWeight: 800, fontSize: 15, color: '#10b981' }}>{presentCount}</span><span style={{ fontSize: 11, color: '#94a3b8' }}> / {days.length}</span></td>
-                                                            <td><span style={{ fontWeight: 800, fontSize: 15, color: absentCount > 0 ? '#ef4444' : '#94a3b8' }}>{absentCount}</span></td>
-                                                            <td>
-                                                                <div style={{ display: 'flex', alignItems: 'center', gap: 8, minWidth: 110 }}>
-                                                                    <div style={{ flex: 1 }}><PBar value={rate} color={rate >= 80 ? 'green' : rate >= 60 ? 'amber' : 'red'} /></div>
-                                                                    <span style={{ fontSize: 12, fontWeight: 800, color: rate >= 80 ? '#10b981' : rate >= 60 ? '#d97706' : '#ef4444', width: 36 }}>{rate}%</span>
-                                                                </div>
-                                                            </td>
-                                                            <td>
-                                                                {/* Mini calendar dots */}
-                                                                <div style={{ display: 'flex', gap: 3, flexWrap: 'wrap', maxWidth: 140 }}>
-                                                                    {records.map(r => (
-                                                                        <span key={r.date} title={r.date}
-                                                                            style={{ width: 10, height: 10, borderRadius: 2, background: r.status === 'present' ? '#10b981' : '#ef4444', display: 'inline-block', flexShrink: 0 }} />
-                                                                    ))}
-                                                                </div>
-                                                            </td>
-                                                        </tr>
-
-                                                        {/* Expandable day-by-day breakdown */}
-                                                        {expandedStudent === s.id && (
-                                                            <tr key={`${s.id}-expand`}>
-                                                                <td colSpan={6} style={{ padding: '0 16px 16px', background: '#f8fafc' }}>
-                                                                    <div style={{ paddingTop: 12 }}>
-                                                                        <div style={{ fontSize: 11, fontWeight: 700, color: '#64748b', marginBottom: 8, textTransform: 'uppercase', letterSpacing: '0.06em' }}>Day-by-Day Attendance</div>
-                                                                        <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
-                                                                            {records.map(r => {
-                                                                                const d = new Date(r.date);
-                                                                                const dayName = d.toLocaleDateString('en-US', { weekday: 'short' });
-                                                                                const dayNum  = d.getDate();
-                                                                                const mon     = d.toLocaleDateString('en-US', { month: 'short' });
-                                                                                return (
-                                                                                    <div key={r.date} style={{ textAlign: 'center', padding: '8px 10px', borderRadius: 10, background: r.status === 'present' ? '#f0fdf4' : '#fff1f2', border: `1px solid ${r.status === 'present' ? '#86efac' : '#fca5a5'}`, minWidth: 52 }}>
-                                                                                        <div style={{ fontSize: 9, color: '#94a3b8', fontWeight: 700 }}>{dayName}</div>
-                                                                                        <div style={{ fontSize: 14, fontWeight: 800, color: r.status === 'present' ? '#10b981' : '#ef4444' }}>
-                                                                                            {r.status === 'present' ? '✓' : '✗'}
-                                                                                        </div>
-                                                                                        <div style={{ fontSize: 9, color: '#94a3b8' }}>{mon} {dayNum}</div>
-                                                                                    </div>
-                                                                                );
-                                                                            })}
-                                                                        </div>
-                                                                    </div>
-                                                                </td>
-                                                            </tr>
-                                                        )}
-                                                    </>
-                                                ))}
-                                            </tbody>
-                                        </table>
-                                        <Pagination total={sortedSummaries.length} page={histPage} perPage={histPerPage} onPageChange={setHistPage} onPerPageChange={setHistPerPage} showPerPage={false} />
-                                    </div>
-                                )}
-                            </>
-                        )}
-                    </>
-                )}
-            </div>
+            {deleteTarget && (
+                <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.45)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 230, padding: 16 }}>
+                    <div style={{ background: 'white', borderRadius: 20, padding: 32, maxWidth: 420, width: '100%', boxShadow: '0 24px 60px rgba(0,0,0,0.15)' }}>
+                        <div style={{ textAlign: 'center', marginBottom: 20 }}>
+                            <div style={{ fontSize: 18, fontWeight: 800, color: '#1e293b', marginBottom: 6 }}>Delete Attendance?</div>
+                            <div style={{ fontSize: 13, color: '#64748b', lineHeight: 1.5 }}>Remove attendance for <strong>{deleteTarget.className}</strong> on <strong>{deleteTarget.attendanceDate}</strong>?</div>
+                        </div>
+                        <div style={{ display: 'flex', gap: 10 }}>
+                            <button onClick={() => setDeleteTarget(null)} style={{ flex: 1, background: '#f1f5f9', color: '#64748b', border: 'none', borderRadius: 10, padding: '11px', fontWeight: 700, cursor: 'pointer', fontSize: 14 }}>Cancel</button>
+                            <button onClick={confirmDelete} style={{ flex: 1, background: '#ef4444', color: 'white', border: 'none', borderRadius: 10, padding: '11px', fontWeight: 700, cursor: 'pointer', fontSize: 14 }}>Yes, Delete</button>
+                        </div>
+                    </div>
+                </div>
+            )}
         </AdminShell>
     );
 }
