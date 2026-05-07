@@ -15,7 +15,10 @@ use Throwable;
 
 class SchoolClassController extends Controller
 {
-    private SchoolClassService $schoolClassService;
+    /**
+     * @var SchoolClassService
+     */
+    public $schoolClassService;
 
     public function __construct(SchoolClassService $schoolClassService)
     {

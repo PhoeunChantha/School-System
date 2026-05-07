@@ -15,7 +15,10 @@ use Throwable;
 
 class StudentController extends Controller
 {
-    private StudentService $studentService;
+    /**
+     * @var StudentService
+     */
+    public $studentService;
 
     public function __construct(StudentService $studentService)
     {

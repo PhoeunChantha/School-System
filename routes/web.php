@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Controllers\Backends\HomeworkAssignmentController;
 use App\Http\Controllers\Backends\SchoolClassController;
 use App\Http\Controllers\Backends\StudentController;
 use App\Http\Controllers\Backends\TeacherController;
@@ -39,7 +40,12 @@ Route::prefix('admin')->name('admin.')->group(function () {
     Route::delete('/classes/{schoolClass}', [SchoolClassController::class, 'destroy'])->name('classes.destroy');
     Route::get('/attendance', fn () => Inertia::render('admin/attendance/index'))->name('attendance');
     Route::get('/grades', fn () => Inertia::render('admin/grades/index'))->name('grades');
-    Route::get('/homework', fn () => Inertia::render('admin/homework/index'))->name('homework');
+    Route::get('/homework', [HomeworkAssignmentController::class, 'index'])->name('homework');
+    Route::get('/homework/create', [HomeworkAssignmentController::class, 'create'])->name('homework.create');
+    Route::post('/homework', [HomeworkAssignmentController::class, 'store'])->name('homework.store');
+    Route::get('/homework/{homeworkAssignment}/edit', [HomeworkAssignmentController::class, 'edit'])->name('homework.edit');
+    Route::put('/homework/{homeworkAssignment}', [HomeworkAssignmentController::class, 'update'])->name('homework.update');
+    Route::delete('/homework/{homeworkAssignment}', [HomeworkAssignmentController::class, 'destroy'])->name('homework.destroy');
     Route::get('/fee', fn () => Inertia::render('admin/fee/index'))->name('fee');
     Route::get('/exam', fn () => Inertia::render('admin/exam/index'))->name('exam');
     Route::get('/reports', fn () => Inertia::render('admin/reports/index'))->name('reports');
