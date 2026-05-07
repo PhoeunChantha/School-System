@@ -1,0 +1,191 @@
+import { FormEvent, useState } from 'react';
+import { index as studentIndex, store, update } from '@/actions/App/Http/Controllers/Backends/StudentController';
+import AdminShell from '@/pages/admin/shell';
+import { Link, useForm } from '@inertiajs/react';
+import { toast } from 'sonner';
+
+export interface LevelOption {
+    id: number;
+    name: string;
+    monthly_fee: string;
+}
+
+export interface ClassOption {
+    id: number;
+    levelId: number | null;
+    name: string;
+    level: string | null;
+    time: string;
+}
+
+export interface StudentFormData {
+    id?: number;
+    level_id: number | null;
+    school_class_id: number | null;
+    code: string;
+    name_kh: string;
+    name_en: string;
+    date_of_birth: string;
+    gender: 'male' | 'female' | '';
+    province: string;
+    district: string;
+    commune: string;
+    village: string;
+    parent_phone: string;
+    telegram_username: string;
+    monthly_fee: string | number;
+    scholarship_amount: string | number;
+    fee_status: 'paid' | 'unpaid' | 'partial';
+    status: 'active' | 'inactive';
+    enrolled_on: string;
+}
+
+interface StudentFormPageProps {
+    mode: 'create' | 'edit';
+    student?: StudentFormData;
+    levels: LevelOption[];
+    classes: ClassOption[];
+}
+
+export default function StudentFormPage({ mode, student, levels, classes }: StudentFormPageProps) {
+    const isEdit = mode === 'edit';
+    const [step, setStep] = useState(1);
+    const { data, setData, post, put, processing, errors, transform } = useForm<StudentFormData>({
+        level_id: student?.level_id ?? null,
+        school_class_id: student?.school_class_id ?? null,
+        code: student?.code ?? '',
+        name_kh: student?.name_kh ?? '',
+        name_en: student?.name_en ?? '',
+        date_of_birth: student?.date_of_birth ?? '',
+        gender: student?.gender ?? '',
+        province: student?.province ?? '',
+        district: student?.district ?? '',
+        commune: student?.commune ?? '',
+        village: student?.village ?? '',
+        parent_phone: student?.parent_phone ?? '',
+        telegram_username: student?.telegram_username ?? '',
+        monthly_fee: student?.monthly_fee ?? 0,
+        scholarship_amount: student?.scholarship_amount ?? 0,
+        fee_status: student?.fee_status ?? 'unpaid',
+        status: student?.status ?? 'active',
+        enrolled_on: student?.enrolled_on ?? new Date().toISOString().slice(0, 10),
+    });
+
+    const filteredClasses = data.level_id
+        ? classes.filter(schoolClass => schoolClass.levelId === data.level_id)
+        : classes;
+
+    const selectedLevel = levels.find(level => level.id === data.level_id);
+
+    const submit = (event: FormEvent<HTMLFormElement>) => {
+        event.preventDefault();
+
+        transform(formData => ({
+            ...formData,
+            level_id: formData.level_id || null,
+            school_class_id: formData.school_class_id || null,
+            code: formData.code || null,
+            date_of_birth: formData.date_of_birth || null,
+            gender: formData.gender || null,
+            province: formData.province || null,
+            district: formData.district || null,
+            commune: formData.commune || null,
+            village: formData.village || null,
+            parent_phone: formData.parent_phone || null,
+            telegram_username: formData.telegram_username || null,
+            scholarship_amount: formData.scholarship_amount || 0,
+            enrolled_on: formData.enrolled_on || null,
+        }));
+
+        const options = {
+            preserveScroll: true,
+            onSuccess: () => {
+                toast.success(isEdit ? 'Student updated successfully!' : 'Student added successfully!', {
+                    description: isEdit ? `${data.name_en} has been updated.` : 'New student has been enrolled.',
+                });
+            },
+        };
+
+        if (isEdit && student?.id) {
+            put(update.url(student.id), options);
+
+            return;
+        }
+
+        post(store.url(), options);
+    };
+
+    const inputError = (message?: string) => message ? <div style={{ color: '#ef4444', fontSize: 11, marginTop: 4 }}>{message}</div> : null;
+
+    return (
+        <AdminShell>
+            <div className="fade-in" style={{ padding: 24 }}>
+                <form className="card" onSubmit={submit} style={{ padding: 28, maxWidth: 680, margin: '0 auto' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 24 }}>
+                        <div style={{ width: 40, height: 40, borderRadius: 10, background: isEdit ? '#eff6ff' : '#f0fdf4', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 20 }}>
+                            {isEdit ? 'Edit' : 'Add'}
+                        </div>
+                        <div>
+                            <div style={{ fontWeight: 800, fontSize: 16, color: '#1e293b' }}>{isEdit ? 'Edit Student' : 'Add New Student'}</div>
+                            {isEdit && <div style={{ fontSize: 12, color: '#94a3b8' }}>{student?.name_en}</div>}
+                        </div>
+                    </div>
+
+                    <div style={{ display: 'flex', alignItems: 'center', marginBottom: 28 }}>
+                        {[1, 2, 3].map((number, index) => (
+                            <div key={number} style={{ display: 'flex', alignItems: 'center', flex: index < 2 ? 1 : undefined }}>
+                                <div style={{ width: 36, height: 36, borderRadius: '50%', background: step >= number ? '#2563eb' : '#f1f5f9', color: step >= number ? 'white' : '#94a3b8', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 800, fontSize: 14 }}>{number}</div>
+                                {index < 2 && <div style={{ flex: 1, height: 2, background: step > number ? '#2563eb' : '#f1f5f9', margin: '0 8px' }} />}
+                            </div>
+                        ))}
+                    </div>
+
+                    {step === 1 && (
+                        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16 }}>
+                            <div className="f-group"><label className="f-label">Student Code</label><input className="f-input" value={data.code} onChange={event => setData('code', event.target.value)} />{inputError(errors.code)}</div>
+                            <div className="f-group"><label className="f-label">Enrolled On</label><input type="date" className="f-input" value={data.enrolled_on} onChange={event => setData('enrolled_on', event.target.value)} />{inputError(errors.enrolled_on)}</div>
+                            <div className="f-group"><label className="f-label">ឈ្មោះ (ខ្មែរ) *</label><input className="f-input" value={data.name_kh} onChange={event => setData('name_kh', event.target.value)} />{inputError(errors.name_kh)}</div>
+                            <div className="f-group"><label className="f-label">English Name *</label><input className="f-input" value={data.name_en} onChange={event => setData('name_en', event.target.value)} />{inputError(errors.name_en)}</div>
+                            <div className="f-group"><label className="f-label">Date of Birth</label><input type="date" className="f-input" value={data.date_of_birth} onChange={event => setData('date_of_birth', event.target.value)} />{inputError(errors.date_of_birth)}</div>
+                            <div className="f-group"><label className="f-label">Gender</label><select className="f-input" value={data.gender} onChange={event => setData('gender', event.target.value as StudentFormData['gender'])}><option value="">Select...</option><option value="male">Male</option><option value="female">Female</option></select>{inputError(errors.gender)}</div>
+                        </div>
+                    )}
+
+                    {step === 2 && (
+                        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16 }}>
+                            <div className="f-group"><label className="f-label">Level *</label><select className="f-input" value={data.level_id ?? ''} onChange={event => {
+                                const level = levels.find(item => item.id === Number(event.target.value));
+                                setData(current => ({ ...current, level_id: level?.id ?? null, monthly_fee: level?.monthly_fee ?? current.monthly_fee, school_class_id: null }));
+                            }}><option value="">Select level...</option>{levels.map(level => <option key={level.id} value={level.id}>{level.name}</option>)}</select>{inputError(errors.level_id)}</div>
+                            <div className="f-group"><label className="f-label">Class *</label><select className="f-input" value={data.school_class_id ?? ''} onChange={event => setData('school_class_id', event.target.value ? Number(event.target.value) : null)}><option value="">Select class...</option>{filteredClasses.map(schoolClass => <option key={schoolClass.id} value={schoolClass.id}>{schoolClass.name} {schoolClass.time ? `(${schoolClass.time})` : ''}</option>)}</select>{inputError(errors.school_class_id)}</div>
+                            <div className="f-group"><label className="f-label">Monthly Fee</label><input type="number" className="f-input" value={data.monthly_fee} min={0} onChange={event => setData('monthly_fee', event.target.value)} />{selectedLevel && <div style={{ fontSize: 11, color: '#94a3b8', marginTop: 4 }}>Level default: ${selectedLevel.monthly_fee}</div>}{inputError(errors.monthly_fee)}</div>
+                            <div className="f-group"><label className="f-label">Scholarship Amount</label><input type="number" className="f-input" value={data.scholarship_amount} min={0} onChange={event => setData('scholarship_amount', event.target.value)} />{inputError(errors.scholarship_amount)}</div>
+                            <div className="f-group"><label className="f-label">Fee Status</label><select className="f-input" value={data.fee_status} onChange={event => setData('fee_status', event.target.value as StudentFormData['fee_status'])}><option value="unpaid">Unpaid</option><option value="partial">Partial</option><option value="paid">Paid</option></select>{inputError(errors.fee_status)}</div>
+                            <div className="f-group"><label className="f-label">Status</label><select className="f-input" value={data.status} onChange={event => setData('status', event.target.value as StudentFormData['status'])}><option value="active">Active</option><option value="inactive">Inactive</option></select>{inputError(errors.status)}</div>
+                        </div>
+                    )}
+
+                    {step === 3 && (
+                        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16 }}>
+                            <div className="f-group"><label className="f-label">Province</label><input className="f-input" value={data.province} onChange={event => setData('province', event.target.value)} />{inputError(errors.province)}</div>
+                            <div className="f-group"><label className="f-label">District</label><input className="f-input" value={data.district} onChange={event => setData('district', event.target.value)} />{inputError(errors.district)}</div>
+                            <div className="f-group"><label className="f-label">Commune</label><input className="f-input" value={data.commune} onChange={event => setData('commune', event.target.value)} />{inputError(errors.commune)}</div>
+                            <div className="f-group"><label className="f-label">Village</label><input className="f-input" value={data.village} onChange={event => setData('village', event.target.value)} />{inputError(errors.village)}</div>
+                            <div className="f-group"><label className="f-label">Parent Phone</label><input className="f-input" value={data.parent_phone} onChange={event => setData('parent_phone', event.target.value)} />{inputError(errors.parent_phone)}</div>
+                            <div className="f-group"><label className="f-label">Telegram Username</label><input className="f-input" value={data.telegram_username} onChange={event => setData('telegram_username', event.target.value)} />{inputError(errors.telegram_username)}</div>
+                        </div>
+                    )}
+
+                    <div style={{ display: 'flex', gap: 12, marginTop: 16 }}>
+                        <Link href={studentIndex.url()} style={{ background: '#f1f5f9', color: '#64748b', border: 'none', borderRadius: 10, padding: '12px 20px', fontWeight: 700, cursor: 'pointer', textDecoration: 'none' }}>Cancel</Link>
+                        {step > 1 && <button type="button" onClick={() => setStep(value => value - 1)} style={{ flex: 1, background: '#f1f5f9', color: '#64748b', border: 'none', borderRadius: 10, padding: '12px', fontWeight: 700, cursor: 'pointer' }}>Back</button>}
+                        {step < 3
+                            ? <button type="button" onClick={() => setStep(value => value + 1)} style={{ flex: 2, background: '#2563eb', color: 'white', border: 'none', borderRadius: 10, padding: '12px', fontWeight: 700, fontSize: 14, cursor: 'pointer' }}>Next</button>
+                            : <button type="submit" disabled={processing} style={{ flex: 2, background: isEdit ? '#2563eb' : '#10b981', color: 'white', border: 'none', borderRadius: 10, padding: '12px', fontWeight: 700, fontSize: 14, cursor: 'pointer' }}>{processing ? 'Saving...' : isEdit ? 'Update Student' : 'Save Student'}</button>
+                        }
+                    </div>
+                </form>
+            </div>
+        </AdminShell>
+    );
+}

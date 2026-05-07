@@ -15,9 +15,12 @@ use Throwable;
 
 class TeacherController extends Controller
 {
-    public function __construct(
-        private readonly TeacherService $teacherService,
-    ) {}
+    private TeacherService $teacherService;
+
+    public function __construct(TeacherService $teacherService)
+    {
+        $this->teacherService = $teacherService;
+    }
 
     public function index(): Response
     {
