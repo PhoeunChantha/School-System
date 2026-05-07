@@ -3,25 +3,48 @@
 namespace Database\Seeders;
 
 use App\Models\User;
-// use Illuminate\Database\Console\Seeds\WithoutModelEvents;
 use Illuminate\Database\Seeder;
+use Illuminate\Support\Facades\Hash;
 
 class DatabaseSeeder extends Seeder
 {
-    /**
-     * Seed the application's database.
-     */
     public function run(): void
     {
-        // User::factory(10)->create();
-
+        // Admin user
         User::firstOrCreate(
-            ['email' => 'test@example.com'],
+            ['email' => 'admin@frania.edu.kh'],
             [
-                'name' => 'Test User',
-                'password' => 'password',
+                'name'              => 'Admin',
+                'password'          => Hash::make('password'),
                 'email_verified_at' => now(),
             ]
         );
+
+        // Keep legacy test user
+        User::firstOrCreate(
+            ['email' => 'test@example.com'],
+            [
+                'name'              => 'Test User',
+                'password'          => Hash::make('password'),
+                'email_verified_at' => now(),
+            ]
+        );
+
+        $this->call([
+            LevelSeeder::class,        // 1 — no dependencies
+            TeacherSeeder::class,      // 2 — no dependencies
+            SchoolClassSeeder::class,  // 3 — needs levels + teachers
+            GradePeriodSeeder::class,  // 4 — no dependencies
+            StudentSeeder::class,      // 5 — needs classes + levels
+            AttendanceSeeder::class,   // 6 — needs classes + students
+            GradeSeeder::class,        // 7 — needs students + grade periods
+            FeeSeeder::class,          // 8 — needs students
+            HomeworkSeeder::class,     // 9 — needs classes + students
+            ExamSeeder::class,         // 10 — needs classes + students
+            CertificateSeeder::class,  // 11 — needs students + grade records
+            NotificationSeeder::class, // 12 — needs students + users
+            SchoolSettingSeeder::class,// 13 — no dependencies
+            ActivityLogSeeder::class,  // 14 — needs students + users
+        ]);
     }
 }
