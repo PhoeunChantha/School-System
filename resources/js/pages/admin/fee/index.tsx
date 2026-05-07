@@ -1,396 +1,234 @@
-import {
-    PAYMENTS,
-    STUDENTS,
-    type Payment,
-    type Student,
-} from '@/pages/admin/data';
+import { create as createFee, destroy, edit as editFee, payment as recordPayment } from '@/actions/App/Http/Controllers/Backends/FeeChargeController';
 import AdminShell from '@/pages/admin/shell';
-import { Avatar, Badge, FeeTag, KH, Pagination } from '@/pages/admin/ui';
-import { useEffect, useMemo, useState } from 'react';
+import { Avatar, Badge, KH, Pagination } from '@/pages/admin/ui';
+import { Link, router, useForm } from '@inertiajs/react';
+import { FormEvent, useEffect, useMemo, useState } from 'react';
+import { toast } from 'sonner';
+
+export interface FeeChargeItem {
+    id: number;
+    studentNameKh: string;
+    studentNameEn: string;
+    level: string;
+    className: string;
+    billingMonth: string;
+    dueOn: string;
+    amount: number;
+    discountAmount: number;
+    paidAmount: number;
+    status: 'paid' | 'unpaid' | 'partial';
+}
+
+export interface PaymentItem {
+    id: number;
+    studentNameKh: string;
+    studentNameEn: string;
+    amount: number;
+    method: string;
+    status: string;
+    paidOn: string;
+    billingMonth: string;
+    reference: string;
+}
+
+interface FeePageProps {
+    charges: FeeChargeItem[];
+    payments: PaymentItem[];
+    summary: {
+        collected: number;
+        outstanding: number;
+        paidCount: number;
+        unpaidCount: number;
+    };
+}
 
 type FeeFilter = 'all' | 'paid' | 'unpaid' | 'partial';
-type StudentOrderKey =
-    | 'name-asc'
-    | 'name-desc'
-    | 'amount-desc'
-    | 'amount-asc'
-    | 'status-asc'
-    | 'level-asc';
-type PaymentOrderKey =
-    | 'date-desc'
-    | 'date-asc'
-    | 'name-asc'
-    | 'amount-desc'
-    | 'amount-asc'
-    | 'method-asc'
-    | 'status-asc';
+type ChargeOrderKey = 'name-asc' | 'name-desc' | 'amount-desc' | 'amount-asc' | 'status-asc' | 'month-desc';
+type PaymentOrderKey = 'date-desc' | 'date-asc' | 'name-asc' | 'amount-desc' | 'amount-asc' | 'method-asc';
 
-const STUDENT_ORDER_OPTIONS: { value: StudentOrderKey; label: string }[] = [
-    { value: 'name-asc', label: 'Name A → Z' },
-    { value: 'name-desc', label: 'Name Z → A' },
-    { value: 'amount-desc', label: 'Amount ↓ Highest' },
-    { value: 'amount-asc', label: 'Amount ↑ Lowest' },
+const CHARGE_ORDER_OPTIONS: { value: ChargeOrderKey; label: string }[] = [
+    { value: 'name-asc', label: 'Name A -> Z' },
+    { value: 'name-desc', label: 'Name Z -> A' },
+    { value: 'amount-desc', label: 'Amount Highest' },
+    { value: 'amount-asc', label: 'Amount Lowest' },
     { value: 'status-asc', label: 'Status' },
-    { value: 'level-asc', label: 'Level' },
+    { value: 'month-desc', label: 'Month Newest' },
 ];
 
 const PAYMENT_ORDER_OPTIONS: { value: PaymentOrderKey; label: string }[] = [
-    { value: 'date-desc', label: 'Date ↓ Newest' },
-    { value: 'date-asc', label: 'Date ↑ Oldest' },
-    { value: 'name-asc', label: 'Name A → Z' },
-    { value: 'amount-desc', label: 'Amount ↓ Highest' },
-    { value: 'amount-asc', label: 'Amount ↑ Lowest' },
+    { value: 'date-desc', label: 'Date Newest' },
+    { value: 'date-asc', label: 'Date Oldest' },
+    { value: 'name-asc', label: 'Name A -> Z' },
+    { value: 'amount-desc', label: 'Amount Highest' },
+    { value: 'amount-asc', label: 'Amount Lowest' },
     { value: 'method-asc', label: 'Method' },
-    { value: 'status-asc', label: 'Status' },
 ];
 
-const feeStatusRank: Record<Student['fees'], number> = {
-    Unpaid: 0,
-    Partial: 1,
-    Paid: 2,
-};
+const statusRank: Record<FeeChargeItem['status'], number> = { unpaid: 0, partial: 1, paid: 2 };
 
-function sortStudentsByFee(list: Student[], order: StudentOrderKey): Student[] {
+function sortCharges(list: FeeChargeItem[], order: ChargeOrderKey): FeeChargeItem[] {
     return [...list].sort((a, b) => {
         switch (order) {
-            case 'name-asc':
-                return a.nameEn.localeCompare(b.nameEn);
-            case 'name-desc':
-                return b.nameEn.localeCompare(a.nameEn);
-            case 'amount-desc':
-                return b.amt - a.amt;
-            case 'amount-asc':
-                return a.amt - b.amt;
-            case 'status-asc':
-                return feeStatusRank[a.fees] - feeStatusRank[b.fees];
-            case 'level-asc':
-                return a.level.localeCompare(b.level);
-            default:
-                return 0;
+            case 'name-asc': return a.studentNameEn.localeCompare(b.studentNameEn);
+            case 'name-desc': return b.studentNameEn.localeCompare(a.studentNameEn);
+            case 'amount-desc': return b.amount - a.amount;
+            case 'amount-asc': return a.amount - b.amount;
+            case 'status-asc': return statusRank[a.status] - statusRank[b.status];
+            case 'month-desc': return b.billingMonth.localeCompare(a.billingMonth);
+            default: return 0;
         }
     });
 }
 
-function sortPayments(list: Payment[], order: PaymentOrderKey): Payment[] {
+function sortPayments(list: PaymentItem[], order: PaymentOrderKey): PaymentItem[] {
     return [...list].sort((a, b) => {
         switch (order) {
-            case 'date-desc':
-                return b.date.localeCompare(a.date);
-            case 'date-asc':
-                return a.date.localeCompare(b.date);
-            case 'name-asc':
-                return a.nameEn.localeCompare(b.nameEn);
-            case 'amount-desc':
-                return b.amount - a.amount;
-            case 'amount-asc':
-                return a.amount - b.amount;
-            case 'method-asc':
-                return a.method.localeCompare(b.method);
-            case 'status-asc':
-                return a.status.localeCompare(b.status);
-            default:
-                return 0;
+            case 'date-desc': return b.paidOn.localeCompare(a.paidOn);
+            case 'date-asc': return a.paidOn.localeCompare(b.paidOn);
+            case 'name-asc': return a.studentNameEn.localeCompare(b.studentNameEn);
+            case 'amount-desc': return b.amount - a.amount;
+            case 'amount-asc': return a.amount - b.amount;
+            case 'method-asc': return a.method.localeCompare(b.method);
+            default: return 0;
         }
     });
 }
 
-export default function FeePage() {
+function FeeStatusBadge({ status }: { status: FeeChargeItem['status'] }) {
+    if (status === 'paid') return <Badge type="green">Paid</Badge>;
+    if (status === 'partial') return <Badge type="amber">Partial</Badge>;
+    return <Badge type="red">Unpaid</Badge>;
+}
+
+export default function FeePage({ charges, payments, summary }: FeePageProps) {
     const [filter, setFilter] = useState<FeeFilter>('all');
-    const [studentOrderBy, setStudentOrderBy] =
-        useState<StudentOrderKey>('name-asc');
-    const [studentPage, setStudentPage] = useState(1);
-    const [studentPerPage, setStudentPerPage] = useState(5);
-    const [paymentOrderBy, setPaymentOrderBy] =
-        useState<PaymentOrderKey>('date-desc');
+    const [chargeOrderBy, setChargeOrderBy] = useState<ChargeOrderKey>('name-asc');
+    const [chargePage, setChargePage] = useState(1);
+    const [chargePerPage, setChargePerPage] = useState(5);
+    const [paymentOrderBy, setPaymentOrderBy] = useState<PaymentOrderKey>('date-desc');
     const [paymentPage, setPaymentPage] = useState(1);
     const [paymentPerPage, setPaymentPerPage] = useState(5);
-    const [showModal, setShowModal] = useState<Student | null>(null);
-    const [method, setMethod] = useState('ABA');
-    const [step, setStep] = useState(1);
-    const [done, setDone] = useState(false);
-    const [screenshot, setScreenshot] = useState(false);
+    const [payTarget, setPayTarget] = useState<FeeChargeItem | null>(null);
+    const [deleteTarget, setDeleteTarget] = useState<FeeChargeItem | null>(null);
 
-    const filtered = useMemo(() => {
-        const base =
-            filter === 'all'
-                ? STUDENTS
-                : STUDENTS.filter((s) =>
-                      filter === 'paid'
-                          ? s.fees === 'Paid'
-                          : filter === 'unpaid'
-                            ? s.fees === 'Unpaid'
-                            : s.fees === 'Partial',
-                  );
+    const paymentForm = useForm({
+        amount: '',
+        method: 'aba',
+        status: 'paid',
+        paid_on: new Date().toISOString().slice(0, 10),
+        billing_month: '',
+        reference: '',
+        screenshot_path: '',
+    });
 
-        return sortStudentsByFee(base, studentOrderBy);
-    }, [filter, studentOrderBy]);
+    useEffect(() => { setChargePage(1); }, [filter, chargeOrderBy, chargePerPage]);
+    useEffect(() => { setPaymentPage(1); }, [paymentOrderBy, paymentPerPage]);
 
-    const paginatedStudents = useMemo(
-        () =>
-            filtered.slice(
-                (studentPage - 1) * studentPerPage,
-                studentPage * studentPerPage,
-            ),
-        [filtered, studentPage, studentPerPage],
+    const filteredCharges = useMemo(() => {
+        const base = filter === 'all' ? charges : charges.filter(charge => charge.status === filter);
+        return sortCharges(base, chargeOrderBy);
+    }, [charges, chargeOrderBy, filter]);
+
+    const paginatedCharges = useMemo(
+        () => filteredCharges.slice((chargePage - 1) * chargePerPage, chargePage * chargePerPage),
+        [filteredCharges, chargePage, chargePerPage],
     );
 
-    const sortedPayments = useMemo(
-        () => sortPayments(PAYMENTS, paymentOrderBy),
-        [paymentOrderBy],
-    );
-
+    const sortedPayments = useMemo(() => sortPayments(payments, paymentOrderBy), [payments, paymentOrderBy]);
     const paginatedPayments = useMemo(
-        () =>
-            sortedPayments.slice(
-                (paymentPage - 1) * paymentPerPage,
-                paymentPage * paymentPerPage,
-            ),
+        () => sortedPayments.slice((paymentPage - 1) * paymentPerPage, paymentPage * paymentPerPage),
         [sortedPayments, paymentPage, paymentPerPage],
     );
 
-    useEffect(() => {
-        setStudentPage(1);
-    }, [filter, studentOrderBy, studentPerPage]);
-    useEffect(() => {
-        setPaymentPage(1);
-    }, [paymentOrderBy, paymentPerPage]);
+    const openPayment = (charge: FeeChargeItem) => {
+        const balance = Math.max(0, charge.amount - charge.discountAmount - charge.paidAmount);
+        setPayTarget(charge);
+        paymentForm.setData({
+            amount: String(balance || charge.amount),
+            method: 'aba',
+            status: 'paid',
+            paid_on: new Date().toISOString().slice(0, 10),
+            billing_month: `${charge.billingMonth}-01`,
+            reference: '',
+            screenshot_path: '',
+        });
+    };
 
-    const totalCollected = PAYMENTS.filter(
-        (p) => p.status === 'verified',
-    ).reduce((a, p) => a + p.amount, 0);
+    const submitPayment = (event: FormEvent<HTMLFormElement>) => {
+        event.preventDefault();
+        if (!payTarget) return;
 
-    const openModal = (s: Student) => {
-        setShowModal(s);
-        setStep(1);
-        setDone(false);
-        setScreenshot(false);
+        paymentForm.post(recordPayment.url(payTarget.id), {
+            preserveScroll: true,
+            onSuccess: () => {
+                toast.success('Payment recorded successfully.');
+                setPayTarget(null);
+                paymentForm.reset();
+            },
+        });
+    };
+
+    const confirmDelete = () => {
+        if (!deleteTarget) return;
+
+        router.delete(destroy.url(deleteTarget.id), {
+            preserveScroll: true,
+            onSuccess: () => {
+                toast.success('Fee charge deleted.');
+                setDeleteTarget(null);
+            },
+        });
     };
 
     return (
         <AdminShell>
-            <div
-                className="fade-in"
-                style={{
-                    padding: 24,
-                    display: 'flex',
-                    flexDirection: 'column',
-                    gap: 16,
-                }}
-            >
-                {/* Summary cards */}
-                <div
-                    style={{
-                        display: 'grid',
-                        gridTemplateColumns:
-                            'repeat(auto-fill,minmax(160px,1fr))',
-                        gap: 12,
-                    }}
-                >
+            <div className="fade-in" style={{ padding: 24, display: 'flex', flexDirection: 'column', gap: 16 }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 12, flexWrap: 'wrap' }}>
+                    <div>
+                        <div style={{ fontWeight: 800, fontSize: 18, color: '#1e293b' }}>Fee Management</div>
+                        <div style={{ fontSize: 12, color: '#94a3b8', marginTop: 2 }}>Track monthly fee charges and payments</div>
+                    </div>
+                    <Link href={createFee.url()} style={{ background: '#2563eb', color: 'white', border: 'none', borderRadius: 10, padding: '9px 18px', fontWeight: 700, fontSize: 13, cursor: 'pointer', textDecoration: 'none' }}>
+                        + New Fee Charge
+                    </Link>
+                </div>
+
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill,minmax(160px,1fr))', gap: 12 }}>
                     {[
-                        {
-                            lk: 'ប្រមូលបាន',
-                            l: 'Collected',
-                            v: `$${totalCollected}`,
-                            c: '#10b981',
-                            bg: '#f0fdf4',
-                        },
-                        {
-                            lk: 'នៅខ្វះ',
-                            l: 'Outstanding',
-                            v: '$450',
-                            c: '#f59e0b',
-                            bg: '#fffbeb',
-                        },
-                        {
-                            lk: 'ក្បាលគ្រប',
-                            l: 'Paid Count',
-                            v: STUDENTS.filter((s) => s.fees === 'Paid').length,
-                            c: '#3b82f6',
-                            bg: '#eff6ff',
-                        },
-                        {
-                            lk: 'មិនទាន់',
-                            l: 'Unpaid Count',
-                            v: STUDENTS.filter((s) => s.fees === 'Unpaid')
-                                .length,
-                            c: '#ef4444',
-                            bg: '#fff1f2',
-                        },
-                    ].map((s, i) => (
-                        <div
-                            key={i}
-                            style={{
-                                background: s.bg,
-                                borderRadius: 14,
-                                padding: 16,
-                                border: `1px solid ${s.c}30`,
-                            }}
-                        >
-                            <div
-                                style={{
-                                    fontSize: 24,
-                                    fontWeight: 800,
-                                    color: s.c,
-                                    marginBottom: 2,
-                                }}
-                            >
-                                {s.v}
-                            </div>
-                            <KH
-                                style={{
-                                    fontSize: 12,
-                                    color: s.c,
-                                    display: 'block',
-                                    opacity: 0.8,
-                                }}
-                            >
-                                {s.lk}
-                            </KH>
-                            <div
-                                style={{
-                                    fontSize: 11,
-                                    color: s.c,
-                                    opacity: 0.6,
-                                }}
-                            >
-                                {s.l}
-                            </div>
+                        { l: 'Collected', v: `$${Number(summary.collected).toFixed(2)}`, c: '#10b981', bg: '#f0fdf4' },
+                        { l: 'Outstanding', v: `$${Number(summary.outstanding).toFixed(2)}`, c: '#f59e0b', bg: '#fffbeb' },
+                        { l: 'Paid Count', v: summary.paidCount, c: '#3b82f6', bg: '#eff6ff' },
+                        { l: 'Unpaid Count', v: summary.unpaidCount, c: '#ef4444', bg: '#fff1f2' },
+                    ].map(item => (
+                        <div key={item.l} style={{ background: item.bg, borderRadius: 14, padding: 16, border: `1px solid ${item.c}30` }}>
+                            <div style={{ fontSize: 24, fontWeight: 800, color: item.c, marginBottom: 2 }}>{item.v}</div>
+                            <div style={{ fontSize: 11, color: item.c, opacity: 0.7 }}>{item.l}</div>
                         </div>
                     ))}
                 </div>
 
-                {/* Student fee table */}
                 <div className="card">
-                    <div
-                        style={{
-                            padding: '16px 20px 0',
-                            display: 'flex',
-                            gap: 8,
-                            flexWrap: 'wrap',
-                            marginBottom: 4,
-                        }}
-                    >
-                        {(
-                            [
-                                { id: 'all', l: 'All' },
-                                { id: 'paid', l: 'Paid ✓' },
-                                { id: 'unpaid', l: 'Unpaid ✗' },
-                                { id: 'partial', l: 'Partial ~' },
-                            ] as { id: FeeFilter; l: string }[]
-                        ).map((f) => (
-                            <button
-                                key={f.id}
-                                onClick={() => setFilter(f.id)}
-                                style={{
-                                    padding: '6px 14px',
-                                    borderRadius: 8,
-                                    border: '1.5px solid',
-                                    cursor: 'pointer',
-                                    fontSize: 12,
-                                    fontWeight: 700,
-                                    transition: 'all 0.15s',
-                                    borderColor:
-                                        filter === f.id ? '#3b82f6' : '#e2e8f0',
-                                    background:
-                                        filter === f.id ? '#eff6ff' : 'white',
-                                    color:
-                                        filter === f.id ? '#2563eb' : '#64748b',
-                                }}
-                            >
-                                {f.l}
+                    <div style={{ padding: '16px 20px 0', display: 'flex', gap: 8, flexWrap: 'wrap', marginBottom: 4 }}>
+                        {([
+                            { id: 'all', l: 'All' },
+                            { id: 'paid', l: 'Paid' },
+                            { id: 'unpaid', l: 'Unpaid' },
+                            { id: 'partial', l: 'Partial' },
+                        ] as { id: FeeFilter; l: string }[]).map(item => (
+                            <button key={item.id} onClick={() => setFilter(item.id)} style={{ padding: '6px 14px', borderRadius: 8, border: '1.5px solid', cursor: 'pointer', fontSize: 12, fontWeight: 700, borderColor: filter === item.id ? '#3b82f6' : '#e2e8f0', background: filter === item.id ? '#eff6ff' : 'white', color: filter === item.id ? '#2563eb' : '#64748b' }}>
+                                {item.l}
                             </button>
                         ))}
                     </div>
-                    <div
-                        style={{
-                            display: 'flex',
-                            alignItems: 'center',
-                            gap: 8,
-                            padding: '12px 16px',
-                            borderBottom: '1px solid #f1f5f9',
-                            flexWrap: 'wrap',
-                        }}
-                    >
-                        <span
-                            style={{
-                                fontSize: 11,
-                                fontWeight: 700,
-                                color: '#94a3b8',
-                                whiteSpace: 'nowrap',
-                            }}
-                        >
-                            Sort by
-                        </span>
-                        <select
-                            value={studentOrderBy}
-                            onChange={(e) =>
-                                setStudentOrderBy(
-                                    e.target.value as StudentOrderKey,
-                                )
-                            }
-                            style={{
-                                padding: '5px 10px',
-                                borderRadius: 8,
-                                border: '1.5px solid #e2e8f0',
-                                background: 'white',
-                                color: '#374151',
-                                fontSize: 12,
-                                fontWeight: 700,
-                                cursor: 'pointer',
-                                outline: 'none',
-                            }}
-                        >
-                            {STUDENT_ORDER_OPTIONS.map((o) => (
-                                <option key={o.value} value={o.value}>
-                                    {o.label}
-                                </option>
-                            ))}
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '12px 16px', borderBottom: '1px solid #f1f5f9', flexWrap: 'wrap' }}>
+                        <span style={{ fontSize: 11, fontWeight: 700, color: '#94a3b8', whiteSpace: 'nowrap' }}>Sort by</span>
+                        <select value={chargeOrderBy} onChange={event => setChargeOrderBy(event.target.value as ChargeOrderKey)} style={{ padding: '5px 10px', borderRadius: 8, border: '1.5px solid #e2e8f0', background: 'white', color: '#374151', fontSize: 12, fontWeight: 700, cursor: 'pointer', outline: 'none' }}>
+                            {CHARGE_ORDER_OPTIONS.map(option => <option key={option.value} value={option.value}>{option.label}</option>)}
                         </select>
-
-                        <div
-                            style={{
-                                width: 1,
-                                height: 18,
-                                background: '#e2e8f0',
-                                margin: '0 2px',
-                            }}
-                        />
-
-                        <select
-                            value={studentPerPage}
-                            onChange={(e) => {
-                                setStudentPerPage(Number(e.target.value));
-                                setStudentPage(1);
-                            }}
-                            style={{
-                                padding: '5px 10px',
-                                borderRadius: 8,
-                                border: '1.5px solid #e2e8f0',
-                                background: 'white',
-                                color: '#374151',
-                                fontSize: 12,
-                                fontWeight: 700,
-                                cursor: 'pointer',
-                                outline: 'none',
-                            }}
-                        >
-                            {[5, 10, 25, 50].map((n) => (
-                                <option key={n} value={n}>
-                                    {n} per page
-                                </option>
-                            ))}
+                        <select value={chargePerPage} onChange={event => setChargePerPage(Number(event.target.value))} style={{ padding: '5px 10px', borderRadius: 8, border: '1.5px solid #e2e8f0', background: 'white', color: '#374151', fontSize: 12, fontWeight: 700, cursor: 'pointer', outline: 'none' }}>
+                            {[5, 10, 25, 50].map(size => <option key={size} value={size}>{size} per page</option>)}
                         </select>
-
-                        <span
-                            style={{
-                                fontSize: 11,
-                                color: '#94a3b8',
-                                marginLeft: 4,
-                            }}
-                        >
-                            {filtered.length} student
-                            {filtered.length !== 1 ? 's' : ''}
-                        </span>
+                        <span style={{ fontSize: 11, color: '#94a3b8', marginLeft: 4 }}>{filteredCharges.length} charge{filteredCharges.length !== 1 ? 's' : ''}</span>
                     </div>
                     <div style={{ overflowX: 'auto' }}>
                         <table className="data-table">
@@ -398,687 +236,123 @@ export default function FeePage() {
                                 <tr>
                                     <th>Student</th>
                                     <th>Level</th>
-                                    <th>Amount</th>
-                                    <th>Status</th>
                                     <th>Month</th>
+                                    <th>Amount</th>
+                                    <th>Paid</th>
+                                    <th>Status</th>
                                     <th>Action</th>
                                 </tr>
                             </thead>
                             <tbody>
-                                {paginatedStudents.map((s) => (
-                                    <tr key={s.id}>
+                                {paginatedCharges.length === 0 ? (
+                                    <tr>
+                                        <td colSpan={7} style={{ padding: '34px 24px', textAlign: 'center', color: '#64748b', fontSize: 14, fontWeight: 700 }}>
+                                            Data not found
+                                        </td>
+                                    </tr>
+                                ) : paginatedCharges.map(charge => (
+                                    <tr key={charge.id}>
                                         <td>
-                                            <div
-                                                style={{
-                                                    display: 'flex',
-                                                    alignItems: 'center',
-                                                    gap: 10,
-                                                }}
-                                            >
-                                                <Avatar
-                                                    name={s.nameEn}
-                                                    size={32}
-                                                />
+                                            <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                                                <Avatar name={charge.studentNameEn} size={32} />
                                                 <div>
-                                                    <KH
-                                                        style={{
-                                                            fontWeight: 700,
-                                                            fontSize: 13,
-                                                            display: 'block',
-                                                        }}
-                                                    >
-                                                        {s.nameKh}
-                                                    </KH>
-                                                    <div
-                                                        style={{
-                                                            fontSize: 11,
-                                                            color: '#94a3b8',
-                                                        }}
-                                                    >
-                                                        {s.nameEn}
-                                                    </div>
+                                                    <KH style={{ fontWeight: 700, fontSize: 13, display: 'block' }}>{charge.studentNameKh}</KH>
+                                                    <div style={{ fontSize: 11, color: '#94a3b8' }}>{charge.studentNameEn}</div>
                                                 </div>
                                             </div>
                                         </td>
+                                        <td><Badge type="blue">{charge.level || charge.className}</Badge></td>
+                                        <td style={{ fontSize: 12, color: '#64748b' }}>{charge.billingMonth}</td>
+                                        <td style={{ fontWeight: 700 }}>${charge.amount.toFixed(2)}</td>
+                                        <td style={{ fontWeight: 700 }}>${charge.paidAmount.toFixed(2)}</td>
+                                        <td><FeeStatusBadge status={charge.status} /></td>
                                         <td>
-                                            <Badge type="blue">{s.level}</Badge>
-                                        </td>
-                                        <td>
-                                            <span style={{ fontWeight: 700 }}>
-                                                ${s.amt}
-                                            </span>
-                                        </td>
-                                        <td>
-                                            <FeeTag status={s.fees} />
-                                        </td>
-                                        <td
-                                            style={{
-                                                fontSize: 12,
-                                                color: '#64748b',
-                                            }}
-                                        >
-                                            May 2026
-                                        </td>
-                                        <td>
-                                            {s.fees !== 'Paid' && (
-                                                <button
-                                                    onClick={() => openModal(s)}
-                                                    style={{
-                                                        background: '#eff6ff',
-                                                        color: '#2563eb',
-                                                        border: '1px solid #bfdbfe',
-                                                        borderRadius: 7,
-                                                        padding: '5px 12px',
-                                                        cursor: 'pointer',
-                                                        fontSize: 12,
-                                                        fontWeight: 700,
-                                                    }}
-                                                >
-                                                    + Record
-                                                </button>
-                                            )}
+                                            <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
+                                                {charge.status !== 'paid' && (
+                                                    <button onClick={() => openPayment(charge)} style={{ background: '#f0fdf4', color: '#16a34a', border: '1px solid #bbf7d0', borderRadius: 7, padding: '5px 10px', cursor: 'pointer', fontSize: 11, fontWeight: 700 }}>Pay</button>
+                                                )}
+                                                <Link href={editFee.url(charge.id)} style={{ background: '#eff6ff', color: '#2563eb', border: '1px solid #bfdbfe', borderRadius: 7, padding: '5px 10px', cursor: 'pointer', fontSize: 11, fontWeight: 700, textDecoration: 'none' }}>Edit</Link>
+                                                <button onClick={() => setDeleteTarget(charge)} style={{ background: '#fff1f2', color: '#ef4444', border: '1px solid #fecaca', borderRadius: 7, padding: '5px 10px', cursor: 'pointer', fontSize: 11, fontWeight: 700 }}>Delete</button>
+                                            </div>
                                         </td>
                                     </tr>
                                 ))}
                             </tbody>
                         </table>
                     </div>
-                    <Pagination
-                        total={filtered.length}
-                        page={studentPage}
-                        perPage={studentPerPage}
-                        onPageChange={setStudentPage}
-                        onPerPageChange={setStudentPerPage}
-                        showPerPage={false}
-                    />
+                    {filteredCharges.length > 0 && <Pagination total={filteredCharges.length} page={chargePage} perPage={chargePerPage} onPageChange={setChargePage} onPerPageChange={setChargePerPage} showPerPage={false} />}
                 </div>
 
-                {/* Payment history */}
-                <div className="card">
-                    <div
-                        style={{
-                            padding: '16px 20px 12px',
-                            display: 'flex',
-                            alignItems: 'center',
-                            justifyContent: 'space-between',
-                            gap: 12,
-                            flexWrap: 'wrap',
-                        }}
-                    >
-                        <KH
-                            style={{
-                                fontWeight: 800,
-                                fontSize: 15,
-                                display: 'block',
-                            }}
-                        >
-                            ប្រវត្តិការទូទាត់
-                        </KH>
-                        <span style={{ fontSize: 11, color: '#94a3b8' }}>
-                            {sortedPayments.length} payment
-                            {sortedPayments.length !== 1 ? 's' : ''}
-                        </span>
-                    </div>
-                    <div
-                        style={{
-                            display: 'flex',
-                            alignItems: 'center',
-                            gap: 8,
-                            padding: '12px 16px',
-                            borderTop: '1px solid #f1f5f9',
-                            borderBottom: '1px solid #f1f5f9',
-                            flexWrap: 'wrap',
-                        }}
-                    >
-                        <span
-                            style={{
-                                fontSize: 11,
-                                fontWeight: 700,
-                                color: '#94a3b8',
-                                whiteSpace: 'nowrap',
-                            }}
-                        >
-                            Sort by
-                        </span>
-                        <select
-                            value={paymentOrderBy}
-                            onChange={(e) =>
-                                setPaymentOrderBy(
-                                    e.target.value as PaymentOrderKey,
-                                )
-                            }
-                            style={{
-                                padding: '5px 10px',
-                                borderRadius: 8,
-                                border: '1.5px solid #e2e8f0',
-                                background: 'white',
-                                color: '#374151',
-                                fontSize: 12,
-                                fontWeight: 700,
-                                cursor: 'pointer',
-                                outline: 'none',
-                            }}
-                        >
-                            {PAYMENT_ORDER_OPTIONS.map((o) => (
-                                <option key={o.value} value={o.value}>
-                                    {o.label}
-                                </option>
-                            ))}
+                <div className="card" style={{ overflowX: 'auto' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '12px 16px', borderBottom: '1px solid #f1f5f9', flexWrap: 'wrap' }}>
+                        <span style={{ fontSize: 11, fontWeight: 700, color: '#94a3b8', whiteSpace: 'nowrap' }}>Payments</span>
+                        <select value={paymentOrderBy} onChange={event => setPaymentOrderBy(event.target.value as PaymentOrderKey)} style={{ padding: '5px 10px', borderRadius: 8, border: '1.5px solid #e2e8f0', background: 'white', color: '#374151', fontSize: 12, fontWeight: 700, cursor: 'pointer', outline: 'none' }}>
+                            {PAYMENT_ORDER_OPTIONS.map(option => <option key={option.value} value={option.value}>{option.label}</option>)}
                         </select>
-
-                        <div
-                            style={{
-                                width: 1,
-                                height: 18,
-                                background: '#e2e8f0',
-                                margin: '0 2px',
-                            }}
-                        />
-
-                        <select
-                            value={paymentPerPage}
-                            onChange={(e) => {
-                                setPaymentPerPage(Number(e.target.value));
-                                setPaymentPage(1);
-                            }}
-                            style={{
-                                padding: '5px 10px',
-                                borderRadius: 8,
-                                border: '1.5px solid #e2e8f0',
-                                background: 'white',
-                                color: '#374151',
-                                fontSize: 12,
-                                fontWeight: 700,
-                                cursor: 'pointer',
-                                outline: 'none',
-                            }}
-                        >
-                            {[5, 10, 25, 50].map((n) => (
-                                <option key={n} value={n}>
-                                    {n} per page
-                                </option>
-                            ))}
+                        <select value={paymentPerPage} onChange={event => setPaymentPerPage(Number(event.target.value))} style={{ padding: '5px 10px', borderRadius: 8, border: '1.5px solid #e2e8f0', background: 'white', color: '#374151', fontSize: 12, fontWeight: 700, cursor: 'pointer', outline: 'none' }}>
+                            {[5, 10, 25, 50].map(size => <option key={size} value={size}>{size} per page</option>)}
                         </select>
                     </div>
-                    <div style={{ overflowX: 'auto' }}>
-                        <table className="data-table">
-                            <thead>
-                                <tr>
-                                    <th>Student</th>
-                                    <th>Amount</th>
-                                    <th>Method</th>
-                                    <th>Date</th>
-                                    <th>Status</th>
+                    <table className="data-table">
+                        <thead><tr><th>Student</th><th>Amount</th><th>Method</th><th>Status</th><th>Paid On</th><th>Month</th></tr></thead>
+                        <tbody>
+                            {paginatedPayments.length === 0 ? (
+                                <tr><td colSpan={6} style={{ padding: '34px 24px', textAlign: 'center', color: '#64748b', fontSize: 14, fontWeight: 700 }}>Data not found</td></tr>
+                            ) : paginatedPayments.map(payment => (
+                                <tr key={payment.id}>
+                                    <td>{payment.studentNameEn}</td>
+                                    <td style={{ fontWeight: 700 }}>${payment.amount.toFixed(2)}</td>
+                                    <td>{payment.method}</td>
+                                    <td><Badge type={payment.status === 'verified' || payment.status === 'paid' ? 'green' : 'amber'}>{payment.status}</Badge></td>
+                                    <td>{payment.paidOn}</td>
+                                    <td>{payment.billingMonth}</td>
                                 </tr>
-                            </thead>
-                            <tbody>
-                                {paginatedPayments.map((p) => (
-                                    <tr key={p.id}>
-                                        <td>
-                                            <KH
-                                                style={{
-                                                    fontWeight: 700,
-                                                    fontSize: 13,
-                                                }}
-                                            >
-                                                {p.nameKh}
-                                            </KH>
-                                            <div
-                                                style={{
-                                                    fontSize: 11,
-                                                    color: '#94a3b8',
-                                                }}
-                                            >
-                                                {p.nameEn}
-                                            </div>
-                                        </td>
-                                        <td>
-                                            <span style={{ fontWeight: 700 }}>
-                                                ${p.amount}
-                                            </span>
-                                        </td>
-                                        <td>
-                                            <Badge type="blue">
-                                                {p.method}
-                                            </Badge>
-                                        </td>
-                                        <td
-                                            style={{
-                                                fontSize: 12,
-                                                color: '#64748b',
-                                            }}
-                                        >
-                                            {p.date}
-                                        </td>
-                                        <td>
-                                            <Badge
-                                                type={
-                                                    p.status === 'verified'
-                                                        ? 'green'
-                                                        : p.status === 'pending'
-                                                          ? 'amber'
-                                                          : 'blue'
-                                                }
-                                            >
-                                                {p.status}
-                                            </Badge>
-                                        </td>
-                                    </tr>
-                                ))}
-                            </tbody>
-                        </table>
-                    </div>
-                    <Pagination
-                        total={sortedPayments.length}
-                        page={paymentPage}
-                        perPage={paymentPerPage}
-                        onPageChange={setPaymentPage}
-                        onPerPageChange={setPaymentPerPage}
-                        showPerPage={false}
-                    />
+                            ))}
+                        </tbody>
+                    </table>
+                    {sortedPayments.length > 0 && <Pagination total={sortedPayments.length} page={paymentPage} perPage={paymentPerPage} onPageChange={setPaymentPage} onPerPageChange={setPaymentPerPage} showPerPage={false} />}
                 </div>
+            </div>
 
-                {/* Payment Modal */}
-                {showModal && (
-                    <div
-                        style={{
-                            position: 'fixed',
-                            inset: 0,
-                            background: 'rgba(0,0,0,0.4)',
-                            display: 'flex',
-                            alignItems: 'center',
-                            justifyContent: 'center',
-                            zIndex: 100,
-                            padding: 16,
-                        }}
-                        onClick={(e) => {
-                            if (e.target === e.currentTarget)
-                                setShowModal(null);
-                        }}
-                    >
-                        <div
-                            style={{
-                                background: 'white',
-                                borderRadius: 20,
-                                width: '100%',
-                                maxWidth: 480,
-                                maxHeight: '90vh',
-                                overflowY: 'auto',
-                                padding: 28,
-                            }}
-                            onClick={(e) => e.stopPropagation()}
-                        >
-                            {!done ? (
-                                <>
-                                    <div
-                                        style={{
-                                            display: 'flex',
-                                            justifyContent: 'space-between',
-                                            marginBottom: 20,
-                                        }}
-                                    >
-                                        <div>
-                                            <KH
-                                                style={{
-                                                    fontWeight: 800,
-                                                    fontSize: 18,
-                                                    display: 'block',
-                                                }}
-                                            >
-                                                ទទួលការទូទាត់
-                                            </KH>
-                                            <div
-                                                style={{
-                                                    fontSize: 13,
-                                                    color: '#94a3b8',
-                                                }}
-                                            >
-                                                Record Payment ·{' '}
-                                                {showModal.nameEn}
-                                            </div>
-                                        </div>
-                                        <button
-                                            onClick={() => setShowModal(null)}
-                                            style={{
-                                                background: '#f1f5f9',
-                                                border: 'none',
-                                                borderRadius: 8,
-                                                width: 32,
-                                                height: 32,
-                                                cursor: 'pointer',
-                                                fontSize: 18,
-                                                color: '#64748b',
-                                            }}
-                                        >
-                                            ✕
-                                        </button>
-                                    </div>
-                                    <div
-                                        style={{
-                                            display: 'flex',
-                                            gap: 12,
-                                            alignItems: 'center',
-                                            background: '#f8fafc',
-                                            borderRadius: 12,
-                                            padding: 14,
-                                            marginBottom: 20,
-                                        }}
-                                    >
-                                        <Avatar
-                                            name={showModal.nameEn}
-                                            size={44}
-                                        />
-                                        <div style={{ flex: 1 }}>
-                                            <KH
-                                                style={{
-                                                    fontWeight: 700,
-                                                    fontSize: 15,
-                                                    display: 'block',
-                                                }}
-                                            >
-                                                {showModal.nameKh}
-                                            </KH>
-                                            <div
-                                                style={{
-                                                    fontSize: 12,
-                                                    color: '#64748b',
-                                                }}
-                                            >
-                                                {showModal.level}
-                                            </div>
-                                        </div>
-                                        <div style={{ textAlign: 'right' }}>
-                                            <div
-                                                style={{
-                                                    fontSize: 22,
-                                                    fontWeight: 800,
-                                                }}
-                                            >
-                                                ${showModal.amt}
-                                            </div>
-                                            <div
-                                                style={{
-                                                    fontSize: 11,
-                                                    color: '#94a3b8',
-                                                }}
-                                            >
-                                                Due
-                                            </div>
-                                        </div>
-                                    </div>
+            {payTarget && (
+                <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.45)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 200, padding: 16 }} onClick={event => { if (event.target === event.currentTarget) setPayTarget(null); }}>
+                    <form onSubmit={submitPayment} style={{ background: 'white', borderRadius: 20, padding: 28, maxWidth: 440, width: '100%', boxShadow: '0 24px 60px rgba(0,0,0,0.15)', display: 'flex', flexDirection: 'column', gap: 14 }}>
+                        <div>
+                            <div style={{ fontSize: 18, fontWeight: 800, color: '#1e293b' }}>Record Payment</div>
+                            <div style={{ fontSize: 12, color: '#94a3b8', marginTop: 2 }}>{payTarget.studentNameEn} · {payTarget.billingMonth}</div>
+                        </div>
+                        <input type="number" step="0.01" className="f-input" value={paymentForm.data.amount} onChange={event => paymentForm.setData('amount', event.target.value)} />
+                        <select className="f-input" value={paymentForm.data.method} onChange={event => paymentForm.setData('method', event.target.value)}>
+                            <option value="aba">ABA</option>
+                            <option value="acleda">ACLEDA</option>
+                            <option value="wing">Wing</option>
+                            <option value="cash">Cash</option>
+                            <option value="bank">Bank</option>
+                        </select>
+                        <input type="date" className="f-input" value={paymentForm.data.paid_on} onChange={event => paymentForm.setData('paid_on', event.target.value)} />
+                        <input className="f-input" placeholder="Reference" value={paymentForm.data.reference} onChange={event => paymentForm.setData('reference', event.target.value)} />
+                        <div style={{ display: 'flex', gap: 10 }}>
+                            <button type="button" onClick={() => setPayTarget(null)} style={{ flex: 1, background: '#f1f5f9', color: '#64748b', border: 'none', borderRadius: 10, padding: '11px', fontWeight: 700, cursor: 'pointer' }}>Cancel</button>
+                            <button disabled={paymentForm.processing} type="submit" style={{ flex: 2, background: paymentForm.processing ? '#93c5fd' : '#10b981', color: 'white', border: 'none', borderRadius: 10, padding: '11px', fontWeight: 700, cursor: paymentForm.processing ? 'default' : 'pointer' }}>Confirm Payment</button>
+                        </div>
+                    </form>
+                </div>
+            )}
 
-                                    {step === 1 && (
-                                        <div>
-                                            <div
-                                                className="f-label"
-                                                style={{ marginBottom: 10 }}
-                                            >
-                                                Payment Method
-                                            </div>
-                                            <div
-                                                style={{
-                                                    display: 'grid',
-                                                    gridTemplateColumns:
-                                                        '1fr 1fr',
-                                                    gap: 10,
-                                                    marginBottom: 20,
-                                                }}
-                                            >
-                                                {[
-                                                    { id: 'ABA', c: '#ef4444' },
-                                                    {
-                                                        id: 'ACLEDA',
-                                                        c: '#2563eb',
-                                                    },
-                                                    {
-                                                        id: 'Wing',
-                                                        c: '#f59e0b',
-                                                    },
-                                                    {
-                                                        id: 'Cash',
-                                                        c: '#10b981',
-                                                    },
-                                                ].map((m) => (
-                                                    <button
-                                                        key={m.id}
-                                                        onClick={() =>
-                                                            setMethod(m.id)
-                                                        }
-                                                        style={{
-                                                            padding:
-                                                                '12px 16px',
-                                                            borderRadius: 12,
-                                                            border: `2px solid ${method === m.id ? m.c : '#e2e8f0'}`,
-                                                            background:
-                                                                method === m.id
-                                                                    ? m.c + '15'
-                                                                    : 'white',
-                                                            cursor: 'pointer',
-                                                            fontWeight: 700,
-                                                            fontSize: 14,
-                                                            color:
-                                                                method === m.id
-                                                                    ? m.c
-                                                                    : '#64748b',
-                                                            transition:
-                                                                'all 0.15s',
-                                                        }}
-                                                    >
-                                                        {m.id}
-                                                    </button>
-                                                ))}
-                                            </div>
-                                            <button
-                                                onClick={() => setStep(2)}
-                                                style={{
-                                                    width: '100%',
-                                                    background: '#2563eb',
-                                                    color: 'white',
-                                                    border: 'none',
-                                                    borderRadius: 12,
-                                                    padding: '13px',
-                                                    fontWeight: 700,
-                                                    fontSize: 14,
-                                                    cursor: 'pointer',
-                                                    fontFamily:
-                                                        "'Noto Sans Khmer',sans-serif",
-                                                }}
-                                            >
-                                                បន្ត → Next
-                                            </button>
-                                        </div>
-                                    )}
-
-                                    {step === 2 && (
-                                        <div>
-                                            <div className="f-group">
-                                                <label className="f-label">
-                                                    Amount (USD)
-                                                </label>
-                                                <input
-                                                    type="number"
-                                                    className="f-input"
-                                                    defaultValue={showModal.amt}
-                                                />
-                                            </div>
-                                            <div className="f-group">
-                                                <label className="f-label">
-                                                    Month
-                                                </label>
-                                                <select className="f-input">
-                                                    <option>May 2026</option>
-                                                    <option>June 2026</option>
-                                                </select>
-                                            </div>
-                                            {method !== 'Cash' && (
-                                                <div className="f-group">
-                                                    <label className="f-label">
-                                                        Payment Screenshot
-                                                    </label>
-                                                    <div
-                                                        onClick={() =>
-                                                            setScreenshot(true)
-                                                        }
-                                                        style={{
-                                                            border: `2px dashed ${screenshot ? '#10b981' : '#cbd5e1'}`,
-                                                            borderRadius: 12,
-                                                            padding: 24,
-                                                            textAlign: 'center',
-                                                            cursor: 'pointer',
-                                                            background:
-                                                                screenshot
-                                                                    ? '#f0fdf4'
-                                                                    : '#f8fafc',
-                                                            transition:
-                                                                'all 0.2s',
-                                                        }}
-                                                    >
-                                                        {screenshot ? (
-                                                            <>
-                                                                <div
-                                                                    style={{
-                                                                        fontSize: 32,
-                                                                        marginBottom: 6,
-                                                                    }}
-                                                                >
-                                                                    ✅
-                                                                </div>
-                                                                <KH
-                                                                    style={{
-                                                                        fontWeight: 700,
-                                                                        color: '#16a34a',
-                                                                        display:
-                                                                            'block',
-                                                                    }}
-                                                                >
-                                                                    បានបន្ថែម
-                                                                </KH>
-                                                            </>
-                                                        ) : (
-                                                            <>
-                                                                <div
-                                                                    style={{
-                                                                        fontSize: 32,
-                                                                        marginBottom: 6,
-                                                                    }}
-                                                                >
-                                                                    📱
-                                                                </div>
-                                                                <div
-                                                                    style={{
-                                                                        fontSize: 11,
-                                                                        color: '#94a3b8',
-                                                                    }}
-                                                                >
-                                                                    Upload
-                                                                    payment
-                                                                    screenshot
-                                                                </div>
-                                                            </>
-                                                        )}
-                                                    </div>
-                                                </div>
-                                            )}
-                                            <div
-                                                style={{
-                                                    display: 'flex',
-                                                    gap: 10,
-                                                    marginTop: 8,
-                                                }}
-                                            >
-                                                <button
-                                                    onClick={() => setStep(1)}
-                                                    style={{
-                                                        flex: 1,
-                                                        background: '#f1f5f9',
-                                                        color: '#64748b',
-                                                        border: 'none',
-                                                        borderRadius: 12,
-                                                        padding: '13px',
-                                                        fontWeight: 700,
-                                                        cursor: 'pointer',
-                                                    }}
-                                                >
-                                                    ← Back
-                                                </button>
-                                                <button
-                                                    onClick={() =>
-                                                        setDone(true)
-                                                    }
-                                                    style={{
-                                                        flex: 2,
-                                                        background: '#10b981',
-                                                        color: 'white',
-                                                        border: 'none',
-                                                        borderRadius: 12,
-                                                        padding: '13px',
-                                                        fontWeight: 700,
-                                                        fontSize: 14,
-                                                        cursor: 'pointer',
-                                                        fontFamily:
-                                                            "'Noto Sans Khmer',sans-serif",
-                                                    }}
-                                                >
-                                                    ✓ Confirm Payment
-                                                </button>
-                                            </div>
-                                        </div>
-                                    )}
-                                </>
-                            ) : (
-                                <div
-                                    style={{
-                                        textAlign: 'center',
-                                        padding: '20px 0',
-                                    }}
-                                >
-                                    <div
-                                        style={{
-                                            fontSize: 56,
-                                            marginBottom: 12,
-                                        }}
-                                    >
-                                        ✅
-                                    </div>
-                                    <KH
-                                        style={{
-                                            fontWeight: 800,
-                                            fontSize: 22,
-                                            display: 'block',
-                                            marginBottom: 4,
-                                        }}
-                                    >
-                                        រួចរាល់!
-                                    </KH>
-                                    <div
-                                        style={{
-                                            color: '#64748b',
-                                            marginBottom: 20,
-                                        }}
-                                    >
-                                        Payment recorded successfully
-                                    </div>
-                                    <button
-                                        onClick={() => setShowModal(null)}
-                                        style={{
-                                            background: '#2563eb',
-                                            color: 'white',
-                                            border: 'none',
-                                            borderRadius: 12,
-                                            padding: '12px 32px',
-                                            fontWeight: 700,
-                                            fontSize: 14,
-                                            cursor: 'pointer',
-                                        }}
-                                    >
-                                        Close
-                                    </button>
-                                </div>
-                            )}
+            {deleteTarget && (
+                <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.45)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 200, padding: 16 }}>
+                    <div style={{ background: 'white', borderRadius: 20, padding: 32, maxWidth: 420, width: '100%', boxShadow: '0 24px 60px rgba(0,0,0,0.15)' }}>
+                        <div style={{ textAlign: 'center', marginBottom: 20 }}>
+                            <div style={{ fontSize: 18, fontWeight: 800, color: '#1e293b', marginBottom: 6 }}>Delete Fee Charge?</div>
+                            <div style={{ fontSize: 13, color: '#64748b', lineHeight: 1.5 }}>Are you sure you want to remove this fee charge?</div>
+                        </div>
+                        <div style={{ display: 'flex', gap: 10 }}>
+                            <button onClick={() => setDeleteTarget(null)} style={{ flex: 1, background: '#f1f5f9', color: '#64748b', border: 'none', borderRadius: 10, padding: '11px', fontWeight: 700, cursor: 'pointer', fontSize: 14 }}>Cancel</button>
+                            <button onClick={confirmDelete} style={{ flex: 1, background: '#ef4444', color: 'white', border: 'none', borderRadius: 10, padding: '11px', fontWeight: 700, cursor: 'pointer', fontSize: 14 }}>Yes, Delete</button>
                         </div>
                     </div>
-                )}
-            </div>
+                </div>
+            )}
         </AdminShell>
     );
 }
