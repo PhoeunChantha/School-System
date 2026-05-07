@@ -26,6 +26,7 @@ class UpdateStudentRequest extends FormRequest
         $student = $this->route('student');
 
         return [
+            'profile_photo' => ['nullable', 'image', 'mimes:jpeg,png,jpg,webp', 'max:2048'],
             'level_id' => ['nullable', 'integer', Rule::exists('levels', 'id')],
             'school_class_id' => ['nullable', 'integer', Rule::exists('school_classes', 'id')],
             'code' => [

@@ -5,7 +5,9 @@ namespace App\Services\Backends;
 use App\Models\Level;
 use App\Models\SchoolClass;
 use App\Models\Student;
+use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Str;
 
 class StudentService
 {
@@ -52,8 +54,11 @@ class StudentService
      */
     public function create(array $data, ?int $userId): Student
     {
+        $photoPath = $this->storePhoto($data['profile_photo'] ?? null);
+
         return DB::transaction(fn (): Student => Student::create([
             ...$this->normalizedData($data),
+            'profile_photo' => $photoPath,
             'created_by' => $userId,
             'updated_by' => $userId,
         ]));
@@ -64,9 +69,17 @@ class StudentService
      */
     public function update(Student $student, array $data, ?int $userId): Student
     {
-        return DB::transaction(function () use ($student, $data, $userId): Student {
+        $photoPath = $student->profile_photo;
+
+        if (isset($data['profile_photo']) && $data['profile_photo'] instanceof UploadedFile) {
+            $this->deletePhoto($student->profile_photo);
+            $photoPath = $this->storePhoto($data['profile_photo']);
+        }
+
+        return DB::transaction(function () use ($student, $data, $userId, $photoPath): Student {
             $student->update([
                 ...$this->normalizedData($data),
+                'profile_photo' => $photoPath,
                 'updated_by' => $userId,
             ]);
 
@@ -157,6 +170,7 @@ class StudentService
             'level_id' => $student->level_id,
             'school_class_id' => $student->school_class_id,
             'code' => $student->code,
+            'profile_photo_url' => $student->profile_photo ? asset('uploads/students/' . basename($student->profile_photo)) : null,
             'name_kh' => $student->name_kh,
             'name_en' => $student->name_en,
             'date_of_birth' => $student->date_of_birth?->format('Y-m-d'),
@@ -173,6 +187,31 @@ class StudentService
             'status' => $student->status,
             'enrolled_on' => $student->enrolled_on?->format('Y-m-d'),
         ];
+    }
+
+    private function storePhoto(?UploadedFile $file): ?string
+    {
+        if (! $file) {
+            return null;
+        }
+
+        $filename = Str::uuid() . '.' . $file->getClientOriginalExtension();
+        $destination = public_path('uploads/students');
+
+        if (! is_dir($destination)) {
+            mkdir($destination, 0755, true);
+        }
+
+        $file->move($destination, $filename);
+
+        return 'uploads/students/' . $filename;
+    }
+
+    private function deletePhoto(?string $path): void
+    {
+        if ($path && file_exists(public_path($path))) {
+            unlink(public_path($path));
+        }
     }
 
     /**

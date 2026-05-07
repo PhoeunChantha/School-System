@@ -52,6 +52,11 @@ class Level extends Model
         return $this->hasMany(FeeCharge::class);
     }
 
+    public function certificates(): HasMany
+    {
+        return $this->hasMany(Certificate::class);
+    }
+
     public function creator(): BelongsTo
     {
         return $this->belongsTo(User::class, 'created_by');

@@ -1,6 +1,8 @@
 <?php
 
 use App\Http\Controllers\Backends\AttendanceSessionController;
+use App\Http\Controllers\Backends\CertificateController;
+use App\Http\Controllers\Backends\ExamController;
 use App\Http\Controllers\Backends\FeeChargeController;
 use App\Http\Controllers\Backends\GradeRecordController;
 use App\Http\Controllers\Backends\HomeworkAssignmentController;
@@ -62,9 +64,15 @@ Route::prefix('admin')->name('admin.')->group(function () {
     Route::put('/fee/{feeCharge}', [FeeChargeController::class, 'update'])->name('fee.update');
     Route::delete('/fee/{feeCharge}', [FeeChargeController::class, 'destroy'])->name('fee.destroy');
     Route::post('/fee/{feeCharge}/payments', [FeeChargeController::class, 'payment'])->name('fee.payments.store');
-    Route::get('/exam', fn () => Inertia::render('admin/exam/index'))->name('exam');
+    Route::get('/exam', [ExamController::class, 'index'])->name('exam');
+    Route::post('/exam', [ExamController::class, 'store'])->name('exam.store');
+    Route::put('/exam/{exam}', [ExamController::class, 'update'])->name('exam.update');
+    Route::delete('/exam/{exam}', [ExamController::class, 'destroy'])->name('exam.destroy');
     Route::get('/reports', fn () => Inertia::render('admin/reports/index'))->name('reports');
-    Route::get('/certs', fn () => Inertia::render('admin/certs/index'))->name('certs');
+    Route::get('/certs', [CertificateController::class, 'index'])->name('certs');
+    Route::post('/certs', [CertificateController::class, 'store'])->name('certs.store');
+    Route::put('/certs/{certificate}', [CertificateController::class, 'update'])->name('certs.update');
+    Route::delete('/certs/{certificate}', [CertificateController::class, 'destroy'])->name('certs.destroy');
     Route::get('/honor-roll', fn () => Inertia::render('admin/honor-roll/index'))->name('honor-roll');
     Route::get('/notifications', fn () => Inertia::render('admin/notifications/index'))->name('notifications');
     Route::get('/settings', fn () => Inertia::render('admin/settings/index'))->name('settings');

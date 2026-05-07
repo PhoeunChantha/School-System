@@ -24,6 +24,7 @@ class StoreStudentRequest extends FormRequest
     public function rules(): array
     {
         return [
+            'profile_photo' => ['nullable', 'image', 'mimes:jpeg,png,jpg,webp', 'max:2048'],
             'level_id' => ['nullable', 'integer', Rule::exists('levels', 'id')],
             'school_class_id' => ['nullable', 'integer', Rule::exists('school_classes', 'id')],
             'code' => ['nullable', 'string', 'max:255', Rule::unique('students', 'code')->whereNull('deleted_at')],

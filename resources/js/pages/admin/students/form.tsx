@@ -1,7 +1,9 @@
-import { FormEvent, useState } from 'react';
+import { FormEvent, useRef, useState } from 'react';
 import { index as studentIndex, store, update } from '@/actions/App/Http/Controllers/Backends/StudentController';
+import { DatePicker } from '@/components/ui/date-picker';
 import AdminShell from '@/pages/admin/shell';
 import { Link, useForm } from '@inertiajs/react';
+import { Camera, User } from 'lucide-react';
 import { toast } from 'sonner';
 
 export interface LevelOption {
@@ -23,6 +25,7 @@ export interface StudentFormData {
     level_id: number | null;
     school_class_id: number | null;
     code: string;
+    profile_photo: File | null;
     name_kh: string;
     name_en: string;
     date_of_birth: string;
@@ -40,9 +43,13 @@ export interface StudentFormData {
     enrolled_on: string;
 }
 
+export interface StudentEditData extends Omit<StudentFormData, 'profile_photo'> {
+    profile_photo_url?: string | null;
+}
+
 interface StudentFormPageProps {
     mode: 'create' | 'edit';
-    student?: StudentFormData;
+    student?: StudentEditData;
     levels: LevelOption[];
     classes: ClassOption[];
 }
@@ -50,10 +57,13 @@ interface StudentFormPageProps {
 export default function StudentFormPage({ mode, student, levels, classes }: StudentFormPageProps) {
     const isEdit = mode === 'edit';
     const [step, setStep] = useState(1);
+    const [photoPreview, setPhotoPreview] = useState<string | null>(student?.profile_photo_url ?? null);
+    const fileInputRef = useRef<HTMLInputElement>(null);
     const { data, setData, post, put, processing, errors, transform } = useForm<StudentFormData>({
         level_id: student?.level_id ?? null,
         school_class_id: student?.school_class_id ?? null,
         code: student?.code ?? '',
+        profile_photo: null,
         name_kh: student?.name_kh ?? '',
         name_en: student?.name_en ?? '',
         date_of_birth: student?.date_of_birth ?? '',
@@ -142,11 +152,40 @@ export default function StudentFormPage({ mode, student, levels, classes }: Stud
 
                     {step === 1 && (
                         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16 }}>
+                            <div style={{ gridColumn: '1 / -1', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 10, marginBottom: 4 }}>
+                                <div
+                                    onClick={() => fileInputRef.current?.click()}
+                                    style={{ width: 96, height: 96, borderRadius: '50%', background: '#f1f5f9', border: '2px dashed #cbd5e1', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', overflow: 'hidden', position: 'relative', flexShrink: 0 }}
+                                >
+                                    {photoPreview
+                                        ? <img src={photoPreview} alt="Preview" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                                        : <User size={36} color="#94a3b8" />
+                                    }
+                                    <div style={{ position: 'absolute', bottom: 4, right: 4, width: 24, height: 24, borderRadius: '50%', background: '#2563eb', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                                        <Camera size={12} color="white" />
+                                    </div>
+                                </div>
+                                <div style={{ fontSize: 12, color: '#94a3b8', textAlign: 'center' }}>
+                                    {data.profile_photo ? data.profile_photo.name : 'Click to upload profile photo'}
+                                </div>
+                                <input
+                                    ref={fileInputRef}
+                                    type="file"
+                                    accept="image/jpeg,image/png,image/jpg,image/webp"
+                                    style={{ display: 'none' }}
+                                    onChange={event => {
+                                        const file = event.target.files?.[0] ?? null;
+                                        setData('profile_photo', file);
+                                        setPhotoPreview(file ? URL.createObjectURL(file) : (student?.profile_photo_url ?? null));
+                                    }}
+                                />
+                                {inputError(errors.profile_photo as string | undefined)}
+                            </div>
                             <div className="f-group"><label className="f-label">Student Code</label><input className="f-input" value={data.code} onChange={event => setData('code', event.target.value)} />{inputError(errors.code)}</div>
-                            <div className="f-group"><label className="f-label">Enrolled On</label><input type="date" className="f-input" value={data.enrolled_on} onChange={event => setData('enrolled_on', event.target.value)} />{inputError(errors.enrolled_on)}</div>
+                            <div className="f-group"><label className="f-label">Enrolled On</label><DatePicker value={data.enrolled_on} onChange={value => setData('enrolled_on', value)} />{inputError(errors.enrolled_on)}</div>
                             <div className="f-group"><label className="f-label">ឈ្មោះ (ខ្មែរ) *</label><input className="f-input" value={data.name_kh} onChange={event => setData('name_kh', event.target.value)} />{inputError(errors.name_kh)}</div>
                             <div className="f-group"><label className="f-label">English Name *</label><input className="f-input" value={data.name_en} onChange={event => setData('name_en', event.target.value)} />{inputError(errors.name_en)}</div>
-                            <div className="f-group"><label className="f-label">Date of Birth</label><input type="date" className="f-input" value={data.date_of_birth} onChange={event => setData('date_of_birth', event.target.value)} />{inputError(errors.date_of_birth)}</div>
+                            <div className="f-group"><label className="f-label">Date of Birth</label><DatePicker value={data.date_of_birth} onChange={value => setData('date_of_birth', value)} placeholder="Pick date of birth" />{inputError(errors.date_of_birth)}</div>
                             <div className="f-group"><label className="f-label">Gender</label><select className="f-input" value={data.gender} onChange={event => setData('gender', event.target.value as StudentFormData['gender'])}><option value="">Select...</option><option value="male">Male</option><option value="female">Female</option></select>{inputError(errors.gender)}</div>
                         </div>
                     )}

@@ -30,6 +30,7 @@ return new class extends Migration
             $table->decimal('scholarship_amount', 8, 2)->default(0);
             $table->string('fee_status')->default('unpaid')->index();
             $table->string('status')->default('active')->index();
+            $table->string('profile_photo')->nullable();
             $table->date('enrolled_on')->nullable();
             $table->foreignId('created_by')->nullable()->constrained('users')->nullOnDelete();
             $table->foreignId('updated_by')->nullable()->constrained('users')->nullOnDelete();

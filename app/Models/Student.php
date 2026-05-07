@@ -18,6 +18,7 @@ class Student extends Model
         'level_id',
         'school_class_id',
         'code',
+        'profile_photo',
         'name_kh',
         'name_en',
         'date_of_birth',
@@ -95,6 +96,11 @@ class Student extends Model
     public function homeworkSubmissions(): HasMany
     {
         return $this->hasMany(HomeworkSubmission::class);
+    }
+
+    public function certificates(): HasMany
+    {
+        return $this->hasMany(Certificate::class);
     }
 
     public function scopeActive(Builder $query): Builder
