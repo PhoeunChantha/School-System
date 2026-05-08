@@ -30,6 +30,11 @@ class TeacherController extends Controller
         return Inertia::render('admin/teachers/index', $this->teacherService->indexData());
     }
 
+    public function show(Teacher $teacher): Response
+    {
+        return Inertia::render('admin/teachers/show', $this->teacherService->showData($teacher));
+    }
+
     public function store(StoreTeacherRequest $request): RedirectResponse
     {
         try {

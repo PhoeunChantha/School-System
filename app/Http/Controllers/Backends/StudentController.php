@@ -48,6 +48,11 @@ class StudentController extends Controller
         }
     }
 
+    public function show(Student $student): Response
+    {
+        return Inertia::render('admin/students/show', $this->studentService->showData($student));
+    }
+
     public function edit(Student $student): Response
     {
         return Inertia::render('admin/students/edit', $this->studentService->editData($student));

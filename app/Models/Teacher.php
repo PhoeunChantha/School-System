@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use Database\Factories\TeacherFactory;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
@@ -11,7 +12,7 @@ use Illuminate\Database\Eloquent\SoftDeletes;
 
 class Teacher extends Model
 {
-    /** @use HasFactory<\Database\Factories\TeacherFactory> */
+    /** @use HasFactory<TeacherFactory> */
     use HasFactory, SoftDeletes;
 
     protected $fillable = [
@@ -20,6 +21,7 @@ class Teacher extends Model
         'subject',
         'phone',
         'telegram_username',
+        'profile_photo',
         'status',
         'created_by',
         'updated_by',

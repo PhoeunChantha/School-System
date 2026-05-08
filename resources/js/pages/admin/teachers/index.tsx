@@ -1,8 +1,9 @@
-import { FormEvent, useState } from 'react';
-import { destroy, store, update } from '@/actions/App/Http/Controllers/Backends/TeacherController';
+import { FormEvent, useRef, useState } from 'react';
+import { destroy, show as showTeacher, store, update } from '@/actions/App/Http/Controllers/Backends/TeacherController';
 import AdminShell from '@/pages/admin/shell';
 import { KH, Avatar, Badge } from '@/pages/admin/ui';
-import { router, useForm } from '@inertiajs/react';
+import { Link, router, useForm } from '@inertiajs/react';
+import { Camera, User } from 'lucide-react';
 import { toast } from 'sonner';
 
 type View = 'list' | 'add' | 'edit';
@@ -20,6 +21,7 @@ interface Teacher {
     id: number;
     nameKh: string;
     nameEn: string;
+    photo: string | null;
     subject: string;
     classes: number;
     students: number;
@@ -112,7 +114,7 @@ export default function TeachersPage({ teachers }: TeachersPageProps) {
                         {filtered.map(t => (
                             <div key={t.id} className="card" style={{ padding: 24 }}>
                                 <div style={{ display: 'flex', alignItems: 'center', gap: 14, marginBottom: 16 }}>
-                                    <Avatar name={t.nameEn} size={56} />
+                                    <Avatar name={t.nameEn} src={t.photo} size={56} />
                                     <div style={{ flex: 1, minWidth: 0 }}>
                                         <KH style={{ fontWeight: 800, fontSize: 16, display: 'block', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{t.nameKh}</KH>
                                         <div style={{ fontSize: 13, color: '#64748b' }}>{t.nameEn}</div>
@@ -136,10 +138,10 @@ export default function TeachersPage({ teachers }: TeachersPageProps) {
                                 </div>
 
                                 <div style={{ display: 'flex', gap: 8 }}>
-                                    <button onClick={() => setScheduleTarget(t)}
-                                        style={{ flex: 1, background: '#f0fdf4', color: '#16a34a', border: '1px solid #bbf7d0', borderRadius: 8, padding: '8px', cursor: 'pointer', fontWeight: 700, fontSize: 12 }}>
-                                        📅 Schedule
-                                    </button>
+                                    <Link href={showTeacher.url(t.id)}
+                                        style={{ flex: 1, background: '#f0fdf4', color: '#16a34a', border: '1px solid #bbf7d0', borderRadius: 8, padding: '8px', fontWeight: 700, fontSize: 12, textDecoration: 'none', textAlign: 'center' }}>
+                                        👁 View
+                                    </Link>
                                     <button onClick={() => handleEdit(t)}
                                         style={{ flex: 1, background: '#eff6ff', color: '#2563eb', border: '1px solid #bfdbfe', borderRadius: 8, padding: '8px', cursor: 'pointer', fontWeight: 700, fontSize: 12 }}>
                                         ✏️ Edit
@@ -170,7 +172,7 @@ export default function TeachersPage({ teachers }: TeachersPageProps) {
                     onClick={e => { if (e.target === e.currentTarget) setScheduleTarget(null); }}>
                     <div style={{ background: 'white', borderRadius: 20, padding: 28, maxWidth: 480, width: '100%', boxShadow: '0 24px 60px rgba(0,0,0,0.15)' }}>
                         <div style={{ display: 'flex', alignItems: 'center', gap: 14, marginBottom: 20 }}>
-                            <Avatar name={scheduleTarget.nameEn} size={48} />
+                            <Avatar name={scheduleTarget.nameEn} src={scheduleTarget.photo} size={48} />
                             <div>
                                 <KH style={{ fontWeight: 800, fontSize: 16, display: 'block' }}>{scheduleTarget.nameKh}</KH>
                                 <div style={{ fontSize: 12, color: '#94a3b8' }}>{scheduleTarget.subject}</div>
@@ -234,11 +236,25 @@ export default function TeachersPage({ teachers }: TeachersPageProps) {
 // ── Add / Edit Teacher form ──
 interface FormProps { mode: 'add' | 'edit'; teacher?: Teacher; onBack: () => void; }
 
+interface TeacherFormData {
+    name_kh: string;
+    name_en: string;
+    profile_photo: File | null;
+    subject: string;
+    phone: string;
+    telegram_username: string;
+    status: 'active' | 'inactive';
+    _method?: 'put';
+}
+
 function TeacherForm({ mode, teacher, onBack }: FormProps) {
     const isEdit = mode === 'edit';
-    const { data, setData, post, put, processing, errors, transform } = useForm({
+    const [photoPreview, setPhotoPreview] = useState<string | null>(teacher?.photo ?? null);
+    const fileInputRef = useRef<HTMLInputElement>(null);
+    const { data, setData, post, processing, errors, transform } = useForm<TeacherFormData>({
         name_kh: teacher?.nameKh ?? '',
         name_en: teacher?.nameEn ?? '',
+        profile_photo: null,
         subject: teacher?.subject ?? '',
         phone: teacher?.phone ?? '',
         telegram_username: teacher?.telegramUsername ?? '',
@@ -250,6 +266,7 @@ function TeacherForm({ mode, teacher, onBack }: FormProps) {
 
         transform(formData => ({
             ...formData,
+            ...(isEdit ? { _method: 'put' as const } : {}),
             subject: formData.subject || null,
             phone: formData.phone || null,
             telegram_username: formData.telegram_username || null,
@@ -266,7 +283,7 @@ function TeacherForm({ mode, teacher, onBack }: FormProps) {
         };
 
         if (isEdit && teacher) {
-            put(update.url(teacher.id), options);
+            post(update.url(teacher.id), options);
 
             return;
         }
@@ -293,6 +310,35 @@ function TeacherForm({ mode, teacher, onBack }: FormProps) {
                 </div>
 
                 <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16 }}>
+                    <div style={{ gridColumn: '1 / -1', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 10, marginBottom: 4 }}>
+                        <div
+                            onClick={() => fileInputRef.current?.click()}
+                            style={{ width: 96, height: 96, borderRadius: '50%', background: '#f1f5f9', border: '2px dashed #cbd5e1', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', overflow: 'hidden', position: 'relative', flexShrink: 0 }}
+                        >
+                            {photoPreview
+                                ? <img src={photoPreview} alt="Teacher profile preview" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                                : <User size={36} color="#94a3b8" />
+                            }
+                            <div style={{ position: 'absolute', bottom: 4, right: 4, width: 24, height: 24, borderRadius: '50%', background: '#2563eb', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                                <Camera size={12} color="white" />
+                            </div>
+                        </div>
+                        <div style={{ fontSize: 12, color: '#94a3b8', textAlign: 'center' }}>
+                            {data.profile_photo ? data.profile_photo.name : 'Click to upload profile photo'}
+                        </div>
+                        <input
+                            ref={fileInputRef}
+                            type="file"
+                            accept="image/jpeg,image/png,image/jpg,image/webp"
+                            style={{ display: 'none' }}
+                            onChange={event => {
+                                const file = event.target.files?.[0] ?? null;
+                                setData('profile_photo', file);
+                                setPhotoPreview(file ? URL.createObjectURL(file) : (teacher?.photo ?? null));
+                            }}
+                        />
+                        {inputError(errors.profile_photo as string | undefined)}
+                    </div>
                     <div className="f-group">
                         <label className="f-label">ឈ្មោះ (ខ្មែរ) *</label>
                         <input className="f-input" placeholder="ឧ. គ្រូ វុទ្ធី" value={data.name_kh} onChange={e => setData('name_kh', e.target.value)} />

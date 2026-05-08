@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from 'react';
-import { create as createStudent, destroy, edit as editStudent } from '@/actions/App/Http/Controllers/Backends/StudentController';
+import { create as createStudent, destroy, edit as editStudent, show as showStudent } from '@/actions/App/Http/Controllers/Backends/StudentController';
 import AdminShell from '@/pages/admin/shell';
 import { Avatar, Badge, FeeTag, KH, Pagination, PBar, ScoreChip } from '@/pages/admin/ui';
 import { Link, router } from '@inertiajs/react';
@@ -16,6 +16,7 @@ export interface Student {
     id: number;
     nameKh: string;
     nameEn: string;
+    photo: string | null;
     level: string;
     cls: string;
     attendance: number;
@@ -115,36 +116,26 @@ export default function StudentsPage({ students }: StudentsPageProps) {
     return (
         <AdminShell>
             <div className="fade-in" style={{ padding: 24, display: 'flex', flexDirection: 'column', gap: 16 }}>
-                <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap', alignItems: 'center' }}>
-                    <input value={search} onChange={event => setSearch(event.target.value)} className="f-input" style={{ maxWidth: 260 }} placeholder="Search students..." />
 
-                    <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
-                        {[{ id: 'all', l: 'All' }, { id: 'Beginner', l: 'Beginner' }, { id: 'Intermediate', l: 'Intermediate' }, { id: 'Advanced', l: 'Advanced' }, { id: 'atrisk', l: 'At-Risk' }].map(item => (
-                            <button key={item.id} onClick={() => setFilter(item.id)}
-                                style={{ padding: '7px 14px', borderRadius: 8, border: '1.5px solid', cursor: 'pointer', fontSize: 12, fontWeight: 700, borderColor: filter === item.id ? '#3b82f6' : '#e2e8f0', background: filter === item.id ? '#eff6ff' : 'white', color: filter === item.id ? '#2563eb' : '#64748b' }}>
-                                {item.l}
-                            </button>
+
+                <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap', alignItems: 'center' }}>
+                    <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap' }}>
+                        {[
+                            { l: 'Total', v: students.length, c: '#3b82f6' },
+                            { l: 'Paid', v: students.filter(student => student.fees === 'Paid').length, c: '#10b981' },
+                            { l: 'Unpaid', v: students.filter(student => student.fees === 'Unpaid').length, c: '#ef4444' },
+                            { l: 'At-Risk', v: students.filter(student => student.attendance < 70 || student.fees === 'Unpaid').length, c: '#f59e0b' },
+                        ].map(stat => (
+                            <div key={stat.l} style={{ background: 'white', borderRadius: 10, padding: '10px 16px', border: '1px solid #e8edf5', display: 'flex', gap: 8, alignItems: 'center' }}>
+                                <div style={{ width: 8, height: 8, borderRadius: '50%', background: stat.c }} />
+                                <span style={{ fontSize: 11, color: '#64748b' }}>{stat.l}</span>
+                                <span style={{ fontWeight: 800, fontSize: 16, color: '#1e293b' }}>{stat.v}</span>
+                            </div>
                         ))}
                     </div>
-
                     <Link href={createStudent.url()} style={{ marginLeft: 'auto', background: '#2563eb', color: 'white', border: 'none', borderRadius: 10, padding: '9px 18px', fontWeight: 700, fontSize: 13, cursor: 'pointer', textDecoration: 'none' }}>
                         + Add Student
                     </Link>
-                </div>
-
-                <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap' }}>
-                    {[
-                        { l: 'Total', v: students.length, c: '#3b82f6' },
-                        { l: 'Paid', v: students.filter(student => student.fees === 'Paid').length, c: '#10b981' },
-                        { l: 'Unpaid', v: students.filter(student => student.fees === 'Unpaid').length, c: '#ef4444' },
-                        { l: 'At-Risk', v: students.filter(student => student.attendance < 70 || student.fees === 'Unpaid').length, c: '#f59e0b' },
-                    ].map(stat => (
-                        <div key={stat.l} style={{ background: 'white', borderRadius: 10, padding: '10px 16px', border: '1px solid #e8edf5', display: 'flex', gap: 8, alignItems: 'center' }}>
-                            <div style={{ width: 8, height: 8, borderRadius: '50%', background: stat.c }} />
-                            <span style={{ fontSize: 11, color: '#64748b' }}>{stat.l}</span>
-                            <span style={{ fontWeight: 800, fontSize: 16, color: '#1e293b' }}>{stat.v}</span>
-                        </div>
-                    ))}
                 </div>
 
                 <div className="card" style={{ overflowX: 'auto' }}>
@@ -158,6 +149,16 @@ export default function StudentsPage({ students }: StudentsPageProps) {
                             {[5, 10, 25, 50].map(size => <option key={size} value={size}>{size} per page</option>)}
                         </select>
                         <span style={{ fontSize: 11, color: '#94a3b8', marginLeft: 4 }}>{filtered.length} result{filtered.length !== 1 ? 's' : ''}</span>
+
+                        <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
+                            {[{ id: 'all', l: 'All' }, { id: 'Beginner', l: 'Beginner' }, { id: 'Intermediate', l: 'Intermediate' }, { id: 'Advanced', l: 'Advanced' }, { id: 'atrisk', l: 'At-Risk' }].map(item => (
+                                <button key={item.id} onClick={() => setFilter(item.id)}
+                                    style={{ padding: '7px 14px', borderRadius: 8, border: '1.5px solid', cursor: 'pointer', fontSize: 12, fontWeight: 700, borderColor: filter === item.id ? '#3b82f6' : '#e2e8f0', background: filter === item.id ? '#eff6ff' : 'white', color: filter === item.id ? '#2563eb' : '#64748b' }}>
+                                    {item.l}
+                                </button>
+                            ))}
+                        </div>
+                        <input value={search} onChange={event => setSearch(event.target.value)} className="f-input" style={{ maxWidth: 260, marginLeft: 'auto' }} placeholder="Search students..." />
                     </div>
 
                     <table className="data-table">
@@ -175,7 +176,7 @@ export default function StudentsPage({ students }: StudentsPageProps) {
                                 </tr>
                             ) : paginated.map(student => (
                                 <tr key={student.id} style={{ cursor: 'pointer' }} onClick={() => setSelected(student.id === selected?.id ? null : student)}>
-                                    <td><div style={{ display: 'flex', alignItems: 'center', gap: 10 }}><Avatar name={student.nameEn} size={34} /><div><KH style={{ fontWeight: 700, fontSize: 13, display: 'block' }}>{student.nameKh}</KH><div style={{ fontSize: 11, color: '#94a3b8' }}>{student.nameEn}</div></div></div></td>
+                                    <td><div style={{ display: 'flex', alignItems: 'center', gap: 10 }}><Avatar name={student.nameEn} src={student.photo} size={34} /><div><KH style={{ fontWeight: 700, fontSize: 13, display: 'block' }}>{student.nameKh}</KH><div style={{ fontSize: 11, color: '#94a3b8' }}>{student.nameEn}</div></div></div></td>
                                     <td><Badge type="blue">{student.level}</Badge></td>
                                     <td style={{ fontSize: 12, color: '#64748b' }}>{student.cls}</td>
                                     <td><div style={{ display: 'flex', alignItems: 'center', gap: 6, minWidth: 100 }}><PBar value={student.attendance} color={student.attendance >= 80 ? 'green' : 'red'} /><span style={{ fontSize: 12, fontWeight: 700, width: 36, flexShrink: 0, color: student.attendance >= 80 ? '#10b981' : '#ef4444' }}>{student.attendance}%</span></div></td>
@@ -187,6 +188,7 @@ export default function StudentsPage({ students }: StudentsPageProps) {
                                     <td style={{ fontSize: 12, color: '#64748b' }}>{student.province}</td>
                                     <td onClick={event => event.stopPropagation()}>
                                         <div style={{ display: 'flex', gap: 6 }}>
+                                            <Link href={showStudent.url(student.id)} style={{ background: '#f0fdf4', color: '#16a34a', border: '1px solid #bbf7d0', borderRadius: 7, padding: '5px 10px', cursor: 'pointer', fontSize: 11, fontWeight: 700, textDecoration: 'none', whiteSpace: 'nowrap' }}>View</Link>
                                             <Link href={editStudent.url(student.id)} style={{ background: '#eff6ff', color: '#2563eb', border: '1px solid #bfdbfe', borderRadius: 7, padding: '5px 10px', cursor: 'pointer', fontSize: 11, fontWeight: 700, textDecoration: 'none', whiteSpace: 'nowrap' }}>Edit</Link>
                                             <button onClick={() => setDeleteTarget(student)} style={{ background: '#fff1f2', color: '#ef4444', border: '1px solid #fecaca', borderRadius: 7, padding: '5px 10px', cursor: 'pointer', fontSize: 11, fontWeight: 700, whiteSpace: 'nowrap' }}>Delete</button>
                                         </div>
@@ -205,7 +207,7 @@ export default function StudentsPage({ students }: StudentsPageProps) {
                     <div className="card fade-in" style={{ padding: 24 }}>
                         <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', flexWrap: 'wrap', gap: 12, marginBottom: 16 }}>
                             <div style={{ display: 'flex', alignItems: 'flex-start', gap: 20, flexWrap: 'wrap', flex: 1 }}>
-                                <Avatar name={selected.nameEn} size={64} />
+                                <Avatar name={selected.nameEn} src={selected.photo} size={64} />
                                 <div style={{ flex: 1, minWidth: 200 }}>
                                     <KH style={{ fontWeight: 800, fontSize: 22, display: 'block', marginBottom: 2 }}>{selected.nameKh}</KH>
                                     <div style={{ fontSize: 14, color: '#64748b', marginBottom: 10 }}>{selected.nameEn} / {selected.level}</div>

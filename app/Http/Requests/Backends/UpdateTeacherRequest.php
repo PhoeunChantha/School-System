@@ -29,6 +29,7 @@ class UpdateTeacherRequest extends FormRequest
             'subject' => ['nullable', 'string', 'max:255'],
             'phone' => ['nullable', 'string', 'max:255'],
             'telegram_username' => ['nullable', 'string', 'max:255'],
+            'profile_photo' => ['nullable', 'image', 'mimes:jpeg,png,jpg,webp', 'max:2048'],
             'status' => ['required', 'string', Rule::in(['active', 'inactive'])],
         ];
     }

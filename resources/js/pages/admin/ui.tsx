@@ -1,3 +1,4 @@
+import { useState } from 'react';
 import type { CSSProperties, ReactNode } from 'react';
 import type { Student } from './data';
 
@@ -6,12 +7,25 @@ export function KH({ children, className = '', style }: KHProps) {
     return <span className={`font-khmer ${className}`} style={style}>{children}</span>;
 }
 
-interface AvatarProps { name: string; size?: number; }
-export function Avatar({ name, size = 36 }: AvatarProps) {
+interface AvatarProps { name: string; size?: number; src?: string | null; }
+export function Avatar({ name, size = 36, src }: AvatarProps) {
+    const [imgError, setImgError] = useState(false);
     const clean = (name || '').replace(/[ក-៿\s]/g, '').trim();
     const initials = clean.split(' ').filter(Boolean).map(w => w[0]).join('').slice(0, 2).toUpperCase() || (name || '?')[0];
     const pal = ['#3b82f6', '#8b5cf6', '#10b981', '#f59e0b', '#ef4444', '#06b6d4', '#6366f1', '#f97316'];
     const bg = pal[(name || '').charCodeAt(0) % pal.length];
+
+    if (src && !imgError) {
+        return (
+            <img
+                src={src}
+                alt={name}
+                onError={() => setImgError(true)}
+                style={{ width: size, height: size, borderRadius: '50%', objectFit: 'cover', flexShrink: 0, display: 'block' }}
+            />
+        );
+    }
+
     return (
         <div style={{ width: size, height: size, background: bg, borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'white', fontWeight: 700, fontSize: Math.max(10, size * 0.36), flexShrink: 0 }}>
             {initials}

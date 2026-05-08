@@ -31,6 +31,115 @@ class StudentService
     }
 
     /**
+     * @return array<string, mixed>
+     */
+    public function showData(Student $student): array
+    {
+        $student->load([
+            'level:id,name',
+            'schoolClass:id,name,room,starts_at,ends_at,days',
+            'schoolClass.teacher:id,name_en',
+            'gradeRecords.gradePeriod:id,name,type',
+            'attendanceRecords' => fn ($q) => $q->with('attendanceSession:id,attendance_date,period')->latest('id')->limit(50),
+            'feeCharges' => fn ($q) => $q->with('payments')->orderByDesc('billing_month'),
+            'homeworkSubmissions.homeworkAssignment:id,title_en,title_kh,points,due_on',
+            'certificates',
+        ]);
+
+        $totalAtt = $student->attendanceRecords->count();
+        $presentAtt = $student->attendanceRecords->whereIn('status', ['present', 'late', 'excused'])->count();
+        $attendanceRate = $totalAtt > 0 ? (int) round(($presentAtt / $totalAtt) * 100) : 100;
+
+        return [
+            'student' => [
+                'id' => $student->id,
+                'code' => $student->code,
+                'photo' => $student->profile_photo ? asset($student->profile_photo) : null,
+                'nameKh' => $student->name_kh,
+                'nameEn' => $student->name_en,
+                'gender' => $student->gender,
+                'dateOfBirth' => $student->date_of_birth?->format('Y-m-d'),
+                'age' => $student->date_of_birth ? (int) $student->date_of_birth->diffInYears(now()) : null,
+                'province' => $student->province,
+                'district' => $student->district,
+                'commune' => $student->commune,
+                'village' => $student->village,
+                'parentPhone' => $student->parent_phone,
+                'telegram' => $student->telegram_username,
+                'level' => $student->level?->name ?? '—',
+                'class' => $student->schoolClass?->name ?? '—',
+                'teacher' => $student->schoolClass?->teacher?->name_en ?? '—',
+                'room' => $student->schoolClass?->room ?? '—',
+                'schedule' => collect([$student->schoolClass?->starts_at, $student->schoolClass?->ends_at])->filter()->implode('–'),
+                'days' => implode(', ', array_map('ucfirst', $student->schoolClass?->days ?? [])),
+                'monthlyFee' => (float) $student->monthly_fee,
+                'scholarshipAmount' => (float) $student->scholarship_amount,
+                'feeStatus' => match ($student->fee_status) {
+                    'paid' => 'Paid', 'partial' => 'Partial', default => 'Unpaid'
+                },
+                'status' => $student->status,
+                'enrolledOn' => $student->enrolled_on?->format('Y-m-d'),
+                'attendanceRate' => $attendanceRate,
+            ],
+            'grades' => $student->gradeRecords
+                ->sortByDesc('graded_at')
+                ->values()
+                ->map(fn ($gr) => [
+                    'id' => $gr->id,
+                    'period' => $gr->gradePeriod?->name ?? '—',
+                    'type' => $gr->gradePeriod?->type ?? '',
+                    'speaking' => (int) ($gr->speaking ?? 0),
+                    'listening' => (int) ($gr->listening ?? 0),
+                    'reading' => (int) ($gr->reading ?? 0),
+                    'writing' => (int) ($gr->writing ?? 0),
+                    'average' => round((float) ($gr->average ?? 0), 1),
+                    'gradedAt' => $gr->graded_at?->format('Y-m-d'),
+                ])->all(),
+            'attendance' => $student->attendanceRecords
+                ->map(fn ($ar) => [
+                    'id' => $ar->id,
+                    'date' => $ar->attendanceSession?->attendance_date,
+                    'period' => $ar->attendanceSession?->period ?? '',
+                    'status' => $ar->status,
+                    'note' => $ar->note,
+                ])->all(),
+            'fees' => $student->feeCharges->map(fn ($fc) => [
+                'id' => $fc->id,
+                'billingMonth' => $fc->billing_month,
+                'amount' => (float) $fc->amount,
+                'discountAmount' => (float) $fc->discount_amount,
+                'paidAmount' => (float) $fc->paid_amount,
+                'status' => $fc->status,
+                'dueOn' => $fc->due_on,
+                'payments' => $fc->payments->map(fn ($p) => [
+                    'id' => $p->id,
+                    'amount' => (float) $p->amount,
+                    'method' => ucfirst($p->method),
+                    'paidOn' => $p->paid_on,
+                    'reference' => $p->reference,
+                ])->all(),
+            ])->all(),
+            'homework' => $student->homeworkSubmissions->map(fn ($hs) => [
+                'id' => $hs->id,
+                'title' => $hs->homeworkAssignment?->title_en ?? '—',
+                'points' => $hs->homeworkAssignment?->points ?? 0,
+                'dueOn' => $hs->homeworkAssignment?->due_on,
+                'score' => $hs->score,
+                'status' => $hs->status,
+                'submittedAt' => $hs->submitted_at,
+            ])->all(),
+            'certificates' => $student->certificates->map(fn ($c) => [
+                'id' => $c->id,
+                'type' => $c->type,
+                'title' => $c->title,
+                'number' => $c->certificate_number,
+                'issuedOn' => $c->issued_on?->format('Y-m-d'),
+                'status' => $c->status,
+            ])->all(),
+        ];
+    }
+
+    /**
      * @return array{levels: mixed, classes: mixed}
      */
     public function createData(): array
@@ -140,6 +249,7 @@ class StudentService
             'id' => $student->id,
             'nameKh' => $student->name_kh,
             'nameEn' => $student->name_en,
+            'photo' => $student->profile_photo ? asset($student->profile_photo) : null,
             'level' => $student->level?->name ?? '',
             'cls' => $student->schoolClass?->name ?? '',
             'attendance' => $attendance,
@@ -170,7 +280,7 @@ class StudentService
             'level_id' => $student->level_id,
             'school_class_id' => $student->school_class_id,
             'code' => $student->code,
-            'profile_photo_url' => $student->profile_photo ? asset('uploads/students/' . basename($student->profile_photo)) : null,
+            'profile_photo_url' => $student->profile_photo ? asset('uploads/students/'.basename($student->profile_photo)) : null,
             'name_kh' => $student->name_kh,
             'name_en' => $student->name_en,
             'date_of_birth' => $student->date_of_birth?->format('Y-m-d'),
@@ -195,7 +305,7 @@ class StudentService
             return null;
         }
 
-        $filename = Str::uuid() . '.' . $file->getClientOriginalExtension();
+        $filename = Str::uuid().'.'.$file->getClientOriginalExtension();
         $destination = public_path('uploads/students');
 
         if (! is_dir($destination)) {
@@ -204,7 +314,7 @@ class StudentService
 
         $file->move($destination, $filename);
 
-        return 'uploads/students/' . $filename;
+        return 'uploads/students/'.$filename;
     }
 
     private function deletePhoto(?string $path): void

@@ -2,14 +2,15 @@
 
 use App\Http\Controllers\Backends\ActivityLogController;
 use App\Http\Controllers\Backends\AttendanceSessionController;
-use App\Http\Controllers\Backends\LevelController;
 use App\Http\Controllers\Backends\CertificateController;
+use App\Http\Controllers\Backends\DashboardController;
 use App\Http\Controllers\Backends\ExamController;
 use App\Http\Controllers\Backends\ExamResultController;
 use App\Http\Controllers\Backends\FeeChargeController;
 use App\Http\Controllers\Backends\GradeRecordController;
 use App\Http\Controllers\Backends\HomeworkAssignmentController;
 use App\Http\Controllers\Backends\HomeworkSubmissionController;
+use App\Http\Controllers\Backends\LevelController;
 use App\Http\Controllers\Backends\NotificationController;
 use App\Http\Controllers\Backends\SchoolClassController;
 use App\Http\Controllers\Backends\SchoolSettingController;
@@ -26,9 +27,7 @@ Route::get('/', function () {
 })->name('home');
 
 Route::middleware(['auth', 'verified'])->group(function () {
-    Route::get('dashboard', function () {
-        return Inertia::render('dashboard');
-    })->name('dashboard');
+    Route::get('dashboard', [DashboardController::class, 'index'])->name('dashboard');
 });
 
 // ── Admin School Management ──
@@ -42,10 +41,12 @@ Route::prefix('admin')->name('admin.')->group(function () {
     Route::get('/students', [StudentController::class, 'index'])->name('students');
     Route::get('/students/create', [StudentController::class, 'create'])->name('students.create');
     Route::post('/students', [StudentController::class, 'store'])->name('students.store');
+    Route::get('/students/{student}', [StudentController::class, 'show'])->name('students.show');
     Route::get('/students/{student}/edit', [StudentController::class, 'edit'])->name('students.edit');
     Route::put('/students/{student}', [StudentController::class, 'update'])->name('students.update');
     Route::delete('/students/{student}', [StudentController::class, 'destroy'])->name('students.destroy');
     Route::get('/teachers', [TeacherController::class, 'index'])->name('teachers');
+    Route::get('/teachers/{teacher}', [TeacherController::class, 'show'])->name('teachers.show');
     Route::post('/teachers', [TeacherController::class, 'store'])->name('teachers.store');
     Route::put('/teachers/{teacher}', [TeacherController::class, 'update'])->name('teachers.update');
     Route::delete('/teachers/{teacher}', [TeacherController::class, 'destroy'])->name('teachers.destroy');
