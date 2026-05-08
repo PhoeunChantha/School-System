@@ -32,6 +32,11 @@ class Teacher extends Model
         return $this->hasMany(SchoolClass::class);
     }
 
+    public function lessonPlans(): HasMany
+    {
+        return $this->hasMany(LessonPlan::class);
+    }
+
     public function creator(): BelongsTo
     {
         return $this->belongsTo(User::class, 'created_by');

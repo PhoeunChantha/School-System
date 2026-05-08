@@ -1,4 +1,5 @@
 import { FormEvent, useRef, useState } from 'react';
+import { index as lessonPlanIndex } from '@/actions/App/Http/Controllers/Backends/LessonPlanController';
 import { destroy, show as showTeacher, store, update } from '@/actions/App/Http/Controllers/Backends/TeacherController';
 import AdminShell from '@/pages/admin/shell';
 import { KH, Avatar, Badge } from '@/pages/admin/ui';
@@ -17,6 +18,18 @@ interface TeacherSchedule {
     days: string;
 }
 
+interface TeacherLesson {
+    id: number;
+    date: string;
+    day: 'Today' | 'Tomorrow';
+    title: string;
+    className: string;
+    room: string;
+    time: string;
+    objective: string;
+    status: 'planned' | 'taught' | 'cancelled';
+}
+
 interface Teacher {
     id: number;
     nameKh: string;
@@ -28,6 +41,7 @@ interface Teacher {
     phone: string;
     telegramUsername: string | null;
     status: 'active' | 'inactive';
+    lessons: TeacherLesson[];
     schedule: TeacherSchedule[];
 }
 
@@ -130,6 +144,25 @@ export default function TeachersPage({ teachers }: TeachersPageProps) {
                                             <div style={{ fontSize: 11, color: '#94a3b8' }}>{s.l}</div>
                                         </div>
                                     ))}
+                                </div>
+
+                                <div style={{ display: 'grid', gap: 8, marginBottom: 12 }}>
+                                    {t.lessons.length > 0 ? t.lessons.slice(0, 2).map(lesson => (
+                                        <Link key={lesson.id} href={lessonPlanIndex.url()}
+                                            style={{ background: lesson.day === 'Today' ? '#eff6ff' : '#ecfdf5', border: `1px solid ${lesson.day === 'Today' ? '#bfdbfe' : '#bbf7d0'}`, borderRadius: 10, padding: '10px 12px', textDecoration: 'none', display: 'grid', gap: 4 }}>
+                                            <div style={{ display: 'flex', justifyContent: 'space-between', gap: 8 }}>
+                                                <span style={{ fontSize: 11, color: lesson.day === 'Today' ? '#2563eb' : '#047857', fontWeight: 900 }}>{lesson.day} lesson</span>
+                                                <span style={{ fontSize: 11, color: '#64748b', fontWeight: 800 }}>{lesson.time || 'No time'}</span>
+                                            </div>
+                                            <div style={{ color: '#0f172a', fontSize: 13, fontWeight: 900, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{lesson.title}</div>
+                                            <div style={{ color: '#64748b', fontSize: 11 }}>{lesson.className} - Room {lesson.room || 'N/A'}</div>
+                                        </Link>
+                                    )) : (
+                                        <Link href={lessonPlanIndex.url()}
+                                            style={{ background: '#f8fafc', border: '1px dashed #cbd5e1', borderRadius: 10, padding: '10px 12px', textDecoration: 'none', color: '#64748b', fontSize: 12, fontWeight: 800, textAlign: 'center' }}>
+                                            No lesson planned for today or tomorrow
+                                        </Link>
+                                    )}
                                 </div>
 
                                 <div style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '10px 12px', background: '#f8fafc', borderRadius: 10, marginBottom: 12 }}>

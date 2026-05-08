@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use Database\Factories\SchoolClassFactory;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
@@ -11,7 +12,7 @@ use Illuminate\Database\Eloquent\SoftDeletes;
 
 class SchoolClass extends Model
 {
-    /** @use HasFactory<\Database\Factories\SchoolClassFactory> */
+    /** @use HasFactory<SchoolClassFactory> */
     use HasFactory, SoftDeletes;
 
     protected $fillable = [
@@ -70,6 +71,11 @@ class SchoolClass extends Model
     public function homeworkAssignments(): HasMany
     {
         return $this->hasMany(HomeworkAssignment::class);
+    }
+
+    public function lessonPlans(): HasMany
+    {
+        return $this->hasMany(LessonPlan::class);
     }
 
     public function creator(): BelongsTo

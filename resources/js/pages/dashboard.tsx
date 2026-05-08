@@ -212,7 +212,7 @@ export default function Dashboard({
                     </div>
 
                     {/* ── Charts row 1: Revenue trend + Fee donut ── */}
-                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 340px', gap: 16 }}>
+                    <div className="dashboard-main-grid" style={{ display: 'grid', gridTemplateColumns: 'minmax(0,1fr) 340px', gap: 16 }}>
 
                         {/* Revenue area chart */}
                         <ChartCard titleKh="ចំណូលប្រចាំខែ" title="Monthly Revenue Trend" subtitle="Last 6 months · USD">
@@ -319,7 +319,7 @@ export default function Dashboard({
                             </ResponsiveContainer>
                             <div style={{ display: 'flex', gap: 10, justifyContent: 'center' }}>
                                 {skillsData.map(sk => (
-                                    <div key={sk.skill} style={{ textAlign: 'center', background: '#f8fafc', borderRadius: 10, padding: '8px 12px' }}>
+                                    <div key={sk.skill} className="dashboard-soft-tile" style={{ textAlign: 'center', background: '#f8fafc', borderRadius: 10, padding: '8px 12px' }}>
                                         <div style={{ fontSize: 16, fontWeight: 800, color: sk.avg >= 75 ? '#10b981' : sk.avg >= 50 ? '#3b82f6' : '#f59e0b' }}>{sk.avg}</div>
                                         <KH style={{ fontSize: 10, color: '#64748b', display: 'block' }}>{sk.skKh}</KH>
                                     </div>
@@ -330,12 +330,12 @@ export default function Dashboard({
 
                     {/* ── At-risk + Recent payments ── */}
                     <div className="grid-2-col" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16 }}>
-                        <div className="card" style={{ padding: 20 }}>
+                        <div className="card dashboard-list-card" style={{ padding: 20 }}>
                             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 16 }}>
                                 <div>
                                     <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
                                         <span style={{ fontSize: 20 }}>⚠️</span>
-                                        <KH style={{ fontWeight: 800, fontSize: 15, color: '#1e293b' }}>សិស្សត្រូវការជំនួយ</KH>
+                                        <KH className="dark-text-strong" style={{ fontWeight: 800, fontSize: 15, color: '#1e293b' }}>សិស្សត្រូវការជំនួយ</KH>
                                     </div>
                                     <div style={{ fontSize: 12, color: '#94a3b8', marginTop: 2 }}>At-risk — {atRiskStudents.length} alerts</div>
                                 </div>
@@ -346,10 +346,10 @@ export default function Dashboard({
                                     <div style={{ textAlign: 'center', color: '#94a3b8', fontSize: 13, padding: '20px 0' }}>✓ No at-risk students</div>
                                 )}
                                 {atRiskStudents.map(s => (
-                                    <div key={s.id} style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '10px 12px', background: '#fff7ed', borderRadius: 12, border: '1px solid #fed7aa' }}>
+                                    <div key={s.id} className="dashboard-risk-row" style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '10px 12px', background: '#fff7ed', borderRadius: 12, border: '1px solid #fed7aa' }}>
                                         <Avatar name={s.nameEn} src={s.photo} size={36} />
                                         <div style={{ flex: 1, minWidth: 0 }}>
-                                            <KH style={{ fontWeight: 700, fontSize: 13, display: 'block', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{s.nameKh}</KH>
+                                            <KH className="dark-text-strong" style={{ fontWeight: 700, fontSize: 13, display: 'block', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{s.nameKh}</KH>
                                             <div style={{ fontSize: 11, color: '#94a3b8' }}>{s.level}</div>
                                         </div>
                                         <div style={{ display: 'flex', gap: 6, flexShrink: 0 }}>
@@ -454,7 +454,7 @@ export default function Dashboard({
                         </div>
                         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill,minmax(180px,1fr))', gap: 12 }}>
                             {classes.map(cls => (
-                                <div key={cls.id} style={{ background: '#f8fafc', borderRadius: 12, padding: 14, border: '1px solid #e8edf5' }}>
+                                <div key={cls.id} className="dashboard-soft-tile" style={{ background: '#f8fafc', borderRadius: 12, padding: 14, border: '1px solid #e8edf5' }}>
                                     <div style={{ fontWeight: 700, fontSize: 13, marginBottom: 4 }}>{cls.name}</div>
                                     <div style={{ fontSize: 11, color: '#64748b', marginBottom: 4 }}>{cls.teacher}</div>
                                     <div style={{ fontSize: 11, color: '#3b82f6', fontWeight: 600, marginBottom: 6 }}>🕐 {cls.time}</div>

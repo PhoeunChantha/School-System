@@ -17,9 +17,16 @@ class TeacherService
     {
         return [
             'teachers' => Teacher::query()
-                ->with(['schoolClasses' => fn ($query) => $query
-                    ->withCount('students')
-                    ->orderBy('name')])
+                ->with([
+                    'lessonPlans' => fn ($query) => $query
+                        ->with('schoolClass:id,name,room,starts_at,ends_at')
+                        ->whereBetween('lesson_date', [today(), today()->addDay()])
+                        ->orderBy('lesson_date')
+                        ->orderBy('id'),
+                    'schoolClasses' => fn ($query) => $query
+                        ->withCount('students')
+                        ->orderBy('name'),
+                ])
                 ->withCount('schoolClasses')
                 ->orderBy('name_en')
                 ->get()
@@ -34,6 +41,19 @@ class TeacherService
                     'phone' => $teacher->phone ?? '',
                     'telegramUsername' => $teacher->telegram_username,
                     'status' => $teacher->status,
+                    'lessons' => $teacher->lessonPlans
+                        ->map(fn ($lessonPlan): array => [
+                            'id' => $lessonPlan->id,
+                            'date' => $lessonPlan->lesson_date?->toDateString(),
+                            'day' => $lessonPlan->lesson_date?->isToday() ? 'Today' : 'Tomorrow',
+                            'title' => $lessonPlan->title,
+                            'className' => $lessonPlan->schoolClass?->name ?? 'No class',
+                            'room' => $lessonPlan->schoolClass?->room ?? '',
+                            'time' => collect([$lessonPlan->schoolClass?->starts_at, $lessonPlan->schoolClass?->ends_at])->filter()->implode('-'),
+                            'objective' => $lessonPlan->objective ?? '',
+                            'status' => $lessonPlan->status,
+                        ])
+                        ->values(),
                     'schedule' => $teacher->schoolClasses
                         ->map(fn (SchoolClass $schoolClass): array => [
                             'id' => $schoolClass->id,
@@ -62,31 +82,33 @@ class TeacherService
 
         return [
             'teacher' => [
-                'id'           => $teacher->id,
-                'nameKh'       => $teacher->name_kh,
-                'nameEn'       => $teacher->name_en,
-                'photo'        => $teacher->profile_photo ? asset($teacher->profile_photo) : null,
-                'subject'      => $teacher->subject ?? '—',
-                'phone'        => $teacher->phone,
-                'telegram'     => $teacher->telegram_username,
-                'status'       => $teacher->status,
+                'id' => $teacher->id,
+                'nameKh' => $teacher->name_kh,
+                'nameEn' => $teacher->name_en,
+                'photo' => $teacher->profile_photo ? asset($teacher->profile_photo) : null,
+                'subject' => $teacher->subject ?? '—',
+                'phone' => $teacher->phone,
+                'telegram' => $teacher->telegram_username,
+                'status' => $teacher->status,
                 'totalClasses' => $teacher->schoolClasses->count(),
                 'totalStudents' => $teacher->schoolClasses->sum('students_count'),
             ],
             'classes' => $teacher->schoolClasses->map(fn (SchoolClass $c) => [
-                'id'       => $c->id,
-                'name'     => $c->name,
-                'room'     => $c->room ?? '—',
-                'time'     => collect([$c->starts_at, $c->ends_at])->filter()->implode('–'),
-                'days'     => implode(', ', array_map('ucfirst', $c->days ?? [])),
+                'id' => $c->id,
+                'name' => $c->name,
+                'room' => $c->room ?? '—',
+                'time' => collect([$c->starts_at, $c->ends_at])->filter()->implode('–'),
+                'days' => implode(', ', array_map('ucfirst', $c->days ?? [])),
                 'capacity' => $c->capacity,
-                'count'    => $c->students_count,
+                'count' => $c->students_count,
                 'students' => $c->students->map(fn ($s) => [
-                    'id'     => $s->id,
+                    'id' => $s->id,
                     'nameKh' => $s->name_kh,
                     'nameEn' => $s->name_en,
-                    'photo'  => $s->profile_photo ? asset($s->profile_photo) : null,
-                    'fees'   => match ($s->fee_status) { 'paid' => 'Paid', 'partial' => 'Partial', default => 'Unpaid' },
+                    'photo' => $s->profile_photo ? asset($s->profile_photo) : null,
+                    'fees' => match ($s->fee_status) {
+                        'paid' => 'Paid', 'partial' => 'Partial', default => 'Unpaid'
+                    },
                     'status' => $s->status,
                 ])->all(),
             ])->all(),

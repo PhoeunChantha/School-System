@@ -2,6 +2,7 @@
 
 namespace Tests\Feature;
 
+use App\Models\LessonPlan;
 use App\Models\SchoolClass;
 use App\Models\Teacher;
 use App\Models\User;
@@ -21,7 +22,14 @@ class AdminTeacherCrudTest extends TestCase
             'name_en' => 'Mr. Vuthy',
             'profile_photo' => 'uploads/teachers/vuthy.jpg',
         ]);
-        SchoolClass::factory()->for($teacher)->create(['name' => 'Beginner 1']);
+        $schoolClass = SchoolClass::factory()->for($teacher)->create(['name' => 'Beginner 1']);
+        LessonPlan::factory()
+            ->for($teacher)
+            ->for($schoolClass)
+            ->create([
+                'lesson_date' => today(),
+                'title' => 'Present Simple Tense',
+            ]);
 
         $this->get(route('admin.teachers'))
             ->assertOk()
@@ -31,6 +39,7 @@ class AdminTeacherCrudTest extends TestCase
                 ->where('teachers.0.nameEn', 'Mr. Vuthy')
                 ->where('teachers.0.photo', asset('uploads/teachers/vuthy.jpg'))
                 ->where('teachers.0.classes', 1)
+                ->where('teachers.0.lessons.0.title', 'Present Simple Tense')
                 ->has('teachers.0.schedule', 1));
     }
 

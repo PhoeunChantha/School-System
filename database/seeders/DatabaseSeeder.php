@@ -14,8 +14,8 @@ class DatabaseSeeder extends Seeder
         User::firstOrCreate(
             ['email' => 'admin@frania.edu.kh'],
             [
-                'name'              => 'Admin',
-                'password'          => Hash::make('password'),
+                'name' => 'Admin',
+                'password' => Hash::make('password'),
                 'email_verified_at' => now(),
             ]
         );
@@ -24,13 +24,14 @@ class DatabaseSeeder extends Seeder
         User::firstOrCreate(
             ['email' => 'test@example.com'],
             [
-                'name'              => 'Test User',
-                'password'          => Hash::make('password'),
+                'name' => 'Test User',
+                'password' => Hash::make('password'),
                 'email_verified_at' => now(),
             ]
         );
 
         $this->call([
+            PermissionSeeder::class,   // 0 — roles + permissions
             LevelSeeder::class,        // 1 — no dependencies
             TeacherSeeder::class,      // 2 — no dependencies
             SchoolClassSeeder::class,  // 3 — needs levels + teachers
@@ -43,7 +44,7 @@ class DatabaseSeeder extends Seeder
             ExamSeeder::class,         // 10 — needs classes + students
             CertificateSeeder::class,  // 11 — needs students + grade records
             NotificationSeeder::class, // 12 — needs students + users
-            SchoolSettingSeeder::class,// 13 — no dependencies
+            SchoolSettingSeeder::class, // 13 — no dependencies
             ActivityLogSeeder::class,  // 14 — needs students + users
         ]);
     }

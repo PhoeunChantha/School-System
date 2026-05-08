@@ -33,6 +33,7 @@ const NAV: NavEntry[] = [
     { id: 'attendance', icon: '📋',  label: 'វត្តមាន',    sub: 'Attendance', href: '/admin/attendance' },
     { id: 'grades',     icon: '⭐',  label: 'ពិន្ទុ',      sub: 'Grades',     href: '/admin/grades' },
     { id: 'homework',   icon: '📝',  label: 'កិច្ចការ',    sub: 'Homework',   href: '/admin/homework' },
+    { id: 'lesson-plans', icon: 'LP', label: 'Lesson Plans', sub: 'Lesson Plans', href: '/admin/lesson-plans' },
     { id: 'homework-submissions', icon: 'S', label: 'Submissions', sub: 'Homework Submissions', href: '/admin/homework-submissions' },
     { group: 'ហិរញ្ញ / Finance' },
     { id: 'fee',        icon: '💳',  label: 'ការទូទាត់',  sub: 'Fees',       href: '/admin/fee' },
@@ -46,6 +47,7 @@ const NAV: NavEntry[] = [
     { group: 'ផ្សេងៗ / Other' },
     { id: 'notifications', icon: '🔔',  label: 'ការជូនដំណឹង',   sub: 'Notifications',  href: '/admin/notifications' },
     { id: 'activity-logs', icon: '📜',  label: 'កត់ត្រា',       sub: 'Activity Logs',  href: '/admin/activity-logs' },
+    { id: 'roles-permissions', icon: 'RP', label: 'Roles', sub: 'Roles & Permissions', href: '/admin/roles-permissions' },
     { id: 'settings',      icon: '⚙️',  label: 'កំណត់',           sub: 'Settings',       href: '/admin/settings' },
 ];
 
@@ -66,6 +68,7 @@ const PAGE_TITLES: Record<string, { kh: string; en: string }> = {
     attendance: { kh: 'វត្តមាន',      en: 'Attendance' },
     grades:     { kh: 'ពិន្ទុ',        en: 'Grades' },
     homework:   { kh: 'កិច្ចការ',      en: 'Homework' },
+    'lesson-plans': { kh: 'Lesson Plans', en: 'Lesson Plans' },
     'homework-submissions': { kh: 'Homework Submissions', en: 'Homework Submissions' },
     fee:           { kh: 'ការទូទាត់',    en: 'Fees' },
     exam:          { kh: 'ប្រឡង',        en: 'Exams' },
@@ -75,6 +78,7 @@ const PAGE_TITLES: Record<string, { kh: string; en: string }> = {
     'honor-roll':  { kh: 'តារាងកិត្តិយស', en: 'Honor Roll' },
     notifications: { kh: 'ការជូនដំណឹង', en: 'Notifications' },
     'activity-logs': { kh: 'កត់ត្រាសកម្មភាព', en: 'Activity Logs' },
+    'roles-permissions': { kh: 'Roles & Permissions', en: 'Roles & Permissions' },
     settings:      { kh: 'កំណត់',        en: 'Settings' },
 };
 
@@ -106,7 +110,7 @@ export default function AdminShell({ children }: AdminShellProps) {
 
             {/* Sidebar */}
             <div style={{ position: mobileOpen ? 'fixed' : 'relative', inset: mobileOpen ? '0 auto 0 0' : undefined, zIndex: mobileOpen ? 40 : 1 }}>
-                <nav className={`sidebar${collapsed ? ' collapsed' : ''}`}>
+                <nav className={`sidebar${collapsed ? ' collapsed' : ''}${mobileOpen ? ' mobile-open' : ''}`}>
                     <div className="sidebar-logo">
                         <div style={{ width: 34, height: 34, background: 'linear-gradient(135deg,#3b82f6,#6366f1)', borderRadius: 10, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 18, flexShrink: 0 }}>🏫</div>
                         {!collapsed && (
