@@ -173,13 +173,13 @@ export default function ShowStudentPage({ student, grades, attendance, fees, hom
                         </div>
 
                         {/* Quick stats */}
-                        <div style={{ display: 'flex', gap: 16, flexShrink: 0 }}>
+                        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(90px, 1fr))', gap: 10, flex: '1 1 280px', minWidth: 0 }}>
                             {[
                                 { label: 'Attendance', value: `${student.attendanceRate}%`, color: student.attendanceRate >= 80 ? '#10b981' : '#ef4444' },
                                 { label: 'Monthly Fee', value: `$${student.monthlyFee.toFixed(0)}`, color: '#2563eb' },
                                 { label: 'Enrolled', value: student.enrolledOn ?? '—', color: '#64748b' },
                             ].map(s => (
-                                <div key={s.label} style={{ textAlign: 'center', background: '#f8fafc', borderRadius: 12, padding: '12px 16px', minWidth: 90 }}>
+                                <div key={s.label} style={{ textAlign: 'center', background: '#f8fafc', borderRadius: 12, padding: '12px 16px', minWidth: 0 }}>
                                     <div style={{ fontWeight: 800, fontSize: 18, color: s.color }}>{s.value}</div>
                                     <div style={{ fontSize: 11, color: '#94a3b8', marginTop: 2 }}>{s.label}</div>
                                 </div>
@@ -194,7 +194,7 @@ export default function ShowStudentPage({ student, grades, attendance, fees, hom
                 </div>
 
                 {/* ── Tabs ── */}
-                <div style={{ display: 'flex', gap: 4, borderBottom: '2px solid #f1f5f9', paddingBottom: 0 }}>
+                <div style={{ display: 'flex', gap: 4, borderBottom: '2px solid #f1f5f9', paddingBottom: 0, flexWrap: 'wrap' }}>
                     {tabs.map(t => (
                         <button key={t.id} onClick={() => setTab(t.id)}
                             style={{ padding: '10px 18px', border: 'none', background: 'none', cursor: 'pointer', fontSize: 13, fontWeight: 700, color: tab === t.id ? '#2563eb' : '#64748b', borderBottom: tab === t.id ? '2px solid #2563eb' : '2px solid transparent', marginBottom: -2, borderRadius: '4px 4px 0 0', display: 'flex', alignItems: 'center', gap: 6 }}>
@@ -208,7 +208,7 @@ export default function ShowStudentPage({ student, grades, attendance, fees, hom
 
                 {/* ── Overview tab ── */}
                 {tab === 'overview' && (
-                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16 }}>
+                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: 16 }}>
 
                         {/* Personal info */}
                         <div className="card" style={{ padding: 20 }}>

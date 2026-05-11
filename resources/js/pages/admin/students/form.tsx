@@ -1,6 +1,7 @@
 import { FormEvent, useRef, useState } from 'react';
 import { index as studentIndex, store, update } from '@/actions/App/Http/Controllers/Backends/StudentController';
 import { DatePicker } from '@/components/ui/date-picker';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import AdminShell from '@/pages/admin/shell';
 import { Link, useForm } from '@inertiajs/react';
 import { Camera, User } from 'lucide-react';
@@ -130,7 +131,7 @@ export default function StudentFormPage({ mode, student, levels, classes }: Stud
     return (
         <AdminShell>
             <div className="fade-in" style={{ padding: 24 }}>
-                <form className="card" onSubmit={submit} style={{ padding: 28, maxWidth: 680, margin: '0 auto' }}>
+                <form className="card" onSubmit={submit} style={{ padding: 28, maxWidth: 720, width: '100%', margin: '0 auto' }}>
                     <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 24 }}>
                         <div style={{ width: 40, height: 40, borderRadius: 10, background: isEdit ? '#eff6ff' : '#f0fdf4', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 20 }}>
                             {isEdit ? 'Edit' : 'Add'}
@@ -141,17 +142,17 @@ export default function StudentFormPage({ mode, student, levels, classes }: Stud
                         </div>
                     </div>
 
-                    <div style={{ display: 'flex', alignItems: 'center', marginBottom: 28 }}>
+                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 8, marginBottom: 28, flexWrap: 'wrap' }}>
                         {[1, 2, 3].map((number, index) => (
-                            <div key={number} style={{ display: 'flex', alignItems: 'center', flex: index < 2 ? 1 : undefined }}>
+                            <div key={number} style={{ display: 'flex', alignItems: 'center', flex: index < 2 ? 1 : undefined, minWidth: 0 }}>
                                 <div style={{ width: 36, height: 36, borderRadius: '50%', background: step >= number ? '#2563eb' : '#f1f5f9', color: step >= number ? 'white' : '#94a3b8', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 800, fontSize: 14 }}>{number}</div>
-                                {index < 2 && <div style={{ flex: 1, height: 2, background: step > number ? '#2563eb' : '#f1f5f9', margin: '0 8px' }} />}
+                                {index < 2 && <div style={{ flex: 1, minWidth: 20, height: 2, background: step > number ? '#2563eb' : '#f1f5f9', margin: '0 8px' }} />}
                             </div>
                         ))}
                     </div>
 
                     {step === 1 && (
-                        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16 }}>
+                        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))', gap: 16 }}>
                             <div style={{ gridColumn: '1 / -1', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 10, marginBottom: 4 }}>
                                 <div
                                     onClick={() => fileInputRef.current?.click()}
@@ -186,26 +187,89 @@ export default function StudentFormPage({ mode, student, levels, classes }: Stud
                             <div className="f-group"><label className="f-label">ឈ្មោះ (ខ្មែរ) *</label><input className="f-input" value={data.name_kh} onChange={event => setData('name_kh', event.target.value)} />{inputError(errors.name_kh)}</div>
                             <div className="f-group"><label className="f-label">English Name *</label><input className="f-input" value={data.name_en} onChange={event => setData('name_en', event.target.value)} />{inputError(errors.name_en)}</div>
                             <div className="f-group"><label className="f-label">Date of Birth</label><DatePicker value={data.date_of_birth} onChange={value => setData('date_of_birth', value)} placeholder="Pick date of birth" />{inputError(errors.date_of_birth)}</div>
-                            <div className="f-group"><label className="f-label">Gender</label><select className="f-input" value={data.gender} onChange={event => setData('gender', event.target.value as StudentFormData['gender'])}><option value="">Select...</option><option value="male">Male</option><option value="female">Female</option></select>{inputError(errors.gender)}</div>
+                            <div className="f-group">
+                                <label className="f-label">Gender</label>
+                                <Select value={data.gender} onValueChange={value => setData('gender', value as StudentFormData['gender'])}>
+                                    <SelectTrigger className="f-input">
+                                        <SelectValue placeholder="Select..." />
+                                    </SelectTrigger>
+                                    <SelectContent>
+                                        <SelectItem value="male">Male</SelectItem>
+                                        <SelectItem value="female">Female</SelectItem>
+                                    </SelectContent>
+                                </Select>
+                                {inputError(errors.gender)}
+                            </div>
                         </div>
                     )}
 
                     {step === 2 && (
-                        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16 }}>
-                            <div className="f-group"><label className="f-label">Level *</label><select className="f-input" value={data.level_id ?? ''} onChange={event => {
-                                const level = levels.find(item => item.id === Number(event.target.value));
-                                setData(current => ({ ...current, level_id: level?.id ?? null, monthly_fee: level?.monthly_fee ?? current.monthly_fee, school_class_id: null }));
-                            }}><option value="">Select level...</option>{levels.map(level => <option key={level.id} value={level.id}>{level.name}</option>)}</select>{inputError(errors.level_id)}</div>
-                            <div className="f-group"><label className="f-label">Class *</label><select className="f-input" value={data.school_class_id ?? ''} onChange={event => setData('school_class_id', event.target.value ? Number(event.target.value) : null)}><option value="">Select class...</option>{filteredClasses.map(schoolClass => <option key={schoolClass.id} value={schoolClass.id}>{schoolClass.name} {schoolClass.time ? `(${schoolClass.time})` : ''}</option>)}</select>{inputError(errors.school_class_id)}</div>
+                        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))', gap: 16 }}>
+                            <div className="f-group">
+                                <label className="f-label">Level *</label>
+                                <Select value={data.level_id?.toString() ?? ''} onValueChange={event => {
+                                    const level = levels.find(item => item.id === Number(event));
+                                    setData(current => ({ ...current, level_id: level?.id ?? null, monthly_fee: level?.monthly_fee ?? current.monthly_fee, school_class_id: null }));
+                                }}>
+                                    <SelectTrigger className="f-input">
+                                        <SelectValue placeholder="Select level..." />
+                                    </SelectTrigger>
+                                    <SelectContent>
+                                        {levels.map(level => (
+                                            <SelectItem key={level.id} value={level.id.toString()}>{level.name}</SelectItem>
+                                        ))}
+                                    </SelectContent>
+                                </Select>
+                                {inputError(errors.level_id)}
+                            </div>
+                            <div className="f-group">
+                                <label className="f-label">Class *</label>
+                                <Select value={data.school_class_id?.toString() ?? ''} onValueChange={event => setData('school_class_id', event ? Number(event) : null)}>
+                                    <SelectTrigger className="f-input">
+                                        <SelectValue placeholder="Select class..." />
+                                    </SelectTrigger>
+                                    <SelectContent>
+                                        {filteredClasses.map(schoolClass => (
+                                            <SelectItem key={schoolClass.id} value={schoolClass.id.toString()}>{schoolClass.name} {schoolClass.time ? `(${schoolClass.time})` : ''}</SelectItem>
+                                        ))}
+                                    </SelectContent>
+                                </Select>
+                                {inputError(errors.school_class_id)}
+                            </div>
                             <div className="f-group"><label className="f-label">Monthly Fee</label><input type="number" className="f-input" value={data.monthly_fee} min={0} onChange={event => setData('monthly_fee', event.target.value)} />{selectedLevel && <div style={{ fontSize: 11, color: '#94a3b8', marginTop: 4 }}>Level default: ${selectedLevel.monthly_fee}</div>}{inputError(errors.monthly_fee)}</div>
                             <div className="f-group"><label className="f-label">Scholarship Amount</label><input type="number" className="f-input" value={data.scholarship_amount} min={0} onChange={event => setData('scholarship_amount', event.target.value)} />{inputError(errors.scholarship_amount)}</div>
-                            <div className="f-group"><label className="f-label">Fee Status</label><select className="f-input" value={data.fee_status} onChange={event => setData('fee_status', event.target.value as StudentFormData['fee_status'])}><option value="unpaid">Unpaid</option><option value="partial">Partial</option><option value="paid">Paid</option></select>{inputError(errors.fee_status)}</div>
-                            <div className="f-group"><label className="f-label">Status</label><select className="f-input" value={data.status} onChange={event => setData('status', event.target.value as StudentFormData['status'])}><option value="active">Active</option><option value="inactive">Inactive</option></select>{inputError(errors.status)}</div>
+                            <div className="f-group">
+                                <label className="f-label">Fee Status</label>
+                                <Select value={data.fee_status} onValueChange={value => setData('fee_status', value as StudentFormData['fee_status'])}>
+                                    <SelectTrigger className="f-input">
+                                        <SelectValue />
+                                    </SelectTrigger>
+                                    <SelectContent>
+                                        <SelectItem value="unpaid">Unpaid</SelectItem>
+                                        <SelectItem value="partial">Partial</SelectItem>
+                                        <SelectItem value="paid">Paid</SelectItem>
+                                    </SelectContent>
+                                </Select>
+                                {inputError(errors.fee_status)}
+                            </div>
+                            <div className="f-group">
+                                <label className="f-label">Status</label>
+                                <Select value={data.status} onValueChange={value => setData('status', value as StudentFormData['status'])}>
+                                    <SelectTrigger className="f-input">
+                                        <SelectValue />
+                                    </SelectTrigger>
+                                    <SelectContent>
+                                        <SelectItem value="active">Active</SelectItem>
+                                        <SelectItem value="inactive">Inactive</SelectItem>
+                                    </SelectContent>
+                                </Select>
+                                {inputError(errors.status)}
+                            </div>
                         </div>
                     )}
 
                     {step === 3 && (
-                        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16 }}>
+                        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))', gap: 16 }}>
                             <div className="f-group"><label className="f-label">Province</label><input className="f-input" value={data.province} onChange={event => setData('province', event.target.value)} />{inputError(errors.province)}</div>
                             <div className="f-group"><label className="f-label">District</label><input className="f-input" value={data.district} onChange={event => setData('district', event.target.value)} />{inputError(errors.district)}</div>
                             <div className="f-group"><label className="f-label">Commune</label><input className="f-input" value={data.commune} onChange={event => setData('commune', event.target.value)} />{inputError(errors.commune)}</div>
@@ -215,12 +279,12 @@ export default function StudentFormPage({ mode, student, levels, classes }: Stud
                         </div>
                     )}
 
-                    <div style={{ display: 'flex', gap: 12, marginTop: 16 }}>
-                        <Link href={studentIndex.url()} style={{ background: '#f1f5f9', color: '#64748b', border: 'none', borderRadius: 10, padding: '12px 20px', fontWeight: 700, cursor: 'pointer', textDecoration: 'none' }}>Cancel</Link>
-                        {step > 1 && <button type="button" onClick={() => setStep(value => value - 1)} style={{ flex: 1, background: '#f1f5f9', color: '#64748b', border: 'none', borderRadius: 10, padding: '12px', fontWeight: 700, cursor: 'pointer' }}>Back</button>}
+                    <div style={{ display: 'flex', gap: 12, marginTop: 16, flexWrap: 'wrap' }}>
+                        <Link href={studentIndex.url()} style={{ flex: '1 1 140px', textAlign: 'center', background: '#f1f5f9', color: '#64748b', border: 'none', borderRadius: 10, padding: '12px 20px', fontWeight: 700, cursor: 'pointer', textDecoration: 'none' }}>Cancel</Link>
+                        {step > 1 && <button type="button" onClick={() => setStep(value => value - 1)} style={{ flex: '1 1 140px', background: '#f1f5f9', color: '#64748b', border: 'none', borderRadius: 10, padding: '12px', fontWeight: 700, cursor: 'pointer' }}>Back</button>}
                         {step < 3
-                            ? <button type="button" onClick={() => setStep(value => value + 1)} style={{ flex: 2, background: '#2563eb', color: 'white', border: 'none', borderRadius: 10, padding: '12px', fontWeight: 700, fontSize: 14, cursor: 'pointer' }}>Next</button>
-                            : <button type="submit" disabled={processing} style={{ flex: 2, background: isEdit ? '#2563eb' : '#10b981', color: 'white', border: 'none', borderRadius: 10, padding: '12px', fontWeight: 700, fontSize: 14, cursor: 'pointer' }}>{processing ? 'Saving...' : isEdit ? 'Update Student' : 'Save Student'}</button>
+                            ? <button type="button" onClick={() => setStep(value => value + 1)} style={{ flex: '2 1 180px', background: '#2563eb', color: 'white', border: 'none', borderRadius: 10, padding: '12px', fontWeight: 700, fontSize: 14, cursor: 'pointer' }}>Next</button>
+                            : <button type="submit" disabled={processing} style={{ flex: '2 1 180px', background: isEdit ? '#2563eb' : '#10b981', color: 'white', border: 'none', borderRadius: 10, padding: '12px', fontWeight: 700, fontSize: 14, cursor: 'pointer' }}>{processing ? 'Saving...' : isEdit ? 'Update Student' : 'Save Student'}</button>
                         }
                     </div>
                 </form>

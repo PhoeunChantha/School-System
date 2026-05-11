@@ -1,6 +1,7 @@
 import { FormEvent, useRef, useState } from 'react';
 import { index as lessonPlanIndex } from '@/actions/App/Http/Controllers/Backends/LessonPlanController';
 import { destroy, show as showTeacher, store, update } from '@/actions/App/Http/Controllers/Backends/TeacherController';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import AdminShell from '@/pages/admin/shell';
 import { KH, Avatar, Badge } from '@/pages/admin/ui';
 import { Link, router, useForm } from '@inertiajs/react';
@@ -384,10 +385,16 @@ function TeacherForm({ mode, teacher, onBack }: FormProps) {
                     </div>
                     <div className="f-group" style={{ gridColumn: '1/-1' }}>
                         <label className="f-label">Subject / មុខវិជ្ជា *</label>
-                        <select className="f-input" value={data.subject} onChange={e => setData('subject', e.target.value)}>
-                            <option value="">Select subject...</option>
-                            {['English Grammar', 'Conversation', 'Writing Skills', 'Listening Skills', 'Reading Comprehension', 'Pronunciation'].map(s => <option key={s}>{s}</option>)}
-                        </select>
+                        <Select value={data.subject} onValueChange={value => setData('subject', value)}>
+                            <SelectTrigger className="f-input">
+                                <SelectValue placeholder="Select subject..." />
+                            </SelectTrigger>
+                            <SelectContent>
+                                {['English Grammar', 'Conversation', 'Writing Skills', 'Listening Skills', 'Reading Comprehension', 'Pronunciation'].map(s => (
+                                    <SelectItem key={s} value={s}>{s}</SelectItem>
+                                ))}
+                            </SelectContent>
+                        </Select>
                         {inputError(errors.subject)}
                     </div>
                     <div className="f-group">
@@ -397,10 +404,15 @@ function TeacherForm({ mode, teacher, onBack }: FormProps) {
                     </div>
                     <div className="f-group">
                         <label className="f-label">Status / ស្ថានភាព</label>
-                        <select className="f-input" value={data.status} onChange={e => setData('status', e.target.value as 'active' | 'inactive')}>
-                            <option value="active">Active</option>
-                            <option value="inactive">Inactive</option>
-                        </select>
+                        <Select value={data.status} onValueChange={value => setData('status', value as 'active' | 'inactive')}>
+                            <SelectTrigger className="f-input">
+                                <SelectValue />
+                            </SelectTrigger>
+                            <SelectContent>
+                                <SelectItem value="active">Active</SelectItem>
+                                <SelectItem value="inactive">Inactive</SelectItem>
+                            </SelectContent>
+                        </Select>
                         {inputError(errors.status)}
                     </div>
                     <div className="f-group" style={{ gridColumn: '1/-1' }}>

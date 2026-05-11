@@ -1,5 +1,6 @@
 import { FormEvent, useEffect, useMemo, useState } from 'react';
 import { destroy, store, update } from '@/actions/App/Http/Controllers/Backends/SchoolClassController';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import AdminShell from '@/pages/admin/shell';
 import { Badge, Pagination } from '@/pages/admin/ui';
 import { Link, router, useForm } from '@inertiajs/react';
@@ -159,21 +160,29 @@ export default function ClassesPage({ classes, levels, teachers }: ClassesPagePr
                             {/* Sort + per-page controls */}
                             <div style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '12px 16px', borderBottom: '1px solid #f1f5f9' }}>
                                 <span style={{ fontSize: 11, fontWeight: 700, color: '#94a3b8', whiteSpace: 'nowrap' }}>Sort by</span>
-                                <select value={orderBy} onChange={e => setOrderBy(e.target.value as OrderKey)}
-                                    style={{ padding: '5px 10px', borderRadius: 8, border: '1.5px solid #e2e8f0', background: 'white', color: '#374151', fontSize: 12, fontWeight: 700, cursor: 'pointer', outline: 'none' }}>
-                                    {ORDER_OPTIONS.map(o => (
-                                        <option key={o.value} value={o.value}>{o.label}</option>
-                                    ))}
-                                </select>
+                                <Select value={orderBy} onValueChange={e => setOrderBy(e as OrderKey)}>
+                                    <SelectTrigger style={{ width: 'auto', minWidth: 150, padding: '5px 10px', fontSize: 12, height: 'auto' }}>
+                                        <SelectValue />
+                                    </SelectTrigger>
+                                    <SelectContent>
+                                        {ORDER_OPTIONS.map(o => (
+                                            <SelectItem key={o.value} value={o.value}>{o.label}</SelectItem>
+                                        ))}
+                                    </SelectContent>
+                                </Select>
 
                                 <div style={{ width: 1, height: 18, background: '#e2e8f0', margin: '0 2px' }} />
 
-                                <select value={perPage} onChange={e => { setPerPage(Number(e.target.value)); setPage(1); }}
-                                    style={{ padding: '5px 10px', borderRadius: 8, border: '1.5px solid #e2e8f0', background: 'white', color: '#374151', fontSize: 12, fontWeight: 700, cursor: 'pointer', outline: 'none' }}>
-                                    {[5, 10, 25, 50].map(n => (
-                                        <option key={n} value={n}>{n} per page</option>
-                                    ))}
-                                </select>
+                                <Select value={perPage.toString()} onValueChange={e => { setPerPage(Number(e)); setPage(1); }}>
+                                    <SelectTrigger style={{ width: 'auto', minWidth: 120, padding: '5px 10px', fontSize: 12, height: 'auto' }}>
+                                        <SelectValue />
+                                    </SelectTrigger>
+                                    <SelectContent>
+                                        {[5, 10, 25, 50].map(n => (
+                                            <SelectItem key={n} value={n.toString()}>{n} per page</SelectItem>
+                                        ))}
+                                    </SelectContent>
+                                </Select>
 
                                 <span style={{ fontSize: 11, color: '#94a3b8', marginLeft: 4 }}>
                                     {filtered.length} result{filtered.length !== 1 ? 's' : ''}
@@ -357,11 +366,10 @@ function ClassForm({ mode, cls, levels, teachers, onBack }: FormProps) {
                 <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16 }}>
                     <div className="f-group" style={{ gridColumn: '1/-1' }}>
                         <label className="f-label">Class Name / ឈ្មោះថ្នាក់ *</label>
-                        <select
-                            className="f-input"
-                            value={data.level_id ?? ''}
-                            onChange={e => {
-                                const level = levels.find(item => item.id === Number(e.target.value));
+                        <Select
+                            value={data.level_id?.toString() ?? ''}
+                            onValueChange={e => {
+                                const level = levels.find(item => item.id === Number(e));
 
                                 setData(data => ({
                                     ...data,
@@ -370,19 +378,29 @@ function ClassForm({ mode, cls, levels, teachers, onBack }: FormProps) {
                                 }));
                             }}
                         >
-                            <option value="">Select level...</option>
-                            {levels.map(level => (
-                                <option key={level.id} value={level.id}>{level.name}</option>
-                            ))}
-                        </select>
+                            <SelectTrigger className="f-input">
+                                <SelectValue placeholder="Select level..." />
+                            </SelectTrigger>
+                            <SelectContent>
+                                {levels.map(level => (
+                                    <SelectItem key={level.id} value={level.id.toString()}>{level.name}</SelectItem>
+                                ))}
+                            </SelectContent>
+                        </Select>
                         {errors.name && <div style={{ color: '#ef4444', fontSize: 11, marginTop: 4 }}>{errors.name}</div>}
                     </div>
                     <div className="f-group">
                         <label className="f-label">Teacher / គ្រូ *</label>
-                        <select className="f-input" value={data.teacher_id ?? ''} onChange={e => setData('teacher_id', e.target.value ? Number(e.target.value) : null)}>
-                            <option value="">Select teacher...</option>
-                            {teachers.map(teacher => <option key={teacher.id} value={teacher.id}>{teacher.name_en}</option>)}
-                        </select>
+                        <Select value={data.teacher_id?.toString() ?? ''} onValueChange={e => setData('teacher_id', e ? Number(e) : null)}>
+                            <SelectTrigger className="f-input">
+                                <SelectValue placeholder="Select teacher..." />
+                            </SelectTrigger>
+                            <SelectContent>
+                                {teachers.map(teacher => (
+                                    <SelectItem key={teacher.id} value={teacher.id.toString()}>{teacher.name_en}</SelectItem>
+                                ))}
+                            </SelectContent>
+                        </Select>
                         {errors.teacher_id && <div style={{ color: '#ef4444', fontSize: 11, marginTop: 4 }}>{errors.teacher_id}</div>}
                     </div>
                     <div className="f-group">

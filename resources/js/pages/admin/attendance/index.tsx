@@ -1,32 +1,17 @@
-import { destroy, store, update } from '@/actions/App/Http/Controllers/Backends/AttendanceSessionController';
-import {
-    Dialog,
-    DialogContent,
-    DialogDescription,
-    DialogHeader,
-    DialogTitle,
-} from '@/components/ui/dialog';
+import { destroy } from '@/actions/App/Http/Controllers/Backends/AttendanceSessionController';
 import AdminShell from '@/pages/admin/shell';
-import { Avatar, Badge, KH, Pagination } from '@/pages/admin/ui';
-import { router, useForm } from '@inertiajs/react';
-import { FormEvent, useEffect, useMemo, useState } from 'react';
+import { Badge, KH, Pagination } from '@/pages/admin/ui';
+import { router } from '@inertiajs/react';
+import { useEffect, useMemo, useState } from 'react';
 import { toast } from 'sonner';
 
 type AttendanceStatus = 'present' | 'absent' | 'late' | 'excused';
-type ModalMode = 'create' | 'edit';
 type OrderKey = 'date-desc' | 'date-asc' | 'class-asc' | 'present-desc' | 'absent-desc';
-
-interface AttendanceStudent {
-    id: number;
-    nameKh: string;
-    nameEn: string;
-    province: string;
-}
 
 interface AttendanceClass {
     id: number;
     name: string;
-    students: AttendanceStudent[];
+    students: { id: number; nameKh: string; nameEn: string; province: string }[];
 }
 
 interface AttendanceRecordItem {
@@ -51,19 +36,6 @@ interface AttendanceSessionItem {
     lateCount: number;
     excusedCount: number;
     records: AttendanceRecordItem[];
-}
-
-interface AttendanceFormRecord {
-    student_id: number;
-    status: AttendanceStatus;
-    note: string;
-}
-
-interface AttendanceFormData {
-    school_class_id: number | null;
-    attendance_date: string;
-    period: string;
-    records: AttendanceFormRecord[];
 }
 
 interface AttendancePageProps {
@@ -93,38 +65,6 @@ const PERIODS = [
     { value: 'full_day', label: 'Full Day' },
 ];
 
-const STATUS_OPTIONS: { value: AttendanceStatus; label: string; color: string; bg: string; border: string }[] = [
-    { value: 'present', label: 'Present', color: '#16a34a', bg: '#f0fdf4', border: '#bbf7d0' },
-    { value: 'absent', label: 'Absent', color: '#dc2626', bg: '#fff1f2', border: '#fecaca' },
-    { value: 'late', label: 'Late', color: '#d97706', bg: '#fffbeb', border: '#fde68a' },
-    { value: 'excused', label: 'Excused', color: '#2563eb', bg: '#eff6ff', border: '#bfdbfe' },
-];
-
-const fieldStyle = {
-    width: '100%',
-    minHeight: 42,
-    background: '#f8fafc',
-    border: '1.5px solid #e2e8f0',
-    borderRadius: 10,
-    padding: '10px 14px',
-    fontSize: 14,
-    fontFamily: 'inherit',
-    outline: 'none',
-    color: '#1e293b',
-};
-
-const labelStyle = {
-    display: 'block',
-    fontSize: 12,
-    fontWeight: 700,
-    color: '#64748b',
-    marginBottom: 6,
-};
-
-function today(): string {
-    return new Date().toISOString().slice(0, 10);
-}
-
 function periodLabel(period: string): string {
     return PERIODS.find(item => item.value === period)?.label ?? period;
 }
@@ -147,22 +87,7 @@ export default function AttendancePage({ sessions, classes, summary }: Attendanc
     const [orderBy, setOrderBy] = useState<OrderKey>('date-desc');
     const [page, setPage] = useState(1);
     const [perPage, setPerPage] = useState(5);
-    const [modalMode, setModalMode] = useState<ModalMode | null>(null);
-    const [editingSession, setEditingSession] = useState<AttendanceSessionItem | null>(null);
     const [deleteTarget, setDeleteTarget] = useState<AttendanceSessionItem | null>(null);
-
-    const firstClass = classes[0];
-
-    const { data, setData, post, put, processing, errors, reset } = useForm<AttendanceFormData>({
-        school_class_id: firstClass?.id ?? null,
-        attendance_date: today(),
-        period: 'morning',
-        records: firstClass?.students.map(student => ({
-            student_id: student.id,
-            status: 'present',
-            note: '',
-        })) ?? [],
-    });
 
     useEffect(() => { setPage(1); }, [selectedClass, orderBy, perPage]);
 
@@ -171,110 +96,6 @@ export default function AttendancePage({ sessions, classes, summary }: Attendanc
 
         return sortSessions(base, orderBy);
     }, [orderBy, selectedClass, sessions]);
-
-    const paginated = useMemo(
-        () => filtered.slice((page - 1) * perPage, page * perPage),
-        [filtered, page, perPage],
-    );
-
-    const selectedClassStudents = useMemo(
-        () => classes.find(schoolClass => schoolClass.id === data.school_class_id)?.students ?? [],
-        [classes, data.school_class_id],
-    );
-
-    const openCreateModal = () => {
-        const schoolClass = selectedClass === 'all'
-            ? firstClass
-            : classes.find(item => item.id === selectedClass) ?? firstClass;
-
-        reset();
-        setData({
-            school_class_id: schoolClass?.id ?? null,
-            attendance_date: today(),
-            period: 'morning',
-            records: schoolClass?.students.map(student => ({
-                student_id: student.id,
-                status: 'present',
-                note: '',
-            })) ?? [],
-        });
-        setEditingSession(null);
-        setModalMode('create');
-    };
-
-    const openEditModal = (session: AttendanceSessionItem) => {
-        setData({
-            school_class_id: session.schoolClassId,
-            attendance_date: session.attendanceDate,
-            period: session.period,
-            records: session.records.map(record => ({
-                student_id: record.studentId,
-                status: record.status,
-                note: record.note,
-            })),
-        });
-        setEditingSession(session);
-        setModalMode('edit');
-    };
-
-    const closeModal = () => {
-        setModalMode(null);
-        setEditingSession(null);
-    };
-
-    const changeClass = (classId: number) => {
-        const schoolClass = classes.find(item => item.id === classId);
-
-        setData(current => ({
-            ...current,
-            school_class_id: classId,
-            records: schoolClass?.students.map(student => ({
-                student_id: student.id,
-                status: 'present',
-                note: '',
-            })) ?? [],
-        }));
-    };
-
-    const setRecordStatus = (studentId: number, status: AttendanceStatus) => {
-        setData(current => ({
-            ...current,
-            records: current.records.map(record => record.student_id === studentId ? { ...record, status } : record),
-        }));
-    };
-
-    const setRecordNote = (studentId: number, note: string) => {
-        setData(current => ({
-            ...current,
-            records: current.records.map(record => record.student_id === studentId ? { ...record, note } : record),
-        }));
-    };
-
-    const markAll = (status: AttendanceStatus) => {
-        setData(current => ({
-            ...current,
-            records: current.records.map(record => ({ ...record, status })),
-        }));
-    };
-
-    const submitAttendance = (event: FormEvent<HTMLFormElement>) => {
-        event.preventDefault();
-
-        const options = {
-            preserveScroll: true,
-            onSuccess: () => {
-                toast.success(modalMode === 'edit' ? 'Attendance updated.' : 'Attendance created.');
-                closeModal();
-            },
-        };
-
-        if (modalMode === 'edit' && editingSession) {
-            put(update.url(editingSession.id), options);
-            return;
-        }
-
-        post(store.url(), options);
-    };
 
     const confirmDelete = () => {
         if (!deleteTarget) return;
@@ -288,10 +109,10 @@ export default function AttendancePage({ sessions, classes, summary }: Attendanc
         });
     };
 
-    const modalCounts = data.records.reduce<Record<AttendanceStatus, number>>((counts, record) => ({
-        ...counts,
-        [record.status]: counts[record.status] + 1,
-    }), { present: 0, absent: 0, late: 0, excused: 0 });
+    const paginated = useMemo(
+        () => filtered.slice((page - 1) * perPage, page * perPage),
+        [filtered, page, perPage],
+    );
 
     return (
         <AdminShell>
@@ -301,7 +122,7 @@ export default function AttendancePage({ sessions, classes, summary }: Attendanc
                         <KH style={{ fontWeight: 800, fontSize: 18, color: '#1e293b', display: 'block' }}>Attendance</KH>
                         <div style={{ fontSize: 12, color: '#94a3b8', marginTop: 2 }}>Track daily class attendance</div>
                     </div>
-                    <button onClick={openCreateModal} style={{ background: '#2563eb', color: 'white', border: 'none', borderRadius: 10, padding: '9px 18px', fontWeight: 700, fontSize: 13, cursor: 'pointer' }}>
+                    <button onClick={() => router.visit('/admin/attendance/mark')} style={{ background: '#2563eb', color: 'white', border: 'none', borderRadius: 10, padding: '9px 18px', fontWeight: 700, fontSize: 13, cursor: 'pointer' }}>
                         + Mark Attendance
                     </button>
                 </div>
@@ -371,7 +192,7 @@ export default function AttendancePage({ sessions, classes, summary }: Attendanc
                                     <td style={{ color: '#2563eb', fontWeight: 900 }}>{session.excusedCount}</td>
                                     <td>
                                         <div style={{ display: 'flex', gap: 6 }}>
-                                            <button onClick={() => openEditModal(session)} style={{ background: '#eff6ff', color: '#2563eb', border: '1px solid #bfdbfe', borderRadius: 7, padding: '5px 10px', cursor: 'pointer', fontSize: 11, fontWeight: 700 }}>Edit</button>
+                                            <button onClick={() => router.visit(`/admin/attendance/mark?edit=${session.id}`)} style={{ background: '#eff6ff', color: '#2563eb', border: '1px solid #bfdbfe', borderRadius: 7, padding: '5px 10px', cursor: 'pointer', fontSize: 11, fontWeight: 700 }}>Edit</button>
                                             <button onClick={() => setDeleteTarget(session)} style={{ background: '#fff1f2', color: '#ef4444', border: '1px solid #fecaca', borderRadius: 7, padding: '5px 10px', cursor: 'pointer', fontSize: 11, fontWeight: 700 }}>Delete</button>
                                         </div>
                                     </td>
@@ -382,103 +203,6 @@ export default function AttendancePage({ sessions, classes, summary }: Attendanc
                     {filtered.length > 0 && <Pagination total={filtered.length} page={page} perPage={perPage} onPageChange={setPage} onPerPageChange={setPerPage} showPerPage={false} />}
                 </div>
             </div>
-
-            <Dialog
-                open={modalMode !== null}
-                onOpenChange={(open) => {
-                    if (!open) {
-                        closeModal();
-                    }
-                }}
-            >
-                <DialogContent className="max-h-[90vh] overflow-y-auto p-0 sm:max-w-4xl">
-                    {modalMode && (
-                        <form onSubmit={submitAttendance} className="bg-white">
-                            <DialogHeader className="border-b border-slate-200 px-6 py-5">
-                                <DialogTitle className="text-lg font-black text-slate-800">
-                                    {modalMode === 'create' ? 'Mark Attendance' : 'Edit Attendance'}
-                                </DialogTitle>
-                                <DialogDescription>
-                                    {modalMode === 'create' ? 'Create a class attendance session' : `${editingSession?.className} on ${editingSession?.attendanceDate}`}
-                                </DialogDescription>
-                            </DialogHeader>
-
-                            <div style={{ padding: 24, display: 'grid', gridTemplateColumns: 'repeat(3,minmax(0,1fr))', gap: 16 }}>
-                                <div>
-                                    <label style={labelStyle}>Class *</label>
-                                    <select disabled={modalMode === 'edit'} style={{ ...fieldStyle, opacity: modalMode === 'edit' ? 0.7 : 1 }} value={data.school_class_id ?? ''} onChange={event => changeClass(Number(event.target.value))}>
-                                        {classes.map(schoolClass => <option key={schoolClass.id} value={schoolClass.id}>{schoolClass.name}</option>)}
-                                    </select>
-                                    {errors.school_class_id && <div className="field-error">{errors.school_class_id}</div>}
-                                </div>
-                                <div>
-                                    <label style={labelStyle}>Date *</label>
-                                    <input type="date" style={fieldStyle} value={data.attendance_date} onChange={event => setData('attendance_date', event.target.value)} />
-                                    {errors.attendance_date && <div className="field-error">{errors.attendance_date}</div>}
-                                </div>
-                                <div>
-                                    <label style={labelStyle}>Period *</label>
-                                    <select style={fieldStyle} value={data.period} onChange={event => setData('period', event.target.value)}>
-                                        {PERIODS.map(period => <option key={period.value} value={period.value}>{period.label}</option>)}
-                                    </select>
-                                    {errors.period && <div className="field-error">{errors.period}</div>}
-                                </div>
-                            </div>
-
-                            <div style={{ padding: '0 24px 16px', display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
-                                <span style={{ fontSize: 12, fontWeight: 800, color: '#64748b' }}>Mark all</span>
-                                {STATUS_OPTIONS.map(status => (
-                                    <button key={status.value} type="button" onClick={() => markAll(status.value)} style={{ background: status.bg, color: status.color, border: `1px solid ${status.border}`, borderRadius: 8, padding: '7px 12px', fontSize: 12, fontWeight: 800, cursor: 'pointer' }}>
-                                        {status.label}
-                                    </button>
-                                ))}
-                                <span style={{ marginLeft: 'auto', fontSize: 11, color: '#94a3b8' }}>
-                                    {modalCounts.present} present / {modalCounts.absent} absent / {modalCounts.late} late
-                                </span>
-                            </div>
-
-                            <div style={{ padding: '0 24px 24px' }}>
-                                <div style={{ border: '1px solid #e2e8f0', borderRadius: 14, overflow: 'hidden' }}>
-                                    {selectedClassStudents.length === 0 ? (
-                                        <div style={{ padding: 28, textAlign: 'center', color: '#64748b', fontWeight: 700 }}>Data not found</div>
-                                    ) : selectedClassStudents.map(student => {
-                                        const record = data.records.find(item => item.student_id === student.id);
-                                        return (
-                                            <div key={student.id} style={{ display: 'grid', gridTemplateColumns: 'minmax(210px,1fr) minmax(280px,1.4fr) minmax(160px,.8fr)', gap: 12, alignItems: 'center', padding: 12, borderBottom: '1px solid #f1f5f9' }}>
-                                                <div style={{ display: 'flex', alignItems: 'center', gap: 10, minWidth: 0 }}>
-                                                    <Avatar name={student.nameEn} size={34} />
-                                                    <div style={{ minWidth: 0 }}>
-                                                        <KH style={{ fontWeight: 800, fontSize: 13, display: 'block' }}>{student.nameKh}</KH>
-                                                        <div style={{ fontSize: 11, color: '#94a3b8', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{student.nameEn}</div>
-                                                    </div>
-                                                </div>
-                                                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, minmax(0,1fr))', gap: 6 }}>
-                                                    {STATUS_OPTIONS.map(status => {
-                                                        const active = record?.status === status.value;
-                                                        return (
-                                                            <button key={status.value} type="button" onClick={() => setRecordStatus(student.id, status.value)} style={{ minHeight: 34, background: active ? status.bg : 'white', color: active ? status.color : '#64748b', border: `1.5px solid ${active ? status.border : '#e2e8f0'}`, borderRadius: 8, fontSize: 11, fontWeight: 800, cursor: 'pointer' }}>
-                                                                {status.label}
-                                                            </button>
-                                                        );
-                                                    })}
-                                                </div>
-                                                <input placeholder="Note" style={{ ...fieldStyle, minHeight: 36, padding: '8px 10px', fontSize: 12 }} value={record?.note ?? ''} onChange={event => setRecordNote(student.id, event.target.value)} />
-                                            </div>
-                                        );
-                                    })}
-                                </div>
-                            </div>
-
-                            <div style={{ padding: 24, borderTop: '1px solid #e2e8f0', display: 'flex', gap: 10 }}>
-                                <button type="button" onClick={closeModal} style={{ flex: 1, background: '#f1f5f9', color: '#64748b', border: 'none', borderRadius: 10, padding: '12px', fontWeight: 800, cursor: 'pointer' }}>Cancel</button>
-                                <button disabled={processing || data.records.length === 0} type="submit" style={{ flex: 2, background: processing || data.records.length === 0 ? '#93c5fd' : '#2563eb', color: 'white', border: 'none', borderRadius: 10, padding: '12px', fontWeight: 800, cursor: processing || data.records.length === 0 ? 'default' : 'pointer' }}>
-                                    {modalMode === 'create' ? 'Save Attendance' : 'Save Changes'}
-                                </button>
-                            </div>
-                        </form>
-                    )}
-                </DialogContent>
-            </Dialog>
 
             {deleteTarget && (
                 <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.45)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 230, padding: 16 }}>
