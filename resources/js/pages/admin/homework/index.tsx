@@ -4,6 +4,7 @@ import { Badge, KH, Pagination, PBar } from '@/pages/admin/ui';
 import { Link, router } from '@inertiajs/react';
 import { useEffect, useMemo, useState } from 'react';
 import { toast } from 'sonner';
+import { Select, SelectTrigger, SelectContent, SelectItem, SelectValue } from '@/components/ui/select';
 
 export interface HomeworkItem {
     id: number;
@@ -117,18 +118,35 @@ export default function HomeworkPage({ homework }: HomeworkPageProps) {
                 <div className="card" style={{ overflow: 'hidden' }}>
                     <div style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '12px 16px', borderBottom: '1px solid #f1f5f9', flexWrap: 'wrap' }}>
                         <input value={search} onChange={event => setSearch(event.target.value)} className="f-input" style={{ maxWidth: 240 }} placeholder="Search homework..." />
-                        <select value={status} onChange={event => setStatus(event.target.value)} style={{ padding: '7px 10px', borderRadius: 8, border: '1.5px solid #e2e8f0', background: 'white', color: '#374151', fontSize: 12, fontWeight: 700, cursor: 'pointer', outline: 'none' }}>
-                            <option value="all">All status</option>
-                            <option value="assigned">Assigned</option>
-                            <option value="draft">Draft</option>
-                            <option value="closed">Closed</option>
-                        </select>
-                        <select value={orderBy} onChange={event => setOrderBy(event.target.value as OrderKey)} style={{ padding: '7px 10px', borderRadius: 8, border: '1.5px solid #e2e8f0', background: 'white', color: '#374151', fontSize: 12, fontWeight: 700, cursor: 'pointer', outline: 'none' }}>
-                            {ORDER_OPTIONS.map(option => <option key={option.value} value={option.value}>{option.label}</option>)}
-                        </select>
-                        <select value={perPage} onChange={event => setPerPage(Number(event.target.value))} style={{ padding: '7px 10px', borderRadius: 8, border: '1.5px solid #e2e8f0', background: 'white', color: '#374151', fontSize: 12, fontWeight: 700, cursor: 'pointer', outline: 'none' }}>
-                            {[5, 10, 25, 50].map(size => <option key={size} value={size}>{size} per page</option>)}
-                        </select>
+                        <Select value={status} onValueChange={(val) => setStatus(val)}>
+                            <SelectTrigger className="f-input" style={{ width: 'auto', minWidth: 140 }}>
+                                <SelectValue />
+                            </SelectTrigger>
+                            <SelectContent>
+                                <SelectItem value="all">All status</SelectItem>
+                                <SelectItem value="assigned">Assigned</SelectItem>
+                                <SelectItem value="draft">Draft</SelectItem>
+                                <SelectItem value="closed">Closed</SelectItem>
+                            </SelectContent>
+                        </Select>
+                        <Select value={orderBy} onValueChange={(val) => setOrderBy(val as OrderKey)}>
+                            <SelectTrigger className="f-input" style={{ width: 'auto', minWidth: 160 }}>
+                                <SelectValue />
+                            </SelectTrigger>
+                            <SelectContent>
+                                {ORDER_OPTIONS.map(option => (
+                                    <SelectItem key={option.value} value={option.value}>{option.label}</SelectItem>
+                                ))}
+                            </SelectContent>
+                        </Select>
+                        <Select value={String(perPage)} onValueChange={(val) => setPerPage(Number(val))}>
+                            <SelectTrigger className="f-input" style={{ width: 'auto', minWidth: 120 }}>
+                                <SelectValue />
+                            </SelectTrigger>
+                            <SelectContent>
+                                {[5, 10, 25, 50].map(size => <SelectItem key={size} value={String(size)}>{size} per page</SelectItem>)}
+                            </SelectContent>
+                        </Select>
                         <span style={{ fontSize: 11, color: '#94a3b8' }}>{filtered.length} result{filtered.length !== 1 ? 's' : ''}</span>
                     </div>
 

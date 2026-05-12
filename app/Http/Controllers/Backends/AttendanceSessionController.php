@@ -67,4 +67,25 @@ class AttendanceSessionController extends Controller
             return back()->with('error', 'Unable to delete attendance. Please try again.');
         }
     }
+
+    public function create(): Response
+    {
+        $data = $this->attendanceSessionService->indexData();
+
+        return Inertia::render('admin/attendance/mark', [
+            'classes' => $data['classes'],
+            'editingSession' => null,
+        ]);
+    }
+
+    public function edit(AttendanceSession $attendanceSession): Response
+    {
+        $data = $this->attendanceSessionService->indexData();
+        $editing = collect($data['sessions'])->firstWhere('id', $attendanceSession->id);
+
+        return Inertia::render('admin/attendance/mark', [
+            'classes' => $data['classes'],
+            'editingSession' => $editing,
+        ]);
+    }
 }

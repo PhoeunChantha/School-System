@@ -3,6 +3,8 @@ import { index as homeworkIndex, store, update } from '@/actions/App/Http/Contro
 import AdminShell from '@/pages/admin/shell';
 import { Link, useForm } from '@inertiajs/react';
 import { toast } from 'sonner';
+import { Select, SelectTrigger, SelectContent, SelectItem, SelectValue } from '@/components/ui/select';
+import { DatePicker } from '@/components/ui/date-picker';
 
 export interface HomeworkClassOption {
     id: number;
@@ -111,19 +113,24 @@ export default function HomeworkFormPage({ mode, homework, classes }: HomeworkFo
 
                     <div>
                         <label style={labelStyle}>Class *</label>
-                        <select style={fieldStyle} value={data.school_class_id ?? ''} onChange={event => setData('school_class_id', Number(event.target.value) || null)}>
-                            {classes.map(schoolClass => (
-                                <option key={schoolClass.id} value={schoolClass.id}>
-                                    {schoolClass.name} {schoolClass.room ? `· ${schoolClass.room}` : ''}
-                                </option>
-                            ))}
-                        </select>
+                        <Select value={data.school_class_id ? String(data.school_class_id) : ''} onValueChange={val => setData('school_class_id', val ? Number(val) : null)}>
+                            <SelectTrigger className="f-input">
+                                <SelectValue placeholder="Select class" />
+                            </SelectTrigger>
+                            <SelectContent>
+                                {classes.map(schoolClass => (
+                                    <SelectItem key={schoolClass.id} value={String(schoolClass.id)}>
+                                        {schoolClass.name} {schoolClass.room ? `· ${schoolClass.room}` : ''}
+                                    </SelectItem>
+                                ))}
+                            </SelectContent>
+                        </Select>
                         {errors.school_class_id && <div className="field-error">{errors.school_class_id}</div>}
                     </div>
 
                     <div>
                         <label style={labelStyle}>Due Date *</label>
-                        <input type="date" style={fieldStyle} value={data.due_on} onChange={event => setData('due_on', event.target.value)} />
+                        <DatePicker value={data.due_on} onChange={value => setData('due_on', value)} className="f-input" />
                         {errors.due_on && <div className="field-error">{errors.due_on}</div>}
                     </div>
 
@@ -135,11 +142,16 @@ export default function HomeworkFormPage({ mode, homework, classes }: HomeworkFo
 
                     <div>
                         <label style={labelStyle}>Status *</label>
-                        <select style={fieldStyle} value={data.status} onChange={event => setData('status', event.target.value as HomeworkFormData['status'])}>
-                            <option value="assigned">Assigned</option>
-                            <option value="draft">Draft</option>
-                            <option value="closed">Closed</option>
-                        </select>
+                        <Select value={data.status} onValueChange={val => setData('status', val as HomeworkFormData['status'])}>
+                            <SelectTrigger className="f-input">
+                                <SelectValue />
+                            </SelectTrigger>
+                            <SelectContent>
+                                <SelectItem value="assigned">Assigned</SelectItem>
+                                <SelectItem value="draft">Draft</SelectItem>
+                                <SelectItem value="closed">Closed</SelectItem>
+                            </SelectContent>
+                        </Select>
                         {errors.status && <div className="field-error">{errors.status}</div>}
                     </div>
 

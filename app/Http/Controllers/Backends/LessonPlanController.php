@@ -30,6 +30,27 @@ class LessonPlanController extends Controller
         return Inertia::render('admin/lesson-plans/index', $this->lessonPlanService->indexData());
     }
 
+    public function create(): Response
+    {
+        $data = $this->lessonPlanService->indexData();
+
+        return Inertia::render('admin/lesson-plans/index', array_merge($data, [
+            'openForm' => true,
+            'editing' => null,
+        ]));
+    }
+
+    public function edit(LessonPlan $lessonPlan): Response
+    {
+        $data = $this->lessonPlanService->indexData();
+        $editing = collect($data['lessonPlans'])->firstWhere('id', $lessonPlan->id);
+
+        return Inertia::render('admin/lesson-plans/index', array_merge($data, [
+            'openForm' => true,
+            'editing' => $editing,
+        ]));
+    }
+
     public function store(StoreLessonPlanRequest $request): RedirectResponse
     {
         try {

@@ -106,13 +106,18 @@
 .admin-wrap .badge-gray   { background: #f1f5f9; color: #64748b; }
 
 /* ── Form inputs ── */
+/* Apply base form styles globally so components rendered in portals (dialogs) inherit them */
+.f-input,
 .admin-wrap .f-input {
   width: 100%; background: #f8fafc; border: 1.5px solid #e2e8f0;
   border-radius: 10px; padding: 10px 14px; font-size: 14px;
   font-family: inherit; outline: none; transition: all 0.15s; color: #1e293b;
 }
+.f-input:focus,
 .admin-wrap .f-input:focus { background: white; border-color: #3b82f6; box-shadow: 0 0 0 3px rgba(59,130,246,0.1); }
+.f-label,
 .admin-wrap .f-label { font-size: 12px; font-weight: 700; color: #64748b; margin-bottom: 5px; display: block; }
+.f-group,
 .admin-wrap .f-group { margin-bottom: 16px; }
 
 /* ── Animation ── */

@@ -2,6 +2,8 @@ import { store, update } from '@/actions/App/Http/Controllers/Backends/Attendanc
 import AdminShell from '@/pages/admin/shell';
 import { Avatar, KH } from '@/pages/admin/ui';
 import { router, useForm } from '@inertiajs/react';
+import { Select, SelectTrigger, SelectContent, SelectItem, SelectValue } from '@/components/ui/select';
+import { DatePicker } from '@/components/ui/date-picker';
 import { FormEvent, useMemo } from 'react';
 import { toast } from 'sonner';
 
@@ -113,11 +115,11 @@ export default function MarkAttendancePage({ classes, editingSession }: MarkAtte
         school_class_id: editingSession?.schoolClassId ?? firstClass?.id ?? null,
         attendance_date: editingSession?.attendanceDate ?? today(),
         period: editingSession?.period ?? 'morning',
-        records: editingSession?.records.map(record => ({
+        records: editingSession?.records?.map(record => ({
             student_id: record.studentId,
             status: record.status,
             note: record.note,
-        })) ?? firstClass?.students.map(student => ({
+        })) ?? firstClass?.students?.map(student => ({
             student_id: student.id,
             status: 'present',
             note: '',
@@ -130,11 +132,11 @@ export default function MarkAttendancePage({ classes, editingSession }: MarkAtte
     );
 
     const changeClass = (classId: number) => {
-        const schoolClass = classes.find(item => item.id === classId);
+        const schoolClass = classes.find(item => item.id === classId) ?? null;
 
         setData(current => ({
             ...current,
-            school_class_id: classId,
+            school_class_id: classId || null,
             records: schoolClass?.students.map(student => ({
                 student_id: student.id,
                 status: 'present',
@@ -207,21 +209,35 @@ export default function MarkAttendancePage({ classes, editingSession }: MarkAtte
                     <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3,minmax(0,1fr))', gap: 16, marginBottom: 24 }}>
                         <div>
                             <label style={labelStyle}>Class *</label>
-                            <select disabled={isEdit} style={{ ...fieldStyle, opacity: isEdit ? 0.7 : 1 }} value={data.school_class_id ?? ''} onChange={event => changeClass(Number(event.target.value))}>
-                                {classes.map(schoolClass => <option key={schoolClass.id} value={schoolClass.id}>{schoolClass.name}</option>)}
-                            </select>
+                            <Select value={data.school_class_id ? String(data.school_class_id) : ''} onValueChange={val => changeClass(Number(val))} disabled={isEdit}>
+                                <SelectTrigger className="f-input" style={{ opacity: isEdit ? 0.7 : 1 }}>
+                                    <SelectValue placeholder="Select class" />
+                                </SelectTrigger>
+                                <SelectContent>
+                                    {classes.map(schoolClass => (
+                                        <SelectItem key={schoolClass.id} value={String(schoolClass.id)}>{schoolClass.name}</SelectItem>
+                                    ))}
+                                </SelectContent>
+                            </Select>
                             {errors.school_class_id && <div className="field-error">{errors.school_class_id}</div>}
                         </div>
                         <div>
                             <label style={labelStyle}>Date *</label>
-                            <input type="date" style={fieldStyle} value={data.attendance_date} onChange={event => setData('attendance_date', event.target.value)} />
+                            <DatePicker value={data.attendance_date} onChange={value => setData('attendance_date', value)} className="f-input" />
                             {errors.attendance_date && <div className="field-error">{errors.attendance_date}</div>}
                         </div>
                         <div>
                             <label style={labelStyle}>Period *</label>
-                            <select style={fieldStyle} value={data.period} onChange={event => setData('period', event.target.value)}>
-                                {PERIODS.map(period => <option key={period.value} value={period.value}>{period.label}</option>)}
-                            </select>
+                            <Select value={data.period} onValueChange={val => setData('period', val)}>
+                                <SelectTrigger className="f-input">
+                                    <SelectValue />
+                                </SelectTrigger>
+                                <SelectContent>
+                                    {PERIODS.map(period => (
+                                        <SelectItem key={period.value} value={period.value}>{period.label}</SelectItem>
+                                    ))}
+                                </SelectContent>
+                            </Select>
                             {errors.period && <div className="field-error">{errors.period}</div>}
                         </div>
                     </div>

@@ -56,6 +56,8 @@ Route::prefix('admin')->name('admin.')->group(function () {
     Route::post('/classes', [SchoolClassController::class, 'store'])->name('classes.store');
     Route::put('/classes/{schoolClass}', [SchoolClassController::class, 'update'])->name('classes.update');
     Route::delete('/classes/{schoolClass}', [SchoolClassController::class, 'destroy'])->name('classes.destroy');
+    Route::get('/attendance/mark', [AttendanceSessionController::class, 'create'])->name('attendance.mark');
+    Route::get('/attendance/{attendanceSession}/edit', [AttendanceSessionController::class, 'edit'])->name('attendance.edit');
     Route::get('/attendance', [AttendanceSessionController::class, 'index'])->name('attendance');
     Route::post('/attendance', [AttendanceSessionController::class, 'store'])->name('attendance.store');
     Route::put('/attendance/{attendanceSession}', [AttendanceSessionController::class, 'update'])->name('attendance.update');
@@ -70,6 +72,8 @@ Route::prefix('admin')->name('admin.')->group(function () {
     Route::get('/homework/{homeworkAssignment}/edit', [HomeworkAssignmentController::class, 'edit'])->name('homework.edit');
     Route::put('/homework/{homeworkAssignment}', [HomeworkAssignmentController::class, 'update'])->name('homework.update');
     Route::delete('/homework/{homeworkAssignment}', [HomeworkAssignmentController::class, 'destroy'])->name('homework.destroy');
+    Route::get('/lesson-plans/create', [LessonPlanController::class, 'create'])->name('lesson-plans.create');
+    Route::get('/lesson-plans/{lessonPlan}/edit', [LessonPlanController::class, 'edit'])->name('lesson-plans.edit');
     Route::get('/lesson-plans', [LessonPlanController::class, 'index'])->name('lesson-plans');
     Route::post('/lesson-plans', [LessonPlanController::class, 'store'])->name('lesson-plans.store');
     Route::put('/lesson-plans/{lessonPlan}', [LessonPlanController::class, 'update'])->name('lesson-plans.update');

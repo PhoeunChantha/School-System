@@ -2,9 +2,11 @@ import { FormEvent, useMemo, useState } from 'react';
 import { destroy, store, update } from '@/actions/App/Http/Controllers/Backends/LessonPlanController';
 import AdminShell from '@/pages/admin/shell';
 import { Avatar, Badge } from '@/pages/admin/ui';
-import { router, useForm } from '@inertiajs/react';
+import { Link, router, useForm } from '@inertiajs/react';
 import { CalendarDays, Check, Edit3, Plus, Trash2 } from 'lucide-react';
 import { toast } from 'sonner';
+import { Select, SelectTrigger, SelectContent, SelectItem, SelectValue } from '@/components/ui/select';
+import { DatePicker } from '@/components/ui/date-picker';
 
 type View = 'list' | 'add' | 'edit';
 type FilterKey = 'today' | 'tomorrow' | 'upcoming' | 'all';
@@ -66,11 +68,11 @@ const statusBadge: Record<LessonStatus, 'blue' | 'green' | 'gray'> = {
     cancelled: 'gray',
 };
 
-export default function LessonPlansPage({ lessonPlans, teachers, classes, today, tomorrow, summary }: LessonPlansPageProps) {
-    const [view, setView] = useState<View>('list');
+export default function LessonPlansPage({ lessonPlans, teachers, classes, today, tomorrow, summary, openForm = false, editing: initialEditing = null }: LessonPlansPageProps & { openForm?: boolean; editing?: LessonPlan | null }) {
+    const [view, setView] = useState<View>(openForm ? (initialEditing ? 'edit' : 'add') : 'list');
     const [filter, setFilter] = useState<FilterKey>('today');
     const [search, setSearch] = useState('');
-    const [editing, setEditing] = useState<LessonPlan | null>(null);
+    const [editing, setEditing] = useState<LessonPlan | null>(initialEditing ?? null);
     const [deleteTarget, setDeleteTarget] = useState<LessonPlan | null>(null);
 
     const filtered = useMemo(() => {
@@ -142,10 +144,9 @@ export default function LessonPlansPage({ lessonPlans, teachers, classes, today,
                                 </button>
                             ))}
                         </div>
-                        <button onClick={() => { setEditing(null); setView('add'); }}
-                            style={{ marginLeft: 'auto', background: '#2563eb', color: 'white', border: 'none', borderRadius: 10, padding: '9px 18px', fontWeight: 800, fontSize: 13, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 8 }}>
+                        <Link href="/admin/lesson-plans/create" style={{ marginLeft: 'auto', background: '#2563eb', color: 'white', border: 'none', borderRadius: 10, padding: '9px 18px', fontWeight: 800, fontSize: 13, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 8, textDecoration: 'none' }}>
                             <Plus size={15} /> Add Lesson
-                        </button>
+                        </Link>
                     </div>
 
                     <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill,minmax(320px,1fr))', gap: 14 }}>
@@ -177,10 +178,9 @@ export default function LessonPlansPage({ lessonPlans, teachers, classes, today,
                                 </div>
 
                                 <div style={{ display: 'flex', gap: 8, marginTop: 'auto' }}>
-                                    <button onClick={() => { setEditing(lessonPlan); setView('edit'); }}
-                                        style={{ flex: 1, background: '#eff6ff', color: '#2563eb', border: '1px solid #bfdbfe', borderRadius: 8, padding: '8px', cursor: 'pointer', fontWeight: 800, fontSize: 12, display: 'flex', justifyContent: 'center', alignItems: 'center', gap: 6 }}>
+                                    <Link href={`/admin/lesson-plans/${lessonPlan.id}/edit`} style={{ flex: 1, background: '#eff6ff', color: '#2563eb', border: '1px solid #bfdbfe', borderRadius: 8, padding: '8px', cursor: 'pointer', fontWeight: 800, fontSize: 12, display: 'flex', justifyContent: 'center', alignItems: 'center', gap: 6, textDecoration: 'none' }}>
                                         <Edit3 size={13} /> Edit
-                                    </button>
+                                    </Link>
                                     <button onClick={() => setDeleteTarget(lessonPlan)}
                                         style={{ flex: 1, background: '#fff1f2', color: '#ef4444', border: '1px solid #fecaca', borderRadius: 8, padding: '8px', cursor: 'pointer', fontWeight: 800, fontSize: 12, display: 'flex', justifyContent: 'center', alignItems: 'center', gap: 6 }}>
                                         <Trash2 size={13} /> Delete
@@ -321,36 +321,51 @@ function LessonPlanForm({ mode, lessonPlan, teachers, classes, today, onBack }: 
                 <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16 }}>
                     <div className="f-group">
                         <label className="f-label">Teacher *</label>
-                        <select className="f-input" value={data.teacher_id ?? ''} onChange={event => {
-                            const teacherId = event.target.value ? Number(event.target.value) : null;
+                        <Select value={data.teacher_id ? String(data.teacher_id) : ''} onValueChange={val => {
+                            const teacherId = val ? Number(val) : null;
                             setData(values => ({ ...values, teacher_id: teacherId, school_class_id: null }));
                         }}>
-                            <option value="">Select teacher...</option>
-                            {teachers.map(teacher => <option key={teacher.id} value={teacher.id}>{teacher.name}</option>)}
-                        </select>
+                            <SelectTrigger className="f-input">
+                                <SelectValue placeholder="Select teacher..." />
+                            </SelectTrigger>
+                            <SelectContent>
+                                <SelectItem value="">Select teacher...</SelectItem>
+                                {teachers.map(teacher => <SelectItem key={teacher.id} value={String(teacher.id)}>{teacher.name}</SelectItem>)}
+                            </SelectContent>
+                        </Select>
                         {inputError(errors.teacher_id)}
                     </div>
                     <div className="f-group">
                         <label className="f-label">Class *</label>
-                        <select className="f-input" value={data.school_class_id ?? ''} onChange={event => setData('school_class_id', event.target.value ? Number(event.target.value) : null)}>
-                            <option value="">Select class...</option>
-                            {availableClasses.map(classOption => <option key={classOption.id} value={classOption.id}>{classOption.name} {classOption.time ? `(${classOption.time})` : ''}</option>)}
-                        </select>
+                        <Select value={data.school_class_id ? String(data.school_class_id) : ''} onValueChange={val => setData('school_class_id', val ? Number(val) : null)}>
+                            <SelectTrigger className="f-input">
+                                <SelectValue placeholder="Select class..." />
+                            </SelectTrigger>
+                            <SelectContent>
+                                <SelectItem value="">Select class...</SelectItem>
+                                {availableClasses.map(classOption => <SelectItem key={classOption.id} value={String(classOption.id)}>{classOption.name} {classOption.time ? `(${classOption.time})` : ''}</SelectItem>)}
+                            </SelectContent>
+                        </Select>
                         {selectedClass && <div style={{ fontSize: 11, color: '#94a3b8', marginTop: 4 }}>Room {selectedClass.room || 'N/A'} - {selectedClass.teacher}</div>}
                         {inputError(errors.school_class_id)}
                     </div>
                     <div className="f-group">
                         <label className="f-label">Lesson Date *</label>
-                        <input type="date" className="f-input" value={data.lesson_date} onChange={event => setData('lesson_date', event.target.value)} />
+                        <DatePicker value={data.lesson_date} onChange={value => setData('lesson_date', value)} className="f-input" />
                         {inputError(errors.lesson_date)}
                     </div>
                     <div className="f-group">
                         <label className="f-label">Status</label>
-                        <select className="f-input" value={data.status} onChange={event => setData('status', event.target.value as LessonStatus)}>
-                            <option value="planned">Planned</option>
-                            <option value="taught">Taught</option>
-                            <option value="cancelled">Cancelled</option>
-                        </select>
+                        <Select value={data.status} onValueChange={val => setData('status', val as LessonStatus)}>
+                            <SelectTrigger className="f-input">
+                                <SelectValue />
+                            </SelectTrigger>
+                            <SelectContent>
+                                <SelectItem value="planned">Planned</SelectItem>
+                                <SelectItem value="taught">Taught</SelectItem>
+                                <SelectItem value="cancelled">Cancelled</SelectItem>
+                            </SelectContent>
+                        </Select>
                         {inputError(errors.status)}
                     </div>
                     <div className="f-group" style={{ gridColumn: '1/-1' }}>
