@@ -119,6 +119,8 @@
 .admin-wrap .f-label { font-size: 12px; font-weight: 700; color: #64748b; margin-bottom: 5px; display: block; }
 .f-group,
 .admin-wrap .f-group { margin-bottom: 16px; }
+.field-error,
+.admin-wrap .field-error { color: #dc2626; font-size: 12px; font-weight: 600; margin-top: 6px; }
 
 /* ── Animation ── */
 .admin-wrap .fade-in { animation: adminFadeIn 0.2s ease; }

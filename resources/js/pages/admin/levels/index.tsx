@@ -1,7 +1,9 @@
-import { FormEvent, useState } from 'react';
+import { FormEvent, useEffect, useMemo, useState } from 'react';
 import { destroy, store, update } from '@/actions/App/Http/Controllers/Backends/LevelController';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import AdminShell from '@/pages/admin/shell';
+import { Pagination } from '@/pages/admin/ui';
 import { router, useForm } from '@inertiajs/react';
 import { toast } from 'sonner';
 
@@ -26,12 +28,41 @@ interface LevelFormData {
 }
 
 type View = 'list' | 'add' | 'edit';
+type OrderKey = 'sort-asc' | 'name-asc' | 'name-desc' | 'fee-asc' | 'fee-desc' | 'students-desc' | 'students-asc';
+
+const ORDER_OPTIONS: { value: OrderKey; label: string }[] = [
+    { value: 'sort-asc', label: 'Sort order' },
+    { value: 'name-asc', label: 'Name A → Z' },
+    { value: 'name-desc', label: 'Name Z → A' },
+    { value: 'fee-asc', label: 'Fee ↑ Low' },
+    { value: 'fee-desc', label: 'Fee ↓ High' },
+    { value: 'students-desc', label: 'Students ↓ Most' },
+    { value: 'students-asc', label: 'Students ↑ Least' },
+];
+
+function sortLevels(list: Level[], order: OrderKey): Level[] {
+    return [...list].sort((a, b) => {
+        switch (order) {
+            case 'sort-asc': return a.sortOrder - b.sortOrder;
+            case 'name-asc': return a.name.localeCompare(b.name);
+            case 'name-desc': return b.name.localeCompare(a.name);
+            case 'fee-asc': return a.monthlyFee - b.monthlyFee;
+            case 'fee-desc': return b.monthlyFee - a.monthlyFee;
+            case 'students-desc': return b.studentCount - a.studentCount;
+            case 'students-asc': return a.studentCount - b.studentCount;
+            default: return 0;
+        }
+    });
+}
 
 export default function LevelsPage({ levels }: LevelsPageProps) {
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [editing, setEditing] = useState<Level | null>(null);
     const [deleteTarget, setDeleteTarget] = useState<Level | null>(null);
     const [search, setSearch] = useState('');
+    const [orderBy, setOrderBy] = useState<OrderKey>('sort-asc');
+    const [page, setPage] = useState(1);
+    const [perPage, setPerPage] = useState(5);
 
     const { data, setData, post, put, processing, errors, reset } = useForm<LevelFormData>({
         name: '',
@@ -100,8 +131,25 @@ export default function LevelsPage({ levels }: LevelsPageProps) {
     const inputError = (message?: string) =>
         message ? <div style={{ color: '#ef4444', fontSize: 11, marginTop: 4 }}>{message}</div> : null;
 
-    const filtered = levels.filter(l =>
-        !search || l.name.toLowerCase().includes(search.toLowerCase()),
+    useEffect(() => { setPage(1); }, [search, orderBy, perPage]);
+
+    const filtered = useMemo(() => {
+        const q = search.toLowerCase();
+        const base = levels.filter(l =>
+            !q ||
+            l.name.toLowerCase().includes(q) ||
+            String(l.sortOrder).includes(q) ||
+            String(l.monthlyFee).includes(q) ||
+            String(l.studentCount).includes(q) ||
+            (l.isActive ? 'active' : 'inactive').includes(q),
+        );
+
+        return sortLevels(base, orderBy);
+    }, [levels, search, orderBy]);
+
+    const paginated = useMemo(
+        () => filtered.slice((page - 1) * perPage, page * perPage),
+        [filtered, page, perPage],
     );
 
     return (
@@ -164,18 +212,47 @@ export default function LevelsPage({ levels }: LevelsPageProps) {
 
                 {/* List */}
                 <>
-                    <div style={{ marginBottom: 14 }}>
-                        <input
-                            className="f-input"
-                            style={{ maxWidth: 320 }}
-                            placeholder="Search levels..."
-                            value={search}
-                            onChange={e => setSearch(e.target.value)}
-                        />
-                    </div>
+                    <div className="card" style={{ overflowX: 'auto' }}>
+                        <div style={{ display: 'flex', alignItems: 'center', flexWrap: 'wrap', gap: 8, padding: '12px 16px', borderBottom: '1px solid #f1f5f9' }}>
+                            <span style={{ fontSize: 11, fontWeight: 700, color: '#94a3b8', whiteSpace: 'nowrap' }}>Sort by</span>
+                            <Select value={orderBy} onValueChange={e => setOrderBy(e as OrderKey)}>
+                                <SelectTrigger style={{ width: 'auto', minWidth: 150, padding: '5px 10px', fontSize: 12, height: 'auto' }}>
+                                    <SelectValue />
+                                </SelectTrigger>
+                                <SelectContent>
+                                    {ORDER_OPTIONS.map(o => (
+                                        <SelectItem key={o.value} value={o.value}>{o.label}</SelectItem>
+                                    ))}
+                                </SelectContent>
+                            </Select>
 
-                    <div className="card" style={{ overflow: 'hidden' }}>
-                        <table style={{ width: '100%', borderCollapse: 'collapse' }}>
+                            <div style={{ width: 1, height: 18, background: '#e2e8f0', margin: '0 2px' }} />
+
+                            <Select value={perPage.toString()} onValueChange={e => { setPerPage(Number(e)); setPage(1); }}>
+                                <SelectTrigger style={{ width: 'auto', minWidth: 120, padding: '5px 10px', fontSize: 12, height: 'auto' }}>
+                                    <SelectValue />
+                                </SelectTrigger>
+                                <SelectContent>
+                                    {[5, 10, 25, 50].map(n => (
+                                        <SelectItem key={n} value={n.toString()}>{n} per page</SelectItem>
+                                    ))}
+                                </SelectContent>
+                            </Select>
+
+                            <span style={{ fontSize: 11, color: '#94a3b8', marginLeft: 4 }}>
+                                {filtered.length} result{filtered.length !== 1 ? 's' : ''}
+                            </span>
+
+                            <input
+                                className="f-input"
+                                style={{ width: 260, maxWidth: '100%', marginLeft: 'auto' }}
+                                placeholder="Search levels..."
+                                value={search}
+                                onChange={e => setSearch(e.target.value)}
+                            />
+                        </div>
+
+                        <table className="data-table">
                             <thead>
                                 <tr style={{ borderBottom: '1px solid #f1f5f9' }}>
                                     {['#', 'Name', 'Monthly Fee', 'Students', 'Status', ''].map((h, i) => (
@@ -184,14 +261,14 @@ export default function LevelsPage({ levels }: LevelsPageProps) {
                                 </tr>
                             </thead>
                             <tbody>
-                                {filtered.length === 0 && (
+                                {paginated.length === 0 && (
                                     <tr>
                                         <td colSpan={6} style={{ padding: '40px 16px', textAlign: 'center', color: '#94a3b8', fontSize: 13 }}>
                                             {search ? 'No levels match your search.' : 'No levels yet. Click "+ Add Level" to create one.'}
                                         </td>
                                     </tr>
                                 )}
-                                {filtered.map(level => (
+                                {paginated.map(level => (
                                     <tr key={level.id} style={{ borderBottom: '1px solid #f8fafc' }}
                                         onMouseEnter={e => (e.currentTarget.style.background = '#f8fafc')}
                                         onMouseLeave={e => (e.currentTarget.style.background = '')}>
@@ -212,6 +289,17 @@ export default function LevelsPage({ levels }: LevelsPageProps) {
                                 ))}
                             </tbody>
                         </table>
+
+                        {filtered.length > 0 && (
+                            <Pagination
+                                total={filtered.length}
+                                page={page}
+                                perPage={perPage}
+                                onPageChange={setPage}
+                                onPerPageChange={setPerPage}
+                                showPerPage={false}
+                            />
+                        )}
                     </div>
                 </>
 

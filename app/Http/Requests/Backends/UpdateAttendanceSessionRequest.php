@@ -2,6 +2,7 @@
 
 namespace App\Http\Requests\Backends;
 
+use App\Models\AttendanceSession;
 use Illuminate\Contracts\Validation\ValidationRule;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
@@ -19,6 +20,7 @@ class UpdateAttendanceSessionRequest extends FormRequest
     public function rules(): array
     {
         $session = $this->route('attendanceSession');
+        $sessionId = $session instanceof AttendanceSession ? $session->getKey() : $session;
 
         return [
             'school_class_id' => ['required', 'integer', Rule::exists('school_classes', 'id')->whereNull('deleted_at')],
@@ -30,7 +32,7 @@ class UpdateAttendanceSessionRequest extends FormRequest
                 Rule::unique('attendance_sessions', 'period')
                     ->where('school_class_id', $this->integer('school_class_id'))
                     ->where('attendance_date', $this->input('attendance_date'))
-                    ->ignore($session),
+                    ->ignore($sessionId),
             ],
             'records' => ['required', 'array', 'min:1'],
             'records.*.student_id' => ['required', 'integer', Rule::exists('students', 'id')->whereNull('deleted_at')],

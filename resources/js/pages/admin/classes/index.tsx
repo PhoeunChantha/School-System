@@ -119,46 +119,18 @@ export default function ClassesPage({ classes, levels, teachers }: ClassesPagePr
                 <div className="fade-in" style={{ padding: 24, display: 'flex', flexDirection: 'column', gap: 16 }}>
 
                     {/* Toolbar */}
-                    <div style={{ display: 'flex', alignItems: 'center', flexWrap: 'wrap', gap: 12 }}>
-                        <input
-                            value={search}
-                            onChange={e => setSearch(e.target.value)}
-                            className="f-input"
-                            style={{ maxWidth: 260 }}
-                            placeholder="🔍  Search classes..."
-                        />
-                        <div style={{ display: 'flex', gap: 8 }}>
-                            {[
-                                { l: 'Total',    v: classes.length,                              c: '#3b82f6' },
-                                { l: 'Students', v: classes.reduce((a, c) => a + c.count, 0),   c: '#8b5cf6' },
-                            ].map((s, i) => (
-                                <div key={i} style={{ background: 'white', borderRadius: 10, padding: '8px 14px', border: '1px solid #e8edf5', display: 'flex', gap: 8, alignItems: 'center' }}>
-                                    <div style={{ width: 8, height: 8, borderRadius: '50%', background: s.c }} />
-                                    <span style={{ fontSize: 11, color: '#64748b' }}>{s.l}</span>
-                                    <span style={{ fontWeight: 800, fontSize: 15, color: '#1e293b' }}>{s.v}</span>
-                                </div>
-                            ))}
-                        </div>
+                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'flex-end', flexWrap: 'wrap', gap: 12 }}>
                         <button onClick={() => setView('add')}
                             style={{ marginLeft: 'auto', background: '#2563eb', color: 'white', border: 'none', borderRadius: 10, padding: '9px 18px', fontWeight: 700, fontSize: 13, cursor: 'pointer' }}>
                             + Add Class
                         </button>
                     </div>
 
-                    {/* Empty state */}
-                    {filtered.length === 0 && (
-                        <div style={{ textAlign: 'center', padding: '60px 0', color: '#94a3b8', fontSize: 14 }}>
-                            <div style={{ fontSize: 32, marginBottom: 8 }}>🔍</div>
-                            No classes found for <strong>"{search}"</strong>
-                        </div>
-                    )}
-
                     {/* Table */}
-                    {filtered.length > 0 && (
-                        <div className="card" style={{ overflowX: 'auto' }}>
+                    <div className="card" style={{ overflowX: 'auto' }}>
 
                             {/* Sort + per-page controls */}
-                            <div style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '12px 16px', borderBottom: '1px solid #f1f5f9' }}>
+                            <div style={{ display: 'flex', alignItems: 'center', flexWrap: 'wrap', gap: 8, padding: '12px 16px', borderBottom: '1px solid #f1f5f9' }}>
                                 <span style={{ fontSize: 11, fontWeight: 700, color: '#94a3b8', whiteSpace: 'nowrap' }}>Sort by</span>
                                 <Select value={orderBy} onValueChange={e => setOrderBy(e as OrderKey)}>
                                     <SelectTrigger style={{ width: 'auto', minWidth: 150, padding: '5px 10px', fontSize: 12, height: 'auto' }}>
@@ -187,6 +159,14 @@ export default function ClassesPage({ classes, levels, teachers }: ClassesPagePr
                                 <span style={{ fontSize: 11, color: '#94a3b8', marginLeft: 4 }}>
                                     {filtered.length} result{filtered.length !== 1 ? 's' : ''}
                                 </span>
+
+                                <input
+                                    value={search}
+                                    onChange={e => setSearch(e.target.value)}
+                                    className="f-input"
+                                    style={{ width: 260, maxWidth: '100%', marginLeft: 'auto' }}
+                                    placeholder="Search classes..."
+                                />
                             </div>
 
                             <table className="data-table">
@@ -200,50 +180,59 @@ export default function ClassesPage({ classes, levels, teachers }: ClassesPagePr
                                     <th>Actions</th>
                                 </tr></thead>
                                 <tbody>
-                                    {paginated.map(cls => (
-                                        <tr key={cls.id}>
-                                            <td><span style={{ fontWeight: 700, fontSize: 14 }}>{cls.name}</span></td>
-                                            <td style={{ fontSize: 13, color: '#64748b' }}>{cls.teacher}</td>
-                                            <td><Badge type="blue">{cls.room}</Badge></td>
-                                            <td style={{ fontSize: 13, color: '#3b82f6', fontWeight: 600 }}>🕐 {cls.time}</td>
-                                            <td style={{ fontSize: 12, color: '#64748b' }}>{cls.days}</td>
-                                            <td>
-                                                <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-                                                    <span style={{ fontWeight: 700 }}>{cls.count}</span>
-                                                    <span style={{ fontSize: 11, color: '#94a3b8' }}>students</span>
-                                                </div>
-                                            </td>
-                                            <td>
-                                                <div style={{ display: 'flex', gap: 6 }}>
-                                                    <Link href="/admin/attendance"
-                                                        style={{ background: '#f0fdf4', color: '#16a34a', border: '1px solid #bbf7d0', borderRadius: 6, padding: '5px 10px', cursor: 'pointer', fontSize: 11, fontWeight: 700, textDecoration: 'none', whiteSpace: 'nowrap' }}>
-                                                        📋 Attendance
-                                                    </Link>
-                                                    <button onClick={() => handleEdit(cls)}
-                                                        style={{ background: '#eff6ff', color: '#2563eb', border: '1px solid #bfdbfe', borderRadius: 6, padding: '5px 10px', cursor: 'pointer', fontSize: 11, fontWeight: 700, whiteSpace: 'nowrap' }}>
-                                                        ✏️ Edit
-                                                    </button>
-                                                    <button onClick={() => handleDelete(cls)}
-                                                        style={{ background: '#fff1f2', color: '#ef4444', border: '1px solid #fecaca', borderRadius: 6, padding: '5px 10px', cursor: 'pointer', fontSize: 11, fontWeight: 700, whiteSpace: 'nowrap' }}>
-                                                        🗑️ Delete
-                                                    </button>
-                                                </div>
+                                    {paginated.length === 0 ? (
+                                        <tr>
+                                            <td colSpan={7} style={{ textAlign: 'center', padding: '44px 16px', color: '#94a3b8', fontSize: 14 }}>
+                                                No classes found for <strong>"{search}"</strong>
                                             </td>
                                         </tr>
-                                    ))}
+                                    ) : (
+                                        paginated.map(cls => (
+                                            <tr key={cls.id}>
+                                                <td><span style={{ fontWeight: 700, fontSize: 14 }}>{cls.name}</span></td>
+                                                <td style={{ fontSize: 13, color: '#64748b' }}>{cls.teacher}</td>
+                                                <td><Badge type="blue">{cls.room}</Badge></td>
+                                                <td style={{ fontSize: 13, color: '#3b82f6', fontWeight: 600 }}>🕐 {cls.time}</td>
+                                                <td style={{ fontSize: 12, color: '#64748b' }}>{cls.days}</td>
+                                                <td>
+                                                    <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                                                        <span style={{ fontWeight: 700 }}>{cls.count}</span>
+                                                        <span style={{ fontSize: 11, color: '#94a3b8' }}>students</span>
+                                                    </div>
+                                                </td>
+                                                <td>
+                                                    <div style={{ display: 'flex', gap: 6 }}>
+                                                        <Link href="/admin/attendance"
+                                                            style={{ background: '#f0fdf4', color: '#16a34a', border: '1px solid #bbf7d0', borderRadius: 6, padding: '5px 10px', cursor: 'pointer', fontSize: 11, fontWeight: 700, textDecoration: 'none', whiteSpace: 'nowrap' }}>
+                                                            📋 Attendance
+                                                        </Link>
+                                                        <button onClick={() => handleEdit(cls)}
+                                                            style={{ background: '#eff6ff', color: '#2563eb', border: '1px solid #bfdbfe', borderRadius: 6, padding: '5px 10px', cursor: 'pointer', fontSize: 11, fontWeight: 700, whiteSpace: 'nowrap' }}>
+                                                            ✏️ Edit
+                                                        </button>
+                                                        <button onClick={() => handleDelete(cls)}
+                                                            style={{ background: '#fff1f2', color: '#ef4444', border: '1px solid #fecaca', borderRadius: 6, padding: '5px 10px', cursor: 'pointer', fontSize: 11, fontWeight: 700, whiteSpace: 'nowrap' }}>
+                                                            🗑️ Delete
+                                                        </button>
+                                                    </div>
+                                                </td>
+                                            </tr>
+                                        ))
+                                    )}
                                 </tbody>
                             </table>
 
-                            <Pagination
-                                total={filtered.length}
-                                page={page}
-                                perPage={perPage}
-                                onPageChange={setPage}
-                                onPerPageChange={setPerPage}
-                                showPerPage={false}
-                            />
-                        </div>
-                    )}
+                            {filtered.length > 0 && (
+                                <Pagination
+                                    total={filtered.length}
+                                    page={page}
+                                    perPage={perPage}
+                                    onPageChange={setPage}
+                                    onPerPageChange={setPerPage}
+                                    showPerPage={false}
+                                />
+                            )}
+                    </div>
                 </div>
             )}
 

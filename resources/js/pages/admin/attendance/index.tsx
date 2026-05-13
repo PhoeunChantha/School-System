@@ -1,4 +1,4 @@
-import { destroy } from '@/actions/App/Http/Controllers/Backends/AttendanceSessionController';
+import { destroy, edit } from '@/actions/App/Http/Controllers/Backends/AttendanceSessionController';
 import AdminShell from '@/pages/admin/shell';
 import { Badge, KH, Pagination } from '@/pages/admin/ui';
 import { router } from '@inertiajs/react';
@@ -192,7 +192,7 @@ export default function AttendancePage({ sessions, classes, summary }: Attendanc
                                     <td style={{ color: '#2563eb', fontWeight: 900 }}>{session.excusedCount}</td>
                                     <td>
                                         <div style={{ display: 'flex', gap: 6 }}>
-                                            <button onClick={() => router.visit(`/admin/attendance/mark?edit=${session.id}`)} style={{ background: '#eff6ff', color: '#2563eb', border: '1px solid #bfdbfe', borderRadius: 7, padding: '5px 10px', cursor: 'pointer', fontSize: 11, fontWeight: 700 }}>Edit</button>
+                                            <button onClick={() => router.visit(edit.url(session.id))} style={{ background: '#eff6ff', color: '#2563eb', border: '1px solid #bfdbfe', borderRadius: 7, padding: '5px 10px', cursor: 'pointer', fontSize: 11, fontWeight: 700 }}>Edit</button>
                                             <button onClick={() => setDeleteTarget(session)} style={{ background: '#fff1f2', color: '#ef4444', border: '1px solid #fecaca', borderRadius: 7, padding: '5px 10px', cursor: 'pointer', fontSize: 11, fontWeight: 700 }}>Delete</button>
                                         </div>
                                     </td>

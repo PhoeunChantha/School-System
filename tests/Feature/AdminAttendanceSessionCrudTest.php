@@ -36,6 +36,48 @@ class AdminAttendanceSessionCrudTest extends TestCase
                 ->has('classes', 1));
     }
 
+    public function test_admin_can_open_attendance_edit_page(): void
+    {
+        $this->actingAs(User::factory()->create());
+
+        $schoolClass = SchoolClass::factory()->create(['name' => 'Advanced A']);
+        $student = Student::factory()->for($schoolClass)->create(['name_en' => 'Chanthy Mao']);
+        $session = AttendanceSession::factory()->for($schoolClass)->create([
+            'attendance_date' => '2026-05-13',
+            'period' => 'morning',
+        ]);
+        AttendanceRecord::factory()->for($session)->for($student)->create(['status' => 'present']);
+
+        $this->get(route('admin.attendance.edit', $session))
+            ->assertOk()
+            ->assertInertia(fn ($page) => $page
+                ->component('admin/attendance/mark')
+                ->where('editingSession.id', $session->id)
+                ->where('editingSession.period', 'morning')
+                ->where('editingSession.records.0.status', 'present'));
+    }
+
+    public function test_admin_can_open_attendance_edit_page_from_legacy_mark_query(): void
+    {
+        $this->actingAs(User::factory()->create());
+
+        $schoolClass = SchoolClass::factory()->create(['name' => 'Advanced A']);
+        $student = Student::factory()->for($schoolClass)->create(['name_en' => 'Chanthy Mao']);
+        $session = AttendanceSession::factory()->for($schoolClass)->create([
+            'attendance_date' => '2026-05-13',
+            'period' => 'morning',
+        ]);
+        AttendanceRecord::factory()->for($session)->for($student)->create(['status' => 'late']);
+
+        $this->get(route('admin.attendance.mark', ['edit' => $session->id]))
+            ->assertOk()
+            ->assertInertia(fn ($page) => $page
+                ->component('admin/attendance/mark')
+                ->where('editingSession.id', $session->id)
+                ->where('editingSession.period', 'morning')
+                ->where('editingSession.records.0.status', 'late'));
+    }
+
     public function test_admin_can_create_attendance_session(): void
     {
         $user = User::factory()->create();
@@ -111,6 +153,36 @@ class AdminAttendanceSessionCrudTest extends TestCase
             'status' => 'excused',
             'note' => 'Approved leave',
         ]);
+    }
+
+    public function test_admin_can_update_attendance_session_without_changing_period(): void
+    {
+        $user = User::factory()->create();
+        $schoolClass = SchoolClass::factory()->create();
+        $students = Student::factory()->count(2)->for($schoolClass)->create();
+        $session = AttendanceSession::factory()->for($schoolClass)->create([
+            'attendance_date' => '2026-05-07',
+            'period' => 'morning',
+        ]);
+
+        $this->actingAs($user)
+            ->put(route('admin.attendance.update', $session), [
+                'school_class_id' => $schoolClass->id,
+                'attendance_date' => '2026-05-07',
+                'period' => 'morning',
+                'records' => [
+                    ['student_id' => $students[0]->id, 'status' => 'present', 'note' => null],
+                    ['student_id' => $students[1]->id, 'status' => 'absent', 'note' => 'Called parent'],
+                ],
+            ])
+            ->assertSessionHasNoErrors()
+            ->assertRedirect(route('admin.attendance'));
+
+        $session->refresh();
+
+        $this->assertSame('2026-05-07', $session->attendance_date->toDateString());
+        $this->assertSame('morning', $session->period);
+        $this->assertSame($user->id, $session->updated_by);
     }
 
     public function test_admin_can_delete_attendance_session(): void

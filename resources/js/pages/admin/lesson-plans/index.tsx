@@ -1,5 +1,5 @@
 import { FormEvent, useMemo, useState } from 'react';
-import { destroy, store, update } from '@/actions/App/Http/Controllers/Backends/LessonPlanController';
+import { destroy, store, update } from '@/routes/admin/lesson-plans';
 import AdminShell from '@/pages/admin/shell';
 import { Avatar, Badge } from '@/pages/admin/ui';
 import { Link, router, useForm } from '@inertiajs/react';
@@ -329,7 +329,6 @@ function LessonPlanForm({ mode, lessonPlan, teachers, classes, today, onBack }: 
                                 <SelectValue placeholder="Select teacher..." />
                             </SelectTrigger>
                             <SelectContent>
-                                <SelectItem value="">Select teacher...</SelectItem>
                                 {teachers.map(teacher => <SelectItem key={teacher.id} value={String(teacher.id)}>{teacher.name}</SelectItem>)}
                             </SelectContent>
                         </Select>
@@ -342,7 +341,6 @@ function LessonPlanForm({ mode, lessonPlan, teachers, classes, today, onBack }: 
                                 <SelectValue placeholder="Select class..." />
                             </SelectTrigger>
                             <SelectContent>
-                                <SelectItem value="">Select class...</SelectItem>
                                 {availableClasses.map(classOption => <SelectItem key={classOption.id} value={String(classOption.id)}>{classOption.name} {classOption.time ? `(${classOption.time})` : ''}</SelectItem>)}
                             </SelectContent>
                         </Select>

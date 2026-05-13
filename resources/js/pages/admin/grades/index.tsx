@@ -6,9 +6,12 @@ import {
     SheetHeader,
     SheetTitle,
 } from '@/components/ui/sheet';
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import AdminShell from '@/pages/admin/shell';
 import { Avatar, Badge, KH, Pagination, PBar, ScoreChip } from '@/pages/admin/ui';
 import { router, useForm } from '@inertiajs/react';
+import { Check, ChevronsUpDown, Search } from 'lucide-react';
 import { FormEvent, useEffect, useMemo, useState } from 'react';
 import { toast } from 'sonner';
 
@@ -146,6 +149,8 @@ export default function GradesPage({ records, periods, students, classes, summar
     const [drawerMode, setDrawerMode] = useState<DrawerMode | null>(null);
     const [editingRecord, setEditingRecord] = useState<GradeRecordItem | null>(null);
     const [deleteTarget, setDeleteTarget] = useState<GradeRecordItem | null>(null);
+    const [studentPickerOpen, setStudentPickerOpen] = useState(false);
+    const [studentSearch, setStudentSearch] = useState('');
 
     const { data, setData, post, put, processing, errors, reset } = useForm<GradeFormData>({
         grade_period_id: summary.currentPeriodId ?? periods[0]?.id ?? null,
@@ -185,6 +190,26 @@ export default function GradesPage({ records, periods, students, classes, summar
         ? Math.round((filtered.reduce((total, record) => total + record.average, 0) / filtered.length) * 100) / 100
         : 0;
 
+    const selectedStudent = useMemo(
+        () => students.find(student => student.id === data.student_id) ?? null,
+        [data.student_id, students],
+    );
+
+    const searchableStudents = useMemo(() => {
+        const query = studentSearch.trim().toLowerCase();
+
+        if (!query) {
+            return students;
+        }
+
+        return students.filter(student =>
+            student.nameEn.toLowerCase().includes(query) ||
+            student.nameKh.toLowerCase().includes(query) ||
+            student.level.toLowerCase().includes(query) ||
+            student.className.toLowerCase().includes(query),
+        );
+    }, [studentSearch, students]);
+
     const openCreateDrawer = () => {
         const student = students[0];
         reset();
@@ -199,6 +224,8 @@ export default function GradesPage({ records, periods, students, classes, summar
         });
         setEditingRecord(null);
         setDrawerMode('create');
+        setStudentSearch('');
+        setStudentPickerOpen(false);
     };
 
     const openEditDrawer = (record: GradeRecordItem) => {
@@ -213,11 +240,15 @@ export default function GradesPage({ records, periods, students, classes, summar
         });
         setEditingRecord(record);
         setDrawerMode('edit');
+        setStudentSearch('');
+        setStudentPickerOpen(false);
     };
 
     const closeDrawer = () => {
         setDrawerMode(null);
         setEditingRecord(null);
+        setStudentSearch('');
+        setStudentPickerOpen(false);
     };
 
     const selectStudent = (studentId: number) => {
@@ -227,6 +258,8 @@ export default function GradesPage({ records, periods, students, classes, summar
             student_id: studentId,
             school_class_id: student?.schoolClassId ?? current.school_class_id,
         }));
+        setStudentPickerOpen(false);
+        setStudentSearch('');
     };
 
     const submitGrade = (event: FormEvent<HTMLFormElement>) => {
@@ -397,16 +430,73 @@ export default function GradesPage({ records, periods, students, classes, summar
                             <div style={{ padding: 24, display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16 }}>
                             <div style={{ gridColumn: '1 / -1' }}>
                                 <label style={drawerLabelStyle}>Period *</label>
-                                <select style={drawerFieldStyle} value={data.grade_period_id ?? ''} onChange={event => setData('grade_period_id', Number(event.target.value) || null)}>
-                                    {periods.map(period => <option key={period.id} value={period.id}>{period.name}</option>)}
-                                </select>
+                                <Select value={data.grade_period_id ? String(data.grade_period_id) : ''} onValueChange={value => setData('grade_period_id', Number(value) || null)}>
+                                    <SelectTrigger className="f-input" style={{ minHeight: 42 }}>
+                                        <SelectValue placeholder="Select period" />
+                                    </SelectTrigger>
+                                    <SelectContent>
+                                        {periods.map(period => (
+                                            <SelectItem key={period.id} value={String(period.id)}>
+                                                {period.name}
+                                            </SelectItem>
+                                        ))}
+                                    </SelectContent>
+                                </Select>
                                 {errors.grade_period_id && <div className="field-error">{errors.grade_period_id}</div>}
                             </div>
                             <div style={{ gridColumn: '1 / -1' }}>
                                 <label style={drawerLabelStyle}>Student *</label>
-                                <select disabled={drawerMode === 'edit'} style={{ ...drawerFieldStyle, opacity: drawerMode === 'edit' ? 0.7 : 1 }} value={data.student_id ?? ''} onChange={event => selectStudent(Number(event.target.value))}>
-                                    {students.map(student => <option key={student.id} value={student.id}>{student.nameEn} · {student.className || student.level}</option>)}
-                                </select>
+                                <Popover open={studentPickerOpen} onOpenChange={open => { if (drawerMode !== 'edit') setStudentPickerOpen(open); }}>
+                                    <PopoverTrigger asChild>
+                                        <button
+                                            type="button"
+                                            disabled={drawerMode === 'edit'}
+                                            className="f-input"
+                                            style={{ minHeight: 42, display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 10, textAlign: 'left', opacity: drawerMode === 'edit' ? 0.7 : 1, cursor: drawerMode === 'edit' ? 'default' : 'pointer' }}
+                                        >
+                                            <span style={{ minWidth: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                                                {selectedStudent ? `${selectedStudent.nameEn} · ${selectedStudent.className || selectedStudent.level}` : 'Select student'}
+                                            </span>
+                                            <ChevronsUpDown size={16} style={{ color: '#94a3b8', flexShrink: 0 }} />
+                                        </button>
+                                    </PopoverTrigger>
+                                    <PopoverContent align="start" className="w-[var(--radix-popover-trigger-width)] p-0">
+                                        <div style={{ padding: 10, borderBottom: '1px solid #e2e8f0', display: 'flex', alignItems: 'center', gap: 8 }}>
+                                            <Search size={15} style={{ color: '#94a3b8', flexShrink: 0 }} />
+                                            <input
+                                                value={studentSearch}
+                                                onChange={event => setStudentSearch(event.target.value)}
+                                                placeholder="Search students..."
+                                                autoFocus
+                                                style={{ border: 'none', outline: 'none', width: '100%', fontSize: 13, background: 'transparent', color: '#1e293b' }}
+                                            />
+                                        </div>
+                                        <div style={{ maxHeight: 260, overflowY: 'auto', padding: 6 }}>
+                                            {searchableStudents.length === 0 ? (
+                                                <div style={{ padding: '18px 10px', textAlign: 'center', color: '#94a3b8', fontSize: 13, fontWeight: 700 }}>
+                                                    No students found
+                                                </div>
+                                            ) : searchableStudents.map(student => {
+                                                const selected = student.id === data.student_id;
+
+                                                return (
+                                                    <button
+                                                        key={student.id}
+                                                        type="button"
+                                                        onClick={() => selectStudent(student.id)}
+                                                        style={{ width: '100%', border: 'none', background: selected ? '#eff6ff' : 'transparent', color: '#1e293b', borderRadius: 8, padding: '9px 10px', display: 'flex', alignItems: 'center', gap: 10, cursor: 'pointer', textAlign: 'left' }}
+                                                    >
+                                                        <Check size={15} style={{ color: selected ? '#2563eb' : 'transparent', flexShrink: 0 }} />
+                                                        <span style={{ minWidth: 0 }}>
+                                                            <span style={{ display: 'block', fontSize: 13, fontWeight: 800, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{student.nameEn}</span>
+                                                            <span style={{ display: 'block', fontSize: 11, color: '#94a3b8', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{student.nameKh} · {student.className || student.level}</span>
+                                                        </span>
+                                                    </button>
+                                                );
+                                            })}
+                                        </div>
+                                    </PopoverContent>
+                                </Popover>
                                 {errors.student_id && <div className="field-error">{errors.student_id}</div>}
                             </div>
                             {(['speaking', 'listening', 'reading', 'writing'] as const).map(skill => (

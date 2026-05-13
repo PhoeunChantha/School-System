@@ -8,6 +8,7 @@ use App\Http\Requests\Backends\UpdateAttendanceSessionRequest;
 use App\Models\AttendanceSession;
 use App\Services\Backends\AttendanceSessionService;
 use Illuminate\Http\RedirectResponse;
+use Illuminate\Http\Request;
 use Inertia\Inertia;
 use Inertia\Response;
 use Throwable;
@@ -68,13 +69,18 @@ class AttendanceSessionController extends Controller
         }
     }
 
-    public function create(): Response
+    public function create(Request $request): Response
     {
         $data = $this->attendanceSessionService->indexData();
+        $editing = null;
+
+        if ($request->filled('edit')) {
+            $editing = collect($data['sessions'])->firstWhere('id', $request->integer('edit'));
+        }
 
         return Inertia::render('admin/attendance/mark', [
             'classes' => $data['classes'],
-            'editingSession' => null,
+            'editingSession' => $editing,
         ]);
     }
 
