@@ -1,6 +1,7 @@
 import { destroy, store, update } from '@/actions/App/Http/Controllers/Backends/ExamController';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import AdminShell from '@/pages/admin/shell';
-import { Badge } from '@/pages/admin/ui';
+import { Badge, Pagination } from '@/pages/admin/ui';
 import { router, useForm } from '@inertiajs/react';
 import Color from '@tiptap/extension-color';
 import Highlight from '@tiptap/extension-highlight';
@@ -11,7 +12,7 @@ import Underline from '@tiptap/extension-underline';
 import { EditorContent, useEditor } from '@tiptap/react';
 import StarterKit from '@tiptap/starter-kit';
 import { ArrowLeft, Edit3, FileText, Plus, Printer, Save, Trash2 } from 'lucide-react';
-import { FormEvent, useMemo, useRef, useState } from 'react';
+import { FormEvent, useEffect, useMemo, useRef, useState } from 'react';
 import { toast } from 'sonner';
 
 interface ExamClassOption {
@@ -59,6 +60,7 @@ interface ExamFormData {
 }
 
 type View = 'list' | 'build' | 'print';
+type OrderKey = 'date-desc' | 'date-asc' | 'title-asc' | 'title-desc' | 'status-asc';
 
 const DEFAULT_CONTENT = `
 <h1 style="text-align:center">ENGLISH EXAMINATION</h1>
@@ -89,17 +91,68 @@ const statusType = {
     archived: 'gray',
 } as const;
 
+const ORDER_OPTIONS: { value: OrderKey; label: string }[] = [
+    { value: 'date-desc', label: 'Date new-old' },
+    { value: 'date-asc', label: 'Date old-new' },
+    { value: 'title-asc', label: 'Title A-Z' },
+    { value: 'title-desc', label: 'Title Z-A' },
+    { value: 'status-asc', label: 'Status A-Z' },
+];
+
+function sortExams(exams: ExamItem[], orderBy: OrderKey): ExamItem[] {
+    return [...exams].sort((a, b) => {
+        if (orderBy === 'date-asc') {
+            return (a.examDate || a.createdAt).localeCompare(b.examDate || b.createdAt);
+        }
+
+        if (orderBy === 'title-asc') {
+            return a.title.localeCompare(b.title);
+        }
+
+        if (orderBy === 'title-desc') {
+            return b.title.localeCompare(a.title);
+        }
+
+        if (orderBy === 'status-asc') {
+            return a.status.localeCompare(b.status);
+        }
+
+        return (b.examDate || b.createdAt).localeCompare(a.examDate || a.createdAt);
+    });
+}
+
 export default function ExamPage({ exams, classes, summary }: ExamPageProps) {
     const [view, setView] = useState<View>('list');
     const [editingExam, setEditingExam] = useState<ExamItem | null>(null);
     const [printingExam, setPrintingExam] = useState<ExamItem | null>(null);
     const [deleteTarget, setDeleteTarget] = useState<ExamItem | null>(null);
+    const [search, setSearch] = useState('');
+    const [orderBy, setOrderBy] = useState<OrderKey>('date-desc');
+    const [perPage, setPerPage] = useState(10);
+    const [page, setPage] = useState(1);
 
     const { data, setData, post, put, processing, errors, reset, transform } = useForm<ExamFormData>(emptyForm(classes));
 
-    const sortedExams = useMemo(
-        () => [...exams].sort((a, b) => (b.examDate || b.createdAt).localeCompare(a.examDate || a.createdAt)),
-        [exams],
+    useEffect(() => { setPage(1); }, [search, orderBy, perPage]);
+
+    const filteredExams = useMemo(() => {
+        const q = search.toLowerCase();
+        const filtered = exams.filter(exam =>
+            !q ||
+            exam.title.toLowerCase().includes(q) ||
+            exam.subject.toLowerCase().includes(q) ||
+            exam.className.toLowerCase().includes(q) ||
+            exam.status.toLowerCase().includes(q) ||
+            exam.academicYear.toLowerCase().includes(q) ||
+            exam.examDate.includes(search)
+        );
+
+        return sortExams(filtered, orderBy);
+    }, [exams, search, orderBy]);
+
+    const paginatedExams = useMemo(
+        () => filteredExams.slice((page - 1) * perPage, page * perPage),
+        [filteredExams, page, perPage],
     );
 
     const openCreate = () => {
@@ -205,6 +258,45 @@ export default function ExamPage({ exams, classes, summary }: ExamPageProps) {
                 </div>
 
                 <div className="card" style={{ overflowX: 'auto' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', flexWrap: 'wrap', gap: 8, padding: '12px 16px', borderBottom: '1px solid #f1f5f9' }}>
+                        <span style={{ fontSize: 11, fontWeight: 700, color: '#94a3b8', whiteSpace: 'nowrap' }}>Sort by</span>
+                        <Select value={orderBy} onValueChange={value => setOrderBy(value as OrderKey)}>
+                            <SelectTrigger style={{ width: 'auto', minWidth: 150, padding: '5px 10px', fontSize: 12, height: 'auto' }}>
+                                <SelectValue />
+                            </SelectTrigger>
+                            <SelectContent>
+                                {ORDER_OPTIONS.map(option => (
+                                    <SelectItem key={option.value} value={option.value}>{option.label}</SelectItem>
+                                ))}
+                            </SelectContent>
+                        </Select>
+
+                        <div style={{ width: 1, height: 18, background: '#e2e8f0', margin: '0 2px' }} />
+
+                        <Select value={perPage.toString()} onValueChange={value => { setPerPage(Number(value)); setPage(1); }}>
+                            <SelectTrigger style={{ width: 'auto', minWidth: 120, padding: '5px 10px', fontSize: 12, height: 'auto' }}>
+                                <SelectValue />
+                            </SelectTrigger>
+                            <SelectContent>
+                                {[5, 10, 25, 50].map(size => (
+                                    <SelectItem key={size} value={size.toString()}>{size} per page</SelectItem>
+                                ))}
+                            </SelectContent>
+                        </Select>
+
+                        <span style={{ fontSize: 11, color: '#94a3b8', marginLeft: 4 }}>
+                            {filteredExams.length} result{filteredExams.length !== 1 ? 's' : ''}
+                        </span>
+
+                        <input
+                            value={search}
+                            onChange={event => setSearch(event.target.value)}
+                            className="f-input"
+                            style={{ width: 260, maxWidth: '100%', marginLeft: 'auto' }}
+                            placeholder="Search exams..."
+                        />
+                    </div>
+
                     <table className="data-table">
                         <thead>
                             <tr>
@@ -218,13 +310,13 @@ export default function ExamPage({ exams, classes, summary }: ExamPageProps) {
                             </tr>
                         </thead>
                         <tbody>
-                            {sortedExams.length === 0 ? (
+                            {paginatedExams.length === 0 ? (
                                 <tr>
                                     <td colSpan={7} style={{ padding: '42px 24px', textAlign: 'center', color: '#64748b', fontSize: 14, fontWeight: 700 }}>
-                                        No exams found
+                                        {search ? <>No exams found for <strong>"{search}"</strong></> : 'No exams found'}
                                     </td>
                                 </tr>
-                            ) : sortedExams.map(exam => (
+                            ) : paginatedExams.map(exam => (
                                 <tr key={exam.id}>
                                     <td>
                                         <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
@@ -259,6 +351,17 @@ export default function ExamPage({ exams, classes, summary }: ExamPageProps) {
                             ))}
                         </tbody>
                     </table>
+
+                    {filteredExams.length > 0 && (
+                        <Pagination
+                            total={filteredExams.length}
+                            page={page}
+                            perPage={perPage}
+                            onPageChange={setPage}
+                            onPerPageChange={setPerPage}
+                            showPerPage={false}
+                        />
+                    )}
                 </div>
             </div>
 

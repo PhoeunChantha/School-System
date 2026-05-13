@@ -1,4 +1,6 @@
 import { destroy, store, update } from '@/actions/App/Http/Controllers/Backends/CertificateController';
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import {
     Sheet,
     SheetContent,
@@ -9,8 +11,9 @@ import {
 import AdminShell from '@/pages/admin/shell';
 import { Avatar, Badge, KH } from '@/pages/admin/ui';
 import { router, useForm } from '@inertiajs/react';
-import { Award, Edit3, Eye, Plus, Printer, Trash2 } from 'lucide-react';
+import { Award, Check, ChevronsUpDown, Edit3, Eye, Plus, Printer, Search, Trash2 } from 'lucide-react';
 import { FormEvent, useMemo, useState } from 'react';
+import type { ReactNode } from 'react';
 import { toast } from 'sonner';
 
 interface CertificateItem {
@@ -124,6 +127,8 @@ function emptyForm(students: StudentOption[]): CertificateFormData {
 
 export default function CertificatesPage({ certificates, students, levels, summary }: CertificatesPageProps) {
     const [filter, setFilter] = useState<CertificateType | 'all'>('all');
+    const [studentPickerOpen, setStudentPickerOpen] = useState(false);
+    const [studentSearch, setStudentSearch] = useState('');
     const [drawerMode, setDrawerMode] = useState<DrawerMode | null>(null);
     const [editingCertificate, setEditingCertificate] = useState<CertificateItem | null>(null);
     const [preview, setPreview] = useState<CertificateItem | null>(null);
@@ -136,9 +141,28 @@ export default function CertificatesPage({ certificates, students, levels, summa
         [certificates, filter],
     );
 
+    const selectedStudent = useMemo(
+        () => students.find(student => student.id === data.student_id) ?? null,
+        [students, data.student_id],
+    );
+
+    const searchableStudents = useMemo(() => {
+        const q = studentSearch.toLowerCase();
+
+        return students.filter(student =>
+            !q ||
+            student.nameKh.includes(studentSearch) ||
+            student.nameEn.toLowerCase().includes(q) ||
+            student.className.toLowerCase().includes(q) ||
+            student.level.toLowerCase().includes(q)
+        );
+    }, [students, studentSearch]);
+
     const openCreateDrawer = () => {
         reset();
         setData(emptyForm(students));
+        setStudentSearch('');
+        setStudentPickerOpen(false);
         setEditingCertificate(null);
         setDrawerMode('create');
     };
@@ -154,11 +178,15 @@ export default function CertificatesPage({ certificates, students, levels, summa
             certificate_number: certificate.certificateNumber,
             status: certificate.status,
         });
+        setStudentSearch('');
+        setStudentPickerOpen(false);
         setEditingCertificate(certificate);
         setDrawerMode('edit');
     };
 
     const closeDrawer = () => {
+        setStudentSearch('');
+        setStudentPickerOpen(false);
         setDrawerMode(null);
         setEditingCertificate(null);
     };
@@ -170,6 +198,8 @@ export default function CertificatesPage({ certificates, students, levels, summa
             student_id: studentId,
             level_id: student?.levelId ?? current.level_id,
         }));
+        setStudentPickerOpen(false);
+        setStudentSearch('');
     };
 
     const selectType = (type: CertificateType) => {
@@ -330,27 +360,57 @@ export default function CertificatesPage({ certificates, students, levels, summa
                             <div style={{ padding: 24, display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16 }}>
                                 <div style={{ gridColumn: '1 / -1' }}>
                                     <label style={labelStyle}>Student *</label>
-                                    <select style={fieldStyle} value={data.student_id ?? ''} onChange={event => selectStudent(Number(event.target.value))}>
-                                        {students.map(student => <option key={student.id} value={student.id}>{student.nameEn} · {student.className || student.level}</option>)}
-                                    </select>
+                                    <SearchablePicker
+                                        open={studentPickerOpen}
+                                        onOpenChange={setStudentPickerOpen}
+                                        search={studentSearch}
+                                        onSearchChange={setStudentSearch}
+                                        placeholder="Select student"
+                                        searchPlaceholder="Search students..."
+                                        selectedLabel={selectedStudent ? `${selectedStudent.nameEn} - ${selectedStudent.className || selectedStudent.level}` : null}
+                                        emptyLabel="No students found"
+                                    >
+                                        {searchableStudents.map(student => {
+                                            const selected = student.id === data.student_id;
+
+                                            return (
+                                                <PickerOption key={student.id} selected={selected} onClick={() => selectStudent(student.id)}>
+                                                    <span style={{ display: 'block', fontSize: 13, fontWeight: 800, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{student.nameEn}</span>
+                                                    <span style={{ display: 'block', fontSize: 11, color: '#94a3b8', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                                                        {student.nameKh} - {student.className || student.level}
+                                                    </span>
+                                                </PickerOption>
+                                            );
+                                        })}
+                                    </SearchablePicker>
                                     {errors.student_id && <div className="field-error">{errors.student_id}</div>}
                                 </div>
 
                                 <div>
                                     <label style={labelStyle}>Type *</label>
-                                    <select style={fieldStyle} value={data.type} onChange={event => selectType(event.target.value as CertificateType)}>
-                                        {Object.entries(CERT_TYPES).map(([id, meta]) => <option key={id} value={id}>{meta.label}</option>)}
-                                    </select>
+                                    <Select value={data.type} onValueChange={value => selectType(value as CertificateType)}>
+                                        <SelectTrigger className="f-input" style={{ minHeight: 42 }}>
+                                            <SelectValue />
+                                        </SelectTrigger>
+                                        <SelectContent>
+                                            {Object.entries(CERT_TYPES).map(([id, meta]) => <SelectItem key={id} value={id}>{meta.label}</SelectItem>)}
+                                        </SelectContent>
+                                    </Select>
                                     {errors.type && <div className="field-error">{errors.type}</div>}
                                 </div>
 
                                 <div>
                                     <label style={labelStyle}>Status *</label>
-                                    <select style={fieldStyle} value={data.status} onChange={event => setData('status', event.target.value as CertificateStatus)}>
-                                        <option value="issued">Issued</option>
-                                        <option value="draft">Draft</option>
-                                        <option value="void">Void</option>
-                                    </select>
+                                    <Select value={data.status} onValueChange={value => setData('status', value as CertificateStatus)}>
+                                        <SelectTrigger className="f-input" style={{ minHeight: 42 }}>
+                                            <SelectValue />
+                                        </SelectTrigger>
+                                        <SelectContent>
+                                            <SelectItem value="issued">Issued</SelectItem>
+                                            <SelectItem value="draft">Draft</SelectItem>
+                                            <SelectItem value="void">Void</SelectItem>
+                                        </SelectContent>
+                                    </Select>
                                     {errors.status && <div className="field-error">{errors.status}</div>}
                                 </div>
 
@@ -362,10 +422,15 @@ export default function CertificatesPage({ certificates, students, levels, summa
 
                                 <div>
                                     <label style={labelStyle}>Level</label>
-                                    <select style={fieldStyle} value={data.level_id ?? ''} onChange={event => setData('level_id', Number(event.target.value) || null)}>
-                                        <option value="">Use student level</option>
-                                        {levels.map(level => <option key={level.id} value={level.id}>{level.name}</option>)}
-                                    </select>
+                                    <Select value={data.level_id ? String(data.level_id) : 'student-level'} onValueChange={value => setData('level_id', value === 'student-level' ? null : Number(value))}>
+                                        <SelectTrigger className="f-input" style={{ minHeight: 42 }}>
+                                            <SelectValue />
+                                        </SelectTrigger>
+                                        <SelectContent>
+                                            <SelectItem value="student-level">Use student level</SelectItem>
+                                            {levels.map(level => <SelectItem key={level.id} value={String(level.id)}>{level.name}</SelectItem>)}
+                                        </SelectContent>
+                                    </Select>
                                     {errors.level_id && <div className="field-error">{errors.level_id}</div>}
                                 </div>
 
@@ -416,6 +481,79 @@ export default function CertificatesPage({ certificates, students, levels, summa
                 </div>
             )}
         </AdminShell>
+    );
+}
+
+function SearchablePicker({
+    open,
+    onOpenChange,
+    search,
+    onSearchChange,
+    placeholder,
+    searchPlaceholder,
+    selectedLabel,
+    emptyLabel,
+    children,
+}: {
+    open: boolean;
+    onOpenChange: (open: boolean) => void;
+    search: string;
+    onSearchChange: (value: string) => void;
+    placeholder: string;
+    searchPlaceholder: string;
+    selectedLabel: string | null;
+    emptyLabel: string;
+    children: ReactNode;
+}) {
+    const hasOptions = Array.isArray(children) ? children.length > 0 : Boolean(children);
+
+    return (
+        <Popover open={open} onOpenChange={onOpenChange}>
+            <PopoverTrigger asChild>
+                <button
+                    type="button"
+                    className="f-input"
+                    style={{ minHeight: 42, display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 10, textAlign: 'left', cursor: 'pointer' }}
+                >
+                    <span style={{ minWidth: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                        {selectedLabel ?? placeholder}
+                    </span>
+                    <ChevronsUpDown size={16} style={{ color: '#94a3b8', flexShrink: 0 }} />
+                </button>
+            </PopoverTrigger>
+            <PopoverContent align="start" className="w-[var(--radix-popover-trigger-width)] p-0">
+                <div style={{ padding: 10, borderBottom: '1px solid #e2e8f0', display: 'flex', alignItems: 'center', gap: 8 }}>
+                    <Search size={15} style={{ color: '#94a3b8', flexShrink: 0 }} />
+                    <input
+                        value={search}
+                        onChange={event => onSearchChange(event.target.value)}
+                        placeholder={searchPlaceholder}
+                        autoFocus
+                        style={{ border: 'none', outline: 'none', width: '100%', fontSize: 13, background: 'transparent', color: '#1e293b' }}
+                    />
+                </div>
+                <div style={{ maxHeight: 280, overflowY: 'auto', padding: 6 }}>
+                    {hasOptions ? children : (
+                        <div style={{ padding: '18px 10px', textAlign: 'center', color: '#94a3b8', fontSize: 13, fontWeight: 700 }}>
+                            {emptyLabel}
+                        </div>
+                    )}
+                </div>
+            </PopoverContent>
+        </Popover>
+    );
+}
+
+function PickerOption({ selected, onClick, children }: { selected: boolean; onClick: () => void; children: ReactNode }) {
+    return (
+        <button
+            type="button"
+            onClick={onClick}
+            style={{ width: '100%', border: 'none', background: selected ? '#eff6ff' : 'transparent', color: '#1e293b', borderRadius: 8, padding: '9px 10px', display: 'flex', alignItems: 'center', gap: 10, cursor: 'pointer', textAlign: 'left' }}
+        >
+            <Check size={15} style={{ color: selected ? '#2563eb' : 'transparent', flexShrink: 0 }} />
+            <span style={{ minWidth: 0, flex: 1 }}>{children}</span>
+        </button>
     );
 }
 

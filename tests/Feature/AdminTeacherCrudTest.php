@@ -155,6 +155,76 @@ class AdminTeacherCrudTest extends TestCase
         unlink(public_path($teacher->profile_photo));
     }
 
+    public function test_admin_can_open_teacher_lesson_plan_form(): void
+    {
+        $this->actingAs(User::factory()->create());
+
+        $teacher = Teacher::factory()->create(['name_en' => 'Mr. Vuthy']);
+        SchoolClass::factory()->for($teacher)->create(['name' => 'Advanced A']);
+
+        $this->get(route('admin.teachers.lesson-plans.create', $teacher))
+            ->assertOk()
+            ->assertInertia(fn ($page) => $page
+                ->component('admin/teachers/lesson-plan-form')
+                ->where('teacher.id', $teacher->id)
+                ->where('teacher.nameEn', 'Mr. Vuthy')
+                ->has('classes', 1)
+                ->where('classes.0.name', 'Advanced A'));
+    }
+
+    public function test_admin_can_create_lesson_plan_for_teacher(): void
+    {
+        $user = User::factory()->create();
+        $teacher = Teacher::factory()->create();
+        $schoolClass = SchoolClass::factory()->for($teacher)->create();
+
+        $this->actingAs($user)
+            ->post(route('admin.teachers.lesson-plans.store', $teacher), [
+                'teacher_id' => $teacher->id,
+                'school_class_id' => $schoolClass->id,
+                'lesson_date' => '2026-05-13',
+                'title' => 'Present Simple Tense',
+                'objective' => 'Students can form positive sentences.',
+                'content' => 'Warm-up and guided practice.',
+                'materials' => 'Workbook',
+                'homework' => 'Exercise A',
+                'status' => 'planned',
+            ])
+            ->assertRedirect(route('admin.teachers'));
+
+        $this->assertDatabaseHas('lesson_plans', [
+            'teacher_id' => $teacher->id,
+            'school_class_id' => $schoolClass->id,
+            'lesson_date' => '2026-05-13',
+            'title' => 'Present Simple Tense',
+            'created_by' => $user->id,
+            'updated_by' => $user->id,
+        ]);
+    }
+
+    public function test_teacher_lesson_plan_requires_class_assigned_to_teacher(): void
+    {
+        $this->actingAs(User::factory()->create());
+
+        $teacher = Teacher::factory()->create();
+        $otherClass = SchoolClass::factory()->create();
+
+        $this->post(route('admin.teachers.lesson-plans.store', $teacher), [
+            'teacher_id' => $teacher->id,
+            'school_class_id' => $otherClass->id,
+            'lesson_date' => '2026-05-13',
+            'title' => 'Present Simple Tense',
+            'status' => 'planned',
+        ])
+            ->assertSessionHasErrors('school_class_id');
+
+        $this->assertDatabaseMissing('lesson_plans', [
+            'teacher_id' => $teacher->id,
+            'school_class_id' => $otherClass->id,
+            'title' => 'Present Simple Tense',
+        ]);
+    }
+
     public function test_admin_can_delete_teacher(): void
     {
         $this->actingAs(User::factory()->create());

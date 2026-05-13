@@ -3,9 +3,11 @@
 namespace App\Http\Controllers\Backends;
 
 use App\Http\Controllers\Controller;
+use App\Http\Requests\Backends\StoreLessonPlanRequest;
 use App\Http\Requests\Backends\StoreTeacherRequest;
 use App\Http\Requests\Backends\UpdateTeacherRequest;
 use App\Models\Teacher;
+use App\Services\Backends\LessonPlanService;
 use App\Services\Backends\TeacherService;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -20,8 +22,10 @@ class TeacherController extends Controller
      */
     public $teacherService;
 
-    public function __construct(TeacherService $teacherService)
-    {
+    public function __construct(
+        TeacherService $teacherService,
+        private readonly LessonPlanService $lessonPlanService,
+    ) {
         $this->teacherService = $teacherService;
     }
 
@@ -33,6 +37,52 @@ class TeacherController extends Controller
     public function show(Teacher $teacher): Response
     {
         return Inertia::render('admin/teachers/show', $this->teacherService->showData($teacher));
+    }
+
+    public function createLessonPlan(Teacher $teacher): Response
+    {
+        $teacher->load(['schoolClasses' => fn ($query) => $query->active()->orderBy('name')]);
+
+        return Inertia::render('admin/teachers/lesson-plan-form', [
+            'teacher' => [
+                'id' => $teacher->id,
+                'nameKh' => $teacher->name_kh,
+                'nameEn' => $teacher->name_en,
+                'photo' => $teacher->profile_photo ? asset($teacher->profile_photo) : null,
+                'subject' => $teacher->subject,
+            ],
+            'classes' => $teacher->schoolClasses->map(fn ($schoolClass): array => [
+                'id' => $schoolClass->id,
+                'name' => $schoolClass->name,
+                'room' => $schoolClass->room ?? '',
+                'time' => collect([$schoolClass->starts_at, $schoolClass->ends_at])->filter()->implode('-'),
+            ]),
+            'today' => today()->toDateString(),
+        ]);
+    }
+
+    public function storeLessonPlan(StoreLessonPlanRequest $request, Teacher $teacher): RedirectResponse
+    {
+        $data = $request->validated();
+
+        if (! $teacher->schoolClasses()->whereKey($data['school_class_id'])->exists()) {
+            return back()->withErrors([
+                'school_class_id' => 'Please select a class assigned to this teacher.',
+            ])->withInput();
+        }
+
+        try {
+            $this->lessonPlanService->create([
+                ...$data,
+                'teacher_id' => $teacher->id,
+            ], $request->user()?->id);
+
+            return to_route('admin.teachers')->with('success', 'Lesson plan created successfully.');
+        } catch (Throwable $exception) {
+            report($exception);
+
+            return back()->with('error', 'Unable to create lesson plan. Please try again.');
+        }
     }
 
     public function store(StoreTeacherRequest $request): RedirectResponse

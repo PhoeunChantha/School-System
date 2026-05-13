@@ -1,4 +1,6 @@
-import { destroy, store, update } from '@/actions/App/Http/Controllers/Backends/HomeworkSubmissionController';
+import { destroy, store, update } from '@/routes/admin/homework-submissions';
+import { DatePicker } from '@/components/ui/date-picker';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import {
     Sheet,
     SheetContent,
@@ -6,11 +8,12 @@ import {
     SheetHeader,
     SheetTitle,
 } from '@/components/ui/sheet';
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import AdminShell from '@/pages/admin/shell';
-import { Avatar, Badge, KH, PBar } from '@/pages/admin/ui';
+import { Avatar, Badge, KH, Pagination, PBar } from '@/pages/admin/ui';
 import { router, useForm } from '@inertiajs/react';
-import { Edit3, Plus, Trash2 } from 'lucide-react';
-import { FormEvent, useMemo, useState } from 'react';
+import { Check, ChevronsUpDown, Edit3, Plus, Search, Trash2 } from 'lucide-react';
+import { FormEvent, useEffect, useMemo, useState } from 'react';
 import type { CSSProperties, ReactNode } from 'react';
 import { toast } from 'sonner';
 
@@ -73,6 +76,8 @@ interface HomeworkSubmissionFormData {
 
 type DrawerMode = 'create' | 'edit';
 type HomeworkSubmissionStatus = 'pending' | 'submitted' | 'graded' | 'missing';
+type AssignmentFilter = 'all' | `title:${string}`;
+type OrderKey = 'student-asc' | 'homework-asc' | 'submitted-desc' | 'score-desc' | 'status-asc';
 
 const statusType = {
     pending: 'amber',
@@ -80,6 +85,60 @@ const statusType = {
     graded: 'green',
     missing: 'red',
 } as const;
+
+const ORDER_OPTIONS: { value: OrderKey; label: string }[] = [
+    { value: 'student-asc', label: 'Student A -> Z' },
+    { value: 'homework-asc', label: 'Homework A -> Z' },
+    { value: 'submitted-desc', label: 'Submitted newest' },
+    { value: 'score-desc', label: 'Score highest' },
+    { value: 'status-asc', label: 'Status A -> Z' },
+];
+
+function assignmentLabel(assignment: HomeworkAssignmentOption): string {
+    return assignment.titleEn || assignment.titleKh || `Homework #${assignment.id}`;
+}
+
+function submissionAssignmentLabel(submission: SubmissionItem): string {
+    return submission.assignmentTitleEn || submission.assignmentTitleKh || `Homework #${submission.homeworkAssignmentId}`;
+}
+
+function assignmentFilterTitle(filter: AssignmentFilter): string | null {
+    return filter === 'all' ? null : filter.slice('title:'.length);
+}
+
+function sortSubmissions(list: SubmissionItem[], order: OrderKey): SubmissionItem[] {
+    return [...list].sort((a, b) => {
+        switch (order) {
+            case 'student-asc':
+                return a.studentNameEn.localeCompare(b.studentNameEn);
+            case 'homework-asc':
+                return submissionAssignmentLabel(a).localeCompare(submissionAssignmentLabel(b));
+            case 'submitted-desc':
+                return (b.submittedAt || '').localeCompare(a.submittedAt || '');
+            case 'score-desc':
+                return (b.score ?? -1) - (a.score ?? -1);
+            case 'status-asc':
+                return a.status.localeCompare(b.status);
+            default:
+                return 0;
+        }
+    });
+}
+
+function formatSubmittedAt(value: string): string {
+    if (!value) {
+        return 'Not submitted';
+    }
+
+    return value.replace('T', ' ');
+}
+
+function nowDateTimeValue(): string {
+    const now = new Date();
+    const offsetDate = new Date(now.getTime() - now.getTimezoneOffset() * 60000);
+
+    return offsetDate.toISOString().slice(0, 16);
+}
 
 function emptyForm(assignments: HomeworkAssignmentOption[], students: StudentOption[]): HomeworkSubmissionFormData {
     return {
@@ -93,24 +152,102 @@ function emptyForm(assignments: HomeworkAssignmentOption[], students: StudentOpt
 }
 
 export default function HomeworkSubmissionsPage({ submissions, assignments, students, summary }: HomeworkSubmissionsPageProps) {
-    const [selectedAssignment, setSelectedAssignment] = useState<number | 'all'>('all');
+    const [selectedAssignment, setSelectedAssignment] = useState<AssignmentFilter>('all');
+    const [search, setSearch] = useState('');
+    const [submittedDate, setSubmittedDate] = useState('');
+    const [orderBy, setOrderBy] = useState<OrderKey>('student-asc');
+    const [page, setPage] = useState(1);
+    const [perPage, setPerPage] = useState(5);
+    const [homeworkPickerOpen, setHomeworkPickerOpen] = useState(false);
+    const [homeworkSearch, setHomeworkSearch] = useState('');
+    const [studentPickerOpen, setStudentPickerOpen] = useState(false);
+    const [studentSearch, setStudentSearch] = useState('');
     const [drawerMode, setDrawerMode] = useState<DrawerMode | null>(null);
     const [editingSubmission, setEditingSubmission] = useState<SubmissionItem | null>(null);
     const [deleteTarget, setDeleteTarget] = useState<SubmissionItem | null>(null);
 
     const { data, setData, post, put, processing, errors, reset } = useForm<HomeworkSubmissionFormData>(emptyForm(assignments, students));
 
-    const filtered = useMemo(
-        () => selectedAssignment === 'all' ? submissions : submissions.filter(submission => submission.homeworkAssignmentId === selectedAssignment),
-        [submissions, selectedAssignment],
+    const selectedHomework = assignments.find(assignment => assignment.id === data.homework_assignment_id);
+    const selectedStudent = students.find(student => student.id === data.student_id);
+
+    const assignmentOptions = useMemo(() => {
+        const titles = new Map<string, string>();
+
+        assignments.forEach(assignment => {
+            const label = assignmentLabel(assignment);
+            titles.set(label.toLowerCase(), label);
+        });
+
+        return [...titles.values()].sort((a, b) => a.localeCompare(b));
+    }, [assignments]);
+
+    const filtered = useMemo(() => {
+        const query = search.toLowerCase();
+        const selectedTitle = assignmentFilterTitle(selectedAssignment)?.toLowerCase() ?? null;
+
+        const base = submissions.filter(submission => {
+            const title = submissionAssignmentLabel(submission);
+            const matchesAssignment = !selectedTitle || title.toLowerCase() === selectedTitle;
+            const matchesDate = !submittedDate || submission.submittedAt.slice(0, 10) === submittedDate;
+            const matchesSearch = !query
+                || submission.studentNameKh.toLowerCase().includes(query)
+                || submission.studentNameEn.toLowerCase().includes(query)
+                || title.toLowerCase().includes(query)
+                || submission.className.toLowerCase().includes(query)
+                || submission.status.toLowerCase().includes(query);
+
+            return matchesAssignment && matchesDate && matchesSearch;
+        });
+
+        return sortSubmissions(base, orderBy);
+    }, [submissions, selectedAssignment, submittedDate, search, orderBy]);
+
+    const paginated = useMemo(
+        () => filtered.slice((page - 1) * perPage, page * perPage),
+        [filtered, page, perPage],
     );
 
+    const searchableAssignments = useMemo(() => {
+        const query = homeworkSearch.toLowerCase();
+
+        return assignments.filter(assignment => {
+            const label = assignmentLabel(assignment);
+
+            return !query
+                || label.toLowerCase().includes(query)
+                || assignment.className.toLowerCase().includes(query)
+                || assignment.dueOn.toLowerCase().includes(query);
+        });
+    }, [assignments, homeworkSearch]);
+
+    const searchableStudents = useMemo(() => {
+        const query = studentSearch.toLowerCase();
+
+        return students.filter(student => !query
+            || student.nameKh.toLowerCase().includes(query)
+            || student.nameEn.toLowerCase().includes(query)
+            || student.className.toLowerCase().includes(query)
+            || student.level.toLowerCase().includes(query));
+    }, [students, studentSearch]);
+
+    useEffect(() => {
+        setPage(1);
+    }, [selectedAssignment, submittedDate, search, orderBy, perPage]);
+
     const openCreateDrawer = () => {
+        const selectedTitle = assignmentFilterTitle(selectedAssignment);
+        const selectedAssignmentId = selectedTitle
+            ? assignments.find(assignment => assignmentLabel(assignment) === selectedTitle)?.id
+            : null;
+
         reset();
         setData({
             ...emptyForm(assignments, students),
-            homework_assignment_id: selectedAssignment === 'all' ? assignments[0]?.id ?? null : selectedAssignment,
+            homework_assignment_id: selectedAssignmentId ?? assignments[0]?.id ?? null,
         });
+        setHomeworkSearch('');
+        setStudentSearch('');
         setEditingSubmission(null);
         setDrawerMode('create');
     };
@@ -124,6 +261,8 @@ export default function HomeworkSubmissionsPage({ submissions, assignments, stud
             status: submission.status,
             feedback: submission.feedback,
         });
+        setHomeworkSearch('');
+        setStudentSearch('');
         setEditingSubmission(submission);
         setDrawerMode('edit');
     };
@@ -131,6 +270,20 @@ export default function HomeworkSubmissionsPage({ submissions, assignments, stud
     const closeDrawer = () => {
         setDrawerMode(null);
         setEditingSubmission(null);
+        setHomeworkPickerOpen(false);
+        setStudentPickerOpen(false);
+    };
+
+    const selectHomework = (assignmentId: number) => {
+        setData('homework_assignment_id', assignmentId);
+        setHomeworkPickerOpen(false);
+        setHomeworkSearch('');
+    };
+
+    const selectStudent = (studentId: number) => {
+        setData('student_id', studentId);
+        setStudentPickerOpen(false);
+        setStudentSearch('');
     };
 
     const submitSubmission = (event: FormEvent<HTMLFormElement>) => {
@@ -195,12 +348,69 @@ export default function HomeworkSubmissionsPage({ submissions, assignments, stud
                 </div>
 
                 <div className="card" style={{ overflowX: 'auto' }}>
-                    <div style={{ padding: '12px 16px', borderBottom: '1px solid #f1f5f9', display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap' }}>
-                        <select style={selectStyle} value={selectedAssignment} onChange={event => setSelectedAssignment(event.target.value === 'all' ? 'all' : Number(event.target.value))}>
-                            <option value="all">All homework</option>
-                            {assignments.map(assignment => <option key={assignment.id} value={assignment.id}>{assignment.titleEn || assignment.titleKh}</option>)}
-                        </select>
+                    <div style={{ padding: '12px 16px', borderBottom: '1px solid #f1f5f9', display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
+                        <span style={{ fontSize: 11, fontWeight: 700, color: '#94a3b8', whiteSpace: 'nowrap' }}>Sort by</span>
+                        <Select value={orderBy} onValueChange={value => setOrderBy(value as OrderKey)}>
+                            <SelectTrigger style={{ width: 'auto', minWidth: 160, padding: '5px 10px', fontSize: 12, height: 'auto' }}>
+                                <SelectValue />
+                            </SelectTrigger>
+                            <SelectContent>
+                                {ORDER_OPTIONS.map(option => (
+                                    <SelectItem key={option.value} value={option.value}>{option.label}</SelectItem>
+                                ))}
+                            </SelectContent>
+                        </Select>
+
+                        <div style={{ width: 1, height: 18, background: '#e2e8f0', margin: '0 2px' }} />
+
+                        <Select value={perPage.toString()} onValueChange={value => { setPerPage(Number(value)); setPage(1); }}>
+                            <SelectTrigger style={{ width: 'auto', minWidth: 120, padding: '5px 10px', fontSize: 12, height: 'auto' }}>
+                                <SelectValue />
+                            </SelectTrigger>
+                            <SelectContent>
+                                {[5, 10, 25, 50].map(size => (
+                                    <SelectItem key={size} value={size.toString()}>{size} per page</SelectItem>
+                                ))}
+                            </SelectContent>
+                        </Select>
+
+                        <Select value={selectedAssignment} onValueChange={value => setSelectedAssignment(value as AssignmentFilter)}>
+                            <SelectTrigger style={{ width: 'auto', minWidth: 220, maxWidth: 320, padding: '5px 10px', fontSize: 12, height: 'auto' }}>
+                                <SelectValue />
+                            </SelectTrigger>
+                            <SelectContent>
+                                <SelectItem value="all">All homework</SelectItem>
+                                {assignmentOptions.map(title => (
+                                    <SelectItem key={title} value={`title:${title}`}>{title}</SelectItem>
+                                ))}
+                            </SelectContent>
+                        </Select>
+
+                        <DatePicker
+                            value={submittedDate}
+                            onChange={setSubmittedDate}
+                            placeholder="Submitted date"
+                            className="h-auto w-auto min-w-[160px] px-3 py-[7px] text-xs font-bold"
+                        />
+
+                        {submittedDate && (
+                            <button
+                                type="button"
+                                onClick={() => setSubmittedDate('')}
+                                style={{ background: '#f8fafc', color: '#64748b', border: '1px solid #e2e8f0', borderRadius: 8, padding: '6px 10px', fontSize: 12, fontWeight: 800, cursor: 'pointer' }}
+                            >
+                                Clear date
+                            </button>
+                        )}
+
                         <span style={{ fontSize: 11, color: '#94a3b8' }}>{filtered.length} submission{filtered.length !== 1 ? 's' : ''}</span>
+                        <input
+                            value={search}
+                            onChange={event => setSearch(event.target.value)}
+                            className="f-input"
+                            style={{ width: 260, maxWidth: '100%', marginLeft: 'auto' }}
+                            placeholder="Search submissions..."
+                        />
                     </div>
                     <table className="data-table">
                         <thead>
@@ -214,13 +424,13 @@ export default function HomeworkSubmissionsPage({ submissions, assignments, stud
                             </tr>
                         </thead>
                         <tbody>
-                            {filtered.length === 0 ? (
+                            {paginated.length === 0 ? (
                                 <tr>
                                     <td colSpan={6} style={{ padding: '38px 24px', textAlign: 'center', color: '#64748b', fontSize: 14, fontWeight: 700 }}>
-                                        No homework submissions found
+                                        {search ? <>No homework submissions found for <strong>"{search}"</strong></> : 'No homework submissions found'}
                                     </td>
                                 </tr>
-                            ) : filtered.map(submission => {
+                            ) : paginated.map(submission => {
                                 const percent = submission.score === null ? 0 : Math.round((submission.score / Math.max(submission.points, 1)) * 100);
 
                                 return (
@@ -257,6 +467,16 @@ export default function HomeworkSubmissionsPage({ submissions, assignments, stud
                             })}
                         </tbody>
                     </table>
+                    {filtered.length > 0 && (
+                        <Pagination
+                            total={filtered.length}
+                            page={page}
+                            perPage={perPage}
+                            onPageChange={setPage}
+                            onPerPageChange={setPerPage}
+                            showPerPage={false}
+                        />
+                    )}
                 </div>
             </div>
 
@@ -275,28 +495,82 @@ export default function HomeworkSubmissionsPage({ submissions, assignments, stud
 
                             <div style={{ padding: 24, display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16 }}>
                                 <Field label="Homework" error={errors.homework_assignment_id} wide>
-                                    <select style={fieldStyle} value={data.homework_assignment_id ?? ''} onChange={event => setData('homework_assignment_id', Number(event.target.value) || null)}>
-                                        {assignments.map(assignment => <option key={assignment.id} value={assignment.id}>{assignment.titleEn || assignment.titleKh}</option>)}
-                                    </select>
+                                    <SearchablePicker
+                                        open={homeworkPickerOpen}
+                                        onOpenChange={setHomeworkPickerOpen}
+                                        search={homeworkSearch}
+                                        onSearchChange={setHomeworkSearch}
+                                        placeholder="Select homework"
+                                        searchPlaceholder="Search homework..."
+                                        selectedLabel={selectedHomework ? assignmentLabel(selectedHomework) : null}
+                                        emptyLabel="No homework found"
+                                    >
+                                        {searchableAssignments.map(assignment => {
+                                            const selected = assignment.id === data.homework_assignment_id;
+
+                                            return (
+                                                <PickerOption key={assignment.id} selected={selected} onClick={() => selectHomework(assignment.id)}>
+                                                    <span style={{ display: 'block', fontSize: 13, fontWeight: 800, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{assignmentLabel(assignment)}</span>
+                                                    <span style={{ display: 'block', fontSize: 11, color: '#94a3b8', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                                                        {assignment.className || 'No class'}{assignment.dueOn ? ` - Due ${assignment.dueOn}` : ''}
+                                                    </span>
+                                                </PickerOption>
+                                            );
+                                        })}
+                                    </SearchablePicker>
                                 </Field>
                                 <Field label="Student" error={errors.student_id} wide>
-                                    <select style={fieldStyle} value={data.student_id ?? ''} onChange={event => setData('student_id', Number(event.target.value) || null)}>
-                                        {students.map(student => <option key={student.id} value={student.id}>{student.nameEn} - {student.className || student.level}</option>)}
-                                    </select>
+                                    <SearchablePicker
+                                        open={studentPickerOpen}
+                                        onOpenChange={setStudentPickerOpen}
+                                        search={studentSearch}
+                                        onSearchChange={setStudentSearch}
+                                        placeholder="Select student"
+                                        searchPlaceholder="Search students..."
+                                        selectedLabel={selectedStudent ? `${selectedStudent.nameEn} - ${selectedStudent.className || selectedStudent.level}` : null}
+                                        emptyLabel="No students found"
+                                    >
+                                        {searchableStudents.map(student => {
+                                            const selected = student.id === data.student_id;
+
+                                            return (
+                                                <PickerOption key={student.id} selected={selected} onClick={() => selectStudent(student.id)}>
+                                                    <span style={{ display: 'block', fontSize: 13, fontWeight: 800, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{student.nameEn}</span>
+                                                    <span style={{ display: 'block', fontSize: 11, color: '#94a3b8', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                                                        {student.nameKh} - {student.className || student.level}
+                                                    </span>
+                                                </PickerOption>
+                                            );
+                                        })}
+                                    </SearchablePicker>
                                 </Field>
                                 <Field label="Submitted At" error={errors.submitted_at}>
-                                    <input type="datetime-local" style={fieldStyle} value={data.submitted_at} onChange={event => setData('submitted_at', event.target.value)} />
+                                    <Select value={data.submitted_at || 'none'} onValueChange={value => setData('submitted_at', value === 'none' ? '' : value === 'now' ? nowDateTimeValue() : value)}>
+                                        <SelectTrigger className="f-input" style={{ minHeight: 42 }}>
+                                            <SelectValue />
+                                        </SelectTrigger>
+                                        <SelectContent>
+                                            <SelectItem value="none">Not submitted</SelectItem>
+                                            <SelectItem value="now">Now</SelectItem>
+                                            {data.submitted_at && <SelectItem value={data.submitted_at}>{formatSubmittedAt(data.submitted_at)}</SelectItem>}
+                                        </SelectContent>
+                                    </Select>
                                 </Field>
                                 <Field label="Score" error={errors.score}>
                                     <input type="number" min={0} max={1000} style={fieldStyle} value={data.score ?? ''} onChange={event => setData('score', event.target.value === '' ? null : Number(event.target.value))} />
                                 </Field>
                                 <Field label="Status" error={errors.status} wide>
-                                    <select style={fieldStyle} value={data.status} onChange={event => setData('status', event.target.value as HomeworkSubmissionStatus)}>
-                                        <option value="pending">Pending</option>
-                                        <option value="submitted">Submitted</option>
-                                        <option value="graded">Graded</option>
-                                        <option value="missing">Missing</option>
-                                    </select>
+                                    <Select value={data.status} onValueChange={value => setData('status', value as HomeworkSubmissionStatus)}>
+                                        <SelectTrigger className="f-input" style={{ minHeight: 42 }}>
+                                            <SelectValue />
+                                        </SelectTrigger>
+                                        <SelectContent>
+                                            <SelectItem value="pending">Pending</SelectItem>
+                                            <SelectItem value="submitted">Submitted</SelectItem>
+                                            <SelectItem value="graded">Graded</SelectItem>
+                                            <SelectItem value="missing">Missing</SelectItem>
+                                        </SelectContent>
+                                    </Select>
                                 </Field>
                                 <Field label="Feedback" error={errors.feedback} wide>
                                     <textarea style={{ ...fieldStyle, minHeight: 110, resize: 'vertical' }} value={data.feedback} onChange={event => setData('feedback', event.target.value)} />
@@ -342,6 +616,79 @@ function Field({ label, error, children, wide = false }: { label: string; error?
     );
 }
 
+function SearchablePicker({
+    open,
+    onOpenChange,
+    search,
+    onSearchChange,
+    placeholder,
+    searchPlaceholder,
+    selectedLabel,
+    emptyLabel,
+    children,
+}: {
+    open: boolean;
+    onOpenChange: (open: boolean) => void;
+    search: string;
+    onSearchChange: (value: string) => void;
+    placeholder: string;
+    searchPlaceholder: string;
+    selectedLabel: string | null;
+    emptyLabel: string;
+    children: ReactNode;
+}) {
+    const hasOptions = Array.isArray(children) ? children.length > 0 : Boolean(children);
+
+    return (
+        <Popover open={open} onOpenChange={onOpenChange}>
+            <PopoverTrigger asChild>
+                <button
+                    type="button"
+                    className="f-input"
+                    style={{ minHeight: 42, display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 10, textAlign: 'left', cursor: 'pointer' }}
+                >
+                    <span style={{ minWidth: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                        {selectedLabel ?? placeholder}
+                    </span>
+                    <ChevronsUpDown size={16} style={{ color: '#94a3b8', flexShrink: 0 }} />
+                </button>
+            </PopoverTrigger>
+            <PopoverContent align="start" className="w-[var(--radix-popover-trigger-width)] p-0">
+                <div style={{ padding: 10, borderBottom: '1px solid #e2e8f0', display: 'flex', alignItems: 'center', gap: 8 }}>
+                    <Search size={15} style={{ color: '#94a3b8', flexShrink: 0 }} />
+                    <input
+                        value={search}
+                        onChange={event => onSearchChange(event.target.value)}
+                        placeholder={searchPlaceholder}
+                        autoFocus
+                        style={{ border: 'none', outline: 'none', width: '100%', fontSize: 13, background: 'transparent', color: '#1e293b' }}
+                    />
+                </div>
+                <div style={{ maxHeight: 280, overflowY: 'auto', padding: 6 }}>
+                    {hasOptions ? children : (
+                        <div style={{ padding: '18px 10px', textAlign: 'center', color: '#94a3b8', fontSize: 13, fontWeight: 700 }}>
+                            {emptyLabel}
+                        </div>
+                    )}
+                </div>
+            </PopoverContent>
+        </Popover>
+    );
+}
+
+function PickerOption({ selected, onClick, children }: { selected: boolean; onClick: () => void; children: ReactNode }) {
+    return (
+        <button
+            type="button"
+            onClick={onClick}
+            style={{ width: '100%', border: 'none', background: selected ? '#eff6ff' : 'transparent', color: '#1e293b', borderRadius: 8, padding: '9px 10px', display: 'flex', alignItems: 'center', gap: 10, cursor: 'pointer', textAlign: 'left' }}
+        >
+            <Check size={15} style={{ color: selected ? '#2563eb' : 'transparent', flexShrink: 0 }} />
+            <span style={{ minWidth: 0, flex: 1 }}>{children}</span>
+        </button>
+    );
+}
+
 function iconButton(background: string, color: string, border: string): CSSProperties {
     return {
         background,
@@ -368,18 +715,6 @@ const primaryButton: CSSProperties = {
     display: 'inline-flex',
     alignItems: 'center',
     gap: 8,
-};
-
-const selectStyle: CSSProperties = {
-    padding: '7px 10px',
-    borderRadius: 8,
-    border: '1.5px solid #e2e8f0',
-    background: 'white',
-    color: '#374151',
-    fontSize: 12,
-    fontWeight: 800,
-    cursor: 'pointer',
-    outline: 'none',
 };
 
 const fieldStyle: CSSProperties = {

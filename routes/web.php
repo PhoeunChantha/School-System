@@ -48,6 +48,8 @@ Route::prefix('admin')->name('admin.')->group(function () {
     Route::put('/students/{student}', [StudentController::class, 'update'])->name('students.update');
     Route::delete('/students/{student}', [StudentController::class, 'destroy'])->name('students.destroy');
     Route::get('/teachers', [TeacherController::class, 'index'])->name('teachers');
+    Route::get('/teachers/{teacher}/lesson-plans/create', [TeacherController::class, 'createLessonPlan'])->name('teachers.lesson-plans.create');
+    Route::post('/teachers/{teacher}/lesson-plans', [TeacherController::class, 'storeLessonPlan'])->name('teachers.lesson-plans.store');
     Route::get('/teachers/{teacher}', [TeacherController::class, 'show'])->name('teachers.show');
     Route::post('/teachers', [TeacherController::class, 'store'])->name('teachers.store');
     Route::put('/teachers/{teacher}', [TeacherController::class, 'update'])->name('teachers.update');

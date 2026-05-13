@@ -6,11 +6,12 @@ import {
     SheetHeader,
     SheetTitle,
 } from '@/components/ui/sheet';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import AdminShell from '@/pages/admin/shell';
-import { Avatar, Badge, KH, PBar } from '@/pages/admin/ui';
+import { Avatar, Badge, KH, Pagination, PBar } from '@/pages/admin/ui';
 import { router, useForm } from '@inertiajs/react';
 import { Edit3, Plus, Trash2 } from 'lucide-react';
-import { FormEvent, useMemo, useState } from 'react';
+import { FormEvent, useEffect, useMemo, useState } from 'react';
 import type { CSSProperties, ReactNode } from 'react';
 import { toast } from 'sonner';
 
@@ -71,6 +72,7 @@ interface ExamResultFormData {
 
 type DrawerMode = 'create' | 'edit';
 type ExamResultStatus = 'pending' | 'passed' | 'failed' | 'absent';
+type OrderKey = 'student-asc' | 'student-desc' | 'score-desc' | 'score-asc' | 'status-asc' | 'exam-asc';
 
 const statusType = {
     pending: 'amber',
@@ -78,6 +80,41 @@ const statusType = {
     failed: 'red',
     absent: 'gray',
 } as const;
+
+const ORDER_OPTIONS: { value: OrderKey; label: string }[] = [
+    { value: 'student-asc', label: 'Student A-Z' },
+    { value: 'student-desc', label: 'Student Z-A' },
+    { value: 'score-desc', label: 'Score high-low' },
+    { value: 'score-asc', label: 'Score low-high' },
+    { value: 'status-asc', label: 'Status A-Z' },
+    { value: 'exam-asc', label: 'Exam A-Z' },
+];
+
+function sortResults(results: ExamResultItem[], orderBy: OrderKey): ExamResultItem[] {
+    return [...results].sort((a, b) => {
+        if (orderBy === 'student-desc') {
+            return b.studentNameEn.localeCompare(a.studentNameEn);
+        }
+
+        if (orderBy === 'score-desc') {
+            return (b.percent ?? 0) - (a.percent ?? 0);
+        }
+
+        if (orderBy === 'score-asc') {
+            return (a.percent ?? 0) - (b.percent ?? 0);
+        }
+
+        if (orderBy === 'status-asc') {
+            return a.status.localeCompare(b.status);
+        }
+
+        if (orderBy === 'exam-asc') {
+            return a.examTitle.localeCompare(b.examTitle);
+        }
+
+        return a.studentNameEn.localeCompare(b.studentNameEn);
+    });
+}
 
 function emptyForm(exams: ExamOption[], students: StudentOption[]): ExamResultFormData {
     return {
@@ -92,15 +129,39 @@ function emptyForm(exams: ExamOption[], students: StudentOption[]): ExamResultFo
 
 export default function ExamResultsPage({ results, exams, students, summary }: ExamResultsPageProps) {
     const [selectedExam, setSelectedExam] = useState<number | 'all'>('all');
+    const [search, setSearch] = useState('');
+    const [orderBy, setOrderBy] = useState<OrderKey>('student-asc');
+    const [perPage, setPerPage] = useState(10);
+    const [page, setPage] = useState(1);
     const [drawerMode, setDrawerMode] = useState<DrawerMode | null>(null);
     const [editingResult, setEditingResult] = useState<ExamResultItem | null>(null);
     const [deleteTarget, setDeleteTarget] = useState<ExamResultItem | null>(null);
 
     const { data, setData, post, put, processing, errors, reset } = useForm<ExamResultFormData>(emptyForm(exams, students));
 
-    const filtered = useMemo(
-        () => selectedExam === 'all' ? results : results.filter(result => result.examId === selectedExam),
-        [results, selectedExam],
+    useEffect(() => { setPage(1); }, [selectedExam, search, orderBy, perPage]);
+
+    const filtered = useMemo(() => {
+        const q = search.toLowerCase();
+        const byExam = selectedExam === 'all' ? results : results.filter(result => result.examId === selectedExam);
+        const bySearch = byExam.filter(result =>
+            !q ||
+            result.studentNameKh.includes(search) ||
+            result.studentNameEn.toLowerCase().includes(q) ||
+            result.examTitle.toLowerCase().includes(q) ||
+            result.examSubject.toLowerCase().includes(q) ||
+            result.className.toLowerCase().includes(q) ||
+            result.level.toLowerCase().includes(q) ||
+            result.status.toLowerCase().includes(q) ||
+            result.examDate.includes(search)
+        );
+
+        return sortResults(bySearch, orderBy);
+    }, [results, selectedExam, search, orderBy]);
+
+    const paginated = useMemo(
+        () => filtered.slice((page - 1) * perPage, page * perPage),
+        [filtered, page, perPage],
     );
 
     const openCreateDrawer = () => {
@@ -194,11 +255,50 @@ export default function ExamResultsPage({ results, exams, students, summary }: E
 
                 <div className="card" style={{ overflowX: 'auto' }}>
                     <div style={{ padding: '12px 16px', borderBottom: '1px solid #f1f5f9', display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap' }}>
-                        <select style={selectStyle} value={selectedExam} onChange={event => setSelectedExam(event.target.value === 'all' ? 'all' : Number(event.target.value))}>
-                            <option value="all">All exams</option>
-                            {exams.map(exam => <option key={exam.id} value={exam.id}>{exam.title}</option>)}
-                        </select>
-                        <span style={{ fontSize: 11, color: '#94a3b8' }}>{filtered.length} result{filtered.length !== 1 ? 's' : ''}</span>
+                        <span style={{ fontSize: 11, fontWeight: 700, color: '#94a3b8', whiteSpace: 'nowrap' }}>Sort by</span>
+                        <Select value={orderBy} onValueChange={value => setOrderBy(value as OrderKey)}>
+                            <SelectTrigger style={{ width: 'auto', minWidth: 150, padding: '5px 10px', fontSize: 12, height: 'auto' }}>
+                                <SelectValue />
+                            </SelectTrigger>
+                            <SelectContent>
+                                {ORDER_OPTIONS.map(option => (
+                                    <SelectItem key={option.value} value={option.value}>{option.label}</SelectItem>
+                                ))}
+                            </SelectContent>
+                        </Select>
+
+                        <div style={{ width: 1, height: 18, background: '#e2e8f0', margin: '0 2px' }} />
+
+                        <Select value={perPage.toString()} onValueChange={value => { setPerPage(Number(value)); setPage(1); }}>
+                            <SelectTrigger style={{ width: 'auto', minWidth: 120, padding: '5px 10px', fontSize: 12, height: 'auto' }}>
+                                <SelectValue />
+                            </SelectTrigger>
+                            <SelectContent>
+                                {[5, 10, 25, 50].map(size => (
+                                    <SelectItem key={size} value={size.toString()}>{size} per page</SelectItem>
+                                ))}
+                            </SelectContent>
+                        </Select>
+
+                        <Select value={String(selectedExam)} onValueChange={value => setSelectedExam(value === 'all' ? 'all' : Number(value))}>
+                            <SelectTrigger style={{ width: 'auto', minWidth: 180, maxWidth: 280, padding: '5px 10px', fontSize: 12, height: 'auto' }}>
+                                <SelectValue />
+                            </SelectTrigger>
+                            <SelectContent>
+                                <SelectItem value="all">All exams</SelectItem>
+                                {exams.map(exam => <SelectItem key={exam.id} value={String(exam.id)}>{exam.title}</SelectItem>)}
+                            </SelectContent>
+                        </Select>
+
+                        <span style={{ fontSize: 11, color: '#94a3b8', marginLeft: 4 }}>{filtered.length} result{filtered.length !== 1 ? 's' : ''}</span>
+
+                        <input
+                            value={search}
+                            onChange={event => setSearch(event.target.value)}
+                            className="f-input"
+                            style={{ width: 260, maxWidth: '100%', marginLeft: 'auto' }}
+                            placeholder="Search exam results..."
+                        />
                     </div>
                     <table className="data-table">
                         <thead>
@@ -212,13 +312,13 @@ export default function ExamResultsPage({ results, exams, students, summary }: E
                             </tr>
                         </thead>
                         <tbody>
-                            {filtered.length === 0 ? (
+                            {paginated.length === 0 ? (
                                 <tr>
                                     <td colSpan={6} style={{ padding: '38px 24px', textAlign: 'center', color: '#64748b', fontSize: 14, fontWeight: 700 }}>
-                                        No exam results found
+                                        {search ? <>No exam results found for <strong>"{search}"</strong></> : 'No exam results found'}
                                     </td>
                                 </tr>
-                            ) : filtered.map(result => (
+                            ) : paginated.map(result => (
                                 <tr key={result.id}>
                                     <td>
                                         <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
@@ -251,6 +351,17 @@ export default function ExamResultsPage({ results, exams, students, summary }: E
                             ))}
                         </tbody>
                     </table>
+
+                    {filtered.length > 0 && (
+                        <Pagination
+                            total={filtered.length}
+                            page={page}
+                            perPage={perPage}
+                            onPageChange={setPage}
+                            onPerPageChange={setPerPage}
+                            showPerPage={false}
+                        />
+                    )}
                 </div>
             </div>
 
@@ -362,18 +473,6 @@ const primaryButton: CSSProperties = {
     display: 'inline-flex',
     alignItems: 'center',
     gap: 8,
-};
-
-const selectStyle: CSSProperties = {
-    padding: '7px 10px',
-    borderRadius: 8,
-    border: '1.5px solid #e2e8f0',
-    background: 'white',
-    color: '#374151',
-    fontSize: 12,
-    fontWeight: 800,
-    cursor: 'pointer',
-    outline: 'none',
 };
 
 const fieldStyle: CSSProperties = {

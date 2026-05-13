@@ -1,5 +1,6 @@
 import { FormEvent, useRef, useState } from 'react';
-import { index as lessonPlanIndex } from '@/actions/App/Http/Controllers/Backends/LessonPlanController';
+import { lessonPlans as lessonPlanIndex } from '@/routes/admin';
+import { create as createTeacherLessonPlan } from '@/routes/admin/teachers/lesson-plans';
 import { destroy, show as showTeacher, store, update } from '@/actions/App/Http/Controllers/Backends/TeacherController';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import AdminShell from '@/pages/admin/shell';
@@ -95,7 +96,7 @@ export default function TeachersPage({ teachers }: TeachersPageProps) {
                             value={search}
                             onChange={e => setSearch(e.target.value)}
                             className="f-input"
-                            style={{ maxWidth: 260 }}
+                            style={{ width: 260, maxWidth: '100%' }}
                             placeholder="🔍  Search teachers..."
                         />
                         {/* Stats */}
@@ -125,7 +126,7 @@ export default function TeachersPage({ teachers }: TeachersPageProps) {
                     )}
 
                     {/* Teacher cards */}
-                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill,minmax(300px,1fr))', gap: 16 }}>
+                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill,minmax(min(300px,100%),1fr))', gap: 16 }}>
                         {filtered.map(t => (
                             <div key={t.id} className="card" style={{ padding: 24 }}>
                                 <div style={{ display: 'flex', alignItems: 'center', gap: 14, marginBottom: 16 }}>
@@ -148,7 +149,7 @@ export default function TeachersPage({ teachers }: TeachersPageProps) {
                                 </div>
 
                                 <div style={{ display: 'grid', gap: 8, marginBottom: 12 }}>
-                                    {t.lessons.length > 0 ? t.lessons.slice(0, 2).map(lesson => (
+                                    {t.lessons.slice(0, 2).map(lesson => (
                                         <Link key={lesson.id} href={lessonPlanIndex.url()}
                                             style={{ background: lesson.day === 'Today' ? '#eff6ff' : '#ecfdf5', border: `1px solid ${lesson.day === 'Today' ? '#bfdbfe' : '#bbf7d0'}`, borderRadius: 10, padding: '10px 12px', textDecoration: 'none', display: 'grid', gap: 4 }}>
                                             <div style={{ display: 'flex', justifyContent: 'space-between', gap: 8 }}>
@@ -158,12 +159,7 @@ export default function TeachersPage({ teachers }: TeachersPageProps) {
                                             <div style={{ color: '#0f172a', fontSize: 13, fontWeight: 900, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{lesson.title}</div>
                                             <div style={{ color: '#64748b', fontSize: 11 }}>{lesson.className} - Room {lesson.room || 'N/A'}</div>
                                         </Link>
-                                    )) : (
-                                        <Link href={lessonPlanIndex.url()}
-                                            style={{ background: '#f8fafc', border: '1px dashed #cbd5e1', borderRadius: 10, padding: '10px 12px', textDecoration: 'none', color: '#64748b', fontSize: 12, fontWeight: 800, textAlign: 'center' }}>
-                                            No lesson planned for today or tomorrow
-                                        </Link>
-                                    )}
+                                    ))}
                                 </div>
 
                                 <div style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '10px 12px', background: '#f8fafc', borderRadius: 10, marginBottom: 12 }}>
@@ -171,7 +167,12 @@ export default function TeachersPage({ teachers }: TeachersPageProps) {
                                     <span style={{ fontSize: 13, fontWeight: 600, color: '#374151', flex: 1 }}>{t.phone}</span>
                                 </div>
 
-                                <div style={{ display: 'flex', gap: 8 }}>
+                                <Link href={createTeacherLessonPlan.url(t.id)}
+                                    style={{ width: '100%', background: '#eff6ff', color: '#2563eb', border: '1px solid #bfdbfe', borderRadius: 8, padding: '9px 10px', fontWeight: 800, fontSize: 12, textDecoration: 'none', textAlign: 'center', display: 'block', marginBottom: 10 }}>
+                                    + Create Lesson Plan
+                                </Link>
+
+                                <div className="teacher-card-actions">
                                     <Link href={showTeacher.url(t.id)}
                                         style={{ flex: 1, background: '#f0fdf4', color: '#16a34a', border: '1px solid #bbf7d0', borderRadius: 8, padding: '8px', fontWeight: 700, fontSize: 12, textDecoration: 'none', textAlign: 'center' }}>
                                         👁 View
