@@ -1,8 +1,9 @@
-import { useEffect, useMemo, useState } from 'react';
-import { create as createStudent, destroy, edit as editStudent, show as showStudent } from '@/actions/App/Http/Controllers/Backends/StudentController';
+import { useEffect, useMemo, useRef, useState } from 'react';
+import { create as createStudent, destroy, downloadLayout as downloadStudentLayout, edit as editStudent, exportMethod as exportStudents, importMethod as importStudents, show as showStudent } from '@/actions/App/Http/Controllers/Backends/StudentController';
 import AdminShell from '@/pages/admin/shell';
 import { Avatar, Badge, FeeTag, KH, Pagination, PBar, ScoreChip } from '@/pages/admin/ui';
 import { Link, router } from '@inertiajs/react';
+import { Download, FileDown, Upload } from 'lucide-react';
 import { toast } from 'sonner';
 
 export interface Grade {
@@ -80,6 +81,14 @@ const RESPONSIVE_CSS = `
         width: 100% !important;
         text-align: center !important;
         margin-left: 0 !important;
+    }
+    .students-top-actions {
+        width: 100% !important;
+        justify-content: stretch !important;
+    }
+    .students-top-actions > * {
+        flex: 1 1 auto !important;
+        justify-content: center !important;
     }
     .students-toolbar {
         flex-direction: column !important;
@@ -233,6 +242,7 @@ export default function StudentsPage({ students }: StudentsPageProps) {
     const [orderBy, setOrderBy] = useState<OrderKey>('name-asc');
     const [page, setPage] = useState(1);
     const [perPage, setPerPage] = useState(5);
+    const importInputRef = useRef<HTMLInputElement>(null);
 
     useEffect(() => { setPage(1); }, [search, filter, orderBy, perPage]);
 
@@ -270,6 +280,22 @@ export default function StudentsPage({ students }: StudentsPageProps) {
         });
     };
 
+    const importFile = (file: File | null) => {
+        if (!file) return;
+
+        router.post(importStudents.url(), { import_file: file }, {
+            forceFormData: true,
+            preserveScroll: true,
+            onSuccess: () => toast.success('Students imported successfully.'),
+            onError: () => toast.error('Unable to import students. Please check the CSV layout.'),
+            onFinish: () => {
+                if (importInputRef.current) {
+                    importInputRef.current.value = '';
+                }
+            },
+        });
+    };
+
     const FILTER_OPTIONS = [
         { id: 'all', l: 'All' },
         { id: 'Beginner', l: 'Beginner' },
@@ -298,13 +324,31 @@ export default function StudentsPage({ students }: StudentsPageProps) {
                             </div>
                         ))}
                     </div>
-                    <Link
-                        href={createStudent.url()}
-                        className="students-add-btn"
-                        style={{ background: '#2563eb', color: 'white', border: 'none', borderRadius: 10, padding: '10px 18px', fontWeight: 700, fontSize: 13, cursor: 'pointer', textDecoration: 'none', whiteSpace: 'nowrap' }}
-                    >
-                        + Add Student
-                    </Link>
+                    <div className="students-top-actions" style={{ marginLeft: 'auto', display: 'flex', gap: 8, flexWrap: 'wrap', alignItems: 'center' }}>
+                        <a href={downloadStudentLayout.url()} style={{ background: '#f8fafc', color: '#475569', border: '1px solid #dbe3ef', borderRadius: 10, padding: '10px 12px', fontWeight: 800, fontSize: 12, cursor: 'pointer', textDecoration: 'none', whiteSpace: 'nowrap', display: 'inline-flex', alignItems: 'center', gap: 6 }}>
+                            <Download size={14} /> Layout
+                        </a>
+                        <button type="button" onClick={() => importInputRef.current?.click()} style={{ background: '#fff7ed', color: '#ea580c', border: '1px solid #fed7aa', borderRadius: 10, padding: '10px 12px', fontWeight: 800, fontSize: 12, cursor: 'pointer', whiteSpace: 'nowrap', display: 'inline-flex', alignItems: 'center', gap: 6 }}>
+                            <Upload size={14} /> Import
+                        </button>
+                        <a href={exportStudents.url()} style={{ background: '#f0fdf4', color: '#16a34a', border: '1px solid #bbf7d0', borderRadius: 10, padding: '10px 12px', fontWeight: 800, fontSize: 12, cursor: 'pointer', textDecoration: 'none', whiteSpace: 'nowrap', display: 'inline-flex', alignItems: 'center', gap: 6 }}>
+                            <FileDown size={14} /> Export
+                        </a>
+                        <Link
+                            href={createStudent.url()}
+                            className="students-add-btn"
+                            style={{ background: '#2563eb', color: 'white', border: 'none', borderRadius: 10, padding: '10px 18px', fontWeight: 700, fontSize: 13, cursor: 'pointer', textDecoration: 'none', whiteSpace: 'nowrap', display: 'inline-flex', alignItems: 'center' }}
+                        >
+                            + Add Student
+                        </Link>
+                        <input
+                            ref={importInputRef}
+                            type="file"
+                            accept=".csv,text/csv,text/plain"
+                            style={{ display: 'none' }}
+                            onChange={event => importFile(event.target.files?.[0] ?? null)}
+                        />
+                    </div>
                 </div>
 
                 {/* ── Table card ── */}

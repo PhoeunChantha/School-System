@@ -5,10 +5,28 @@ namespace App\Services\Backends;
 use App\Models\AttendanceRecord;
 use App\Models\AttendanceSession;
 use App\Models\SchoolClass;
+use App\Models\Student;
+use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Validator;
+use Illuminate\Support\Str;
+use Illuminate\Validation\Rule;
 
 class AttendanceSessionService
 {
+    /**
+     * @var array<int, string>
+     */
+    public const IMPORT_COLUMNS = [
+        'class',
+        'attendance_date',
+        'period',
+        'student_code',
+        'student_name_en',
+        'status',
+        'note',
+    ];
+
     /**
      * @return array{sessions: mixed, classes: mixed, summary: array<string, mixed>}
      */
@@ -101,6 +119,107 @@ class AttendanceSessionService
     }
 
     /**
+     * @return array{created: int, updated: int, skipped: int}
+     */
+    public function import(UploadedFile $file, ?int $userId): array
+    {
+        $summary = ['created' => 0, 'updated' => 0, 'skipped' => 0];
+
+        foreach ($this->csvRows($file) as $row) {
+            $data = $this->attendanceImportData($row);
+
+            $validator = Validator::make($data, [
+                'school_class_id' => ['required', 'integer', Rule::exists('school_classes', 'id')->whereNull('deleted_at')],
+                'attendance_date' => ['required', 'date'],
+                'period' => ['required', 'string', Rule::in(['morning', 'afternoon', 'evening', 'full_day'])],
+                'student_id' => ['required', 'integer', Rule::exists('students', 'id')->whereNull('deleted_at')],
+                'status' => ['required', 'string', Rule::in(['present', 'absent', 'late', 'excused'])],
+                'note' => ['nullable', 'string', 'max:255'],
+            ]);
+
+            if ($validator->fails()) {
+                $summary['skipped']++;
+
+                continue;
+            }
+
+            DB::transaction(function () use ($data, $userId, &$summary): void {
+                $session = AttendanceSession::query()->firstOrCreate(
+                    [
+                        'school_class_id' => $data['school_class_id'],
+                        'attendance_date' => $data['attendance_date'],
+                        'period' => $data['period'],
+                    ],
+                    [
+                        'marked_by' => $userId,
+                        'created_by' => $userId,
+                        'updated_by' => $userId,
+                        'marked_at' => now(),
+                    ],
+                );
+
+                if (! $session->wasRecentlyCreated) {
+                    $session->update([
+                        'marked_by' => $userId,
+                        'updated_by' => $userId,
+                        'marked_at' => now(),
+                    ]);
+                }
+
+                $record = AttendanceRecord::query()
+                    ->where('attendance_session_id', $session->id)
+                    ->where('student_id', $data['student_id'])
+                    ->first();
+
+                if ($record) {
+                    $record->update([
+                        'status' => $data['status'],
+                        'note' => $data['note'] ?? null,
+                    ]);
+                    $summary['updated']++;
+
+                    return;
+                }
+
+                AttendanceRecord::create([
+                    'attendance_session_id' => $session->id,
+                    'student_id' => $data['student_id'],
+                    'status' => $data['status'],
+                    'note' => $data['note'] ?? null,
+                ]);
+                $summary['created']++;
+            });
+        }
+
+        return $summary;
+    }
+
+    /**
+     * @return array<int, array<int, mixed>>
+     */
+    public function exportRows(): array
+    {
+        return AttendanceSession::query()
+            ->with([
+                'schoolClass:id,name',
+                'records.student:id,code,name_en',
+            ])
+            ->latest('attendance_date')
+            ->latest('id')
+            ->get()
+            ->flatMap(fn (AttendanceSession $session) => $session->records->map(fn (AttendanceRecord $record): array => [
+                $session->schoolClass?->name ?? '',
+                $session->attendance_date?->format('Y-m-d') ?? '',
+                $session->period ?? '',
+                $record->student?->code ?? '',
+                $record->student?->name_en ?? '',
+                $record->status,
+                $record->note ?? '',
+            ]))
+            ->all();
+    }
+
+    /**
      * @param  array<int, array<string, mixed>>  $records
      */
     private function syncRecords(AttendanceSession $session, array $records): void
@@ -154,5 +273,105 @@ class AttendanceSessionService
                 'note' => $record->note ?? '',
             ]),
         ];
+    }
+
+    /**
+     * @return iterable<array<string, string>>
+     */
+    private function csvRows(UploadedFile $file): iterable
+    {
+        $handle = fopen($file->getRealPath(), 'r');
+
+        if ($handle === false) {
+            return;
+        }
+
+        $headers = null;
+
+        while (($row = fgetcsv($handle)) !== false) {
+            if ($row === [null] || $row === false) {
+                continue;
+            }
+
+            if ($headers === null) {
+                $headers = array_map(
+                    fn (string $header): string => Str::of($header)->trim("\xEF\xBB\xBF \t\n\r\0\x0B")->lower()->replace(' ', '_')->toString(),
+                    $row,
+                );
+
+                continue;
+            }
+
+            $values = array_slice(array_pad($row, count($headers), ''), 0, count($headers));
+
+            yield array_combine($headers, $values) ?: [];
+        }
+
+        fclose($handle);
+    }
+
+    /**
+     * @param  array<string, string>  $row
+     * @return array<string, mixed>
+     */
+    private function attendanceImportData(array $row): array
+    {
+        $schoolClassId = $this->classId($row['class'] ?? null);
+
+        return [
+            'school_class_id' => $schoolClassId,
+            'attendance_date' => $this->emptyToNull($row['attendance_date'] ?? null),
+            'period' => Str::lower((string) ($this->emptyToNull($row['period'] ?? null) ?? 'morning')),
+            'student_id' => $this->studentId(
+                $schoolClassId,
+                $row['student_code'] ?? null,
+                $row['student_name_en'] ?? null,
+            ),
+            'status' => Str::lower((string) ($this->emptyToNull($row['status'] ?? null) ?? 'present')),
+            'note' => $this->emptyToNull($row['note'] ?? null),
+        ];
+    }
+
+    private function classId(?string $name): ?int
+    {
+        $name = $this->emptyToNull($name);
+
+        return $name
+            ? SchoolClass::query()->where('name', $name)->whereNull('deleted_at')->value('id')
+            : null;
+    }
+
+    private function studentId(?int $schoolClassId, ?string $code, ?string $nameEn): ?int
+    {
+        if (! $schoolClassId) {
+            return null;
+        }
+
+        $code = $this->emptyToNull($code);
+        if ($code) {
+            return Student::query()
+                ->where('school_class_id', $schoolClassId)
+                ->where('code', $code)
+                ->whereNull('deleted_at')
+                ->value('id');
+        }
+
+        $nameEn = $this->emptyToNull($nameEn);
+        if (! $nameEn) {
+            return null;
+        }
+
+        return Student::query()
+            ->where('school_class_id', $schoolClassId)
+            ->where('name_en', $nameEn)
+            ->whereNull('deleted_at')
+            ->value('id');
+    }
+
+    private function emptyToNull(?string $value): ?string
+    {
+        $value = trim((string) $value);
+
+        return $value === '' ? null : $value;
     }
 }

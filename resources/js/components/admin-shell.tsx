@@ -271,7 +271,7 @@ export default function AdminShell({ children }: AdminShellProps) {
                     </DropdownMenu>
                 </div>
 
-                <main className="main-content" style={{ flex: 1, overflowY: 'auto', overflowX: 'hidden' }}>
+                <main className="main-content vh-100" style={{ flex: 1, overflowY: 'auto', overflowX: 'hidden' }}>
                     {children}
                 </main>
                 <AdminFooter />

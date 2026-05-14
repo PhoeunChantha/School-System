@@ -6,10 +6,28 @@ use App\Models\GradePeriod;
 use App\Models\GradeRecord;
 use App\Models\SchoolClass;
 use App\Models\Student;
+use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Validator;
+use Illuminate\Support\Str;
+use Illuminate\Validation\Rule;
 
 class GradeRecordService
 {
+    /**
+     * @var array<int, string>
+     */
+    public const IMPORT_COLUMNS = [
+        'period',
+        'student_code',
+        'student_name_en',
+        'class',
+        'speaking',
+        'listening',
+        'reading',
+        'writing',
+    ];
+
     /**
      * @return array{records: mixed, periods: mixed, students: mixed, classes: mixed, summary: array<string, mixed>}
      */
@@ -92,6 +110,89 @@ class GradeRecordService
     }
 
     /**
+     * @return array{created: int, updated: int, skipped: int}
+     */
+    public function import(UploadedFile $file, ?int $userId): array
+    {
+        $summary = ['created' => 0, 'updated' => 0, 'skipped' => 0];
+
+        foreach ($this->csvRows($file) as $row) {
+            $data = $this->gradeImportData($row);
+
+            $validator = Validator::make($data, [
+                'grade_period_id' => ['required', 'integer', Rule::exists('grade_periods', 'id')],
+                'student_id' => ['required', 'integer', Rule::exists('students', 'id')->whereNull('deleted_at')],
+                'school_class_id' => ['nullable', 'integer', Rule::exists('school_classes', 'id')->whereNull('deleted_at')],
+                'speaking' => ['required', 'integer', 'min:0', 'max:100'],
+                'listening' => ['required', 'integer', 'min:0', 'max:100'],
+                'reading' => ['required', 'integer', 'min:0', 'max:100'],
+                'writing' => ['required', 'integer', 'min:0', 'max:100'],
+            ]);
+
+            if ($validator->fails()) {
+                $summary['skipped']++;
+
+                continue;
+            }
+
+            DB::transaction(function () use ($data, $userId, &$summary): void {
+                $record = GradeRecord::query()
+                    ->where('grade_period_id', $data['grade_period_id'])
+                    ->where('student_id', $data['student_id'])
+                    ->first();
+
+                if ($record) {
+                    $record->update([
+                        ...$this->normalizedData($data),
+                        'updated_by' => $userId,
+                        'graded_at' => now(),
+                    ]);
+                    $summary['updated']++;
+
+                    return;
+                }
+
+                GradeRecord::create([
+                    ...$this->normalizedData($data),
+                    'graded_by' => $userId,
+                    'updated_by' => $userId,
+                    'graded_at' => now(),
+                ]);
+                $summary['created']++;
+            });
+        }
+
+        return $summary;
+    }
+
+    /**
+     * @return array<int, array<int, mixed>>
+     */
+    public function exportRows(): array
+    {
+        return GradeRecord::query()
+            ->with([
+                'gradePeriod:id,name',
+                'student:id,code,name_en',
+                'schoolClass:id,name',
+            ])
+            ->latest('average')
+            ->latest('id')
+            ->get()
+            ->map(fn (GradeRecord $record): array => [
+                $record->gradePeriod?->name ?? '',
+                $record->student?->code ?? '',
+                $record->student?->name_en ?? '',
+                $record->schoolClass?->name ?? '',
+                $record->speaking,
+                $record->listening,
+                $record->reading,
+                $record->writing,
+            ])
+            ->all();
+    }
+
+    /**
      * @return mixed
      */
     private function studentOptions()
@@ -158,5 +259,100 @@ class GradeRecordService
             ...$scores,
             'average' => round(array_sum($scores) / count($scores), 2),
         ];
+    }
+
+    /**
+     * @return iterable<array<string, string>>
+     */
+    private function csvRows(UploadedFile $file): iterable
+    {
+        $handle = fopen($file->getRealPath(), 'r');
+
+        if ($handle === false) {
+            return;
+        }
+
+        $headers = null;
+
+        while (($row = fgetcsv($handle)) !== false) {
+            if ($row === [null] || $row === false) {
+                continue;
+            }
+
+            if ($headers === null) {
+                $headers = array_map(
+                    fn (string $header): string => Str::of($header)->trim("\xEF\xBB\xBF \t\n\r\0\x0B")->lower()->replace(' ', '_')->toString(),
+                    $row,
+                );
+
+                continue;
+            }
+
+            $values = array_slice(array_pad($row, count($headers), ''), 0, count($headers));
+
+            yield array_combine($headers, $values) ?: [];
+        }
+
+        fclose($handle);
+    }
+
+    /**
+     * @param  array<string, string>  $row
+     * @return array<string, mixed>
+     */
+    private function gradeImportData(array $row): array
+    {
+        $studentId = $this->studentId($row['student_code'] ?? null, $row['student_name_en'] ?? null);
+        $student = $studentId ? Student::query()->find($studentId) : null;
+
+        return [
+            'grade_period_id' => $this->periodId($row['period'] ?? null),
+            'student_id' => $studentId,
+            'school_class_id' => $this->classId($row['class'] ?? null) ?? $student?->school_class_id,
+            'speaking' => $this->emptyToNull($row['speaking'] ?? null),
+            'listening' => $this->emptyToNull($row['listening'] ?? null),
+            'reading' => $this->emptyToNull($row['reading'] ?? null),
+            'writing' => $this->emptyToNull($row['writing'] ?? null),
+        ];
+    }
+
+    private function periodId(?string $periodName): ?int
+    {
+        $periodName = $this->emptyToNull($periodName);
+
+        return $periodName ? GradePeriod::query()->where('name', $periodName)->value('id') : null;
+    }
+
+    private function studentId(?string $code, ?string $nameEn): ?int
+    {
+        $code = $this->emptyToNull($code);
+        if ($code) {
+            return Student::query()
+                ->where('code', $code)
+                ->whereNull('deleted_at')
+                ->value('id');
+        }
+
+        $nameEn = $this->emptyToNull($nameEn);
+
+        return $nameEn
+            ? Student::query()->where('name_en', $nameEn)->whereNull('deleted_at')->value('id')
+            : null;
+    }
+
+    private function classId(?string $name): ?int
+    {
+        $name = $this->emptyToNull($name);
+
+        return $name
+            ? SchoolClass::query()->where('name', $name)->whereNull('deleted_at')->value('id')
+            : null;
+    }
+
+    private function emptyToNull(?string $value): ?string
+    {
+        $value = trim((string) $value);
+
+        return $value === '' ? null : $value;
     }
 }

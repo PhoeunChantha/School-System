@@ -1,4 +1,4 @@
-import { destroy, store, update } from '@/actions/App/Http/Controllers/Backends/GradeRecordController';
+import { destroy, downloadLayout, exportMethod, importMethod, store, update } from '@/actions/App/Http/Controllers/Backends/GradeRecordController';
 import {
     Sheet,
     SheetContent,
@@ -11,8 +11,8 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import AdminShell from '@/pages/admin/shell';
 import { Avatar, Badge, KH, Pagination, PBar, ScoreChip } from '@/pages/admin/ui';
 import { router, useForm } from '@inertiajs/react';
-import { Check, ChevronsUpDown, Search } from 'lucide-react';
-import { FormEvent, useEffect, useMemo, useState } from 'react';
+import { Check, ChevronsUpDown, Download, FileDown, Search, Upload } from 'lucide-react';
+import { FormEvent, useEffect, useMemo, useRef, useState } from 'react';
 import { toast } from 'sonner';
 
 interface GradePeriodOption {
@@ -152,6 +152,7 @@ export default function GradesPage({ records, periods, students, classes, summar
     const [deleteTarget, setDeleteTarget] = useState<GradeRecordItem | null>(null);
     const [studentPickerOpen, setStudentPickerOpen] = useState(false);
     const [studentSearch, setStudentSearch] = useState('');
+    const importInputRef = useRef<HTMLInputElement>(null);
 
     const { data, setData, post, put, processing, errors, reset } = useForm<GradeFormData>({
         grade_period_id: summary.currentPeriodId ?? periods[0]?.id ?? null,
@@ -303,6 +304,22 @@ export default function GradesPage({ records, periods, students, classes, summar
         });
     };
 
+    const importFile = (file: File | null) => {
+        if (!file) return;
+
+        router.post(importMethod.url(), { import_file: file }, {
+            forceFormData: true,
+            preserveScroll: true,
+            onSuccess: () => toast.success('Grades imported successfully.'),
+            onError: () => toast.error('Unable to import grades. Please check the CSV layout.'),
+            onFinish: () => {
+                if (importInputRef.current) {
+                    importInputRef.current.value = '';
+                }
+            },
+        });
+    };
+
     return (
         <AdminShell>
             <div className="fade-in" style={{ padding: 24, display: 'flex', flexDirection: 'column', gap: 16 }}>
@@ -311,9 +328,27 @@ export default function GradesPage({ records, periods, students, classes, summar
                         <KH style={{ fontWeight: 800, fontSize: 18, color: '#1e293b', display: 'block' }}>Grade Book</KH>
                         <div style={{ fontSize: 12, color: '#94a3b8', marginTop: 2 }}>Manage speaking, listening, reading, and writing scores</div>
                     </div>
-                    <button onClick={openCreateDrawer} style={{ background: '#2563eb', color: 'white', border: 'none', borderRadius: 10, padding: '9px 18px', fontWeight: 700, fontSize: 13, cursor: 'pointer' }}>
-                        + Add Grade
-                    </button>
+                    <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', alignItems: 'center' }}>
+                        <a href={downloadLayout.url()} style={{ background: '#f8fafc', color: '#475569', border: '1px solid #dbe3ef', borderRadius: 10, padding: '9px 12px', fontWeight: 800, fontSize: 12, cursor: 'pointer', textDecoration: 'none', whiteSpace: 'nowrap', display: 'inline-flex', alignItems: 'center', gap: 6 }}>
+                            <Download size={14} /> Layout
+                        </a>
+                        <button type="button" onClick={() => importInputRef.current?.click()} style={{ background: '#fff7ed', color: '#ea580c', border: '1px solid #fed7aa', borderRadius: 10, padding: '9px 12px', fontWeight: 800, fontSize: 12, cursor: 'pointer', whiteSpace: 'nowrap', display: 'inline-flex', alignItems: 'center', gap: 6 }}>
+                            <Upload size={14} /> Import
+                        </button>
+                        <a href={exportMethod.url()} style={{ background: '#f0fdf4', color: '#16a34a', border: '1px solid #bbf7d0', borderRadius: 10, padding: '9px 12px', fontWeight: 800, fontSize: 12, cursor: 'pointer', textDecoration: 'none', whiteSpace: 'nowrap', display: 'inline-flex', alignItems: 'center', gap: 6 }}>
+                            <FileDown size={14} /> Export
+                        </a>
+                        <button onClick={openCreateDrawer} style={{ background: '#2563eb', color: 'white', border: 'none', borderRadius: 10, padding: '9px 18px', fontWeight: 700, fontSize: 13, cursor: 'pointer' }}>
+                            + Add Grade
+                        </button>
+                        <input
+                            ref={importInputRef}
+                            type="file"
+                            accept=".csv,text/csv,text/plain"
+                            style={{ display: 'none' }}
+                            onChange={event => importFile(event.target.files?.[0] ?? null)}
+                        />
+                    </div>
                 </div>
 
                 <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill,minmax(150px,1fr))', gap: 12 }}>

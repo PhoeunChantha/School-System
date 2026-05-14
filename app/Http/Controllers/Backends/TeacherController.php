@@ -12,9 +12,10 @@ use App\Services\Backends\LessonPlanService;
 use App\Services\Backends\TeacherService;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
-use Symfony\Component\HttpFoundation\StreamedResponse;
+use Illuminate\Http\UploadedFile;
 use Inertia\Inertia;
 use Inertia\Response;
+use Symfony\Component\HttpFoundation\StreamedResponse;
 use Throwable;
 
 class TeacherController extends Controller
@@ -104,8 +105,14 @@ class TeacherController extends Controller
 
     public function import(ImportTeachersRequest $request): RedirectResponse
     {
+        $file = $request->file('import_file');
+
+        if (! $file instanceof UploadedFile) {
+            return back()->with('error', 'Please select a valid CSV file.');
+        }
+
         try {
-            $summary = $this->teacherService->import($request->file('import_file'), $request->user()?->id);
+            $summary = $this->teacherService->import($file, $request->user()?->id);
 
             return to_route('admin.teachers')->with('success', "Teachers imported: {$summary['created']} created, {$summary['updated']} updated, {$summary['skipped']} skipped.");
         } catch (Throwable $exception) {
@@ -169,6 +176,8 @@ class TeacherController extends Controller
     {
         return response()->streamDownload(function () use ($rows): void {
             $handle = fopen('php://output', 'w');
+
+            echo "\xEF\xBB\xBF";
 
             foreach ($rows as $row) {
                 fputcsv($handle, $row);

@@ -10,9 +10,10 @@ use App\Models\Student;
 use App\Services\Backends\StudentService;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
-use Symfony\Component\HttpFoundation\StreamedResponse;
+use Illuminate\Http\UploadedFile;
 use Inertia\Inertia;
 use Inertia\Response;
+use Symfony\Component\HttpFoundation\StreamedResponse;
 use Throwable;
 
 class StudentController extends Controller
@@ -79,8 +80,14 @@ class StudentController extends Controller
 
     public function import(ImportStudentsRequest $request): RedirectResponse
     {
+        $file = $request->file('import_file');
+
+        if (! $file instanceof UploadedFile) {
+            return back()->with('error', 'Please select a valid CSV file.');
+        }
+
         try {
-            $summary = $this->studentService->import($request->file('import_file'), $request->user()?->id);
+            $summary = $this->studentService->import($file, $request->user()?->id);
 
             return to_route('admin.students')->with('success', "Students imported: {$summary['created']} created, {$summary['updated']} updated, {$summary['skipped']} skipped.");
         } catch (Throwable $exception) {
@@ -141,6 +148,8 @@ class StudentController extends Controller
     {
         return response()->streamDownload(function () use ($rows): void {
             $handle = fopen('php://output', 'w');
+
+            echo "\xEF\xBB\xBF";
 
             foreach ($rows as $row) {
                 fputcsv($handle, $row);

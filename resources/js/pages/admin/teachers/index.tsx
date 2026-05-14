@@ -1,12 +1,12 @@
 import { FormEvent, useEffect, useMemo, useRef, useState } from 'react';
 import { lessonPlans as lessonPlanIndex } from '@/routes/admin';
 import { create as createTeacherLessonPlan } from '@/routes/admin/teachers/lesson-plans';
-import { destroy, show as showTeacher, store, update } from '@/actions/App/Http/Controllers/Backends/TeacherController';
+import { destroy, downloadLayout as downloadTeacherLayout, exportMethod as exportTeachers, importMethod as importTeachers, show as showTeacher, store, update } from '@/actions/App/Http/Controllers/Backends/TeacherController';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import AdminShell from '@/pages/admin/shell';
 import { KH, Avatar, Badge, Pagination } from '@/pages/admin/ui';
 import { Link, router, useForm } from '@inertiajs/react';
-import { ArrowLeft, Camera, Check, Edit3, Eye, GraduationCap, Phone, School, Search, Trash2, User, X } from 'lucide-react';
+import { ArrowLeft, Camera, Check, Download, Edit3, Eye, FileDown, GraduationCap, Phone, School, Trash2, Upload, User, X } from 'lucide-react';
 import { toast } from 'sonner';
 
 type View = 'list' | 'add' | 'edit';
@@ -84,6 +84,7 @@ export default function TeachersPage({ teachers }: TeachersPageProps) {
     const [editing, setEditing]       = useState<Teacher | null>(null);
     const [deleteTarget, setDeleteTarget] = useState<Teacher | null>(null);
     const [scheduleTarget, setScheduleTarget] = useState<Teacher | null>(null);
+    const importInputRef = useRef<HTMLInputElement>(null);
 
     const handleEdit   = (t: Teacher) => { setEditing(t); setView('edit'); };
     const handleDelete = (t: Teacher) => setDeleteTarget(t);
@@ -97,6 +98,22 @@ export default function TeachersPage({ teachers }: TeachersPageProps) {
                     description: `${deleteTarget.nameEn} has been removed.`,
                 });
                 setDeleteTarget(null);
+            },
+        });
+    };
+
+    const importFile = (file: File | null) => {
+        if (!file) return;
+
+        router.post(importTeachers.url(), { import_file: file }, {
+            forceFormData: true,
+            preserveScroll: true,
+            onSuccess: () => toast.success('Teachers imported successfully.'),
+            onError: () => toast.error('Unable to import teachers. Please check the CSV layout.'),
+            onFinish: () => {
+                if (importInputRef.current) {
+                    importInputRef.current.value = '';
+                }
             },
         });
     };
@@ -127,10 +144,28 @@ export default function TeachersPage({ teachers }: TeachersPageProps) {
             {/* List view */}
             {view === 'list' && (
                 <div className="fade-in" style={{ padding: 24, display: 'flex', flexDirection: 'column', gap: 16 }}>
-                    <div style={{ display: 'flex', alignItems: 'center', flexWrap: 'wrap', gap: 12 }}>
-                        <button onClick={() => setView('add')} style={{ marginLeft: 'auto', background: '#2563eb', color: 'white', border: 'none', borderRadius: 10, padding: '9px 18px', fontWeight: 700, fontSize: 13, cursor: 'pointer' }}>
-                            + Add Teacher
-                        </button>
+                    <div style={{ display: 'flex', alignItems: 'center', flexWrap: 'wrap', gap: 8 }}>
+                        <div style={{ marginLeft: 'auto', display: 'flex', gap: 8, flexWrap: 'wrap', alignItems: 'center' }}>
+                            <a href={downloadTeacherLayout.url()} style={{ background: '#f8fafc', color: '#475569', border: '1px solid #dbe3ef', borderRadius: 10, padding: '9px 12px', fontWeight: 800, fontSize: 12, cursor: 'pointer', textDecoration: 'none', whiteSpace: 'nowrap', display: 'inline-flex', alignItems: 'center', gap: 6 }}>
+                                <Download size={14} /> Layout
+                            </a>
+                            <button type="button" onClick={() => importInputRef.current?.click()} style={{ background: '#fff7ed', color: '#ea580c', border: '1px solid #fed7aa', borderRadius: 10, padding: '9px 12px', fontWeight: 800, fontSize: 12, cursor: 'pointer', whiteSpace: 'nowrap', display: 'inline-flex', alignItems: 'center', gap: 6 }}>
+                                <Upload size={14} /> Import
+                            </button>
+                            <a href={exportTeachers.url()} style={{ background: '#f0fdf4', color: '#16a34a', border: '1px solid #bbf7d0', borderRadius: 10, padding: '9px 12px', fontWeight: 800, fontSize: 12, cursor: 'pointer', textDecoration: 'none', whiteSpace: 'nowrap', display: 'inline-flex', alignItems: 'center', gap: 6 }}>
+                                <FileDown size={14} /> Export
+                            </a>
+                            <button onClick={() => setView('add')} style={{ background: '#2563eb', color: 'white', border: 'none', borderRadius: 10, padding: '9px 18px', fontWeight: 700, fontSize: 13, cursor: 'pointer' }}>
+                                + Add Teacher
+                            </button>
+                            <input
+                                ref={importInputRef}
+                                type="file"
+                                accept=".csv,text/csv,text/plain"
+                                style={{ display: 'none' }}
+                                onChange={event => importFile(event.target.files?.[0] ?? null)}
+                            />
+                        </div>
                     </div>
 
                     <div className="card" style={{ overflowX: 'auto' }}>

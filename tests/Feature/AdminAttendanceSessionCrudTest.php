@@ -8,6 +8,7 @@ use App\Models\SchoolClass;
 use App\Models\Student;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Http\UploadedFile;
 use Tests\TestCase;
 
 class AdminAttendanceSessionCrudTest extends TestCase
@@ -200,6 +201,89 @@ class AdminAttendanceSessionCrudTest extends TestCase
         ]);
         $this->assertDatabaseMissing('attendance_records', [
             'attendance_session_id' => $session->id,
+        ]);
+    }
+
+    public function test_admin_can_download_attendance_import_layout(): void
+    {
+        $this->actingAs(User::factory()->create());
+
+        $response = $this->get(route('admin.attendance.layout'))
+            ->assertOk()
+            ->assertDownload('attendance-import-layout.csv');
+
+        $this->assertStringContainsString('class,attendance_date,period,student_code,student_name_en,status,note', $response->streamedContent());
+    }
+
+    public function test_admin_can_export_attendance(): void
+    {
+        $this->actingAs(User::factory()->create());
+
+        $schoolClass = SchoolClass::factory()->create(['name' => 'Export Class']);
+        $student = Student::factory()->for($schoolClass)->create([
+            'code' => 'STU-2001',
+            'name_en' => 'Export Student',
+        ]);
+        $session = AttendanceSession::factory()->for($schoolClass)->create([
+            'attendance_date' => '2026-05-14',
+            'period' => 'morning',
+        ]);
+        AttendanceRecord::factory()->for($session)->for($student)->create([
+            'status' => 'late',
+            'note' => 'Traffic',
+        ]);
+
+        $response = $this->get(route('admin.attendance.export'))
+            ->assertOk()
+            ->assertDownload('attendance-export.csv');
+
+        $content = $response->streamedContent();
+
+        $this->assertStringContainsString('Export Class', $content);
+        $this->assertStringContainsString('STU-2001', $content);
+        $this->assertStringContainsString('Export Student', $content);
+        $this->assertStringContainsString('late', $content);
+    }
+
+    public function test_admin_can_import_attendance_from_csv_layout(): void
+    {
+        $user = User::factory()->create();
+        $schoolClass = SchoolClass::factory()->create(['name' => 'Beginner 1']);
+        $student = Student::factory()->for($schoolClass)->create([
+            'code' => 'STU-1001',
+            'name_en' => 'Sok Dara',
+        ]);
+        $csv = implode("\n", [
+            'class,attendance_date,period,student_code,student_name_en,status,note',
+            'Beginner 1,2026-05-14,morning,STU-1001,Sok Dara,absent,Called parent',
+        ]);
+
+        $this->actingAs($user)
+            ->post(route('admin.attendance.import'), [
+                'import_file' => UploadedFile::fake()->createWithContent('attendance.csv', $csv),
+            ])
+            ->assertRedirect(route('admin.attendance'));
+
+        $this->assertDatabaseHas('attendance_sessions', [
+            'school_class_id' => $schoolClass->id,
+            'attendance_date' => '2026-05-14',
+            'period' => 'morning',
+            'marked_by' => $user->id,
+            'created_by' => $user->id,
+            'updated_by' => $user->id,
+        ]);
+
+        $session = AttendanceSession::query()
+            ->where('school_class_id', $schoolClass->id)
+            ->whereDate('attendance_date', '2026-05-14')
+            ->where('period', 'morning')
+            ->firstOrFail();
+
+        $this->assertDatabaseHas('attendance_records', [
+            'attendance_session_id' => $session->id,
+            'student_id' => $student->id,
+            'status' => 'absent',
+            'note' => 'Called parent',
         ]);
     }
 }

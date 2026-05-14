@@ -236,4 +236,54 @@ class AdminTeacherCrudTest extends TestCase
 
         $this->assertSoftDeleted($teacher);
     }
+
+    public function test_admin_can_download_teacher_import_layout(): void
+    {
+        $this->actingAs(User::factory()->create());
+
+        $response = $this->get(route('admin.teachers.layout'))
+            ->assertOk()
+            ->assertDownload('teachers-import-layout.csv');
+
+        $this->assertStringContainsString('name_kh,name_en,subject,phone,telegram_username,status', $response->streamedContent());
+    }
+
+    public function test_admin_can_export_teachers(): void
+    {
+        $this->actingAs(User::factory()->create());
+
+        Teacher::factory()->create([
+            'name_en' => 'Export Teacher',
+            'subject' => 'Writing Skills',
+        ]);
+
+        $response = $this->get(route('admin.teachers.export'))
+            ->assertOk()
+            ->assertDownload('teachers-export.csv');
+
+        $this->assertStringContainsString('Export Teacher', $response->streamedContent());
+        $this->assertStringContainsString('Writing Skills', $response->streamedContent());
+    }
+
+    public function test_admin_can_import_teachers_from_csv_layout(): void
+    {
+        $user = User::factory()->create();
+        $csv = implode("\n", [
+            'name_kh,name_en,subject,phone,telegram_username,status',
+            'Teacher Khmer,Imported Teacher,Conversation,012345678,@teacher,active',
+        ]);
+
+        $this->actingAs($user)
+            ->post(route('admin.teachers.import'), [
+                'import_file' => UploadedFile::fake()->createWithContent('teachers.csv', $csv),
+            ])
+            ->assertRedirect(route('admin.teachers'));
+
+        $this->assertDatabaseHas('teachers', [
+            'name_en' => 'Imported Teacher',
+            'subject' => 'Conversation',
+            'created_by' => $user->id,
+            'updated_by' => $user->id,
+        ]);
+    }
 }

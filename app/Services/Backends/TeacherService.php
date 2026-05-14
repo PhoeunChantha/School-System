@@ -295,12 +295,14 @@ class TeacherService
             }
 
             if ($headers === null) {
-                $headers = array_map(fn (string $header): string => Str::of($header)->trim()->lower()->replace(' ', '_')->toString(), $row);
+                $headers = array_map(fn (string $header): string => Str::of($header)->trim("\xEF\xBB\xBF \t\n\r\0\x0B")->lower()->replace(' ', '_')->toString(), $row);
 
                 continue;
             }
 
-            yield array_combine($headers, array_pad($row, count($headers), '')) ?: [];
+            $values = array_slice(array_pad($row, count($headers), ''), 0, count($headers));
+
+            yield array_combine($headers, $values) ?: [];
         }
 
         fclose($handle);

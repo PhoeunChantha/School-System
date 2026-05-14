@@ -15,6 +15,7 @@ export function AdminFooter() {
             flexWrap: 'wrap',
             gap: 8,
             flexShrink: 0,
+            bottom: 0,
         }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
                 <div style={{ width: 22, height: 22, background: 'linear-gradient(135deg,#3b82f6,#6366f1)', borderRadius: 6, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>

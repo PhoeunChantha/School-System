@@ -1,8 +1,9 @@
-import { destroy, edit } from '@/actions/App/Http/Controllers/Backends/AttendanceSessionController';
+import { create, destroy, downloadLayout, edit, exportMethod, importMethod } from '@/actions/App/Http/Controllers/Backends/AttendanceSessionController';
 import AdminShell from '@/pages/admin/shell';
 import { Badge, KH, Pagination } from '@/pages/admin/ui';
 import { router } from '@inertiajs/react';
-import { useEffect, useMemo, useState } from 'react';
+import { Download, FileDown, Upload } from 'lucide-react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { toast } from 'sonner';
 
 type AttendanceStatus = 'present' | 'absent' | 'late' | 'excused';
@@ -89,6 +90,23 @@ export default function AttendancePage({ sessions, classes, summary }: Attendanc
     const [page, setPage] = useState(1);
     const [perPage, setPerPage] = useState(5);
     const [deleteTarget, setDeleteTarget] = useState<AttendanceSessionItem | null>(null);
+    const importInputRef = useRef<HTMLInputElement>(null);
+
+    const importFile = (file: File | null) => {
+        if (!file) return;
+
+        router.post(importMethod.url(), { import_file: file }, {
+            forceFormData: true,
+            preserveScroll: true,
+            onSuccess: () => toast.success('Attendance imported successfully.'),
+            onError: () => toast.error('Unable to import attendance. Please check the CSV layout.'),
+            onFinish: () => {
+                if (importInputRef.current) {
+                    importInputRef.current.value = '';
+                }
+            },
+        });
+    };
 
     useEffect(() => { setPage(1); }, [selectedClass, search, orderBy, perPage]);
 
@@ -133,9 +151,27 @@ export default function AttendancePage({ sessions, classes, summary }: Attendanc
                         <KH style={{ fontWeight: 800, fontSize: 18, color: '#1e293b', display: 'block' }}>Attendance</KH>
                         <div style={{ fontSize: 12, color: '#94a3b8', marginTop: 2 }}>Track daily class attendance</div>
                     </div>
-                    <button onClick={() => router.visit('/admin/attendance/mark')} style={{ background: '#2563eb', color: 'white', border: 'none', borderRadius: 10, padding: '9px 18px', fontWeight: 700, fontSize: 13, cursor: 'pointer' }}>
-                        + Mark Attendance
-                    </button>
+                    <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', alignItems: 'center' }}>
+                        <a href={downloadLayout.url()} style={{ background: '#f8fafc', color: '#475569', border: '1px solid #dbe3ef', borderRadius: 10, padding: '9px 12px', fontWeight: 800, fontSize: 12, cursor: 'pointer', textDecoration: 'none', whiteSpace: 'nowrap', display: 'inline-flex', alignItems: 'center', gap: 6 }}>
+                            <Download size={14} /> Layout
+                        </a>
+                        <button type="button" onClick={() => importInputRef.current?.click()} style={{ background: '#fff7ed', color: '#ea580c', border: '1px solid #fed7aa', borderRadius: 10, padding: '9px 12px', fontWeight: 800, fontSize: 12, cursor: 'pointer', whiteSpace: 'nowrap', display: 'inline-flex', alignItems: 'center', gap: 6 }}>
+                            <Upload size={14} /> Import
+                        </button>
+                        <a href={exportMethod.url()} style={{ background: '#f0fdf4', color: '#16a34a', border: '1px solid #bbf7d0', borderRadius: 10, padding: '9px 12px', fontWeight: 800, fontSize: 12, cursor: 'pointer', textDecoration: 'none', whiteSpace: 'nowrap', display: 'inline-flex', alignItems: 'center', gap: 6 }}>
+                            <FileDown size={14} /> Export
+                        </a>
+                        <button onClick={() => router.visit(create.url())} style={{ background: '#2563eb', color: 'white', border: 'none', borderRadius: 10, padding: '9px 18px', fontWeight: 700, fontSize: 13, cursor: 'pointer' }}>
+                            + Mark Attendance
+                        </button>
+                        <input
+                            ref={importInputRef}
+                            type="file"
+                            accept=".csv,text/csv,text/plain"
+                            style={{ display: 'none' }}
+                            onChange={event => importFile(event.target.files?.[0] ?? null)}
+                        />
+                    </div>
                 </div>
 
                 <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill,minmax(150px,1fr))', gap: 12 }}>
