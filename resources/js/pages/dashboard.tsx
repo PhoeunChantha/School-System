@@ -3,6 +3,21 @@ import AdminShell from '@/pages/admin/shell';
 import { Avatar, Badge, FeeTag, KH, PBar, ScoreChip } from '@/pages/admin/ui';
 import { Head, Link } from '@inertiajs/react';
 import {
+    Check,
+    CheckCircle2,
+    ClipboardCheck,
+    Clock,
+    CreditCard,
+    DollarSign,
+    GraduationCap,
+    Hourglass,
+    ArrowRight,
+    TriangleAlert,
+    UserRound,
+    Users,
+} from 'lucide-react';
+import type { LucideIcon } from 'lucide-react';
+import {
     Area,
     AreaChart,
     Bar,
@@ -115,6 +130,13 @@ interface DashboardProps {
 const avg = (g: RecentStudent['grade']) =>
     Math.round((g.speaking + g.listening + g.reading + g.writing) / 4);
 
+const iconBadge = (Icon: LucideIcon, label: React.ReactNode) => (
+    <span style={{ display: 'inline-flex', alignItems: 'center', gap: 4 }}>
+        <Icon size={12} strokeWidth={2.4} />
+        {label}
+    </span>
+);
+
 // ── Custom tooltip ────────────────────────────────────────
 const DarkTooltip = ({ active, payload, label }: any) => {
     if (!active || !payload?.length) return null;
@@ -195,14 +217,16 @@ export default function Dashboard({
                     {/* ── Stat cards ── */}
                     <div className="stat-grid-4" style={{ display: 'grid', gridTemplateColumns: 'repeat(4,1fr)', gap: 16 }}>
                         {[
-                            { icon: '🎓', lk: 'សិស្សទាំងអស់', l: 'Total Students',   v: stats.totalStudents,               bg: '#eff6ff', c: '#2563eb' },
-                            { icon: '👩‍🏫', lk: 'គ្រូបង្រៀន',   l: 'Teachers',        v: stats.totalTeachers,               bg: '#f5f3ff', c: '#7c3aed' },
-                            { icon: '💰', lk: 'ចំណូលខែនេះ',   l: 'Monthly Revenue', v: `$${stats.monthlyRevenue.toFixed(0)}`, bg: '#f0fdf4', c: '#10b981' },
-                            { icon: '📋', lk: 'អត្រាវត្តមាន',  l: 'Avg Attendance',  v: `${stats.avgAttendance}%`,         bg: '#fffbeb', c: '#d97706' },
+                            { icon: GraduationCap, lk: 'សិស្សទាំងអស់', l: 'Total Students',   v: stats.totalStudents,               bg: '#eff6ff', c: '#2563eb' },
+                            { icon: Users, lk: 'គ្រូបង្រៀន',   l: 'Teachers',        v: stats.totalTeachers,               bg: '#f5f3ff', c: '#7c3aed' },
+                            { icon: DollarSign, lk: 'ចំណូលខែនេះ',   l: 'Monthly Revenue', v: `$${stats.monthlyRevenue.toFixed(0)}`, bg: '#f0fdf4', c: '#10b981' },
+                            { icon: ClipboardCheck, lk: 'អត្រាវត្តមាន',  l: 'Avg Attendance',  v: `${stats.avgAttendance}%`,         bg: '#fffbeb', c: '#d97706' },
                         ].map((s, i) => (
                             <div key={i} className="stat-card">
                                 <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', marginBottom: 12 }}>
-                                    <div style={{ width: 44, height: 44, borderRadius: 12, background: s.bg, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 22 }}>{s.icon}</div>
+                                    <div style={{ width: 44, height: 44, borderRadius: 12, background: s.bg, color: s.c, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                                        <s.icon size={22} strokeWidth={2.4} />
+                                    </div>
                                 </div>
                                 <div style={{ fontSize: 26, fontWeight: 800, color: '#1e293b', marginBottom: 2 }}>{s.v}</div>
                                 <KH style={{ fontSize: 12, color: '#64748b', display: 'block', lineHeight: 1.3 }}>{s.lk}</KH>
@@ -334,16 +358,19 @@ export default function Dashboard({
                             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 16 }}>
                                 <div>
                                     <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                                        <span style={{ fontSize: 20 }}>⚠️</span>
+                                        <TriangleAlert size={20} color="#d97706" strokeWidth={2.4} />
                                         <KH className="dark-text-strong" style={{ fontWeight: 800, fontSize: 15, color: '#1e293b' }}>សិស្សត្រូវការជំនួយ</KH>
                                     </div>
                                     <div style={{ fontSize: 12, color: '#94a3b8', marginTop: 2 }}>At-risk — {atRiskStudents.length} alerts</div>
                                 </div>
-                                <Link href="/admin/students" style={{ fontSize: 12, color: '#3b82f6', fontWeight: 700, textDecoration: 'none' }}>View All →</Link>
+                                    <Link href="/admin/students" style={{ fontSize: 12, color: '#3b82f6', fontWeight: 700, textDecoration: 'none', display: 'inline-flex', alignItems: 'center', gap: 4 }}>View All <ArrowRight size={13} /></Link>
                             </div>
                             <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
                                 {atRiskStudents.length === 0 && (
-                                    <div style={{ textAlign: 'center', color: '#94a3b8', fontSize: 13, padding: '20px 0' }}>✓ No at-risk students</div>
+                                    <div style={{ textAlign: 'center', color: '#94a3b8', fontSize: 13, padding: '20px 0', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6 }}>
+                                        <Check size={14} />
+                                        No at-risk students
+                                    </div>
                                 )}
                                 {atRiskStudents.map(s => (
                                     <div key={s.id} className="dashboard-risk-row" style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '10px 12px', background: '#fff7ed', borderRadius: 12, border: '1px solid #fed7aa' }}>
@@ -353,8 +380,8 @@ export default function Dashboard({
                                             <div style={{ fontSize: 11, color: '#94a3b8' }}>{s.level}</div>
                                         </div>
                                         <div style={{ display: 'flex', gap: 6, flexShrink: 0 }}>
-                                            {s.attendance < 70 && <Badge type="red">📋 {s.attendance}%</Badge>}
-                                            {s.fees === 'Unpaid' && <Badge type="amber">💳 Unpaid</Badge>}
+                                            {s.attendance < 70 && <Badge type="red">{iconBadge(ClipboardCheck, `${s.attendance}%`)}</Badge>}
+                                            {s.fees === 'Unpaid' && <Badge type="amber">{iconBadge(CreditCard, 'Unpaid')}</Badge>}
                                         </div>
                                     </div>
                                 ))}
@@ -367,7 +394,7 @@ export default function Dashboard({
                                     <KH style={{ fontWeight: 800, fontSize: 15, color: '#1e293b', display: 'block' }}>ការទូទាត់ថ្មីៗ</KH>
                                     <div style={{ fontSize: 12, color: '#94a3b8' }}>Recent Payments</div>
                                 </div>
-                                <Link href="/admin/fee" style={{ fontSize: 12, color: '#3b82f6', fontWeight: 700, textDecoration: 'none' }}>View All →</Link>
+                                    <Link href="/admin/fee" style={{ fontSize: 12, color: '#3b82f6', fontWeight: 700, textDecoration: 'none', display: 'inline-flex', alignItems: 'center', gap: 4 }}>View All <ArrowRight size={13} /></Link>
                             </div>
                             {recentPayments.length === 0
                                 ? <div style={{ textAlign: 'center', color: '#94a3b8', fontSize: 13, padding: '20px 0' }}>No payments yet</div>
@@ -390,7 +417,7 @@ export default function Dashboard({
                                                     <td><Badge type="blue">{p.method}</Badge></td>
                                                     <td>
                                                         <Badge type={p.status === 'paid' ? 'green' : 'amber'}>
-                                                            {p.status === 'paid' ? '✓ Paid' : '⏳ Pending'}
+                                                            {p.status === 'paid' ? iconBadge(CheckCircle2, 'Paid') : iconBadge(Hourglass, 'Pending')}
                                                         </Badge>
                                                     </td>
                                                 </tr>
@@ -450,17 +477,23 @@ export default function Dashboard({
                                 <KH style={{ fontWeight: 800, fontSize: 15, color: '#1e293b', display: 'block' }}>ថ្នាក់ទាំងអស់</KH>
                                 <div style={{ fontSize: 12, color: '#94a3b8' }}>All Classes</div>
                             </div>
-                            <Link href="/admin/classes" style={{ fontSize: 12, color: '#3b82f6', fontWeight: 700, textDecoration: 'none' }}>View All →</Link>
+                                    <Link href="/admin/classes" style={{ fontSize: 12, color: '#3b82f6', fontWeight: 700, textDecoration: 'none', display: 'inline-flex', alignItems: 'center', gap: 4 }}>View All <ArrowRight size={13} /></Link>
                         </div>
                         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill,minmax(180px,1fr))', gap: 12 }}>
                             {classes.map(cls => (
                                 <div key={cls.id} className="dashboard-soft-tile" style={{ background: '#f8fafc', borderRadius: 12, padding: 14, border: '1px solid #e8edf5' }}>
                                     <div style={{ fontWeight: 700, fontSize: 13, marginBottom: 4 }}>{cls.name}</div>
                                     <div style={{ fontSize: 11, color: '#64748b', marginBottom: 4 }}>{cls.teacher}</div>
-                                    <div style={{ fontSize: 11, color: '#3b82f6', fontWeight: 600, marginBottom: 6 }}>🕐 {cls.time}</div>
+                                    <div style={{ fontSize: 11, color: '#3b82f6', fontWeight: 600, marginBottom: 6, display: 'flex', alignItems: 'center', gap: 4 }}>
+                                        <Clock size={12} strokeWidth={2.4} />
+                                        {cls.time}
+                                    </div>
                                     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                                         <Badge type="gray">Room {cls.room}</Badge>
-                                        <span style={{ fontSize: 11, fontWeight: 700, color: '#64748b' }}>{cls.count} 👤</span>
+                                        <span style={{ fontSize: 11, fontWeight: 700, color: '#64748b', display: 'inline-flex', alignItems: 'center', gap: 4 }}>
+                                            {cls.count}
+                                            <UserRound size={12} strokeWidth={2.4} />
+                                        </span>
                                     </div>
                                 </div>
                             ))}

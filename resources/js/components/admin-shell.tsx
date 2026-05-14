@@ -15,48 +15,77 @@ import {
 } from '@/components/ui/dropdown-menu';
 import { logout } from '@/routes';
 import { edit as editProfile } from '@/routes/profile';
-import { LogOut, Settings } from 'lucide-react';
+import {
+    Award,
+    Bell,
+    BookOpen,
+    Building2,
+    ChartNoAxesColumn,
+    ClipboardCheck,
+    CreditCard,
+    FileText,
+    GraduationCap,
+    History,
+    Home,
+    Layers3,
+    LogOut,
+    Medal,
+    Menu,
+    Moon,
+    NotebookPen,
+    PanelLeftClose,
+    PanelLeftOpen,
+    ScrollText,
+    Send,
+    Settings,
+    ShieldCheck,
+    School,
+    Star,
+    Sun,
+    Users,
+} from 'lucide-react';
+import type { LucideIcon } from 'lucide-react';
 
 interface NavGroup { group: string; }
-interface NavItem  { id: string; icon: string; label: string; sub: string; href: string; }
+interface NavItem  { id: string; icon: LucideIcon; label: string; sub: string; href: string; }
 type NavEntry = NavGroup | NavItem;
 const isItem = (e: NavEntry): e is NavItem => 'id' in e;
 
 const NAV: NavEntry[] = [
     { group: 'ទំព័រដើម / Main' },
-    { id: 'dashboard',  icon: '🏠',  label: 'ទំព័រដើម',  sub: 'Dashboard',  href: '/admin/dashboard' },
-    { id: 'students',   icon: '👥',  label: 'សិស្ស',      sub: 'Students',   href: '/admin/students' },
-    { id: 'teachers',   icon: '👩‍🏫', label: 'គ្រូ',        sub: 'Teachers',   href: '/admin/teachers' },
-    { id: 'classes',    icon: '🏫',  label: 'ថ្នាក់',      sub: 'Classes',    href: '/admin/classes' },
-    { id: 'levels',     icon: '🎓',  label: 'កម្រិត',      sub: 'Levels',     href: '/admin/levels' },
+    { id: 'dashboard',  icon: Home,  label: 'ទំព័រដើម',  sub: 'Dashboard',  href: '/admin/dashboard' },
+    { id: 'students',   icon: Users,  label: 'សិស្ស',      sub: 'Students',   href: '/admin/students' },
+    { id: 'teachers',   icon: GraduationCap, label: 'គ្រូ',        sub: 'Teachers',   href: '/admin/teachers' },
+    { id: 'classes',    icon: School,  label: 'ថ្នាក់',      sub: 'Classes',    href: '/admin/classes' },
+    { id: 'levels',     icon: Layers3,  label: 'កម្រិត',      sub: 'Levels',     href: '/admin/levels' },
     { group: 'ការបង្រៀន / Teaching' },
-    { id: 'attendance', icon: '📋',  label: 'វត្តមាន',    sub: 'Attendance', href: '/admin/attendance' },
-    { id: 'grades',     icon: '⭐',  label: 'ពិន្ទុ',      sub: 'Grades',     href: '/admin/grades' },
-    { id: 'homework',   icon: '📝',  label: 'កិច្ចការ',    sub: 'Homework',   href: '/admin/homework' },
-    { id: 'lesson-plans', icon: 'LP', label: 'Lesson Plans', sub: 'Lesson Plans', href: '/admin/lesson-plans' },
-    { id: 'homework-submissions', icon: 'S', label: 'Submissions', sub: 'Homework Submissions', href: '/admin/homework-submissions' },
+    { id: 'attendance', icon: ClipboardCheck,  label: 'វត្តមាន',    sub: 'Attendance', href: '/admin/attendance' },
+    { id: 'grades',     icon: Star,  label: 'ពិន្ទុ',      sub: 'Grades',     href: '/admin/grades' },
+    { id: 'homework',   icon: NotebookPen,  label: 'កិច្ចការ',    sub: 'Homework',   href: '/admin/homework' },
+    { id: 'lesson-plans', icon: BookOpen, label: 'Lesson Plans', sub: 'Lesson Plans', href: '/admin/lesson-plans' },
+    { id: 'homework-submissions', icon: Send, label: 'Submissions', sub: 'Homework Submissions', href: '/admin/homework-submissions' },
     { group: 'ហិរញ្ញ / Finance' },
-    { id: 'fee',        icon: '💳',  label: 'ការទូទាត់',  sub: 'Fees',       href: '/admin/fee' },
+    { id: 'fee',        icon: CreditCard,  label: 'ការទូទាត់',  sub: 'Fees',       href: '/admin/fee' },
     { group: 'ការប្រឡង / Exam' },
-    { id: 'exam',          icon: '📄',  label: 'ប្រឡង',         sub: 'Exams',          href: '/admin/exam' },
-    { id: 'exam-results',  icon: '🧾',  label: 'លទ្ធផល',       sub: 'Exam Results',   href: '/admin/exam-results' },
+    { id: 'exam',          icon: FileText,  label: 'ប្រឡង',         sub: 'Exams',          href: '/admin/exam' },
+    { id: 'exam-results',  icon: ScrollText,  label: 'លទ្ធផល',       sub: 'Exam Results',   href: '/admin/exam-results' },
     { group: 'រាយការណ៍ / Reports' },
-    { id: 'reports',       icon: '📊',  label: 'រាយការណ៍',       sub: 'Reports',        href: '/admin/reports' },
-    { id: 'certs',         icon: '🏆',  label: 'វិញ្ញាបនបត្រ',   sub: 'Certificates',   href: '/admin/certs' },
-    { id: 'honor-roll',    icon: '🥇',  label: 'តារាងកិត្តិយស',  sub: 'Honor Roll',     href: '/admin/honor-roll' },
+    { id: 'reports',       icon: ChartNoAxesColumn,  label: 'រាយការណ៍',       sub: 'Reports',        href: '/admin/reports' },
+    { id: 'certs',         icon: Award,  label: 'វិញ្ញាបនបត្រ',   sub: 'Certificates',   href: '/admin/certs' },
+    { id: 'honor-roll',    icon: Medal,  label: 'តារាងកិត្តិយស',  sub: 'Honor Roll',     href: '/admin/honor-roll' },
     { group: 'ផ្សេងៗ / Other' },
-    { id: 'notifications', icon: '🔔',  label: 'ការជូនដំណឹង',   sub: 'Notifications',  href: '/admin/notifications' },
-    { id: 'activity-logs', icon: '📜',  label: 'កត់ត្រា',       sub: 'Activity Logs',  href: '/admin/activity-logs' },
-    { id: 'roles-permissions', icon: 'RP', label: 'Roles', sub: 'Roles & Permissions', href: '/admin/roles-permissions' },
-    { id: 'settings',      icon: '⚙️',  label: 'កំណត់',           sub: 'Settings',       href: '/admin/settings' },
+    { id: 'notifications', icon: Bell,  label: 'ការជូនដំណឹង',   sub: 'Notifications',  href: '/admin/notifications' },
+    { id: 'activity-logs', icon: History,  label: 'កត់ត្រា',       sub: 'Activity Logs',  href: '/admin/activity-logs' },
+    { id: 'roles-permissions', icon: ShieldCheck, label: 'Roles', sub: 'Roles & Permissions', href: '/admin/roles-permissions' },
+    { id: 'settings',      icon: Settings,  label: 'កំណត់',           sub: 'Settings',       href: '/admin/settings' },
 ];
 
 const MOBILE_NAV = [
-    { id: 'dashboard',  icon: '🏠', lk: 'ទំព័រ',  href: '/admin/dashboard' },
-    { id: 'students',   icon: '👥', lk: 'សិស្ស',   href: '/admin/students' },
-    { id: 'attendance', icon: '📋', lk: 'វត្តមាន', href: '/admin/attendance' },
-    { id: 'fee',        icon: '💳', lk: 'ថ្លៃ',    href: '/admin/fee' },
-    { id: 'exam',       icon: '📄', lk: 'ប្រឡង',  href: '/admin/exam' },
+    { id: 'dashboard',  icon: Home, lk: 'ទំព័រ',  href: '/admin/dashboard' },
+    { id: 'students',   icon: Users, lk: 'សិស្ស',   href: '/admin/students' },
+    { id: 'attendance', icon: ClipboardCheck, lk: 'វត្តមាន', href: '/admin/attendance' },
+    { id: 'fee',        icon: CreditCard, lk: 'ថ្លៃ',    href: '/admin/fee' },
+    { id: 'exam',       icon: FileText, lk: 'ប្រឡង',  href: '/admin/exam' },
 ];
 
 const PAGE_TITLES: Record<string, { kh: string; en: string }> = {
@@ -112,26 +141,31 @@ export default function AdminShell({ children }: AdminShellProps) {
             <div style={{ position: mobileOpen ? 'fixed' : 'relative', inset: mobileOpen ? '0 auto 0 0' : undefined, zIndex: mobileOpen ? 40 : 1 }}>
                 <nav className={`sidebar${collapsed ? ' collapsed' : ''}${mobileOpen ? ' mobile-open' : ''}`}>
                     <div className="sidebar-logo">
-                        <div style={{ width: 34, height: 34, background: 'linear-gradient(135deg,#3b82f6,#6366f1)', borderRadius: 10, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 18, flexShrink: 0 }}>🏫</div>
+                        <div style={{ width: 34, height: 34, background: 'linear-gradient(135deg,#3b82f6,#6366f1)', borderRadius: 10, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                            <Building2 size={18} color="white" strokeWidth={2.4} />
+                        </div>
                         {!collapsed && (
                             <div>
                                 <div style={{ color: 'white', fontWeight: 800, fontSize: 15, fontFamily: "'Noto Sans Khmer',sans-serif", lineHeight: 1.2 }}>Frania</div>
                                 <div style={{ color: 'rgba(255,255,255,0.4)', fontSize: 10 }}>School System</div>
                             </div>
                         )}
-                        <button onClick={() => setCollapsed(c => !c)} style={{ marginLeft: 'auto', background: 'none', border: 'none', color: 'rgba(255,255,255,0.4)', cursor: 'pointer', fontSize: 16, padding: '4px', flexShrink: 0 }}>
-                            {collapsed ? '→' : '←'}
+                        <button onClick={() => setCollapsed(c => !c)} style={{ marginLeft: 'auto', background: 'none', border: 'none', color: 'rgba(255,255,255,0.4)', cursor: 'pointer', padding: '4px', flexShrink: 0, display: 'inline-flex', alignItems: 'center', justifyContent: 'center' }} aria-label={collapsed ? 'Expand sidebar' : 'Collapse sidebar'}>
+                            {collapsed ? <PanelLeftOpen size={17} /> : <PanelLeftClose size={17} />}
                         </button>
                     </div>
 
                     <div className="sidebar-nav">
-                        {NAV.map((entry, i) =>
-                            isItem(entry) ? (
+                        {NAV.map((entry, i) => {
+                            if (isItem(entry)) {
+                                const Icon = entry.icon;
+
+                                return (
                                 <Link key={entry.id} href={entry.href}
                                     onClick={() => setMobileOpen(false)}
                                     className={`nav-item${active === entry.id ? ' active' : ''}`}
                                     title={collapsed ? entry.sub : ''}>
-                                    <span className="nav-icon">{entry.icon}</span>
+                                    <span className="nav-icon"><Icon size={18} strokeWidth={2.2} /></span>
                                     {!collapsed && (
                                         <div>
                                             <div style={{ fontSize: 12, fontFamily: "'Noto Sans Khmer',sans-serif" }}>{entry.label}</div>
@@ -139,10 +173,11 @@ export default function AdminShell({ children }: AdminShellProps) {
                                         </div>
                                     )}
                                 </Link>
-                            ) : (
-                                !collapsed ? <div key={i} className="nav-group-title">{entry.group}</div> : null
-                            )
-                        )}
+                                );
+                            }
+
+                            return !collapsed ? <div key={i} className="nav-group-title">{entry.group}</div> : null;
+                        })}
                     </div>
 
                     <div style={{ padding: '12px 16px', borderTop: '1px solid rgba(255,255,255,0.08)', display: 'flex', alignItems: 'center', gap: 10 }}>
@@ -161,7 +196,10 @@ export default function AdminShell({ children }: AdminShellProps) {
             <div style={{ flex: 1, display: 'flex', flexDirection: 'column', overflow: 'hidden', minWidth: 0 }}>
                 <div className="topbar">
                     <button className="mobile-only" onClick={() => setMobileOpen(o => !o)}
-                        style={{ background: 'none', border: 'none', fontSize: 22, cursor: 'pointer', color: '#64748b', padding: '4px', flexShrink: 0 }}>☰</button>
+                        style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#64748b', padding: '4px', flexShrink: 0, display: 'inline-flex', alignItems: 'center', justifyContent: 'center' }}
+                        aria-label="Toggle navigation">
+                        <Menu size={22} />
+                    </button>
 
                     <div style={{ flex: 1 }}>
                         <KH style={{ fontWeight: 800, fontSize: 18, color: '#1e293b', display: 'block', lineHeight: 1.2 }}>{title.kh}</KH>
@@ -180,13 +218,13 @@ export default function AdminShell({ children }: AdminShellProps) {
 
                     {/* Dark mode toggle */}
                     <button onClick={() => setDark(d => !d)}
-                        style={{ background: 'none', border: 'none', cursor: 'pointer', padding: '6px', fontSize: 18, flexShrink: 0 }}
+                        style={{ background: 'none', border: 'none', cursor: 'pointer', padding: '6px', flexShrink: 0, display: 'inline-flex', alignItems: 'center', justifyContent: 'center', color: '#64748b' }}
                         title="Toggle dark mode">
-                        {dark ? '☀️' : '🌙'}
+                        {dark ? <Sun size={19} /> : <Moon size={19} />}
                     </button>
 
-                    <button style={{ position: 'relative', background: 'none', border: 'none', cursor: 'pointer', padding: '6px' }}>
-                        <span style={{ fontSize: 20 }}>🔔</span>
+                    <button style={{ position: 'relative', background: 'none', border: 'none', cursor: 'pointer', padding: '6px', color: '#64748b', display: 'inline-flex', alignItems: 'center', justifyContent: 'center' }} aria-label="Notifications">
+                        <Bell size={20} />
                         <span style={{ position: 'absolute', top: 2, right: 2, width: 16, height: 16, background: '#ef4444', borderRadius: '50%', color: 'white', fontSize: 9, fontWeight: 700, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>3</span>
                     </button>
 
@@ -241,12 +279,16 @@ export default function AdminShell({ children }: AdminShellProps) {
 
             {/* Mobile bottom nav */}
             <div className="mobile-bottom-nav">
-                {MOBILE_NAV.map(item => (
+                {MOBILE_NAV.map(item => {
+                    const Icon = item.icon;
+
+                    return (
                     <Link key={item.id} href={item.href} className={`mob-nav-btn${active === item.id ? ' active' : ''}`}>
-                        <span className="mni" style={{ opacity: active === item.id ? 1 : 0.45 }}>{item.icon}</span>
+                        <span className="mni" style={{ opacity: active === item.id ? 1 : 0.45 }}><Icon size={22} strokeWidth={2.2} /></span>
                         <KH className="mnl" style={{ color: active === item.id ? '#2563eb' : '#94a3b8' }}>{item.lk}</KH>
                     </Link>
-                ))}
+                    );
+                })}
             </div>
         </div>
     );

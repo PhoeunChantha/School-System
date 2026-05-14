@@ -5,6 +5,7 @@ import { router, useForm } from '@inertiajs/react';
 import { Select, SelectTrigger, SelectContent, SelectItem, SelectValue } from '@/components/ui/select';
 import { DatePicker } from '@/components/ui/date-picker';
 import { FormEvent, useMemo } from 'react';
+import { ClipboardCheck, Edit3 } from 'lucide-react';
 import { toast } from 'sonner';
 
 type AttendanceStatus = 'present' | 'absent' | 'late' | 'excused';
@@ -196,8 +197,8 @@ export default function MarkAttendancePage({ classes, editingSession }: MarkAtte
                 <form onSubmit={submitAttendance} style={{ background: 'white', borderRadius: 16, padding: 24, maxWidth: 1200, margin: '0 auto' }}>
                     {/* Header */}
                     <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 24 }}>
-                        <div style={{ width: 40, height: 40, borderRadius: 10, background: isEdit ? '#eff6ff' : '#f0fdf4', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 20 }}>
-                            {isEdit ? '✏️' : '📋'}
+                        <div style={{ width: 40, height: 40, borderRadius: 10, background: isEdit ? '#eff6ff' : '#f0fdf4', color: isEdit ? '#2563eb' : '#16a34a', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                            {isEdit ? <Edit3 size={20} /> : <ClipboardCheck size={20} />}
                         </div>
                         <div>
                             <div style={{ fontWeight: 800, fontSize: 16, color: '#1e293b' }}>{isEdit ? 'Edit Attendance' : 'Mark Attendance'}</div>

@@ -3,12 +3,14 @@
 namespace App\Http\Controllers\Backends;
 
 use App\Http\Controllers\Controller;
+use App\Http\Requests\Backends\ImportStudentsRequest;
 use App\Http\Requests\Backends\StoreStudentRequest;
 use App\Http\Requests\Backends\UpdateStudentRequest;
 use App\Models\Student;
 use App\Services\Backends\StudentService;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Symfony\Component\HttpFoundation\StreamedResponse;
 use Inertia\Inertia;
 use Inertia\Response;
 use Throwable;
@@ -48,6 +50,54 @@ class StudentController extends Controller
         }
     }
 
+    public function downloadLayout(): StreamedResponse
+    {
+        return $this->csvDownload('students-import-layout.csv', [
+            StudentService::IMPORT_COLUMNS,
+            [
+                'STU-1001',
+                'សុខ ដារ៉ា',
+                'Sokh Dara',
+                'Beginner 1',
+                'Beginner 1A',
+                '2012-01-01',
+                'male',
+                'Prey Veng',
+                'Kampong Trabek',
+                'Commune',
+                'Village',
+                '012345678',
+                '@parent',
+                '25',
+                '0',
+                'unpaid',
+                'active',
+                '2026-05-14',
+            ],
+        ]);
+    }
+
+    public function import(ImportStudentsRequest $request): RedirectResponse
+    {
+        try {
+            $summary = $this->studentService->import($request->file('import_file'), $request->user()?->id);
+
+            return to_route('admin.students')->with('success', "Students imported: {$summary['created']} created, {$summary['updated']} updated, {$summary['skipped']} skipped.");
+        } catch (Throwable $exception) {
+            report($exception);
+
+            return back()->with('error', 'Unable to import students. Please check the layout and try again.');
+        }
+    }
+
+    public function export(): StreamedResponse
+    {
+        return $this->csvDownload('students-export.csv', [
+            StudentService::IMPORT_COLUMNS,
+            ...$this->studentService->exportRows(),
+        ]);
+    }
+
     public function show(Student $student): Response
     {
         return Inertia::render('admin/students/show', $this->studentService->showData($student));
@@ -82,5 +132,23 @@ class StudentController extends Controller
 
             return back()->with('error', 'Unable to delete student. Please try again.');
         }
+    }
+
+    /**
+     * @param  array<int, array<int, mixed>>  $rows
+     */
+    private function csvDownload(string $filename, array $rows): StreamedResponse
+    {
+        return response()->streamDownload(function () use ($rows): void {
+            $handle = fopen('php://output', 'w');
+
+            foreach ($rows as $row) {
+                fputcsv($handle, $row);
+            }
+
+            fclose($handle);
+        }, $filename, [
+            'Content-Type' => 'text/csv; charset=UTF-8',
+        ]);
     }
 }

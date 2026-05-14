@@ -4,6 +4,7 @@ import { show as showStudent } from '@/actions/App/Http/Controllers/Backends/Stu
 import AdminShell from '@/pages/admin/shell';
 import { Avatar, Badge, KH } from '@/pages/admin/ui';
 import { Head, Link } from '@inertiajs/react';
+import { ArrowLeft, CalendarDays, ChevronDown, ChevronUp, Clock, DoorOpen, Phone, School, Send } from 'lucide-react';
 
 interface StudentSummary {
     id: number;
@@ -92,7 +93,7 @@ const RESPONSIVE_CSS = `
     }
 }
 
-/* Student table → cards on mobile */
+/* Student table becomes cards on mobile */
 @media (max-width: 600px) {
     .student-data-table { display: none !important; }
     .student-card-list  { display: flex !important; }
@@ -156,7 +157,9 @@ export default function ShowTeacherPage({ teacher, classes }: ShowTeacherProps) 
                 {/* Back */}
                 <div>
                     <Link href={teacherIndex.url()} style={{ fontSize: 13, color: '#64748b', textDecoration: 'none', fontWeight: 600 }}>
-                        ← Back to Teachers
+                        <span style={{ display: 'inline-flex', alignItems: 'center', gap: 6 }}>
+                            <ArrowLeft size={14} /> Back to Teachers
+                        </span>
                     </Link>
                 </div>
 
@@ -221,13 +224,13 @@ export default function ShowTeacherPage({ teacher, classes }: ShowTeacherProps) 
                         >
                             {teacher.phone && (
                                 <div style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: 13, color: '#374151' }}>
-                                    <span style={{ fontSize: 16 }}>📞</span>
+                                    <Phone size={15} color="#64748b" />
                                     <span style={{ fontWeight: 600 }}>{teacher.phone}</span>
                                 </div>
                             )}
                             {teacher.telegram && (
                                 <div style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: 13, color: '#374151' }}>
-                                    <span style={{ fontSize: 16 }}>✈️</span>
+                                    <Send size={15} color="#64748b" />
                                     <span style={{ fontWeight: 600 }}>{teacher.telegram}</span>
                                 </div>
                             )}
@@ -257,15 +260,17 @@ export default function ShowTeacherPage({ teacher, classes }: ShowTeacherProps) 
                                 style={{ display: 'flex', alignItems: 'center', gap: 14, padding: '14px 18px', cursor: 'pointer' }}
                             >
                                 {/* Icon */}
-                                <div style={{ width: 40, height: 40, borderRadius: 10, background: '#eff6ff', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 18, flexShrink: 0 }}>🏫</div>
+                                <div style={{ width: 40, height: 40, borderRadius: 10, background: '#eff6ff', color: '#2563eb', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                                    <School size={18} />
+                                </div>
 
                                 {/* Name + meta */}
                                 <div style={{ flex: 1, minWidth: 0 }}>
                                     <div style={{ fontWeight: 700, fontSize: 14, color: '#1e293b', marginBottom: 3 }}>{cls.name}</div>
                                     <div className="class-header-meta" style={{ display: 'flex', flexWrap: 'wrap', gap: '2px 12px', fontSize: 12, color: '#94a3b8' }}>
-                                        {cls.time && <span>🕐 {cls.time}</span>}
-                                        {cls.days && <span>📅 {cls.days}</span>}
-                                        {cls.room && <span>🚪 Room {cls.room}</span>}
+                                        {cls.time && <span style={{ display: 'inline-flex', alignItems: 'center', gap: 4 }}><Clock size={12} /> {cls.time}</span>}
+                                        {cls.days && <span style={{ display: 'inline-flex', alignItems: 'center', gap: 4 }}><CalendarDays size={12} /> {cls.days}</span>}
+                                        {cls.room && <span style={{ display: 'inline-flex', alignItems: 'center', gap: 4 }}><DoorOpen size={12} /> Room {cls.room}</span>}
                                     </div>
                                 </div>
 
@@ -281,8 +286,8 @@ export default function ShowTeacherPage({ teacher, classes }: ShowTeacherProps) 
                                             <div style={{ fontSize: 10, color: '#94a3b8' }}>capacity</div>
                                         </div>
                                     )}
-                                    <span style={{ fontSize: 16, color: '#94a3b8', marginLeft: 2 }}>
-                                        {openClass === cls.id ? '▲' : '▼'}
+                                    <span style={{ color: '#94a3b8', marginLeft: 2, display: 'inline-flex' }}>
+                                        {openClass === cls.id ? <ChevronUp size={16} /> : <ChevronDown size={16} />}
                                     </span>
                                 </div>
                             </div>

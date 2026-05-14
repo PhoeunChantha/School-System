@@ -143,6 +143,7 @@ export default function GradesPage({ records, periods, students, classes, summar
     const [selectedPeriod, setSelectedPeriod] = useState<number | 'all'>(summary.currentPeriodId ?? 'all');
     const [selectedClass, setSelectedClass] = useState<number | 'all'>('all');
     const [performanceFilter, setPerformanceFilter] = useState<PerfFilter>('all');
+    const [search, setSearch] = useState('');
     const [orderBy, setOrderBy] = useState<OrderKey>('avg-desc');
     const [page, setPage] = useState(1);
     const [perPage, setPerPage] = useState(5);
@@ -162,9 +163,10 @@ export default function GradesPage({ records, periods, students, classes, summar
         writing: 0,
     });
 
-    useEffect(() => { setPage(1); }, [selectedPeriod, selectedClass, performanceFilter, orderBy, perPage]);
+    useEffect(() => { setPage(1); }, [selectedPeriod, selectedClass, performanceFilter, search, orderBy, perPage]);
 
     const filtered = useMemo(() => {
+        const query = search.toLowerCase();
         const base = records.filter(record => {
             const periodMatches = selectedPeriod === 'all' || record.gradePeriodId === selectedPeriod;
             const classMatches = selectedClass === 'all' || record.classId === selectedClass;
@@ -174,12 +176,20 @@ export default function GradesPage({ records, periods, students, classes, summar
                 || (performanceFilter === 'good' && perf === 'good')
                 || (performanceFilter === 'average' && perf === 'average')
                 || (performanceFilter === 'poor' && perf === 'needs-work');
+            const searchMatches = !query
+                || record.studentNameKh.includes(search)
+                || record.studentNameEn.toLowerCase().includes(query)
+                || record.className.toLowerCase().includes(query)
+                || record.level.toLowerCase().includes(query)
+                || record.periodName.toLowerCase().includes(query)
+                || record.province.toLowerCase().includes(query)
+                || record.gradedAt.includes(search);
 
-            return periodMatches && classMatches && perfMatches;
+            return periodMatches && classMatches && perfMatches && searchMatches;
         });
 
         return sortRecords(base, orderBy);
-    }, [orderBy, performanceFilter, records, selectedClass, selectedPeriod]);
+    }, [orderBy, performanceFilter, records, search, selectedClass, selectedPeriod]);
 
     const paginated = useMemo(
         () => filtered.slice((page - 1) * perPage, page * perPage),
@@ -344,6 +354,13 @@ export default function GradesPage({ records, periods, students, classes, summar
                             {ORDER_OPTIONS.map(option => <option key={option.value} value={option.value}>{option.label}</option>)}
                         </select>
                         <span style={{ fontSize: 11, color: '#94a3b8' }}>{filtered.length} result{filtered.length !== 1 ? 's' : ''}</span>
+                        <input
+                            value={search}
+                            onChange={event => setSearch(event.target.value)}
+                            className="f-input"
+                            style={{ width: 260, maxWidth: '100%', marginLeft: 'auto' }}
+                            placeholder="Search grades..."
+                        />
                     </div>
 
                     <table className="data-table">
@@ -364,7 +381,7 @@ export default function GradesPage({ records, periods, students, classes, summar
                             {paginated.length === 0 ? (
                                 <tr>
                                     <td colSpan={9} style={{ padding: '34px 24px', textAlign: 'center', color: '#64748b', fontSize: 14, fontWeight: 700 }}>
-                                        Data not found
+                                        {search ? <>No grades found for <strong>"{search}"</strong></> : 'Data not found'}
                                     </td>
                                 </tr>
                             ) : paginated.map(record => {

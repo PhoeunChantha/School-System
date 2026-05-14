@@ -32,12 +32,12 @@ type OrderKey = 'sort-asc' | 'name-asc' | 'name-desc' | 'fee-asc' | 'fee-desc' |
 
 const ORDER_OPTIONS: { value: OrderKey; label: string }[] = [
     { value: 'sort-asc', label: 'Sort order' },
-    { value: 'name-asc', label: 'Name A → Z' },
-    { value: 'name-desc', label: 'Name Z → A' },
-    { value: 'fee-asc', label: 'Fee ↑ Low' },
-    { value: 'fee-desc', label: 'Fee ↓ High' },
-    { value: 'students-desc', label: 'Students ↓ Most' },
-    { value: 'students-asc', label: 'Students ↑ Least' },
+    { value: 'name-asc', label: 'Name A-Z' },
+    { value: 'name-desc', label: 'Name Z-A' },
+    { value: 'fee-asc', label: 'Fee Low' },
+    { value: 'fee-desc', label: 'Fee High' },
+    { value: 'students-desc', label: 'Students Most' },
+    { value: 'students-asc', label: 'Students Least' },
 ];
 
 function sortLevels(list: Level[], order: OrderKey): Level[] {

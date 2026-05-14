@@ -7,6 +7,7 @@ import { register } from '@/routes';
 import { store } from '@/routes/login';
 import { request } from '@/routes/password';
 import { Form, Head } from '@inertiajs/react';
+import { ArrowRight, Building2 } from 'lucide-react';
 
 interface LoginProps {
     status?: string;
@@ -45,7 +46,9 @@ export default function Login({ status, canResetPassword, canRegister }: LoginPr
                         fontSize: 40,
                         margin: '0 auto 16px',
                         boxShadow: '0 8px 24px rgba(37,99,235,0.3)',
-                    }}>🏫</div>
+                    }}>
+                        <Building2 size={40} color="white" strokeWidth={2.2} />
+                    </div>
 
                     <span style={{
                         fontSize: 26, fontWeight: 800, display: 'block',
@@ -167,7 +170,7 @@ export default function Login({ status, canResetPassword, canRegister }: LoginPr
                                 }}
                             >
                                 {processing && <Spinner />}
-                                {processing ? 'កំពុងចូល...' : 'ចូលប្រព័ន្ធ → Log in'}
+                                {processing ? 'កំពុងចូល...' : <><span>ចូលប្រព័ន្ធ</span><ArrowRight size={16} /><span>Log in</span></>}
                             </button>
 
                             {/* Register link */}

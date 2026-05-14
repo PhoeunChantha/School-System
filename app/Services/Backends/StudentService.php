@@ -7,10 +7,36 @@ use App\Models\SchoolClass;
 use App\Models\Student;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Validator;
 use Illuminate\Support\Str;
+use Illuminate\Validation\Rule;
 
 class StudentService
 {
+    /**
+     * @var array<int, string>
+     */
+    public const IMPORT_COLUMNS = [
+        'code',
+        'name_kh',
+        'name_en',
+        'level',
+        'class',
+        'date_of_birth',
+        'gender',
+        'province',
+        'district',
+        'commune',
+        'village',
+        'parent_phone',
+        'telegram_username',
+        'monthly_fee',
+        'scholarship_amount',
+        'fee_status',
+        'status',
+        'enrolled_on',
+    ];
+
     /**
      * @return array{students: mixed}
      */
@@ -208,6 +234,103 @@ class StudentService
     }
 
     /**
+     * @return array{created: int, updated: int, skipped: int}
+     */
+    public function import(UploadedFile $file, ?int $userId): array
+    {
+        $summary = ['created' => 0, 'updated' => 0, 'skipped' => 0];
+
+        foreach ($this->csvRows($file) as $row) {
+            $data = $this->studentImportData($row);
+
+            $validator = Validator::make($data, [
+                'level_id' => ['nullable', 'integer', Rule::exists('levels', 'id')],
+                'school_class_id' => ['nullable', 'integer', Rule::exists('school_classes', 'id')],
+                'code' => ['nullable', 'string', 'max:255'],
+                'name_kh' => ['required', 'string', 'max:255'],
+                'name_en' => ['required', 'string', 'max:255'],
+                'date_of_birth' => ['nullable', 'date'],
+                'gender' => ['nullable', 'string', Rule::in(['male', 'female'])],
+                'province' => ['nullable', 'string', 'max:255'],
+                'district' => ['nullable', 'string', 'max:255'],
+                'commune' => ['nullable', 'string', 'max:255'],
+                'village' => ['nullable', 'string', 'max:255'],
+                'parent_phone' => ['nullable', 'string', 'max:255'],
+                'telegram_username' => ['nullable', 'string', 'max:255'],
+                'monthly_fee' => ['required', 'numeric', 'min:0', 'max:999999.99'],
+                'scholarship_amount' => ['nullable', 'numeric', 'min:0', 'max:999999.99'],
+                'fee_status' => ['required', 'string', Rule::in(['paid', 'unpaid', 'partial'])],
+                'status' => ['required', 'string', Rule::in(['active', 'inactive'])],
+                'enrolled_on' => ['nullable', 'date'],
+            ]);
+
+            if ($validator->fails()) {
+                $summary['skipped']++;
+
+                continue;
+            }
+
+            DB::transaction(function () use ($data, $userId, &$summary): void {
+                $student = filled($data['code'] ?? null)
+                    ? Student::query()->withTrashed()->where('code', $data['code'])->first()
+                    : null;
+
+                if ($student) {
+                    $student->restore();
+                    $student->update([
+                        ...$this->normalizedData($data),
+                        'updated_by' => $userId,
+                    ]);
+                    $summary['updated']++;
+
+                    return;
+                }
+
+                Student::create([
+                    ...$this->normalizedData($data),
+                    'created_by' => $userId,
+                    'updated_by' => $userId,
+                ]);
+                $summary['created']++;
+            });
+        }
+
+        return $summary;
+    }
+
+    /**
+     * @return array<int, array<int, mixed>>
+     */
+    public function exportRows(): array
+    {
+        return Student::query()
+            ->with(['level:id,name', 'schoolClass:id,name'])
+            ->orderBy('name_en')
+            ->get()
+            ->map(fn (Student $student): array => [
+                $student->code,
+                $student->name_kh,
+                $student->name_en,
+                $student->level?->name,
+                $student->schoolClass?->name,
+                $student->date_of_birth?->format('Y-m-d'),
+                $student->gender,
+                $student->province,
+                $student->district,
+                $student->commune,
+                $student->village,
+                $student->parent_phone,
+                $student->telegram_username,
+                $student->monthly_fee,
+                $student->scholarship_amount,
+                $student->fee_status,
+                $student->status,
+                $student->enrolled_on?->format('Y-m-d'),
+            ])
+            ->all();
+    }
+
+    /**
      * @return array{levels: mixed, classes: mixed}
      */
     private function formOptions(): array
@@ -231,6 +354,85 @@ class StudentService
                     'time' => collect([$schoolClass->starts_at, $schoolClass->ends_at])->filter()->implode('-'),
                 ]),
         ];
+    }
+
+    /**
+     * @return iterable<array<string, string>>
+     */
+    private function csvRows(UploadedFile $file): iterable
+    {
+        $handle = fopen($file->getRealPath(), 'r');
+
+        if ($handle === false) {
+            return;
+        }
+
+        $headers = null;
+
+        while (($row = fgetcsv($handle)) !== false) {
+            if ($row === [null] || $row === false) {
+                continue;
+            }
+
+            if ($headers === null) {
+                $headers = array_map(fn (string $header): string => Str::of($header)->trim()->lower()->replace(' ', '_')->toString(), $row);
+
+                continue;
+            }
+
+            yield array_combine($headers, array_pad($row, count($headers), '')) ?: [];
+        }
+
+        fclose($handle);
+    }
+
+    /**
+     * @param  array<string, string>  $row
+     * @return array<string, mixed>
+     */
+    private function studentImportData(array $row): array
+    {
+        return [
+            'code' => $this->emptyToNull($row['code'] ?? null),
+            'name_kh' => $this->emptyToNull($row['name_kh'] ?? null),
+            'name_en' => $this->emptyToNull($row['name_en'] ?? null),
+            'level_id' => $this->levelId($row['level'] ?? null),
+            'school_class_id' => $this->classId($row['class'] ?? null),
+            'date_of_birth' => $this->emptyToNull($row['date_of_birth'] ?? null),
+            'gender' => Str::lower((string) $this->emptyToNull($row['gender'] ?? null)) ?: null,
+            'province' => $this->emptyToNull($row['province'] ?? null),
+            'district' => $this->emptyToNull($row['district'] ?? null),
+            'commune' => $this->emptyToNull($row['commune'] ?? null),
+            'village' => $this->emptyToNull($row['village'] ?? null),
+            'parent_phone' => $this->emptyToNull($row['parent_phone'] ?? null),
+            'telegram_username' => $this->emptyToNull($row['telegram_username'] ?? null),
+            'monthly_fee' => $this->emptyToNull($row['monthly_fee'] ?? null),
+            'scholarship_amount' => $this->emptyToNull($row['scholarship_amount'] ?? null) ?? 0,
+            'fee_status' => Str::lower((string) ($this->emptyToNull($row['fee_status'] ?? null) ?? 'unpaid')),
+            'status' => Str::lower((string) ($this->emptyToNull($row['status'] ?? null) ?? 'active')),
+            'enrolled_on' => $this->emptyToNull($row['enrolled_on'] ?? null),
+        ];
+    }
+
+    private function levelId(?string $name): ?int
+    {
+        $name = $this->emptyToNull($name);
+
+        return $name ? Level::query()->where('name', $name)->value('id') : null;
+    }
+
+    private function classId(?string $name): ?int
+    {
+        $name = $this->emptyToNull($name);
+
+        return $name ? SchoolClass::query()->where('name', $name)->value('id') : null;
+    }
+
+    private function emptyToNull(?string $value): ?string
+    {
+        $value = trim((string) $value);
+
+        return $value === '' ? null : $value;
     }
 
     /**

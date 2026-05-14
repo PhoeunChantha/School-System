@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Backends;
 
 use App\Http\Controllers\Controller;
+use App\Http\Requests\Backends\ImportTeachersRequest;
 use App\Http\Requests\Backends\StoreLessonPlanRequest;
 use App\Http\Requests\Backends\StoreTeacherRequest;
 use App\Http\Requests\Backends\UpdateTeacherRequest;
@@ -11,6 +12,7 @@ use App\Services\Backends\LessonPlanService;
 use App\Services\Backends\TeacherService;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Symfony\Component\HttpFoundation\StreamedResponse;
 use Inertia\Inertia;
 use Inertia\Response;
 use Throwable;
@@ -85,6 +87,42 @@ class TeacherController extends Controller
         }
     }
 
+    public function downloadLayout(): StreamedResponse
+    {
+        return $this->csvDownload('teachers-import-layout.csv', [
+            TeacherService::IMPORT_COLUMNS,
+            [
+                'គ្រូ វុទ្ធី',
+                'Mr. Vuthy',
+                'English Grammar',
+                '012345678',
+                '@vuthy',
+                'active',
+            ],
+        ]);
+    }
+
+    public function import(ImportTeachersRequest $request): RedirectResponse
+    {
+        try {
+            $summary = $this->teacherService->import($request->file('import_file'), $request->user()?->id);
+
+            return to_route('admin.teachers')->with('success', "Teachers imported: {$summary['created']} created, {$summary['updated']} updated, {$summary['skipped']} skipped.");
+        } catch (Throwable $exception) {
+            report($exception);
+
+            return back()->with('error', 'Unable to import teachers. Please check the layout and try again.');
+        }
+    }
+
+    public function export(): StreamedResponse
+    {
+        return $this->csvDownload('teachers-export.csv', [
+            TeacherService::IMPORT_COLUMNS,
+            ...$this->teacherService->exportRows(),
+        ]);
+    }
+
     public function store(StoreTeacherRequest $request): RedirectResponse
     {
         try {
@@ -122,5 +160,23 @@ class TeacherController extends Controller
 
             return back()->with('error', 'Unable to delete teacher. Please try again.');
         }
+    }
+
+    /**
+     * @param  array<int, array<int, mixed>>  $rows
+     */
+    private function csvDownload(string $filename, array $rows): StreamedResponse
+    {
+        return response()->streamDownload(function () use ($rows): void {
+            $handle = fopen('php://output', 'w');
+
+            foreach ($rows as $row) {
+                fputcsv($handle, $row);
+            }
+
+            fclose($handle);
+        }, $filename, [
+            'Content-Type' => 'text/csv; charset=UTF-8',
+        ]);
     }
 }

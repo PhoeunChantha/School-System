@@ -34,8 +34,8 @@ interface StudentsPageProps {
 type OrderKey = 'name-asc' | 'name-desc' | 'attend-desc' | 'attend-asc' | 'score-desc' | 'score-asc' | 'level-asc' | 'fee-asc' | 'province-asc';
 
 const ORDER_OPTIONS: { value: OrderKey; label: string }[] = [
-    { value: 'name-asc', label: 'Name A → Z' },
-    { value: 'name-desc', label: 'Name Z → A' },
+    { value: 'name-asc', label: 'Name A-Z' },
+    { value: 'name-desc', label: 'Name Z-A' },
     { value: 'attend-desc', label: 'Attendance Highest' },
     { value: 'attend-asc', label: 'Attendance Lowest' },
     { value: 'score-desc', label: 'Score Highest' },

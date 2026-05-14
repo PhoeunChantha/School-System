@@ -1,15 +1,16 @@
-import { FormEvent, useRef, useState } from 'react';
+import { FormEvent, useEffect, useMemo, useRef, useState } from 'react';
 import { lessonPlans as lessonPlanIndex } from '@/routes/admin';
 import { create as createTeacherLessonPlan } from '@/routes/admin/teachers/lesson-plans';
 import { destroy, show as showTeacher, store, update } from '@/actions/App/Http/Controllers/Backends/TeacherController';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import AdminShell from '@/pages/admin/shell';
-import { KH, Avatar, Badge } from '@/pages/admin/ui';
+import { KH, Avatar, Badge, Pagination } from '@/pages/admin/ui';
 import { Link, router, useForm } from '@inertiajs/react';
-import { Camera, User } from 'lucide-react';
+import { ArrowLeft, Camera, Check, Edit3, Eye, GraduationCap, Phone, School, Search, Trash2, User, X } from 'lucide-react';
 import { toast } from 'sonner';
 
 type View = 'list' | 'add' | 'edit';
+type OrderKey = 'name-asc' | 'name-desc' | 'subject-asc' | 'classes-desc' | 'students-desc' | 'status-asc';
 
 interface TeacherSchedule {
     id: number;
@@ -51,9 +52,35 @@ interface TeachersPageProps {
     teachers: Teacher[];
 }
 
+const ORDER_OPTIONS: { value: OrderKey; label: string }[] = [
+    { value: 'name-asc', label: 'Name A-Z' },
+    { value: 'name-desc', label: 'Name Z-A' },
+    { value: 'subject-asc', label: 'Subject' },
+    { value: 'classes-desc', label: 'Classes Most' },
+    { value: 'students-desc', label: 'Students Most' },
+    { value: 'status-asc', label: 'Status' },
+];
+
+function sortTeachers(list: Teacher[], order: OrderKey): Teacher[] {
+    return [...list].sort((a, b) => {
+        switch (order) {
+            case 'name-asc': return a.nameEn.localeCompare(b.nameEn);
+            case 'name-desc': return b.nameEn.localeCompare(a.nameEn);
+            case 'subject-asc': return a.subject.localeCompare(b.subject);
+            case 'classes-desc': return b.classes - a.classes;
+            case 'students-desc': return b.students - a.students;
+            case 'status-asc': return a.status.localeCompare(b.status);
+            default: return 0;
+        }
+    });
+}
+
 export default function TeachersPage({ teachers }: TeachersPageProps) {
     const [view, setView]             = useState<View>('list');
     const [search, setSearch]         = useState('');
+    const [orderBy, setOrderBy]       = useState<OrderKey>('name-asc');
+    const [page, setPage]             = useState(1);
+    const [perPage, setPerPage]       = useState(5);
     const [editing, setEditing]       = useState<Teacher | null>(null);
     const [deleteTarget, setDeleteTarget] = useState<Teacher | null>(null);
     const [scheduleTarget, setScheduleTarget] = useState<Teacher | null>(null);
@@ -74,13 +101,24 @@ export default function TeachersPage({ teachers }: TeachersPageProps) {
         });
     };
 
-    const q = search.toLowerCase();
-    const filtered = teachers.filter(t =>
-        !q ||
-        t.nameKh.includes(search) ||
-        t.nameEn.toLowerCase().includes(q) ||
-        t.subject.toLowerCase().includes(q) ||
-        t.phone.includes(search)
+    useEffect(() => { setPage(1); }, [search, orderBy, perPage]);
+
+    const filtered = useMemo(() => {
+        const q = search.toLowerCase();
+        const base = teachers.filter(t =>
+            !q ||
+            t.nameKh.includes(search) ||
+            t.nameEn.toLowerCase().includes(q) ||
+            t.subject.toLowerCase().includes(q) ||
+            t.phone.includes(search)
+        );
+
+        return sortTeachers(base, orderBy);
+    }, [teachers, search, orderBy]);
+
+    const paginated = useMemo(
+        () => filtered.slice((page - 1) * perPage, page * perPage),
+        [filtered, page, perPage],
     );
 
     return (
@@ -89,105 +127,120 @@ export default function TeachersPage({ teachers }: TeachersPageProps) {
             {/* List view */}
             {view === 'list' && (
                 <div className="fade-in" style={{ padding: 24, display: 'flex', flexDirection: 'column', gap: 16 }}>
-                    {/* Toolbar */}
                     <div style={{ display: 'flex', alignItems: 'center', flexWrap: 'wrap', gap: 12 }}>
-                        {/* Search */}
-                        <input
-                            value={search}
-                            onChange={e => setSearch(e.target.value)}
-                            className="f-input"
-                            style={{ width: 260, maxWidth: '100%' }}
-                            placeholder="🔍  Search teachers..."
-                        />
-                        {/* Stats */}
-                        <div style={{ display: 'flex', gap: 8 }}>
-                            {[
-                                { l: 'Total',  v: teachers.length, c: '#3b82f6' },
-                                { l: 'Active', v: teachers.filter(t => t.status === 'active').length, c: '#10b981' },
-                            ].map((s, i) => (
-                                <div key={i} style={{ background: 'white', borderRadius: 10, padding: '8px 14px', border: '1px solid #e8edf5', display: 'flex', gap: 8, alignItems: 'center' }}>
-                                    <div style={{ width: 8, height: 8, borderRadius: '50%', background: s.c }} />
-                                    <span style={{ fontSize: 11, color: '#64748b' }}>{s.l}</span>
-                                    <span style={{ fontWeight: 800, fontSize: 15, color: '#1e293b' }}>{s.v}</span>
-                                </div>
-                            ))}
-                        </div>
                         <button onClick={() => setView('add')} style={{ marginLeft: 'auto', background: '#2563eb', color: 'white', border: 'none', borderRadius: 10, padding: '9px 18px', fontWeight: 700, fontSize: 13, cursor: 'pointer' }}>
                             + Add Teacher
                         </button>
                     </div>
 
-                    {/* Empty state */}
-                    {filtered.length === 0 && (
-                        <div style={{ textAlign: 'center', padding: '60px 0', color: '#94a3b8', fontSize: 14 }}>
-                            <div style={{ fontSize: 32, marginBottom: 8 }}>🔍</div>
-                            No teachers found for <strong>"{search}"</strong>
+                    <div className="card" style={{ overflowX: 'auto' }}>
+                        <div style={{ display: 'flex', alignItems: 'center', flexWrap: 'wrap', gap: 8, padding: '12px 16px', borderBottom: '1px solid #f1f5f9' }}>
+                            <span style={{ fontSize: 11, fontWeight: 700, color: '#94a3b8', whiteSpace: 'nowrap' }}>Sort by</span>
+                            <Select value={orderBy} onValueChange={value => setOrderBy(value as OrderKey)}>
+                                <SelectTrigger style={{ width: 'auto', minWidth: 150, padding: '5px 10px', fontSize: 12, height: 'auto' }}>
+                                    <SelectValue />
+                                </SelectTrigger>
+                                <SelectContent>
+                                    {ORDER_OPTIONS.map(option => <SelectItem key={option.value} value={option.value}>{option.label}</SelectItem>)}
+                                </SelectContent>
+                            </Select>
+                            <Select value={perPage.toString()} onValueChange={value => setPerPage(Number(value))}>
+                                <SelectTrigger style={{ width: 'auto', minWidth: 120, padding: '5px 10px', fontSize: 12, height: 'auto' }}>
+                                    <SelectValue />
+                                </SelectTrigger>
+                                <SelectContent>
+                                    {[5, 10, 25, 50].map(size => <SelectItem key={size} value={size.toString()}>{size} per page</SelectItem>)}
+                                </SelectContent>
+                            </Select>
+                            <span style={{ fontSize: 11, color: '#94a3b8', marginLeft: 4 }}>{filtered.length} result{filtered.length !== 1 ? 's' : ''}</span>
+                            <input
+                                value={search}
+                                onChange={event => setSearch(event.target.value)}
+                                className="f-input"
+                                style={{ width: 260, maxWidth: '100%', marginLeft: 'auto' }}
+                                placeholder="Search teachers..."
+                            />
                         </div>
-                    )}
 
-                    {/* Teacher cards */}
-                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill,minmax(min(300px,100%),1fr))', gap: 16 }}>
-                        {filtered.map(t => (
-                            <div key={t.id} className="card" style={{ padding: 24 }}>
-                                <div style={{ display: 'flex', alignItems: 'center', gap: 14, marginBottom: 16 }}>
-                                    <Avatar name={t.nameEn} src={t.photo} size={56} />
-                                    <div style={{ flex: 1, minWidth: 0 }}>
-                                        <KH style={{ fontWeight: 800, fontSize: 16, display: 'block', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{t.nameKh}</KH>
-                                        <div style={{ fontSize: 13, color: '#64748b' }}>{t.nameEn}</div>
-                                        <div style={{ fontSize: 12, color: '#94a3b8' }}>{t.subject}</div>
-                                    </div>
-                                    <Badge type={t.status === 'active' ? 'green' : 'gray'}>{t.status}</Badge>
-                                </div>
-
-                                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10, marginBottom: 14 }}>
-                                    {[{ l: 'Classes', v: t.classes, c: '#3b82f6' }, { l: 'Students', v: t.students, c: '#8b5cf6' }].map(s => (
-                                        <div key={s.l} style={{ background: '#f8fafc', borderRadius: 10, padding: '10px 12px', textAlign: 'center' }}>
-                                            <div style={{ fontSize: 20, fontWeight: 800, color: s.c }}>{s.v}</div>
-                                            <div style={{ fontSize: 11, color: '#94a3b8' }}>{s.l}</div>
-                                        </div>
-                                    ))}
-                                </div>
-
-                                <div style={{ display: 'grid', gap: 8, marginBottom: 12 }}>
-                                    {t.lessons.slice(0, 2).map(lesson => (
-                                        <Link key={lesson.id} href={lessonPlanIndex.url()}
-                                            style={{ background: lesson.day === 'Today' ? '#eff6ff' : '#ecfdf5', border: `1px solid ${lesson.day === 'Today' ? '#bfdbfe' : '#bbf7d0'}`, borderRadius: 10, padding: '10px 12px', textDecoration: 'none', display: 'grid', gap: 4 }}>
-                                            <div style={{ display: 'flex', justifyContent: 'space-between', gap: 8 }}>
-                                                <span style={{ fontSize: 11, color: lesson.day === 'Today' ? '#2563eb' : '#047857', fontWeight: 900 }}>{lesson.day} lesson</span>
-                                                <span style={{ fontSize: 11, color: '#64748b', fontWeight: 800 }}>{lesson.time || 'No time'}</span>
+                        <table className="data-table">
+                            <thead>
+                                <tr>
+                                    <th>Teacher</th>
+                                    <th>Subject</th>
+                                    <th>Classes</th>
+                                    <th>Students</th>
+                                    <th>Phone</th>
+                                    <th>Lessons</th>
+                                    <th>Status</th>
+                                    <th>Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {paginated.length === 0 ? (
+                                    <tr>
+                                        <td colSpan={8} style={{ padding: '44px 16px', textAlign: 'center', color: '#94a3b8', fontSize: 14 }}>
+                                            {search ? <>No teachers found for <strong>"{search}"</strong></> : 'No teachers found'}
+                                        </td>
+                                    </tr>
+                                ) : paginated.map(t => (
+                                    <tr key={t.id}>
+                                        <td>
+                                            <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                                                <Avatar name={t.nameEn} src={t.photo} size={34} />
+                                                <div style={{ minWidth: 0 }}>
+                                                    <KH style={{ fontWeight: 800, fontSize: 13, display: 'block' }}>{t.nameKh}</KH>
+                                                    <div style={{ fontSize: 11, color: '#94a3b8' }}>{t.nameEn}</div>
+                                                </div>
                                             </div>
-                                            <div style={{ color: '#0f172a', fontSize: 13, fontWeight: 900, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{lesson.title}</div>
-                                            <div style={{ color: '#64748b', fontSize: 11 }}>{lesson.className} - Room {lesson.room || 'N/A'}</div>
-                                        </Link>
-                                    ))}
-                                </div>
-
-                                <div style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '10px 12px', background: '#f8fafc', borderRadius: 10, marginBottom: 12 }}>
-                                    <span>📞</span>
-                                    <span style={{ fontSize: 13, fontWeight: 600, color: '#374151', flex: 1 }}>{t.phone}</span>
-                                </div>
-
-                                <Link href={createTeacherLessonPlan.url(t.id)}
-                                    style={{ width: '100%', background: '#eff6ff', color: '#2563eb', border: '1px solid #bfdbfe', borderRadius: 8, padding: '9px 10px', fontWeight: 800, fontSize: 12, textDecoration: 'none', textAlign: 'center', display: 'block', marginBottom: 10 }}>
-                                    + Create Lesson Plan
-                                </Link>
-
-                                <div className="teacher-card-actions">
-                                    <Link href={showTeacher.url(t.id)}
-                                        style={{ flex: 1, background: '#f0fdf4', color: '#16a34a', border: '1px solid #bbf7d0', borderRadius: 8, padding: '8px', fontWeight: 700, fontSize: 12, textDecoration: 'none', textAlign: 'center' }}>
-                                        👁 View
-                                    </Link>
-                                    <button onClick={() => handleEdit(t)}
-                                        style={{ flex: 1, background: '#eff6ff', color: '#2563eb', border: '1px solid #bfdbfe', borderRadius: 8, padding: '8px', cursor: 'pointer', fontWeight: 700, fontSize: 12 }}>
-                                        ✏️ Edit
-                                    </button>
-                                    <button onClick={() => handleDelete(t)}
-                                        style={{ flex: 1, background: '#fff1f2', color: '#ef4444', border: '1px solid #fecaca', borderRadius: 8, padding: '8px', cursor: 'pointer', fontWeight: 700, fontSize: 12 }}>
-                                        🗑️ Delete
-                                    </button>
-                                </div>
-                            </div>
-                        ))}
+                                        </td>
+                                        <td style={{ fontSize: 12, color: '#64748b', fontWeight: 700 }}>{t.subject}</td>
+                                        <td style={{ fontWeight: 900, color: '#2563eb' }}>{t.classes}</td>
+                                        <td style={{ fontWeight: 900, color: '#7c3aed' }}>{t.students}</td>
+                                        <td>
+                                            <span style={{ display: 'inline-flex', alignItems: 'center', gap: 6, color: '#374151', fontSize: 12, fontWeight: 700 }}>
+                                                <Phone size={14} color="#64748b" />
+                                                {t.phone || '-'}
+                                            </span>
+                                        </td>
+                                        <td style={{ minWidth: 180 }}>
+                                            {t.lessons.length === 0 ? (
+                                                <span style={{ color: '#94a3b8', fontSize: 12 }}>No lessons</span>
+                                            ) : (
+                                                <Link href={lessonPlanIndex.url()} style={{ color: '#2563eb', fontSize: 12, fontWeight: 800, textDecoration: 'none' }}>
+                                                    {t.lessons[0].title}
+                                                    <span style={{ color: '#94a3b8', fontWeight: 700 }}> · {t.lessons[0].day}</span>
+                                                </Link>
+                                            )}
+                                        </td>
+                                        <td><Badge type={t.status === 'active' ? 'green' : 'gray'}>{t.status}</Badge></td>
+                                        <td>
+                                            <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
+                                                <Link href={createTeacherLessonPlan.url(t.id)} style={{ background: '#f8fafc', color: '#64748b', border: '1px solid #e2e8f0', borderRadius: 7, padding: '5px 9px', fontWeight: 800, fontSize: 11, textDecoration: 'none', whiteSpace: 'nowrap' }}>Plan</Link>
+                                                <Link href={showTeacher.url(t.id)} style={{ background: '#f0fdf4', color: '#16a34a', border: '1px solid #bbf7d0', borderRadius: 7, padding: '5px 9px', fontWeight: 800, fontSize: 11, textDecoration: 'none', display: 'inline-flex', alignItems: 'center', gap: 4 }}>
+                                                    <Eye size={13} /> View
+                                                </Link>
+                                                <button onClick={() => handleEdit(t)} style={{ background: '#eff6ff', color: '#2563eb', border: '1px solid #bfdbfe', borderRadius: 7, padding: '5px 9px', cursor: 'pointer', fontWeight: 800, fontSize: 11, display: 'inline-flex', alignItems: 'center', gap: 4 }}>
+                                                    <Edit3 size={13} /> Edit
+                                                </button>
+                                                <button onClick={() => handleDelete(t)} style={{ background: '#fff1f2', color: '#ef4444', border: '1px solid #fecaca', borderRadius: 7, padding: '5px 9px', cursor: 'pointer', fontWeight: 800, fontSize: 11, display: 'inline-flex', alignItems: 'center', gap: 4 }}>
+                                                    <Trash2 size={13} /> Delete
+                                                </button>
+                                            </div>
+                                        </td>
+                                    </tr>
+                                ))}
+                            </tbody>
+                        </table>
+                        {filtered.length > 0 && (
+                            <Pagination
+                                total={filtered.length}
+                                page={page}
+                                perPage={perPage}
+                                onPageChange={setPage}
+                                onPerPageChange={setPerPage}
+                                showPerPage={false}
+                            />
+                        )}
                     </div>
                 </div>
             )}
@@ -212,14 +265,18 @@ export default function TeachersPage({ teachers }: TeachersPageProps) {
                                 <KH style={{ fontWeight: 800, fontSize: 16, display: 'block' }}>{scheduleTarget.nameKh}</KH>
                                 <div style={{ fontSize: 12, color: '#94a3b8' }}>{scheduleTarget.subject}</div>
                             </div>
-                            <button onClick={() => setScheduleTarget(null)} style={{ marginLeft: 'auto', background: '#f1f5f9', border: 'none', borderRadius: 8, width: 32, height: 32, cursor: 'pointer', fontSize: 16, color: '#64748b' }}>✕</button>
+                            <button onClick={() => setScheduleTarget(null)} style={{ marginLeft: 'auto', background: '#f1f5f9', border: 'none', borderRadius: 8, width: 32, height: 32, cursor: 'pointer', color: '#64748b', display: 'inline-flex', alignItems: 'center', justifyContent: 'center' }}>
+                                <X size={16} />
+                            </button>
                         </div>
 
                         <div style={{ marginBottom: 16 }}>
                             <div style={{ fontSize: 12, fontWeight: 700, color: '#64748b', marginBottom: 10 }}>CLASS SCHEDULE</div>
                             {scheduleTarget.schedule.map(cls => (
                                 <div key={cls.id} style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '10px 14px', background: '#f8fafc', borderRadius: 10, marginBottom: 8, border: '1px solid #e8edf5' }}>
-                                    <div style={{ width: 38, height: 38, borderRadius: 8, background: '#eff6ff', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 16, flexShrink: 0 }}>🏫</div>
+                                    <div style={{ width: 38, height: 38, borderRadius: 8, background: '#eff6ff', color: '#2563eb', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                                        <School size={17} />
+                                    </div>
                                     <div style={{ flex: 1 }}>
                                         <div style={{ fontWeight: 700, fontSize: 13, color: '#1e293b' }}>{cls.name}</div>
                                         <div style={{ fontSize: 11, color: '#94a3b8' }}>{cls.days}</div>
@@ -249,7 +306,9 @@ export default function TeachersPage({ teachers }: TeachersPageProps) {
                     onClick={e => { if (e.target === e.currentTarget) setDeleteTarget(null); }}>
                     <div style={{ background: 'white', borderRadius: 20, padding: 32, maxWidth: 420, width: '100%', boxShadow: '0 24px 60px rgba(0,0,0,0.15)' }}>
                         <div style={{ textAlign: 'center', marginBottom: 20 }}>
-                            <div style={{ width: 56, height: 56, borderRadius: '50%', background: '#fee2e2', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 26, margin: '0 auto 14px' }}>🗑️</div>
+                            <div style={{ width: 56, height: 56, borderRadius: '50%', background: '#fee2e2', color: '#ef4444', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 14px' }}>
+                                <Trash2 size={26} />
+                            </div>
                             <div style={{ fontSize: 18, fontWeight: 800, color: '#1e293b', marginBottom: 6 }}>Remove Teacher?</div>
                             <div style={{ fontSize: 13, color: '#64748b', lineHeight: 1.5 }}>
                                 Are you sure you want to remove{' '}
@@ -335,8 +394,8 @@ function TeacherForm({ mode, teacher, onBack }: FormProps) {
             <form className="card" onSubmit={submit} style={{ padding: 28, maxWidth: 600, margin: '0 auto' }}>
                 {/* Header */}
                 <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 24 }}>
-                    <div style={{ width: 40, height: 40, borderRadius: 10, background: isEdit ? '#eff6ff' : '#f0fdf4', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 20 }}>
-                        {isEdit ? '✏️' : '👩‍🏫'}
+                    <div style={{ width: 40, height: 40, borderRadius: 10, background: isEdit ? '#eff6ff' : '#f0fdf4', color: isEdit ? '#2563eb' : '#16a34a', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                        {isEdit ? <Edit3 size={20} /> : <GraduationCap size={20} />}
                     </div>
                     <div>
                         <div style={{ fontWeight: 800, fontSize: 16, color: '#1e293b' }}>{isEdit ? 'Edit Teacher' : 'Add New Teacher'}</div>
@@ -424,9 +483,9 @@ function TeacherForm({ mode, teacher, onBack }: FormProps) {
                 </div>
 
                 <div style={{ display: 'flex', gap: 12, marginTop: 8 }}>
-                    <button type="button" onClick={onBack} style={{ background: '#f1f5f9', color: '#64748b', border: 'none', borderRadius: 10, padding: '12px 20px', fontWeight: 700, cursor: 'pointer' }}>← Cancel</button>
-                    <button type="submit" disabled={processing} style={{ flex: 1, background: isEdit ? '#2563eb' : '#10b981', color: 'white', border: 'none', borderRadius: 10, padding: '12px', fontWeight: 700, fontSize: 14, cursor: 'pointer', fontFamily: "'Noto Sans Khmer',sans-serif" }}>
-                        {processing ? 'Saving...' : isEdit ? '✓ Update Teacher' : '✓ Save Teacher'}
+                    <button type="button" onClick={onBack} style={{ background: '#f1f5f9', color: '#64748b', border: 'none', borderRadius: 10, padding: '12px 20px', fontWeight: 700, cursor: 'pointer', display: 'inline-flex', alignItems: 'center', gap: 6 }}><ArrowLeft size={14} /> Cancel</button>
+                    <button type="submit" disabled={processing} style={{ flex: 1, background: isEdit ? '#2563eb' : '#10b981', color: 'white', border: 'none', borderRadius: 10, padding: '12px', fontWeight: 700, fontSize: 14, cursor: 'pointer', fontFamily: "'Noto Sans Khmer',sans-serif", display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: 6 }}>
+                        {processing ? 'Saving...' : <><Check size={14} />{isEdit ? 'Update Teacher' : 'Save Teacher'}</>}
                     </button>
                 </div>
             </form>

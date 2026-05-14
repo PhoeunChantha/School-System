@@ -3,6 +3,7 @@ import { edit as editStudent, index as studentIndex } from '@/actions/App/Http/C
 import AdminShell from '@/pages/admin/shell';
 import { Badge, KH, ScoreChip } from '@/pages/admin/ui';
 import { Head, Link } from '@inertiajs/react';
+import { ArrowLeft, Award, CalendarDays, Edit3, TriangleAlert } from 'lucide-react';
 
 // ── Types ─────────────────────────────────────────────────
 
@@ -137,7 +138,9 @@ export default function ShowStudentPage({ student, grades, attendance, fees, hom
                 {/* ── Back ── */}
                 <div>
                     <Link href={studentIndex.url()} style={{ fontSize: 13, color: '#64748b', textDecoration: 'none', fontWeight: 600 }}>
-                        ← Back to Students
+                        <span style={{ display: 'inline-flex', alignItems: 'center', gap: 6 }}>
+                            <ArrowLeft size={14} /> Back to Students
+                        </span>
                     </Link>
                 </div>
 
@@ -168,7 +171,13 @@ export default function ShowStudentPage({ student, grades, attendance, fees, hom
                                 <Badge type={student.feeStatus === 'Paid' ? 'green' : student.feeStatus === 'Partial' ? 'amber' : 'red'}>
                                     {student.feeStatus}
                                 </Badge>
-                                {student.attendanceRate < 70 && <Badge type="red">⚠ Low Attendance</Badge>}
+                                {student.attendanceRate < 70 && (
+                                    <Badge type="red">
+                                        <span style={{ display: 'inline-flex', alignItems: 'center', gap: 4 }}>
+                                            <TriangleAlert size={12} /> Low Attendance
+                                        </span>
+                                    </Badge>
+                                )}
                             </div>
                         </div>
 
@@ -188,7 +197,9 @@ export default function ShowStudentPage({ student, grades, attendance, fees, hom
 
                         {/* Edit button */}
                         <Link href={editStudent.url(student.id)} style={{ background: '#2563eb', color: 'white', borderRadius: 10, padding: '10px 20px', fontWeight: 700, fontSize: 13, textDecoration: 'none', flexShrink: 0 }}>
-                            ✏ Edit
+                            <span style={{ display: 'inline-flex', alignItems: 'center', gap: 6 }}>
+                                <Edit3 size={14} /> Edit
+                            </span>
                         </Link>
                     </div>
                 </div>
@@ -216,7 +227,7 @@ export default function ShowStudentPage({ student, grades, attendance, fees, hom
                             <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
                                 {[
                                     { label: 'Code',         value: student.code ?? '—' },
-                                    { label: 'Gender',       value: student.gender ? (student.gender === 'male' ? '♂ Male' : '♀ Female') : '—' },
+                                    { label: 'Gender',       value: student.gender ? (student.gender === 'male' ? 'Male' : 'Female') : '—' },
                                     { label: 'Date of Birth', value: student.dateOfBirth ?? '—' },
                                     { label: 'Age',          value: student.age != null ? `${student.age} years` : '—' },
                                     { label: 'Province',     value: student.province ?? '—' },
@@ -295,7 +306,9 @@ export default function ShowStudentPage({ student, grades, attendance, fees, hom
                             {/* Certificates */}
                             {certificates.length > 0 && (
                                 <div className="card" style={{ padding: 20 }}>
-                                    <div style={{ fontWeight: 700, fontSize: 14, color: '#1e293b', marginBottom: 14 }}>Certificates 🏆</div>
+                                    <div style={{ fontWeight: 700, fontSize: 14, color: '#1e293b', marginBottom: 14, display: 'flex', alignItems: 'center', gap: 6 }}>
+                                        Certificates <Award size={15} color="#d97706" />
+                                    </div>
                                     <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
                                         {certificates.map(c => (
                                             <div key={c.id} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '8px 12px', background: '#fffbeb', borderRadius: 10, border: '1px solid #fde68a' }}>
@@ -408,7 +421,7 @@ export default function ShowStudentPage({ student, grades, attendance, fees, hom
                                         <div style={{ borderTop: '1px solid #f1f5f9', paddingTop: 10, display: 'flex', flexDirection: 'column', gap: 6 }}>
                                             {fc.payments.map(p => (
                                                 <div key={p.id} style={{ display: 'flex', justifyContent: 'space-between', fontSize: 12, color: '#64748b', padding: '4px 8px', background: '#f8fafc', borderRadius: 8 }}>
-                                                    <span>📅 {p.paidOn}</span>
+                                                    <span style={{ display: 'inline-flex', alignItems: 'center', gap: 4 }}><CalendarDays size={12} /> {p.paidOn}</span>
                                                     <span style={{ fontWeight: 700 }}>${p.amount.toFixed(2)}</span>
                                                     <Badge type="blue">{p.method}</Badge>
                                                     <span style={{ color: '#94a3b8' }}>{p.reference ?? '—'}</span>

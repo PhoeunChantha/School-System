@@ -2,9 +2,15 @@ import { useState } from 'react';
 import AdminShell from '@/pages/admin/shell';
 import { STUDENTS, TEACHERS, CLASSES, PAYMENTS, HOMEWORK, avg } from '@/pages/admin/data';
 import { KH, Avatar, PBar, Badge, ScoreChip } from '@/pages/admin/ui';
+import type { LucideIcon } from 'lucide-react';
+import { ChartNoAxesColumn, CheckCircle2, ClipboardCheck, CreditCard, DollarSign, Download, GraduationCap, Hourglass, Printer, Star, TriangleAlert, XCircle } from 'lucide-react';
 import { toast } from 'sonner';
 
 type ReportTab = 'attendance' | 'grades' | 'fees';
+
+function badgeIcon(Icon: LucideIcon, label: string) {
+    return <span style={{ display: 'inline-flex', alignItems: 'center', gap: 4 }}><Icon size={12} strokeWidth={2.6} />{label}</span>;
+}
 
 export default function ReportsPage() {
     const [tab, setTab] = useState<ReportTab>('attendance');
@@ -19,10 +25,10 @@ export default function ReportsPage() {
         toast.success(`Exporting ${type} report…`, { description: 'CSV download will start shortly.' });
     const handlePrint = () => window.print();
 
-    const TABS: { id: ReportTab; label: string; icon: string }[] = [
-        { id: 'attendance', label: 'Attendance',  icon: '📋' },
-        { id: 'grades',     label: 'Grades',      icon: '⭐' },
-        { id: 'fees',       label: 'Fee Summary', icon: '💳' },
+    const TABS: { id: ReportTab; label: string; icon: LucideIcon }[] = [
+        { id: 'attendance', label: 'Attendance',  icon: ClipboardCheck },
+        { id: 'grades',     label: 'Grades',      icon: Star },
+        { id: 'fees',       label: 'Fee Summary', icon: CreditCard },
     ];
 
     return (
@@ -32,15 +38,18 @@ export default function ReportsPage() {
                 {/* Header */}
                 <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 12 }}>
                     <div>
-                        <div style={{ fontWeight: 800, fontSize: 18, color: '#1e293b' }}>📊 Reports</div>
+                        <div style={{ fontWeight: 800, fontSize: 18, color: '#1e293b', display: 'flex', alignItems: 'center', gap: 8 }}>
+                            <ChartNoAxesColumn size={20} color="#2563eb" />
+                            Reports
+                        </div>
                         <KH style={{ fontSize: 12, color: '#94a3b8', display: 'block' }}>រាយការណ៍សាលា · May 2026</KH>
                     </div>
                     <div style={{ display: 'flex', gap: 8 }}>
-                        <button onClick={() => handleExport(tab)} style={{ background: '#f0fdf4', color: '#16a34a', border: '1px solid #bbf7d0', borderRadius: 8, padding: '8px 16px', fontWeight: 700, fontSize: 12, cursor: 'pointer' }}>
-                            ⬇ Export CSV
+                        <button onClick={() => handleExport(tab)} style={{ background: '#f0fdf4', color: '#16a34a', border: '1px solid #bbf7d0', borderRadius: 8, padding: '8px 16px', fontWeight: 700, fontSize: 12, cursor: 'pointer', display: 'inline-flex', alignItems: 'center', gap: 6 }}>
+                            <Download size={14} /> Export CSV
                         </button>
-                        <button onClick={handlePrint} style={{ background: '#eff6ff', color: '#2563eb', border: '1px solid #bfdbfe', borderRadius: 8, padding: '8px 16px', fontWeight: 700, fontSize: 12, cursor: 'pointer' }}>
-                            🖨️ Print
+                        <button onClick={handlePrint} style={{ background: '#eff6ff', color: '#2563eb', border: '1px solid #bfdbfe', borderRadius: 8, padding: '8px 16px', fontWeight: 700, fontSize: 12, cursor: 'pointer', display: 'inline-flex', alignItems: 'center', gap: 6 }}>
+                            <Printer size={14} /> Print
                         </button>
                     </div>
                 </div>
@@ -48,13 +57,15 @@ export default function ReportsPage() {
                 {/* Summary stats */}
                 <div className="stat-grid-4" style={{ display: 'grid', gridTemplateColumns: 'repeat(4,1fr)', gap: 14 }}>
                     {[
-                        { icon: '🎓', lk: 'សិស្សទាំងអស់', l: 'Total Students',    v: STUDENTS.length,    bg: '#eff6ff', c: '#2563eb' },
-                        { icon: '📋', lk: 'វត្តមានមធ្យម',  l: 'Avg Attendance',   v: `${avgAttendance}%`, bg: '#f0fdf4', c: '#16a34a' },
-                        { icon: '⭐', lk: 'ពិន្ទុមធ្យម',   l: 'Avg Grade',        v: avgGrade,            bg: '#fffbeb', c: '#d97706' },
-                        { icon: '💰', lk: 'ចំណូលខែនេះ',   l: 'Fees Collected',   v: `$${totalRevenue}`,  bg: '#f5f3ff', c: '#7c3aed' },
+                        { icon: GraduationCap, lk: 'សិស្សទាំងអស់', l: 'Total Students',    v: STUDENTS.length,    bg: '#eff6ff', c: '#2563eb' },
+                        { icon: ClipboardCheck, lk: 'វត្តមានមធ្យម',  l: 'Avg Attendance',   v: `${avgAttendance}%`, bg: '#f0fdf4', c: '#16a34a' },
+                        { icon: Star, lk: 'ពិន្ទុមធ្យម',   l: 'Avg Grade',        v: avgGrade,            bg: '#fffbeb', c: '#d97706' },
+                        { icon: DollarSign, lk: 'ចំណូលខែនេះ',   l: 'Fees Collected',   v: `$${totalRevenue}`,  bg: '#f5f3ff', c: '#7c3aed' },
                     ].map((s, i) => (
                         <div key={i} className="stat-card">
-                            <div style={{ width: 40, height: 40, borderRadius: 10, background: s.bg, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 20, marginBottom: 10 }}>{s.icon}</div>
+                            <div style={{ width: 40, height: 40, borderRadius: 10, background: s.bg, color: s.c, display: 'flex', alignItems: 'center', justifyContent: 'center', marginBottom: 10 }}>
+                                <s.icon size={20} strokeWidth={2.4} />
+                            </div>
                             <div style={{ fontSize: 24, fontWeight: 800, color: s.c, marginBottom: 2 }}>{s.v}</div>
                             <KH style={{ fontSize: 11, color: '#64748b', display: 'block' }}>{s.lk}</KH>
                             <div style={{ fontSize: 11, color: '#94a3b8' }}>{s.l}</div>
@@ -64,12 +75,16 @@ export default function ReportsPage() {
 
                 {/* Tabs */}
                 <div style={{ display: 'flex', gap: 8 }}>
-                    {TABS.map(t => (
-                        <button key={t.id} onClick={() => setTab(t.id)}
-                            style={{ padding: '8px 18px', borderRadius: 8, border: '1.5px solid', cursor: 'pointer', fontSize: 13, fontWeight: 700, transition: 'all 0.15s', borderColor: tab === t.id ? '#3b82f6' : '#e2e8f0', background: tab === t.id ? '#eff6ff' : 'white', color: tab === t.id ? '#2563eb' : '#64748b' }}>
-                            {t.icon} {t.label}
-                        </button>
-                    ))}
+                    {TABS.map(t => {
+                        const Icon = t.icon;
+
+                        return (
+                            <button key={t.id} onClick={() => setTab(t.id)}
+                                style={{ padding: '8px 18px', borderRadius: 8, border: '1.5px solid', cursor: 'pointer', fontSize: 13, fontWeight: 700, transition: 'all 0.15s', borderColor: tab === t.id ? '#3b82f6' : '#e2e8f0', background: tab === t.id ? '#eff6ff' : 'white', color: tab === t.id ? '#2563eb' : '#64748b', display: 'inline-flex', alignItems: 'center', gap: 6 }}>
+                                <Icon size={14} /> {t.label}
+                            </button>
+                        );
+                    })}
                 </div>
 
                 {/* Attendance report */}
@@ -126,7 +141,7 @@ export default function ReportsPage() {
                                                 <span style={{ fontSize: 12, fontWeight: 700, width: 36, color: s.attendance >= 80 ? '#10b981' : '#ef4444' }}>{s.attendance}%</span>
                                             </div></td>
                                             <td><Badge type={s.attendance >= 80 ? 'green' : s.attendance >= 60 ? 'amber' : 'red'}>
-                                                {s.attendance >= 80 ? '✓ Good' : s.attendance >= 60 ? '~ Warning' : '⚠ At Risk'}
+                                                {s.attendance >= 80 ? badgeIcon(CheckCircle2, 'Good') : s.attendance >= 60 ? badgeIcon(TriangleAlert, 'Warning') : badgeIcon(TriangleAlert, 'At Risk')}
                                             </Badge></td>
                                         </tr>
                                     ))}
@@ -227,7 +242,7 @@ export default function ReportsPage() {
                                             <td><Badge type="blue">{p.method}</Badge></td>
                                             <td style={{ fontSize: 12, color: '#64748b' }}>{p.date}</td>
                                             <td><Badge type={p.status === 'verified' ? 'green' : p.status === 'pending' ? 'amber' : 'blue'}>
-                                                {p.status === 'verified' ? '✓ Verified' : p.status === 'pending' ? '⏳ Pending' : '~ Partial'}
+                                                {p.status === 'verified' ? badgeIcon(CheckCircle2, 'Verified') : p.status === 'pending' ? badgeIcon(Hourglass, 'Pending') : 'Partial'}
                                             </Badge></td>
                                         </tr>
                                     ))}
@@ -252,7 +267,7 @@ export default function ReportsPage() {
                                             <td><Badge type="blue">{s.level}</Badge></td>
                                             <td><span style={{ fontWeight: 700 }}>${s.amt}</span></td>
                                             <td><Badge type={s.fees === 'Paid' ? 'green' : s.fees === 'Unpaid' ? 'red' : 'amber'}>
-                                                {s.fees === 'Paid' ? '✓ Paid' : s.fees === 'Unpaid' ? '✗ Unpaid' : '~ Partial'}
+                                                {s.fees === 'Paid' ? badgeIcon(CheckCircle2, 'Paid') : s.fees === 'Unpaid' ? badgeIcon(XCircle, 'Unpaid') : 'Partial'}
                                             </Badge></td>
                                         </tr>
                                     ))}

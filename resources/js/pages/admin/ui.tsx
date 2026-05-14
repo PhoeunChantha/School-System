@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import type { CSSProperties, ReactNode } from 'react';
+import { ArrowLeft, ArrowRight, Check, X } from 'lucide-react';
 import type { Student } from './data';
 
 interface KHProps { children: ReactNode; className?: string; style?: CSSProperties; }
@@ -52,9 +53,13 @@ export function Badge({ type = 'blue', children }: BadgeProps) {
 }
 
 interface FeeTagProps { status: Student['fees']; }
+function badgeContent(Icon: typeof Check, label: string) {
+    return <span style={{ display: 'inline-flex', alignItems: 'center', gap: 4 }}><Icon size={12} strokeWidth={2.6} />{label}</span>;
+}
+
 export function FeeTag({ status }: FeeTagProps) {
-    if (status === 'Paid')    return <Badge type="green">✓ Paid</Badge>;
-    if (status === 'Unpaid')  return <Badge type="red">✗ Unpaid</Badge>;
+    if (status === 'Paid')    return <Badge type="green">{badgeContent(Check, 'Paid')}</Badge>;
+    if (status === 'Unpaid')  return <Badge type="red">{badgeContent(X, 'Unpaid')}</Badge>;
     if (status === 'Partial') return <Badge type="amber">~ Partial</Badge>;
     return null;
 }
@@ -124,7 +129,7 @@ export function Pagination({
                     disabled={page === 1}
                     onClick={() => onPageChange(page - 1)}
                     style={btn(false, page === 1)}>
-                    ←
+                    <ArrowLeft size={14} />
                 </button>
                 {pageNums.map((p, i) =>
                     p === '…'
@@ -135,7 +140,7 @@ export function Pagination({
                     disabled={page === totalPages}
                     onClick={() => onPageChange(page + 1)}
                     style={btn(false, page === totalPages)}>
-                    →
+                    <ArrowRight size={14} />
                 </button>
             </div>
 

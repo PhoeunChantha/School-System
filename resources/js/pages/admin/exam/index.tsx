@@ -11,7 +11,7 @@ import { TextStyle } from '@tiptap/extension-text-style';
 import Underline from '@tiptap/extension-underline';
 import { EditorContent, useEditor } from '@tiptap/react';
 import StarterKit from '@tiptap/starter-kit';
-import { ArrowLeft, Edit3, FileText, Plus, Printer, Save, Trash2 } from 'lucide-react';
+import { ArrowLeft, Edit3, FileText, Paperclip, Plus, Printer, Save, Trash2, Upload } from 'lucide-react';
 import { FormEvent, useEffect, useMemo, useRef, useState } from 'react';
 import { toast } from 'sonner';
 
@@ -32,6 +32,9 @@ interface ExamItem {
     examDate: string;
     durationMinutes: number | null;
     content: string;
+    attachmentPath: string | null;
+    attachmentName: string;
+    attachmentUrl: string;
     status: 'draft' | 'published' | 'archived';
     resultsCount: number;
     createdAt: string;
@@ -56,7 +59,9 @@ interface ExamFormData {
     exam_date: string;
     duration_minutes: number | null;
     content: string;
+    attachment: File | null;
     status: 'draft' | 'published' | 'archived';
+    _method?: 'put';
 }
 
 type View = 'list' | 'build' | 'print';
@@ -82,6 +87,7 @@ const emptyForm = (classes: ExamClassOption[]): ExamFormData => ({
     exam_date: '',
     duration_minutes: 60,
     content: DEFAULT_CONTENT,
+    attachment: null,
     status: 'draft',
 });
 
@@ -98,6 +104,89 @@ const ORDER_OPTIONS: { value: OrderKey; label: string }[] = [
     { value: 'title-desc', label: 'Title Z-A' },
     { value: 'status-asc', label: 'Status A-Z' },
 ];
+
+function isPdfFile(fileName: string): boolean {
+    return fileName.toLowerCase().endsWith('.pdf');
+}
+
+function pdfPreviewSource(url: string): string {
+    if (!url) {
+        return '';
+    }
+
+    const [baseUrl] = url.split('#');
+
+    return `${baseUrl}#toolbar=0&navpanes=0&scrollbar=0&view=FitH`;
+}
+
+function escapeHtml(value: string): string {
+    return value
+        .replaceAll('&', '&amp;')
+        .replaceAll('<', '&lt;')
+        .replaceAll('>', '&gt;')
+        .replaceAll('"', '&quot;')
+        .replaceAll("'", '&#039;');
+}
+
+function printHtmlContent(title: string, content: string): void {
+    const printWindow = window.open('', '_blank', 'noopener,noreferrer,width=900,height=700');
+
+    if (!printWindow) {
+        toast.error('Please allow popups to print this exam.');
+        return;
+    }
+
+    printWindow.document.write(`
+        <!doctype html>
+        <html>
+            <head>
+                <title>${escapeHtml(title)}</title>
+                <style>
+                    @page { margin: 15mm; size: A4; }
+                    body { margin: 0; background: white; font-family: Georgia, 'Times New Roman', serif; color: #111; }
+                    .print-paper { max-width: 794px; margin: 0 auto; padding: 52px 64px; }
+                    h1 { font-size: 22px; font-weight: 900; text-align: center; margin: 0 0 6px; }
+                    h2 { font-size: 16px; font-weight: 800; margin: 18px 0 4px; border-bottom: 1px solid #555; padding-bottom: 3px; }
+                    p { margin: 4px 0; font-size: 13px; line-height: 1.7; }
+                    img { max-width: 100%; page-break-inside: avoid; }
+                </style>
+            </head>
+            <body>
+                <div class="print-paper">${content || DEFAULT_CONTENT}</div>
+                <script>
+                    window.addEventListener('load', () => {
+                        window.focus();
+                        window.print();
+                    });
+                    window.addEventListener('afterprint', () => window.close());
+                </script>
+            </body>
+        </html>
+    `);
+    printWindow.document.close();
+}
+
+function printPdfFile(url: string): void {
+    const iframe = document.createElement('iframe');
+
+    iframe.style.position = 'fixed';
+    iframe.style.right = '0';
+    iframe.style.bottom = '0';
+    iframe.style.width = '0';
+    iframe.style.height = '0';
+    iframe.style.border = '0';
+    iframe.src = pdfPreviewSource(url);
+
+    iframe.onload = () => {
+        setTimeout(() => {
+            iframe.contentWindow?.focus();
+            iframe.contentWindow?.print();
+        }, 300);
+    };
+
+    document.body.appendChild(iframe);
+    setTimeout(() => iframe.remove(), 60000);
+}
 
 function sortExams(exams: ExamItem[], orderBy: OrderKey): ExamItem[] {
     return [...exams].sort((a, b) => {
@@ -131,7 +220,7 @@ export default function ExamPage({ exams, classes, summary }: ExamPageProps) {
     const [perPage, setPerPage] = useState(10);
     const [page, setPage] = useState(1);
 
-    const { data, setData, post, put, processing, errors, reset, transform } = useForm<ExamFormData>(emptyForm(classes));
+    const { data, setData, post, processing, errors, reset, transform } = useForm<ExamFormData>(emptyForm(classes));
 
     useEffect(() => { setPage(1); }, [search, orderBy, perPage]);
 
@@ -144,6 +233,7 @@ export default function ExamPage({ exams, classes, summary }: ExamPageProps) {
             exam.className.toLowerCase().includes(q) ||
             exam.status.toLowerCase().includes(q) ||
             exam.academicYear.toLowerCase().includes(q) ||
+            exam.attachmentName.toLowerCase().includes(q) ||
             exam.examDate.includes(search)
         );
 
@@ -171,6 +261,7 @@ export default function ExamPage({ exams, classes, summary }: ExamPageProps) {
             exam_date: exam.examDate,
             duration_minutes: exam.durationMinutes,
             content: exam.content || DEFAULT_CONTENT,
+            attachment: null,
             status: exam.status,
         });
         setEditingExam(exam);
@@ -179,10 +270,10 @@ export default function ExamPage({ exams, classes, summary }: ExamPageProps) {
 
     const submitExam = (payload: ExamFormData) => {
         setData(payload);
-        transform(() => payload);
 
         const options = {
             preserveScroll: true,
+            forceFormData: true,
             onSuccess: () => {
                 toast.success(editingExam ? 'Exam updated.' : 'Exam created.');
                 setView('list');
@@ -191,10 +282,12 @@ export default function ExamPage({ exams, classes, summary }: ExamPageProps) {
         };
 
         if (editingExam) {
-            put(update.url(editingExam.id), options);
+            transform(() => ({ ...payload, _method: 'put' as const }));
+            post(update.url(editingExam.id), options);
             return;
         }
 
+        transform(() => payload);
         post(store.url(), options);
     };
 
@@ -212,11 +305,26 @@ export default function ExamPage({ exams, classes, summary }: ExamPageProps) {
         });
     };
 
+    const printExam = (exam: ExamItem) => {
+        if (exam.attachmentUrl && isPdfFile(exam.attachmentName)) {
+            printPdfFile(exam.attachmentUrl);
+            return;
+        }
+
+        if (exam.content) {
+            printHtmlContent(exam.title, exam.content);
+            return;
+        }
+
+        toast.error('Direct print is available for PDF files or saved exam content.');
+    };
+
     if (view === 'build') {
         return (
             <ExamBuilder
                 classes={classes}
                 data={data}
+                editingExam={editingExam}
                 errors={errors}
                 processing={processing}
                 onBack={() => setView('list')}
@@ -305,6 +413,7 @@ export default function ExamPage({ exams, classes, summary }: ExamPageProps) {
                                 <th>Class</th>
                                 <th>Date</th>
                                 <th>Duration</th>
+                                <th>Attachment</th>
                                 <th>Status</th>
                                 <th>Actions</th>
                             </tr>
@@ -312,7 +421,7 @@ export default function ExamPage({ exams, classes, summary }: ExamPageProps) {
                         <tbody>
                             {paginatedExams.length === 0 ? (
                                 <tr>
-                                    <td colSpan={7} style={{ padding: '42px 24px', textAlign: 'center', color: '#64748b', fontSize: 14, fontWeight: 700 }}>
+                                    <td colSpan={8} style={{ padding: '42px 24px', textAlign: 'center', color: '#64748b', fontSize: 14, fontWeight: 700 }}>
                                         {search ? <>No exams found for <strong>"{search}"</strong></> : 'No exams found'}
                                     </td>
                                 </tr>
@@ -333,11 +442,22 @@ export default function ExamPage({ exams, classes, summary }: ExamPageProps) {
                                     <td style={{ fontSize: 12, color: '#64748b' }}>{exam.className || 'All classes'}</td>
                                     <td style={{ fontSize: 12, color: '#64748b' }}>{exam.examDate || '-'}</td>
                                     <td style={{ fontSize: 12, color: '#64748b' }}>{exam.durationMinutes ? `${exam.durationMinutes} min` : '-'}</td>
+                                    <td>
+                                        {exam.attachmentUrl ? (
+                                            <a href={exam.attachmentUrl} target="_blank" rel="noreferrer" style={{ color: '#2563eb', fontSize: 12, fontWeight: 800, textDecoration: 'none', display: 'inline-flex', alignItems: 'center', gap: 5 }}>
+                                                <Paperclip size={13} />
+                                                Exam file
+                                            </a>
+                                        ) : (
+                                            <span style={{ color: '#94a3b8', fontSize: 12 }}>-</span>
+                                        )}
+                                    </td>
                                     <td><Badge type={statusType[exam.status]}>{exam.status}</Badge></td>
                                     <td>
                                         <div style={{ display: 'flex', gap: 6 }}>
-                                            <button onClick={() => { setPrintingExam(exam); setView('print'); }} style={actionButton('#f0fdf4', '#16a34a', '#bbf7d0')} title="Print">
+                                            <button onClick={() => printExam(exam)} style={{ ...actionButton('#f0fdf4', '#16a34a', '#bbf7d0'), gap: 6, fontWeight: 800 }} title="Print">
                                                 <Printer size={14} />
+                                                <span>Print</span>
                                             </button>
                                             <button onClick={() => openEdit(exam)} style={actionButton('#eff6ff', '#2563eb', '#bfdbfe')} title="Edit">
                                                 <Edit3 size={14} />
@@ -386,6 +506,7 @@ export default function ExamPage({ exams, classes, summary }: ExamPageProps) {
 function ExamBuilder({
     classes,
     data,
+    editingExam,
     errors,
     processing,
     onBack,
@@ -393,6 +514,7 @@ function ExamBuilder({
 }: {
     classes: ExamClassOption[];
     data: ExamFormData;
+    editingExam: ExamItem | null;
     errors: Partial<Record<keyof ExamFormData, string>>;
     processing: boolean;
     onBack: () => void;
@@ -400,6 +522,11 @@ function ExamBuilder({
 }) {
     const [meta, setMeta] = useState<ExamFormData>(data);
     const imageInputRef = useRef<HTMLInputElement>(null);
+    const attachmentInputRef = useRef<HTMLInputElement>(null);
+    const hasFileAttachment = Boolean(meta.attachment || editingExam?.attachmentUrl);
+    const [wordPreviewHtml, setWordPreviewHtml] = useState('');
+    const [wordPreviewStatus, setWordPreviewStatus] = useState<'idle' | 'loading' | 'ready' | 'unsupported' | 'error'>('idle');
+    const attachmentName = meta.attachment?.name || editingExam?.attachmentName || '';
 
     const editor = useEditor({
         extensions: [
@@ -421,7 +548,13 @@ function ExamBuilder({
 
     const submit = (event: FormEvent<HTMLFormElement>) => {
         event.preventDefault();
-        onSave({ ...meta, content: editor?.getHTML() ?? '' });
+
+        if (hasFileAttachment && wordPreviewStatus === 'loading') {
+            toast.error('Please wait until the exam file preview finishes loading.');
+            return;
+        }
+
+        onSave({ ...meta, content: hasFileAttachment ? wordPreviewHtml : editor?.getHTML() ?? '' });
     };
 
     const insertImage = (event: React.ChangeEvent<HTMLInputElement>) => {
@@ -458,6 +591,10 @@ function ExamBuilder({
                 .exam-paper hr{border:none;border-top:2px solid #111;margin:12px 0}
                 .exam-paper ul,.exam-paper ol{padding-left:24px;margin:6px 0}
                 .exam-paper img{max-width:100%;border:1px solid #ddd;border-radius:4px;margin:4px 0}
+                .docx-preview-paper{width:max-content;min-width:100%;margin:0 auto;display:flex;justify-content:center}
+                .docx-preview-paper .docx-wrapper{background:transparent!important;padding:0!important;width:max-content!important;min-width:100%!important}
+                .docx-preview-paper .docx{box-shadow:0 2px 16px rgba(0,0,0,0.28);margin:0 auto 24px!important;max-width:none!important}
+                .docx-preview-paper .docx:last-child{margin-bottom:0!important}
                 .toolbar-btn{background:white;border:1px solid #e2e8f0;border-radius:7px;padding:6px 9px;cursor:pointer;font-size:13px;font-weight:700;color:#374151}
                 .toolbar-btn.active{background:#eff6ff;border-color:#bfdbfe;color:#2563eb}
             `}</style>
@@ -468,9 +605,9 @@ function ExamBuilder({
                     Back
                 </button>
                 <input value={meta.title} onChange={event => setMeta(current => ({ ...current, title: event.target.value }))} style={{ minWidth: 220, flex: 1, background: 'rgba(255,255,255,0.12)', border: '1px solid rgba(255,255,255,0.18)', color: 'white', borderRadius: 8, padding: '8px 10px', fontWeight: 800, outline: 'none' }} />
-                <button disabled={processing} type="submit" style={topButton(processing ? '#93c5fd' : '#10b981')}>
+                <button disabled={processing || (hasFileAttachment && wordPreviewStatus === 'loading')} type="submit" style={topButton(processing || (hasFileAttachment && wordPreviewStatus === 'loading') ? '#93c5fd' : '#10b981')}>
                     <Save size={15} />
-                    {processing ? 'Saving' : 'Save'}
+                    {processing ? 'Saving' : hasFileAttachment && wordPreviewStatus === 'loading' ? 'Reading file' : 'Save'}
                 </button>
             </div>
 
@@ -501,30 +638,248 @@ function ExamBuilder({
                             <option value="archived">Archived</option>
                         </select>
                     </Field>
+                    <Field label="Exam File" error={errors.attachment}>
+                        <input
+                            ref={attachmentInputRef}
+                            type="file"
+                            accept=".doc,.docx,.pdf,application/msword,application/vnd.openxmlformats-officedocument.wordprocessingml.document,application/pdf"
+                            style={{ display: 'none' }}
+                            onChange={event => {
+                                const file = event.target.files?.[0] ?? null;
+                                setMeta(current => ({ ...current, attachment: file }));
+                            }}
+                        />
+                        <button
+                            type="button"
+                            onClick={() => attachmentInputRef.current?.click()}
+                            style={{ ...fieldStyle, display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 10, cursor: 'pointer', textAlign: 'left' }}
+                        >
+                            <span style={{ minWidth: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                                {meta.attachment?.name || editingExam?.attachmentName || 'Upload .doc, .docx, or .pdf file'}
+                            </span>
+                            <Upload size={16} color="#64748b" />
+                        </button>
+                        {editingExam?.attachmentUrl && !meta.attachment && (
+                            <a href={editingExam.attachmentUrl} target="_blank" rel="noreferrer" style={{ color: '#2563eb', fontSize: 12, fontWeight: 800, textDecoration: 'none', display: 'inline-flex', alignItems: 'center', gap: 5, marginTop: 6 }}>
+                                <Paperclip size={13} /> Open current exam file
+                            </a>
+                        )}
+                        <div style={{ fontSize: 11, color: '#94a3b8', marginTop: 5 }}>Use PDF for exact Word shapes/icons. Accepted: .doc, .docx, .pdf up to 10 MB.</div>
+                    </Field>
                     {errors.title && <div className="field-error">{errors.title}</div>}
                     {errors.content && <div className="field-error">{errors.content}</div>}
                 </aside>
 
                 <main style={{ background: '#cbd5e1', minWidth: 0 }}>
-                    <div style={{ background: '#f8fafc', borderBottom: '1px solid #e2e8f0', padding: '8px 12px', display: 'flex', alignItems: 'center', gap: 6, flexWrap: 'wrap' }}>
-                        <button type="button" className={`toolbar-btn${editor.isActive('bold') ? ' active' : ''}`} onClick={() => editor.chain().focus().toggleBold().run()}><strong>B</strong></button>
-                        <button type="button" className={`toolbar-btn${editor.isActive('italic') ? ' active' : ''}`} onClick={() => editor.chain().focus().toggleItalic().run()}><em>I</em></button>
-                        <button type="button" className={`toolbar-btn${editor.isActive('underline') ? ' active' : ''}`} onClick={() => editor.chain().focus().toggleUnderline().run()}><u>U</u></button>
-                        <button type="button" className="toolbar-btn" onClick={() => editor.chain().focus().toggleBulletList().run()}>List</button>
-                        <button type="button" className="toolbar-btn" onClick={() => editor.chain().focus().toggleOrderedList().run()}>1.</button>
-                        <button type="button" className="toolbar-btn" onClick={() => editor.chain().focus().setHorizontalRule().run()}>Rule</button>
-                        <input type="color" defaultValue="#111111" onChange={event => editor.chain().focus().setColor(event.target.value).run()} title="Text color" style={{ width: 34, height: 34, padding: 2, border: '1px solid #e2e8f0', borderRadius: 7 }} />
-                        <button type="button" className="toolbar-btn" onClick={() => imageInputRef.current?.click()}>Image</button>
-                        <input ref={imageInputRef} type="file" accept="image/*" style={{ display: 'none' }} onChange={insertImage} />
-                    </div>
-                    <div style={{ padding: '30px 16px 60px', overflowX: 'auto' }}>
-                        <div className="exam-paper">
-                            <EditorContent editor={editor} />
+                    {!hasFileAttachment && (
+                        <div style={{ background: '#f8fafc', borderBottom: '1px solid #e2e8f0', padding: '8px 12px', display: 'flex', alignItems: 'center', gap: 6, flexWrap: 'wrap' }}>
+                            <button type="button" className={`toolbar-btn${editor.isActive('bold') ? ' active' : ''}`} onClick={() => editor.chain().focus().toggleBold().run()}><strong>B</strong></button>
+                            <button type="button" className={`toolbar-btn${editor.isActive('italic') ? ' active' : ''}`} onClick={() => editor.chain().focus().toggleItalic().run()}><em>I</em></button>
+                            <button type="button" className={`toolbar-btn${editor.isActive('underline') ? ' active' : ''}`} onClick={() => editor.chain().focus().toggleUnderline().run()}><u>U</u></button>
+                            <button type="button" className="toolbar-btn" onClick={() => editor.chain().focus().toggleBulletList().run()}>List</button>
+                            <button type="button" className="toolbar-btn" onClick={() => editor.chain().focus().toggleOrderedList().run()}>1.</button>
+                            <button type="button" className="toolbar-btn" onClick={() => editor.chain().focus().setHorizontalRule().run()}>Rule</button>
+                            <input type="color" defaultValue="#111111" onChange={event => editor.chain().focus().setColor(event.target.value).run()} title="Text color" style={{ width: 34, height: 34, padding: 2, border: '1px solid #e2e8f0', borderRadius: 7 }} />
+                            <button type="button" className="toolbar-btn" onClick={() => imageInputRef.current?.click()}>Image</button>
+                            <input ref={imageInputRef} type="file" accept="image/*" style={{ display: 'none' }} onChange={insertImage} />
                         </div>
+                    )}
+                    <div style={{ padding: '30px 16px 60px', overflowX: 'auto' }}>
+                        {hasFileAttachment ? (
+                            <ExamFilePreview
+                                file={meta.attachment}
+                                fileName={attachmentName || 'Attached Word file'}
+                                fileUrl={!meta.attachment ? editingExam?.attachmentUrl : undefined}
+                                onRenderedHtmlChange={setWordPreviewHtml}
+                                onStatusChange={setWordPreviewStatus}
+                            />
+                        ) : (
+                            <div className="exam-paper">
+                                <EditorContent editor={editor} />
+                            </div>
+                        )}
                     </div>
                 </main>
             </div>
         </form>
+    );
+}
+
+function ExamFilePreview({
+    file,
+    fileName,
+    fileUrl,
+    onRenderedHtmlChange,
+    onStatusChange,
+}: {
+    file: File | null;
+    fileName: string;
+    fileUrl?: string;
+    onRenderedHtmlChange: (html: string) => void;
+    onStatusChange: (status: 'idle' | 'loading' | 'ready' | 'unsupported' | 'error') => void;
+}) {
+    const bodyRef = useRef<HTMLDivElement>(null);
+    const styleRef = useRef<HTMLDivElement>(null);
+    const [status, setStatus] = useState<'loading' | 'ready' | 'unsupported' | 'error'>('loading');
+    const [pdfPreviewUrl, setPdfPreviewUrl] = useState('');
+
+    useEffect(() => {
+        if (!isPdfFile(fileName)) {
+            setPdfPreviewUrl('');
+            return;
+        }
+
+        onRenderedHtmlChange('');
+        onStatusChange('ready');
+        setStatus('ready');
+
+        if (!file) {
+            setPdfPreviewUrl(fileUrl ?? '');
+            return;
+        }
+
+        const objectUrl = URL.createObjectURL(file);
+        setPdfPreviewUrl(objectUrl);
+
+        return () => URL.revokeObjectURL(objectUrl);
+    }, [file, fileName, fileUrl, onRenderedHtmlChange, onStatusChange]);
+
+    useEffect(() => {
+        let ignore = false;
+
+        const renderWordFile = async () => {
+            if (isPdfFile(fileName)) {
+                return;
+            }
+
+            onRenderedHtmlChange('');
+            onStatusChange('loading');
+
+            if (fileName.toLowerCase().endsWith('.doc')) {
+                setStatus('unsupported');
+                onStatusChange('unsupported');
+                return;
+            }
+
+            const bodyContainer = bodyRef.current;
+            const styleContainer = styleRef.current;
+
+            if (!bodyContainer || !styleContainer) {
+                return;
+            }
+
+            bodyContainer.innerHTML = '';
+            styleContainer.innerHTML = '';
+            setStatus('loading');
+            onStatusChange('loading');
+
+            try {
+                const source = file ?? await fetch(fileUrl ?? '').then(response => {
+                    if (!response.ok) {
+                        throw new Error('Unable to load Word file.');
+                    }
+
+                    return response.arrayBuffer();
+                });
+
+                const { renderAsync } = await import('docx-preview');
+
+                await renderAsync(source, bodyContainer, styleContainer, {
+                    className: 'docx',
+                    inWrapper: true,
+                    ignoreWidth: false,
+                    ignoreHeight: false,
+                    ignoreFonts: false,
+                    breakPages: true,
+                    ignoreLastRenderedPageBreak: false,
+                    experimental: true,
+                    renderHeaders: true,
+                    renderFooters: true,
+                    renderFootnotes: true,
+                    renderEndnotes: true,
+                    useBase64URL: true,
+                });
+
+                if (!ignore) {
+                    onRenderedHtmlChange(`${styleContainer.innerHTML}${bodyContainer.innerHTML}`);
+                    setStatus('ready');
+                    onStatusChange('ready');
+                }
+            } catch {
+                if (!ignore) {
+                    setStatus('error');
+                    onStatusChange('error');
+                    onRenderedHtmlChange('');
+                }
+            }
+        };
+
+        void renderWordFile();
+
+        return () => {
+            ignore = true;
+        };
+    }, [file, fileName, fileUrl, onRenderedHtmlChange, onStatusChange]);
+
+    if (isPdfFile(fileName)) {
+        return (
+            <div className="docx-preview-paper">
+                <iframe
+                    src={pdfPreviewSource(pdfPreviewUrl)}
+                    title={fileName}
+                    style={{
+                        width: 'min(100vw - 380px, 980px)',
+                        minWidth: 760,
+                        height: 'calc(100vh - 150px)',
+                        minHeight: 720,
+                        border: 'none',
+                        background: 'white',
+                        boxShadow: '0 2px 16px rgba(0,0,0,0.28)',
+                    }}
+                />
+            </div>
+        );
+    }
+
+    const message = status === 'unsupported'
+        ? 'Original layout preview is available for .docx files. This Word file can still be opened directly.'
+        : status === 'error'
+            ? 'Unable to preview this Word file. You can open the original file directly.'
+            : 'Loading Word file layout...';
+
+    return (
+        <div className="docx-preview-paper">
+            <div ref={styleRef} />
+            {status !== 'ready' && (
+                <div className="exam-paper" style={{ minHeight: 520, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                    <div style={{ maxWidth: 430, width: '100%', textAlign: 'center', border: '1.5px dashed #cbd5e1', borderRadius: 16, padding: 28, background: '#f8fafc' }}>
+                        <div style={{ width: 58, height: 58, borderRadius: 16, background: '#eff6ff', color: '#2563eb', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 14px' }}>
+                            <FileText size={30} />
+                        </div>
+                        <div style={{ fontWeight: 900, fontSize: 16, color: '#1e293b', marginBottom: 6 }}>
+                            {status === 'loading' ? 'Reading Word exam file' : 'Word exam file'}
+                        </div>
+                        <div style={{ fontSize: 13, color: '#64748b', lineHeight: 1.5, marginBottom: 16 }}>
+                            {message}
+                        </div>
+                        <div style={{ display: 'inline-flex', alignItems: 'center', gap: 8, maxWidth: '100%', borderRadius: 10, padding: '9px 12px', background: 'white', border: '1px solid #e2e8f0', color: '#334155', fontWeight: 800, fontSize: 13 }}>
+                            <Paperclip size={15} color="#2563eb" />
+                            <span style={{ minWidth: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                                {fileName}
+                            </span>
+                        </div>
+                        {fileUrl && status !== 'loading' && (
+                            <div style={{ marginTop: 14 }}>
+                                <a href={fileUrl} target="_blank" rel="noreferrer" style={{ color: '#2563eb', fontSize: 12, fontWeight: 800, textDecoration: 'none' }}>
+                                    Open current file
+                                </a>
+                            </div>
+                        )}
+                    </div>
+                </div>
+            )}
+            <div ref={bodyRef} style={{ display: status === 'ready' ? 'block' : 'none', width: 'max-content', minWidth: '100%' }} />
+        </div>
     );
 }
 

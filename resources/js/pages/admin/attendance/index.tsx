@@ -84,18 +84,29 @@ function sortSessions(list: AttendanceSessionItem[], order: OrderKey): Attendanc
 
 export default function AttendancePage({ sessions, classes, summary }: AttendancePageProps) {
     const [selectedClass, setSelectedClass] = useState<number | 'all'>('all');
+    const [search, setSearch] = useState('');
     const [orderBy, setOrderBy] = useState<OrderKey>('date-desc');
     const [page, setPage] = useState(1);
     const [perPage, setPerPage] = useState(5);
     const [deleteTarget, setDeleteTarget] = useState<AttendanceSessionItem | null>(null);
 
-    useEffect(() => { setPage(1); }, [selectedClass, orderBy, perPage]);
+    useEffect(() => { setPage(1); }, [selectedClass, search, orderBy, perPage]);
 
     const filtered = useMemo(() => {
-        const base = sessions.filter(session => selectedClass === 'all' || session.schoolClassId === selectedClass);
+        const query = search.toLowerCase();
+        const base = sessions.filter(session => {
+            const matchesClass = selectedClass === 'all' || session.schoolClassId === selectedClass;
+            const matchesSearch = !query
+                || session.className.toLowerCase().includes(query)
+                || session.attendanceDate.includes(search)
+                || periodLabel(session.period).toLowerCase().includes(query)
+                || session.markedAt.toLowerCase().includes(query);
+
+            return matchesClass && matchesSearch;
+        });
 
         return sortSessions(base, orderBy);
-    }, [orderBy, selectedClass, sessions]);
+    }, [orderBy, search, selectedClass, sessions]);
 
     const confirmDelete = () => {
         if (!deleteTarget) return;
@@ -156,6 +167,7 @@ export default function AttendancePage({ sessions, classes, summary }: Attendanc
                             {classes.map(schoolClass => <option key={schoolClass.id} value={schoolClass.id}>{schoolClass.name}</option>)}
                         </select>
                         <span style={{ fontSize: 11, color: '#94a3b8' }}>{filtered.length} result{filtered.length !== 1 ? 's' : ''}</span>
+                        <input value={search} onChange={event => setSearch(event.target.value)} className="f-input" style={{ width: 260, maxWidth: '100%', marginLeft: 'auto' }} placeholder="Search attendance..." />
                     </div>
 
                     <table className="data-table">
@@ -175,7 +187,7 @@ export default function AttendancePage({ sessions, classes, summary }: Attendanc
                             {paginated.length === 0 ? (
                                 <tr>
                                     <td colSpan={8} style={{ padding: '34px 24px', textAlign: 'center', color: '#64748b', fontSize: 14, fontWeight: 700 }}>
-                                        Data not found
+                                        {search ? <>No attendance found for <strong>"{search}"</strong></> : 'Data not found'}
                                     </td>
                                 </tr>
                             ) : paginated.map(session => (

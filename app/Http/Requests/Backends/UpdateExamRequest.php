@@ -5,6 +5,7 @@ namespace App\Http\Requests\Backends;
 use Illuminate\Contracts\Validation\ValidationRule;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
+use Illuminate\Validation\Rules\File;
 
 class UpdateExamRequest extends FormRequest
 {
@@ -31,6 +32,7 @@ class UpdateExamRequest extends FormRequest
             'exam_date' => ['nullable', 'date'],
             'duration_minutes' => ['nullable', 'integer', 'min:1', 'max:1000'],
             'content' => ['nullable', 'string', 'max:100000'],
+            'attachment' => ['nullable', File::types(['doc', 'docx', 'pdf'])->max(10 * 1024)],
             'status' => ['required', 'string', Rule::in(['draft', 'published', 'archived'])],
         ];
     }

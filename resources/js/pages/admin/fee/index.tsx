@@ -102,10 +102,12 @@ function FeeStatusBadge({ status }: { status: FeeChargeItem['status'] }) {
 
 export default function FeePage({ charges, payments, summary }: FeePageProps) {
     const [filter, setFilter] = useState<FeeFilter>('all');
+    const [chargeSearch, setChargeSearch] = useState('');
     const [chargeOrderBy, setChargeOrderBy] = useState<ChargeOrderKey>('name-asc');
     const [chargePage, setChargePage] = useState(1);
     const [chargePerPage, setChargePerPage] = useState(5);
     const [paymentOrderBy, setPaymentOrderBy] = useState<PaymentOrderKey>('date-desc');
+    const [paymentSearch, setPaymentSearch] = useState('');
     const [paymentPage, setPaymentPage] = useState(1);
     const [paymentPerPage, setPaymentPerPage] = useState(5);
     const [payTarget, setPayTarget] = useState<FeeChargeItem | null>(null);
@@ -121,20 +123,46 @@ export default function FeePage({ charges, payments, summary }: FeePageProps) {
         screenshot_path: '',
     });
 
-    useEffect(() => { setChargePage(1); }, [filter, chargeOrderBy, chargePerPage]);
-    useEffect(() => { setPaymentPage(1); }, [paymentOrderBy, paymentPerPage]);
+    useEffect(() => { setChargePage(1); }, [filter, chargeSearch, chargeOrderBy, chargePerPage]);
+    useEffect(() => { setPaymentPage(1); }, [paymentSearch, paymentOrderBy, paymentPerPage]);
 
     const filteredCharges = useMemo(() => {
-        const base = filter === 'all' ? charges : charges.filter(charge => charge.status === filter);
+        const query = chargeSearch.toLowerCase();
+        const base = charges.filter(charge => {
+            const matchesFilter = filter === 'all' || charge.status === filter;
+            const matchesSearch = !query
+                || charge.studentNameKh.includes(chargeSearch)
+                || charge.studentNameEn.toLowerCase().includes(query)
+                || charge.level.toLowerCase().includes(query)
+                || charge.className.toLowerCase().includes(query)
+                || charge.billingMonth.includes(chargeSearch)
+                || charge.status.toLowerCase().includes(query);
+
+            return matchesFilter && matchesSearch;
+        });
         return sortCharges(base, chargeOrderBy);
-    }, [charges, chargeOrderBy, filter]);
+    }, [charges, chargeOrderBy, chargeSearch, filter]);
 
     const paginatedCharges = useMemo(
         () => filteredCharges.slice((chargePage - 1) * chargePerPage, chargePage * chargePerPage),
         [filteredCharges, chargePage, chargePerPage],
     );
 
-    const sortedPayments = useMemo(() => sortPayments(payments, paymentOrderBy), [payments, paymentOrderBy]);
+    const sortedPayments = useMemo(() => {
+        const query = paymentSearch.toLowerCase();
+        const base = payments.filter(payment =>
+            !query
+            || payment.studentNameKh.includes(paymentSearch)
+            || payment.studentNameEn.toLowerCase().includes(query)
+            || payment.method.toLowerCase().includes(query)
+            || payment.status.toLowerCase().includes(query)
+            || payment.paidOn.includes(paymentSearch)
+            || payment.billingMonth.includes(paymentSearch)
+            || payment.reference.toLowerCase().includes(query)
+        );
+
+        return sortPayments(base, paymentOrderBy);
+    }, [payments, paymentOrderBy, paymentSearch]);
     const paginatedPayments = useMemo(
         () => sortedPayments.slice((paymentPage - 1) * paymentPerPage, paymentPage * paymentPerPage),
         [sortedPayments, paymentPage, paymentPerPage],
@@ -229,6 +257,7 @@ export default function FeePage({ charges, payments, summary }: FeePageProps) {
                             {[5, 10, 25, 50].map(size => <option key={size} value={size}>{size} per page</option>)}
                         </select>
                         <span style={{ fontSize: 11, color: '#94a3b8', marginLeft: 4 }}>{filteredCharges.length} charge{filteredCharges.length !== 1 ? 's' : ''}</span>
+                        <input value={chargeSearch} onChange={event => setChargeSearch(event.target.value)} className="f-input" style={{ width: 260, maxWidth: '100%', marginLeft: 'auto' }} placeholder="Search fee charges..." />
                     </div>
                     <div style={{ overflowX: 'auto' }}>
                         <table className="data-table">
@@ -247,7 +276,7 @@ export default function FeePage({ charges, payments, summary }: FeePageProps) {
                                 {paginatedCharges.length === 0 ? (
                                     <tr>
                                         <td colSpan={7} style={{ padding: '34px 24px', textAlign: 'center', color: '#64748b', fontSize: 14, fontWeight: 700 }}>
-                                            Data not found
+                                            {chargeSearch ? <>No fee charges found for <strong>"{chargeSearch}"</strong></> : 'Data not found'}
                                         </td>
                                     </tr>
                                 ) : paginatedCharges.map(charge => (
@@ -292,12 +321,14 @@ export default function FeePage({ charges, payments, summary }: FeePageProps) {
                         <select value={paymentPerPage} onChange={event => setPaymentPerPage(Number(event.target.value))} style={{ padding: '5px 10px', borderRadius: 8, border: '1.5px solid #e2e8f0', background: 'white', color: '#374151', fontSize: 12, fontWeight: 700, cursor: 'pointer', outline: 'none' }}>
                             {[5, 10, 25, 50].map(size => <option key={size} value={size}>{size} per page</option>)}
                         </select>
+                        <span style={{ fontSize: 11, color: '#94a3b8', marginLeft: 4 }}>{sortedPayments.length} result{sortedPayments.length !== 1 ? 's' : ''}</span>
+                        <input value={paymentSearch} onChange={event => setPaymentSearch(event.target.value)} className="f-input" style={{ width: 260, maxWidth: '100%', marginLeft: 'auto' }} placeholder="Search payments..." />
                     </div>
                     <table className="data-table">
                         <thead><tr><th>Student</th><th>Amount</th><th>Method</th><th>Status</th><th>Paid On</th><th>Month</th></tr></thead>
                         <tbody>
                             {paginatedPayments.length === 0 ? (
-                                <tr><td colSpan={6} style={{ padding: '34px 24px', textAlign: 'center', color: '#64748b', fontSize: 14, fontWeight: 700 }}>Data not found</td></tr>
+                                <tr><td colSpan={6} style={{ padding: '34px 24px', textAlign: 'center', color: '#64748b', fontSize: 14, fontWeight: 700 }}>{paymentSearch ? <>No payments found for <strong>"{paymentSearch}"</strong></> : 'Data not found'}</td></tr>
                             ) : paginatedPayments.map(payment => (
                                 <tr key={payment.id}>
                                     <td>{payment.studentNameEn}</td>

@@ -9,10 +9,10 @@ import {
     SheetTitle,
 } from '@/components/ui/sheet';
 import AdminShell from '@/pages/admin/shell';
-import { Avatar, Badge, KH } from '@/pages/admin/ui';
+import { Avatar, Badge, KH, Pagination } from '@/pages/admin/ui';
 import { router, useForm } from '@inertiajs/react';
 import { Award, Check, ChevronsUpDown, Edit3, Eye, Plus, Printer, Search, Trash2 } from 'lucide-react';
-import { FormEvent, useMemo, useState } from 'react';
+import { FormEvent, useEffect, useMemo, useState } from 'react';
 import type { ReactNode } from 'react';
 import { toast } from 'sonner';
 
@@ -72,6 +72,15 @@ interface CertificateFormData {
 type CertificateType = 'excellence' | 'merit' | 'completion' | 'participation';
 type CertificateStatus = 'issued' | 'draft' | 'void';
 type DrawerMode = 'create' | 'edit';
+type OrderKey = 'issued-desc' | 'issued-asc' | 'student-asc' | 'type-asc' | 'status-asc';
+
+const ORDER_OPTIONS: { value: OrderKey; label: string }[] = [
+    { value: 'issued-desc', label: 'Issued Newest' },
+    { value: 'issued-asc', label: 'Issued Oldest' },
+    { value: 'student-asc', label: 'Student A-Z' },
+    { value: 'type-asc', label: 'Type' },
+    { value: 'status-asc', label: 'Status' },
+];
 
 const CERT_TYPES: Record<CertificateType, { label: string; labelKh: string; color: string; bg: string }> = {
     excellence: { label: 'Academic Excellence', labelKh: 'កិត្តិយស', color: '#d97706', bg: '#fffbeb' },
@@ -125,8 +134,25 @@ function emptyForm(students: StudentOption[]): CertificateFormData {
     };
 }
 
+function sortCertificates(list: CertificateItem[], order: OrderKey): CertificateItem[] {
+    return [...list].sort((a, b) => {
+        switch (order) {
+            case 'issued-desc': return b.issuedOn.localeCompare(a.issuedOn);
+            case 'issued-asc': return a.issuedOn.localeCompare(b.issuedOn);
+            case 'student-asc': return a.studentNameEn.localeCompare(b.studentNameEn);
+            case 'type-asc': return a.type.localeCompare(b.type);
+            case 'status-asc': return a.status.localeCompare(b.status);
+            default: return 0;
+        }
+    });
+}
+
 export default function CertificatesPage({ certificates, students, levels, summary }: CertificatesPageProps) {
     const [filter, setFilter] = useState<CertificateType | 'all'>('all');
+    const [search, setSearch] = useState('');
+    const [orderBy, setOrderBy] = useState<OrderKey>('issued-desc');
+    const [page, setPage] = useState(1);
+    const [perPage, setPerPage] = useState(5);
     const [studentPickerOpen, setStudentPickerOpen] = useState(false);
     const [studentSearch, setStudentSearch] = useState('');
     const [drawerMode, setDrawerMode] = useState<DrawerMode | null>(null);
@@ -136,9 +162,32 @@ export default function CertificatesPage({ certificates, students, levels, summa
 
     const { data, setData, post, put, processing, errors, reset } = useForm<CertificateFormData>(emptyForm(students));
 
+    useEffect(() => { setPage(1); }, [filter, search, orderBy, perPage]);
+
     const filteredCertificates = useMemo(
-        () => filter === 'all' ? certificates : certificates.filter(certificate => certificate.type === filter),
-        [certificates, filter],
+        () => {
+            const query = search.toLowerCase();
+            const base = certificates.filter(certificate => {
+                const matchesFilter = filter === 'all' || certificate.type === filter;
+                const matchesSearch = !query
+                    || certificate.studentNameKh.includes(search)
+                    || certificate.studentNameEn.toLowerCase().includes(query)
+                    || certificate.title.toLowerCase().includes(query)
+                    || certificate.levelName.toLowerCase().includes(query)
+                    || certificate.certificateNumber.toLowerCase().includes(query)
+                    || certificate.status.toLowerCase().includes(query);
+
+                return matchesFilter && matchesSearch;
+            });
+
+            return sortCertificates(base, orderBy);
+        },
+        [certificates, filter, orderBy, search],
+    );
+
+    const paginatedCertificates = useMemo(
+        () => filteredCertificates.slice((page - 1) * perPage, page * perPage),
+        [filteredCertificates, page, perPage],
     );
 
     const selectedStudent = useMemo(
@@ -281,6 +330,27 @@ export default function CertificatesPage({ certificates, students, levels, summa
                 </div>
 
                 <div className="card" style={{ overflowX: 'auto' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', flexWrap: 'wrap', gap: 8, padding: '12px 16px', borderBottom: '1px solid #f1f5f9' }}>
+                        <span style={{ fontSize: 11, fontWeight: 700, color: '#94a3b8', whiteSpace: 'nowrap' }}>Sort by</span>
+                        <Select value={orderBy} onValueChange={value => setOrderBy(value as OrderKey)}>
+                            <SelectTrigger style={{ width: 'auto', minWidth: 150, padding: '5px 10px', fontSize: 12, height: 'auto' }}>
+                                <SelectValue />
+                            </SelectTrigger>
+                            <SelectContent>
+                                {ORDER_OPTIONS.map(option => <SelectItem key={option.value} value={option.value}>{option.label}</SelectItem>)}
+                            </SelectContent>
+                        </Select>
+                        <Select value={perPage.toString()} onValueChange={value => setPerPage(Number(value))}>
+                            <SelectTrigger style={{ width: 'auto', minWidth: 120, padding: '5px 10px', fontSize: 12, height: 'auto' }}>
+                                <SelectValue />
+                            </SelectTrigger>
+                            <SelectContent>
+                                {[5, 10, 25, 50].map(size => <SelectItem key={size} value={size.toString()}>{size} per page</SelectItem>)}
+                            </SelectContent>
+                        </Select>
+                        <span style={{ fontSize: 11, color: '#94a3b8', marginLeft: 4 }}>{filteredCertificates.length} result{filteredCertificates.length !== 1 ? 's' : ''}</span>
+                        <input value={search} onChange={event => setSearch(event.target.value)} className="f-input" style={{ width: 260, maxWidth: '100%', marginLeft: 'auto' }} placeholder="Search certificates..." />
+                    </div>
                     <table className="data-table">
                         <thead>
                             <tr>
@@ -294,13 +364,13 @@ export default function CertificatesPage({ certificates, students, levels, summa
                             </tr>
                         </thead>
                         <tbody>
-                            {filteredCertificates.length === 0 ? (
+                            {paginatedCertificates.length === 0 ? (
                                 <tr>
                                     <td colSpan={7} style={{ padding: '38px 24px', textAlign: 'center', color: '#64748b', fontSize: 14, fontWeight: 700 }}>
-                                        No certificates found
+                                        {search ? <>No certificates found for <strong>"{search}"</strong></> : 'No certificates found'}
                                     </td>
                                 </tr>
-                            ) : filteredCertificates.map(certificate => {
+                            ) : paginatedCertificates.map(certificate => {
                                 const certType = CERT_TYPES[certificate.type];
                                 return (
                                     <tr key={certificate.id}>
@@ -341,6 +411,16 @@ export default function CertificatesPage({ certificates, students, levels, summa
                             })}
                         </tbody>
                     </table>
+                    {filteredCertificates.length > 0 && (
+                        <Pagination
+                            total={filteredCertificates.length}
+                            page={page}
+                            perPage={perPage}
+                            onPageChange={setPage}
+                            onPerPageChange={setPerPage}
+                            showPerPage={false}
+                        />
+                    )}
                 </div>
             </div>
 

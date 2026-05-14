@@ -4,6 +4,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import AdminShell from '@/pages/admin/shell';
 import { Badge, Pagination } from '@/pages/admin/ui';
 import { Link, router, useForm } from '@inertiajs/react';
+import { ArrowLeft, Check, ClipboardCheck, Clock, Edit3, School, Trash2 } from 'lucide-react';
 import { toast } from 'sonner';
 
 type View = 'list' | 'add' | 'edit';
@@ -46,11 +47,11 @@ interface ClassesPageProps {
 // ── Sort options ──────────────────────────────────────────
 type OrderKey = 'name-asc' | 'name-desc' | 'teacher-asc' | 'students-desc' | 'students-asc' | 'room-asc';
 const ORDER_OPTIONS: { value: OrderKey; label: string }[] = [
-    { value: 'name-asc',      label: 'Name A → Z' },
-    { value: 'name-desc',     label: 'Name Z → A' },
-    { value: 'teacher-asc',   label: 'Teacher A → Z' },
-    { value: 'students-desc', label: 'Students ↓ Most' },
-    { value: 'students-asc',  label: 'Students ↑ Least' },
+    { value: 'name-asc',      label: 'Name A-Z' },
+    { value: 'name-desc',     label: 'Name Z-A' },
+    { value: 'teacher-asc',   label: 'Teacher A-Z' },
+    { value: 'students-desc', label: 'Students Most' },
+    { value: 'students-asc',  label: 'Students Least' },
     { value: 'room-asc',      label: 'Room' },
 ];
 function sortClasses(list: SchoolClass[], order: OrderKey): SchoolClass[] {
@@ -192,7 +193,12 @@ export default function ClassesPage({ classes, levels, teachers }: ClassesPagePr
                                                 <td><span style={{ fontWeight: 700, fontSize: 14 }}>{cls.name}</span></td>
                                                 <td style={{ fontSize: 13, color: '#64748b' }}>{cls.teacher}</td>
                                                 <td><Badge type="blue">{cls.room}</Badge></td>
-                                                <td style={{ fontSize: 13, color: '#3b82f6', fontWeight: 600 }}>🕐 {cls.time}</td>
+                                                <td style={{ fontSize: 13, color: '#3b82f6', fontWeight: 600 }}>
+                                                    <span style={{ display: 'inline-flex', alignItems: 'center', gap: 4 }}>
+                                                        <Clock size={13} />
+                                                        {cls.time}
+                                                    </span>
+                                                </td>
                                                 <td style={{ fontSize: 12, color: '#64748b' }}>{cls.days}</td>
                                                 <td>
                                                     <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
@@ -203,16 +209,16 @@ export default function ClassesPage({ classes, levels, teachers }: ClassesPagePr
                                                 <td>
                                                     <div style={{ display: 'flex', gap: 6 }}>
                                                         <Link href="/admin/attendance"
-                                                            style={{ background: '#f0fdf4', color: '#16a34a', border: '1px solid #bbf7d0', borderRadius: 6, padding: '5px 10px', cursor: 'pointer', fontSize: 11, fontWeight: 700, textDecoration: 'none', whiteSpace: 'nowrap' }}>
-                                                            📋 Attendance
+                                                            style={{ background: '#f0fdf4', color: '#16a34a', border: '1px solid #bbf7d0', borderRadius: 6, padding: '5px 10px', cursor: 'pointer', fontSize: 11, fontWeight: 700, textDecoration: 'none', whiteSpace: 'nowrap', display: 'inline-flex', alignItems: 'center', gap: 4 }}>
+                                                            <ClipboardCheck size={13} /> Attendance
                                                         </Link>
                                                         <button onClick={() => handleEdit(cls)}
-                                                            style={{ background: '#eff6ff', color: '#2563eb', border: '1px solid #bfdbfe', borderRadius: 6, padding: '5px 10px', cursor: 'pointer', fontSize: 11, fontWeight: 700, whiteSpace: 'nowrap' }}>
-                                                            ✏️ Edit
+                                                            style={{ background: '#eff6ff', color: '#2563eb', border: '1px solid #bfdbfe', borderRadius: 6, padding: '5px 10px', cursor: 'pointer', fontSize: 11, fontWeight: 700, whiteSpace: 'nowrap', display: 'inline-flex', alignItems: 'center', gap: 4 }}>
+                                                            <Edit3 size={13} /> Edit
                                                         </button>
                                                         <button onClick={() => handleDelete(cls)}
-                                                            style={{ background: '#fff1f2', color: '#ef4444', border: '1px solid #fecaca', borderRadius: 6, padding: '5px 10px', cursor: 'pointer', fontSize: 11, fontWeight: 700, whiteSpace: 'nowrap' }}>
-                                                            🗑️ Delete
+                                                            style={{ background: '#fff1f2', color: '#ef4444', border: '1px solid #fecaca', borderRadius: 6, padding: '5px 10px', cursor: 'pointer', fontSize: 11, fontWeight: 700, whiteSpace: 'nowrap', display: 'inline-flex', alignItems: 'center', gap: 4 }}>
+                                                            <Trash2 size={13} /> Delete
                                                         </button>
                                                     </div>
                                                 </td>
@@ -253,7 +259,9 @@ export default function ClassesPage({ classes, levels, teachers }: ClassesPagePr
                     onClick={e => { if (e.target === e.currentTarget) setDeleteTarget(null); }}>
                     <div style={{ background: 'white', borderRadius: 20, padding: 32, maxWidth: 420, width: '100%', boxShadow: '0 24px 60px rgba(0,0,0,0.15)' }}>
                         <div style={{ textAlign: 'center', marginBottom: 20 }}>
-                            <div style={{ width: 56, height: 56, borderRadius: '50%', background: '#fee2e2', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 26, margin: '0 auto 14px' }}>🗑️</div>
+                            <div style={{ width: 56, height: 56, borderRadius: '50%', background: '#fee2e2', color: '#ef4444', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 14px' }}>
+                                <Trash2 size={26} />
+                            </div>
                             <div style={{ fontSize: 18, fontWeight: 800, color: '#1e293b', marginBottom: 6 }}>Delete Class?</div>
                             <div style={{ fontSize: 13, color: '#64748b', lineHeight: 1.5 }}>
                                 Are you sure you want to remove <strong>{deleteTarget.name}</strong>?
@@ -343,8 +351,8 @@ function ClassForm({ mode, cls, levels, teachers, onBack }: FormProps) {
         <div className="fade-in" style={{ padding: 24 }}>
             <form className="card" onSubmit={submit} style={{ padding: 28, maxWidth: 600, margin: '0 auto' }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 24 }}>
-                    <div style={{ width: 40, height: 40, borderRadius: 10, background: isEdit ? '#eff6ff' : '#f0fdf4', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 20 }}>
-                        {isEdit ? '✏️' : '🏫'}
+                    <div style={{ width: 40, height: 40, borderRadius: 10, background: isEdit ? '#eff6ff' : '#f0fdf4', color: isEdit ? '#2563eb' : '#16a34a', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                        {isEdit ? <Edit3 size={20} /> : <School size={20} />}
                     </div>
                     <div>
                         <div style={{ fontWeight: 800, fontSize: 16, color: '#1e293b' }}>{isEdit ? 'Edit Class' : 'Add New Class'}</div>
@@ -432,12 +440,12 @@ function ClassForm({ mode, cls, levels, teachers, onBack }: FormProps) {
 
                 <div style={{ display: 'flex', gap: 12, marginTop: 8 }}>
                     <button type="button" onClick={onBack}
-                        style={{ background: '#f1f5f9', color: '#64748b', border: 'none', borderRadius: 10, padding: '12px 20px', fontWeight: 700, cursor: 'pointer' }}>
-                        ← Cancel
+                        style={{ background: '#f1f5f9', color: '#64748b', border: 'none', borderRadius: 10, padding: '12px 20px', fontWeight: 700, cursor: 'pointer', display: 'inline-flex', alignItems: 'center', gap: 6 }}>
+                        <ArrowLeft size={14} /> Cancel
                     </button>
                     <button type="submit" disabled={processing}
-                        style={{ flex: 1, background: isEdit ? '#2563eb' : '#10b981', color: 'white', border: 'none', borderRadius: 10, padding: '12px', fontWeight: 700, fontSize: 14, cursor: 'pointer', fontFamily: "'Noto Sans Khmer',sans-serif" }}>
-                        {processing ? 'Saving...' : isEdit ? '✓ Update Class' : '✓ Save Class'}
+                        style={{ flex: 1, background: isEdit ? '#2563eb' : '#10b981', color: 'white', border: 'none', borderRadius: 10, padding: '12px', fontWeight: 700, fontSize: 14, cursor: 'pointer', fontFamily: "'Noto Sans Khmer',sans-serif", display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: 6 }}>
+                        {processing ? 'Saving...' : <><Check size={14} />{isEdit ? 'Update Class' : 'Save Class'}</>}
                     </button>
                 </div>
             </form>

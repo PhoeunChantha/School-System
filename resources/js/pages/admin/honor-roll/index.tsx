@@ -2,6 +2,7 @@ import { useState } from 'react';
 import AdminShell from '@/pages/admin/shell';
 import { STUDENTS, CLASSES, avg, type Student } from '@/pages/admin/data';
 import { KH, Avatar } from '@/pages/admin/ui';
+import { Printer, Trophy } from 'lucide-react';
 
 // ── Medal config ──────────────────────────────────────────
 const MEDALS = [
@@ -357,7 +358,10 @@ export default function HonorRollPage() {
                 {/* ── Controls ── */}
                 <div className="no-print" style={{ display: 'flex', alignItems: 'center', gap: 12, flexWrap: 'wrap' }}>
                     <div>
-                        <div style={{ fontWeight: 800, fontSize: 18, color: '#1e293b' }}>🏆 Honor Roll Chart</div>
+                        <div style={{ fontWeight: 800, fontSize: 18, color: '#1e293b', display: 'flex', alignItems: 'center', gap: 8 }}>
+                            <Trophy size={20} color="#d97706" />
+                            Honor Roll Chart
+                        </div>
                         <KH style={{ fontSize: 12, color: '#94a3b8', display: 'block' }}>
                             តារាងកិត្តិយស · Outstanding Students
                         </KH>
@@ -385,7 +389,7 @@ export default function HonorRollPage() {
                             onClick={() => window.print()}
                             style={{ background: '#1e2940', color: 'white', border: 'none', borderRadius: 10, padding: '9px 22px', fontWeight: 700, fontSize: 13, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 8 }}
                         >
-                            🖨️ Print
+                            <Printer size={14} /> Print
                         </button>
                     </div>
                 </div>

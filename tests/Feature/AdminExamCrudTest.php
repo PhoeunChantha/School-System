@@ -6,6 +6,7 @@ use App\Models\Exam;
 use App\Models\SchoolClass;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Http\UploadedFile;
 use Tests\TestCase;
 
 class AdminExamCrudTest extends TestCase
@@ -44,6 +45,53 @@ class AdminExamCrudTest extends TestCase
             'created_by' => $user->id,
             'updated_by' => $user->id,
         ]);
+    }
+
+    public function test_admin_can_create_exam_with_word_attachment(): void
+    {
+        $this->actingAs(User::factory()->create());
+        $schoolClass = SchoolClass::factory()->create();
+
+        $this->post(route('admin.exam.store'), [
+            ...$this->validPayload($schoolClass->id),
+            'attachment' => UploadedFile::fake()->create(
+                'midterm.docx',
+                24,
+                'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+            ),
+        ])->assertRedirect(route('admin.exam'));
+
+        $exam = Exam::query()->where('title', 'Mid Term English Exam')->firstOrFail();
+
+        $this->assertNotNull($exam->attachment_path);
+        $this->assertStringStartsWith('uploads/exams/', $exam->attachment_path);
+        $this->assertFileExists(public_path($exam->attachment_path));
+
+        unlink(public_path($exam->attachment_path));
+    }
+
+    public function test_admin_can_create_exam_with_pdf_attachment(): void
+    {
+        $this->actingAs(User::factory()->create());
+        $schoolClass = SchoolClass::factory()->create();
+
+        $this->post(route('admin.exam.store'), [
+            ...$this->validPayload($schoolClass->id),
+            'attachment' => UploadedFile::fake()->create(
+                'midterm.pdf',
+                24,
+                'application/pdf',
+            ),
+        ])->assertRedirect(route('admin.exam'));
+
+        $exam = Exam::query()->where('title', 'Mid Term English Exam')->firstOrFail();
+
+        $this->assertNotNull($exam->attachment_path);
+        $this->assertStringStartsWith('uploads/exams/', $exam->attachment_path);
+        $this->assertStringEndsWith('.pdf', $exam->attachment_path);
+        $this->assertFileExists(public_path($exam->attachment_path));
+
+        unlink(public_path($exam->attachment_path));
     }
 
     public function test_admin_can_update_exam(): void

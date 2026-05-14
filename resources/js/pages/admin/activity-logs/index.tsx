@@ -7,10 +7,10 @@ import {
     SheetTitle,
 } from '@/components/ui/sheet';
 import AdminShell from '@/pages/admin/shell';
-import { Avatar, Badge, KH } from '@/pages/admin/ui';
+import { Avatar, Badge, KH, Pagination } from '@/pages/admin/ui';
 import { router, useForm } from '@inertiajs/react';
 import { Edit3, Plus, Trash2 } from 'lucide-react';
-import { FormEvent, useMemo, useState } from 'react';
+import { FormEvent, useEffect, useMemo, useState } from 'react';
 import type { CSSProperties, ReactNode } from 'react';
 import { toast } from 'sonner';
 
@@ -78,20 +78,37 @@ function eventBadge(event: string): 'green' | 'red' | 'amber' | 'blue' | 'purple
 export default function ActivityLogsPage({ logs, users, events, summary }: ActivityLogsPageProps) {
     const [selectedEvent, setSelectedEvent] = useState<string>('all');
     const [selectedUser, setSelectedUser] = useState<number | 'all'>('all');
+    const [search, setSearch] = useState('');
+    const [page, setPage] = useState(1);
+    const [perPage, setPerPage] = useState(5);
     const [drawerMode, setDrawerMode] = useState<DrawerMode | null>(null);
     const [editingLog, setEditingLog] = useState<ActivityLogItem | null>(null);
     const [deleteTarget, setDeleteTarget] = useState<ActivityLogItem | null>(null);
 
     const { data, setData, post, put, processing, errors, reset } = useForm<ActivityLogFormData>(emptyForm);
 
+    useEffect(() => { setPage(1); }, [selectedEvent, selectedUser, search, perPage]);
+
     const filtered = useMemo(
         () => logs.filter(log => {
             const eventMatches = selectedEvent === 'all' || log.event === selectedEvent;
             const userMatches = selectedUser === 'all' || log.userId === selectedUser;
+            const query = search.toLowerCase();
+            const searchMatches = !query
+                || log.userName.toLowerCase().includes(query)
+                || log.userEmail.toLowerCase().includes(query)
+                || log.event.toLowerCase().includes(query)
+                || log.description.toLowerCase().includes(query)
+                || log.ipAddress.toLowerCase().includes(query);
 
-            return eventMatches && userMatches;
+            return eventMatches && userMatches && searchMatches;
         }),
-        [logs, selectedEvent, selectedUser],
+        [logs, selectedEvent, selectedUser, search],
+    );
+
+    const paginated = useMemo(
+        () => filtered.slice((page - 1) * perPage, page * perPage),
+        [filtered, page, perPage],
     );
 
     const openCreateDrawer = () => {
@@ -195,7 +212,17 @@ export default function ActivityLogsPage({ logs, users, events, summary }: Activ
                             <option value="all">All users</option>
                             {users.map(user => <option key={user.id} value={user.id}>{user.name}</option>)}
                         </select>
+                        <select style={selectStyle} value={perPage} onChange={event => setPerPage(Number(event.target.value))}>
+                            {[5, 10, 25, 50].map(size => <option key={size} value={size}>{size} per page</option>)}
+                        </select>
                         <span style={{ fontSize: 11, color: '#94a3b8' }}>{filtered.length} result{filtered.length !== 1 ? 's' : ''}</span>
+                        <input
+                            value={search}
+                            onChange={event => setSearch(event.target.value)}
+                            className="f-input"
+                            placeholder="Search activity logs..."
+                            style={{ width: 260, maxWidth: '100%', marginLeft: 'auto' }}
+                        />
                     </div>
 
                     <table className="data-table">
@@ -210,13 +237,13 @@ export default function ActivityLogsPage({ logs, users, events, summary }: Activ
                             </tr>
                         </thead>
                         <tbody>
-                            {filtered.length === 0 ? (
+                            {paginated.length === 0 ? (
                                 <tr>
                                     <td colSpan={6} style={{ padding: '38px 24px', textAlign: 'center', color: '#64748b', fontSize: 14, fontWeight: 700 }}>
-                                        No activity logs found
+                                        {search ? <>No activity logs found for <strong>"{search}"</strong></> : 'No activity logs found'}
                                     </td>
                                 </tr>
-                            ) : filtered.map(log => (
+                            ) : paginated.map(log => (
                                 <tr key={log.id}>
                                     <td>
                                         {log.userName ? (
@@ -249,6 +276,16 @@ export default function ActivityLogsPage({ logs, users, events, summary }: Activ
                             ))}
                         </tbody>
                     </table>
+                    {filtered.length > 0 && (
+                        <Pagination
+                            total={filtered.length}
+                            page={page}
+                            perPage={perPage}
+                            onPageChange={setPage}
+                            onPerPageChange={setPerPage}
+                            showPerPage={false}
+                        />
+                    )}
                 </div>
             </div>
 

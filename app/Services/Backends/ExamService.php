@@ -4,7 +4,9 @@ namespace App\Services\Backends;
 
 use App\Models\Exam;
 use App\Models\SchoolClass;
+use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Str;
 
 class ExamService
 {
@@ -38,8 +40,11 @@ class ExamService
      */
     public function create(array $data, ?int $userId): Exam
     {
+        $attachmentPath = $this->storeAttachment($data['attachment'] ?? null);
+
         return DB::transaction(fn (): Exam => Exam::create([
             ...$this->normalizedData($data),
+            'attachment_path' => $attachmentPath,
             'created_by' => $userId,
             'updated_by' => $userId,
         ]));
@@ -51,8 +56,16 @@ class ExamService
     public function update(Exam $exam, array $data, ?int $userId): Exam
     {
         return DB::transaction(function () use ($exam, $data, $userId): Exam {
+            $attachmentPath = $exam->attachment_path;
+
+            if (($data['attachment'] ?? null) instanceof UploadedFile) {
+                $this->deleteAttachment($exam->attachment_path);
+                $attachmentPath = $this->storeAttachment($data['attachment']);
+            }
+
             $exam->update([
                 ...$this->normalizedData($data),
+                'attachment_path' => $attachmentPath,
                 'updated_by' => $userId,
             ]);
 
@@ -100,6 +113,9 @@ class ExamService
             'examDate' => $exam->exam_date?->format('Y-m-d') ?? '',
             'durationMinutes' => $exam->duration_minutes,
             'content' => $content['html'] ?? '',
+            'attachmentPath' => $exam->attachment_path,
+            'attachmentName' => $exam->attachment_path ? basename($exam->attachment_path) : '',
+            'attachmentUrl' => $exam->attachment_path ? asset($exam->attachment_path) : '',
             'status' => $exam->status,
             'resultsCount' => $exam->results_count ?? 0,
             'createdAt' => $exam->created_at?->format('Y-m-d') ?? '',
@@ -122,5 +138,30 @@ class ExamService
             'content' => ['html' => $data['content'] ?? ''],
             'status' => $data['status'],
         ];
+    }
+
+    private function storeAttachment(mixed $file): ?string
+    {
+        if (! $file instanceof UploadedFile) {
+            return null;
+        }
+
+        $destination = public_path('uploads/exams');
+
+        if (! is_dir($destination)) {
+            mkdir($destination, 0755, true);
+        }
+
+        $filename = Str::uuid().'.'.$file->getClientOriginalExtension();
+        $file->move($destination, $filename);
+
+        return 'uploads/exams/'.$filename;
+    }
+
+    private function deleteAttachment(?string $path): void
+    {
+        if ($path && file_exists(public_path($path))) {
+            unlink(public_path($path));
+        }
     }
 }

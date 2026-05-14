@@ -1,4 +1,5 @@
 import { KH } from '@/pages/admin/ui';
+import { Building2 } from 'lucide-react';
 
 export function AdminFooter() {
     const year = new Date().getFullYear();
@@ -16,7 +17,9 @@ export function AdminFooter() {
             flexShrink: 0,
         }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                <div style={{ width: 22, height: 22, background: 'linear-gradient(135deg,#3b82f6,#6366f1)', borderRadius: 6, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 12 }}>🏫</div>
+                <div style={{ width: 22, height: 22, background: 'linear-gradient(135deg,#3b82f6,#6366f1)', borderRadius: 6, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                    <Building2 size={13} color="white" strokeWidth={2.4} />
+                </div>
                 <KH style={{ fontSize: 12, fontWeight: 700, color: '#374151' }}>សាលា Frania</KH>
                 <span style={{ fontSize: 12, color: '#94a3b8' }}>· Frania English School</span>
             </div>
