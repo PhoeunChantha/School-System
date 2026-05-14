@@ -5,6 +5,7 @@ namespace App\Http\Requests\Backends;
 use Illuminate\Contracts\Validation\ValidationRule;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
+use Illuminate\Validation\Rules\File;
 
 class StoreHomeworkAssignmentRequest extends FormRequest
 {
@@ -28,6 +29,7 @@ class StoreHomeworkAssignmentRequest extends FormRequest
             'title_kh' => ['required', 'string', 'max:255'],
             'title_en' => ['nullable', 'string', 'max:255'],
             'instructions' => ['nullable', 'string', 'max:5000'],
+            'attachment_file' => ['nullable', File::types(['pdf', 'doc', 'docx', 'xls', 'xlsx', 'ppt', 'pptx', 'jpg', 'jpeg', 'png'])->max(10 * 1024)],
             'points' => ['required', 'integer', 'min:1', 'max:1000'],
             'due_on' => ['required', 'date'],
             'academic_year' => ['nullable', 'string', 'max:20'],

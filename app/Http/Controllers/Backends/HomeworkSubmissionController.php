@@ -30,6 +30,11 @@ class HomeworkSubmissionController extends Controller
         return Inertia::render('admin/homework-submissions/index', $this->homeworkSubmissionService->indexData());
     }
 
+    public function create(): Response
+    {
+        return Inertia::render('admin/homework-submissions/create', $this->homeworkSubmissionService->createData());
+    }
+
     public function store(StoreHomeworkSubmissionRequest $request): RedirectResponse
     {
         try {

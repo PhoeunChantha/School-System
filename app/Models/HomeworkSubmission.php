@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use Database\Factories\HomeworkSubmissionFactory;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
@@ -9,7 +10,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 class HomeworkSubmission extends Model
 {
-    /** @use HasFactory<\Database\Factories\HomeworkSubmissionFactory> */
+    /** @use HasFactory<HomeworkSubmissionFactory> */
     use HasFactory;
 
     protected $fillable = [
@@ -17,6 +18,8 @@ class HomeworkSubmission extends Model
         'student_id',
         'submitted_at',
         'score',
+        'attachment_path',
+        'attachment_name',
         'status',
         'feedback',
         'created_by',

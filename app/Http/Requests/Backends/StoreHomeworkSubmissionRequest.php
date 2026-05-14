@@ -5,6 +5,7 @@ namespace App\Http\Requests\Backends;
 use Illuminate\Contracts\Validation\ValidationRule;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
+use Illuminate\Validation\Rules\File;
 
 class StoreHomeworkSubmissionRequest extends FormRequest
 {
@@ -28,6 +29,7 @@ class StoreHomeworkSubmissionRequest extends FormRequest
             'student_id' => ['required', 'integer', Rule::exists('students', 'id')->whereNull('deleted_at')],
             'submitted_at' => ['nullable', 'date'],
             'score' => ['nullable', 'integer', 'min:0', 'max:1000'],
+            'attachment_file' => ['nullable', File::types(['pdf', 'doc', 'docx', 'xls', 'xlsx', 'ppt', 'pptx', 'jpg', 'jpeg', 'png'])->max(10 * 1024)],
             'status' => ['required', 'string', Rule::in(['pending', 'submitted', 'graded', 'missing'])],
             'feedback' => ['nullable', 'string', 'max:3000'],
         ];

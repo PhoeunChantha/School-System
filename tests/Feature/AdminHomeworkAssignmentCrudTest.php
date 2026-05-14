@@ -6,6 +6,7 @@ use App\Models\HomeworkAssignment;
 use App\Models\SchoolClass;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Http\UploadedFile;
 use Tests\TestCase;
 
 class AdminHomeworkAssignmentCrudTest extends TestCase
@@ -58,6 +59,28 @@ class AdminHomeworkAssignmentCrudTest extends TestCase
         ]);
     }
 
+    public function test_admin_can_create_homework_with_file(): void
+    {
+        $user = User::factory()->create();
+        $schoolClass = SchoolClass::factory()->create();
+
+        $payload = $this->validPayload($schoolClass->id);
+        $payload['attachment_file'] = UploadedFile::fake()->create('homework.docx', 128, 'application/vnd.openxmlformats-officedocument.wordprocessingml.document');
+
+        $this->actingAs($user)
+            ->post(route('admin.homework.store'), $payload)
+            ->assertRedirect(route('admin.homework'));
+
+        $homework = HomeworkAssignment::query()->where('title_en', 'Write about family')->firstOrFail();
+
+        $this->assertSame('homework.docx', $homework->attachment_name);
+        $this->assertNotNull($homework->attachment_path);
+        $this->assertStringStartsWith('uploads/homework/', $homework->attachment_path);
+        $this->assertFileExists(public_path($homework->attachment_path));
+
+        unlink(public_path($homework->attachment_path));
+    }
+
     public function test_admin_can_view_edit_homework_page(): void
     {
         $this->actingAs(User::factory()->create());
@@ -68,7 +91,8 @@ class AdminHomeworkAssignmentCrudTest extends TestCase
             ->assertOk()
             ->assertInertia(fn ($page) => $page
                 ->component('admin/homework/edit')
-                ->where('homework.title_en', 'Write about family'));
+                ->where('homework.title_en', 'Write about family')
+                ->where('homework.attachment_name', ''));
     }
 
     public function test_admin_can_update_homework(): void

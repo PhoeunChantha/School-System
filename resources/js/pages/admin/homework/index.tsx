@@ -1,10 +1,12 @@
 import { create as createHomework, destroy, edit as editHomework } from '@/actions/App/Http/Controllers/Backends/HomeworkAssignmentController';
+import { create as createHomeworkSubmission } from '@/routes/admin/homework-submissions';
 import AdminShell from '@/pages/admin/shell';
 import { Badge, KH, Pagination, PBar } from '@/pages/admin/ui';
 import { Link, router } from '@inertiajs/react';
 import { useEffect, useMemo, useState } from 'react';
 import { toast } from 'sonner';
 import { Select, SelectTrigger, SelectContent, SelectItem, SelectValue } from '@/components/ui/select';
+import { Edit3, FileText, Plus, Trash2, Upload, X } from 'lucide-react';
 
 export interface HomeworkItem {
     id: number;
@@ -13,6 +15,8 @@ export interface HomeworkItem {
     className: string;
     dueOn: string;
     points: number;
+    attachmentName: string;
+    attachmentUrl: string;
     status: 'assigned' | 'draft' | 'closed';
     submitted: number;
     total: number;
@@ -110,9 +114,14 @@ export default function HomeworkPage({ homework }: HomeworkPageProps) {
                         </div>
                     </div>
 
-                    <Link href={createHomework.url()} style={{ background: '#2563eb', color: 'white', border: 'none', borderRadius: 10, padding: '9px 18px', fontWeight: 700, fontSize: 13, cursor: 'pointer', textDecoration: 'none' }}>
-                        + Assign New
-                    </Link>
+                    <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+                        <Link href={createHomeworkSubmission.url()} style={{ background: '#16a34a', color: 'white', border: 'none', borderRadius: 10, padding: '9px 16px', fontWeight: 800, fontSize: 13, cursor: 'pointer', textDecoration: 'none', display: 'inline-flex', alignItems: 'center', gap: 6 }}>
+                            <Upload size={15} /> Student Submit
+                        </Link>
+                        <Link href={createHomework.url()} style={{ background: '#2563eb', color: 'white', border: 'none', borderRadius: 10, padding: '9px 18px', fontWeight: 700, fontSize: 13, cursor: 'pointer', textDecoration: 'none', display: 'inline-flex', alignItems: 'center', gap: 6 }}>
+                            <Plus size={15} /> Assign New
+                        </Link>
+                    </div>
                 </div>
 
                 <div className="card" style={{ overflow: 'hidden' }}>
@@ -177,6 +186,11 @@ export default function HomeworkPage({ homework }: HomeworkPageProps) {
                                         <td>
                                             <KH style={{ fontWeight: 700, fontSize: 13, display: 'block' }}>{item.titleKh}</KH>
                                             <div style={{ fontSize: 11, color: '#94a3b8' }}>{item.titleEn || 'Untitled homework'}</div>
+                                            {item.attachmentUrl && (
+                                                <a href={item.attachmentUrl} target="_blank" rel="noreferrer" style={{ display: 'inline-flex', alignItems: 'center', gap: 4, marginTop: 5, color: '#2563eb', fontSize: 11, fontWeight: 800, textDecoration: 'none' }}>
+                                                    <FileText size={12} /> {item.attachmentName || 'Homework file'}
+                                                </a>
+                                            )}
                                         </td>
                                         <td style={{ fontSize: 12, color: '#64748b' }}>{item.className}</td>
                                         <td style={{ fontSize: 12, color: '#64748b' }}>{item.dueOn}</td>
@@ -190,8 +204,8 @@ export default function HomeworkPage({ homework }: HomeworkPageProps) {
                                         <td>{statusBadge(item.status)}</td>
                                         <td>
                                             <div style={{ display: 'flex', gap: 6 }}>
-                                                <Link href={editHomework.url(item.id)} style={{ background: '#eff6ff', color: '#2563eb', border: '1px solid #bfdbfe', borderRadius: 7, padding: '5px 10px', cursor: 'pointer', fontSize: 11, fontWeight: 700, textDecoration: 'none', whiteSpace: 'nowrap' }}>Edit</Link>
-                                                <button onClick={() => setDeleteTarget(item)} style={{ background: '#fff1f2', color: '#ef4444', border: '1px solid #fecaca', borderRadius: 7, padding: '5px 10px', cursor: 'pointer', fontSize: 11, fontWeight: 700, whiteSpace: 'nowrap' }}>Delete</button>
+                                                <Link href={editHomework.url(item.id)} style={{ background: '#eff6ff', color: '#2563eb', border: '1px solid #bfdbfe', borderRadius: 7, padding: '5px 10px', cursor: 'pointer', fontSize: 11, fontWeight: 700, textDecoration: 'none', whiteSpace: 'nowrap', display: 'inline-flex', alignItems: 'center', gap: 5 }}><Edit3 size={13} /> Edit</Link>
+                                                <button onClick={() => setDeleteTarget(item)} style={{ background: '#fff1f2', color: '#ef4444', border: '1px solid #fecaca', borderRadius: 7, padding: '5px 10px', cursor: 'pointer', fontSize: 11, fontWeight: 700, whiteSpace: 'nowrap', display: 'inline-flex', alignItems: 'center', gap: 5 }}><Trash2 size={13} /> Delete</button>
                                             </div>
                                         </td>
                                     </tr>
@@ -214,8 +228,8 @@ export default function HomeworkPage({ homework }: HomeworkPageProps) {
                             <div style={{ fontSize: 13, color: '#64748b', lineHeight: 1.5 }}>Are you sure you want to remove <strong>{deleteTarget.titleEn || deleteTarget.titleKh}</strong>?</div>
                         </div>
                         <div style={{ display: 'flex', gap: 10 }}>
-                            <button onClick={() => setDeleteTarget(null)} style={{ flex: 1, background: '#f1f5f9', color: '#64748b', border: 'none', borderRadius: 10, padding: '11px', fontWeight: 700, cursor: 'pointer', fontSize: 14 }}>Cancel</button>
-                            <button onClick={confirmDelete} style={{ flex: 1, background: '#ef4444', color: 'white', border: 'none', borderRadius: 10, padding: '11px', fontWeight: 700, cursor: 'pointer', fontSize: 14 }}>Yes, Delete</button>
+                            <button onClick={() => setDeleteTarget(null)} style={{ flex: 1, background: '#f1f5f9', color: '#64748b', border: 'none', borderRadius: 10, padding: '11px', fontWeight: 700, cursor: 'pointer', fontSize: 14, display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: 6 }}><X size={15} /> Cancel</button>
+                            <button onClick={confirmDelete} style={{ flex: 1, background: '#ef4444', color: 'white', border: 'none', borderRadius: 10, padding: '11px', fontWeight: 700, cursor: 'pointer', fontSize: 14, display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: 6 }}><Trash2 size={15} /> Delete</button>
                         </div>
                     </div>
                 </div>

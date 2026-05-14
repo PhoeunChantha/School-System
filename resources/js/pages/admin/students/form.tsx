@@ -4,7 +4,7 @@ import { DatePicker } from '@/components/ui/date-picker';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import AdminShell from '@/pages/admin/shell';
 import { Link, useForm } from '@inertiajs/react';
-import { Camera, User } from 'lucide-react';
+import { ArrowLeft, ArrowRight, Camera, Save, User, X } from 'lucide-react';
 import { toast } from 'sonner';
 
 export interface LevelOption {
@@ -280,11 +280,11 @@ export default function StudentFormPage({ mode, student, levels, classes }: Stud
                     )}
 
                     <div style={{ display: 'flex', gap: 12, marginTop: 16, flexWrap: 'wrap' }}>
-                        <Link href={studentIndex.url()} style={{ flex: '1 1 140px', textAlign: 'center', background: '#f1f5f9', color: '#64748b', border: 'none', borderRadius: 10, padding: '12px 20px', fontWeight: 700, cursor: 'pointer', textDecoration: 'none' }}>Cancel</Link>
-                        {step > 1 && <button type="button" onClick={() => setStep(value => value - 1)} style={{ flex: '1 1 140px', background: '#f1f5f9', color: '#64748b', border: 'none', borderRadius: 10, padding: '12px', fontWeight: 700, cursor: 'pointer' }}>Back</button>}
+                        <Link href={studentIndex.url()} style={{ flex: '1 1 140px', textAlign: 'center', background: '#f1f5f9', color: '#64748b', border: 'none', borderRadius: 10, padding: '12px 20px', fontWeight: 700, cursor: 'pointer', textDecoration: 'none', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: 6 }}><X size={16} /> Cancel</Link>
+                        {step > 1 && <button type="button" onClick={() => setStep(value => value - 1)} style={{ flex: '1 1 140px', background: '#f1f5f9', color: '#64748b', border: 'none', borderRadius: 10, padding: '12px', fontWeight: 700, cursor: 'pointer', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: 6 }}><ArrowLeft size={16} /> Back</button>}
                         {step < 3
-                            ? <button type="button" onClick={() => setStep(value => value + 1)} style={{ flex: '2 1 180px', background: '#2563eb', color: 'white', border: 'none', borderRadius: 10, padding: '12px', fontWeight: 700, fontSize: 14, cursor: 'pointer' }}>Next</button>
-                            : <button type="submit" disabled={processing} style={{ flex: '2 1 180px', background: isEdit ? '#2563eb' : '#10b981', color: 'white', border: 'none', borderRadius: 10, padding: '12px', fontWeight: 700, fontSize: 14, cursor: 'pointer' }}>{processing ? 'Saving...' : isEdit ? 'Update Student' : 'Save Student'}</button>
+                            ? <button type="button" onClick={() => setStep(value => value + 1)} style={{ flex: '2 1 180px', background: '#2563eb', color: 'white', border: 'none', borderRadius: 10, padding: '12px', fontWeight: 700, fontSize: 14, cursor: 'pointer', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: 6 }}>Next <ArrowRight size={16} /></button>
+                            : <button type="submit" disabled={processing} style={{ flex: '2 1 180px', background: isEdit ? '#2563eb' : '#10b981', color: 'white', border: 'none', borderRadius: 10, padding: '12px', fontWeight: 700, fontSize: 14, cursor: 'pointer', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: 6 }}><Save size={16} /> {processing ? 'Saving...' : isEdit ? 'Update Student' : 'Save Student'}</button>
                         }
                     </div>
                 </form>

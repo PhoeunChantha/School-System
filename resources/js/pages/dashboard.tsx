@@ -12,6 +12,7 @@ import {
     GraduationCap,
     Hourglass,
     ArrowRight,
+    Plus,
     TriangleAlert,
     UserRound,
     Users,
@@ -211,7 +212,7 @@ export default function Dashboard({
     return (
         <AdminShell>
             <Head title="Dashboard" />
-            <div className="admin-wrap" style={{ height: 'auto', overflow: 'visible' }}>
+            <div className="dashboard-surface" style={{ height: 'auto', overflow: 'visible' }}>
                 <div className="fade-in" style={{ padding: 24, display: 'flex', flexDirection: 'column', gap: 20 }}>
 
                     {/* ── Stat cards ── */}
@@ -436,7 +437,7 @@ export default function Dashboard({
                                 <KH style={{ fontWeight: 800, fontSize: 15, color: '#1e293b', display: 'block' }}>សិស្សថ្មីៗ</KH>
                                 <div style={{ fontSize: 12, color: '#94a3b8' }}>Recent Students</div>
                             </div>
-                            <Link href="/admin/students/create" style={{ fontSize: 12, color: '#3b82f6', fontWeight: 700, background: '#eff6ff', padding: '6px 14px', borderRadius: 8, textDecoration: 'none' }}>+ Add Student</Link>
+                            <Link href="/admin/students/create" style={{ fontSize: 12, color: '#3b82f6', fontWeight: 700, background: '#eff6ff', padding: '6px 14px', borderRadius: 8, textDecoration: 'none', display: 'inline-flex', alignItems: 'center', gap: 5 }}><Plus size={13} /> Add Student</Link>
                         </div>
                         <div style={{ overflowX: 'auto' }}>
                             <table className="data-table">

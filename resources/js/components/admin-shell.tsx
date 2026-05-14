@@ -119,10 +119,24 @@ export default function AdminShell({ children }: AdminShellProps) {
     const [collapsed, setCollapsed] = useState(false);
     const [mobileOpen, setMobileOpen] = useState(false);
     const [lang, setLang] = useState<'kh' | 'en'>('kh');
-    const [dark, setDark] = useState(false);
+    const [dark, setDark] = useState(() => {
+        if (typeof window === 'undefined') {
+            return false;
+        }
+
+        const stored = window.localStorage.getItem('admin-theme');
+
+        if (stored) {
+            return stored === 'dark';
+        }
+
+        return window.matchMedia('(prefers-color-scheme: dark)').matches;
+    });
 
     useEffect(() => {
         document.querySelector('.admin-wrap')?.classList.toggle('dark', dark);
+        document.documentElement.classList.toggle('dark', dark);
+        window.localStorage.setItem('admin-theme', dark ? 'dark' : 'light');
     }, [dark]);
 
     const segments = url.split('/').filter(Boolean);

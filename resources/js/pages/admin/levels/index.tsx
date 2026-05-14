@@ -5,6 +5,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import AdminShell from '@/pages/admin/shell';
 import { Pagination } from '@/pages/admin/ui';
 import { router, useForm } from '@inertiajs/react';
+import { Edit3, Plus, Save, Trash2, X } from 'lucide-react';
 import { toast } from 'sonner';
 
 interface Level {
@@ -162,7 +163,7 @@ export default function LevelsPage({ levels }: LevelsPageProps) {
                         <div style={{ fontWeight: 800, fontSize: 18, color: '#1e293b' }}>Levels</div>
                         <div style={{ fontSize: 12, color: '#94a3b8' }}>{levels.length} level{levels.length !== 1 ? 's' : ''} total</div>
                     </div>
-                    <button onClick={openAdd} style={{ background: '#2563eb', color: 'white', border: 'none', borderRadius: 10, padding: '10px 20px', fontWeight: 700, fontSize: 13, cursor: 'pointer' }}>+ Add Level</button>
+                    <button onClick={openAdd} style={{ background: '#2563eb', color: 'white', border: 'none', borderRadius: 10, padding: '10px 20px', fontWeight: 700, fontSize: 13, cursor: 'pointer', display: 'inline-flex', alignItems: 'center', gap: 6 }}><Plus size={15} /> Add Level</button>
                 </div>
 
                 {/* Modal Dialog */}
@@ -201,9 +202,9 @@ export default function LevelsPage({ levels }: LevelsPageProps) {
                                 <label htmlFor="is_active" style={{ fontSize: 13, color: '#374151', fontWeight: 600, cursor: 'pointer' }}>Active (visible in student enrollment)</label>
                             </div>
                             <div style={{ display: 'flex', gap: 10, marginTop: 24 }}>
-                                <button type="button" onClick={closeModal} style={{ flex: 1, background: '#f1f5f9', color: '#64748b', border: 'none', borderRadius: 10, padding: '11px', fontWeight: 700, cursor: 'pointer' }}>Cancel</button>
-                                <button type="submit" disabled={processing} style={{ flex: 2, background: '#2563eb', color: 'white', border: 'none', borderRadius: 10, padding: '11px', fontWeight: 700, fontSize: 13, cursor: 'pointer' }}>
-                                    {processing ? 'Saving...' : editing ? 'Update Level' : 'Save Level'}
+                                <button type="button" onClick={closeModal} style={{ flex: 1, background: '#f1f5f9', color: '#64748b', border: 'none', borderRadius: 10, padding: '11px', fontWeight: 700, cursor: 'pointer', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: 6 }}><X size={15} /> Cancel</button>
+                                <button type="submit" disabled={processing} style={{ flex: 2, background: '#2563eb', color: 'white', border: 'none', borderRadius: 10, padding: '11px', fontWeight: 700, fontSize: 13, cursor: 'pointer', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: 6 }}>
+                                    <Save size={15} /> {processing ? 'Saving...' : editing ? 'Update Level' : 'Save Level'}
                                 </button>
                             </div>
                         </form>
@@ -282,8 +283,8 @@ export default function LevelsPage({ levels }: LevelsPageProps) {
                                             </span>
                                         </td>
                                         <td style={{ padding: '12px 16px', textAlign: 'right' }}>
-                                            <button onClick={() => openEdit(level)} style={{ background: '#eff6ff', color: '#2563eb', border: 'none', borderRadius: 8, padding: '6px 14px', fontWeight: 700, fontSize: 12, cursor: 'pointer', marginRight: 6 }}>Edit</button>
-                                            <button onClick={() => setDeleteTarget(level)} style={{ background: '#fef2f2', color: '#dc2626', border: 'none', borderRadius: 8, padding: '6px 14px', fontWeight: 700, fontSize: 12, cursor: 'pointer' }}>Delete</button>
+                                            <button onClick={() => openEdit(level)} style={{ background: '#eff6ff', color: '#2563eb', border: 'none', borderRadius: 8, padding: '6px 14px', fontWeight: 700, fontSize: 12, cursor: 'pointer', marginRight: 6, display: 'inline-flex', alignItems: 'center', gap: 5 }}><Edit3 size={13} /> Edit</button>
+                                            <button onClick={() => setDeleteTarget(level)} style={{ background: '#fef2f2', color: '#dc2626', border: 'none', borderRadius: 8, padding: '6px 14px', fontWeight: 700, fontSize: 12, cursor: 'pointer', display: 'inline-flex', alignItems: 'center', gap: 5 }}><Trash2 size={13} /> Delete</button>
                                         </td>
                                     </tr>
                                 ))}
@@ -315,8 +316,8 @@ export default function LevelsPage({ levels }: LevelsPageProps) {
                                 )}
                             </div>
                             <div style={{ display: 'flex', gap: 10 }}>
-                                <button onClick={() => setDeleteTarget(null)} style={{ flex: 1, background: '#f1f5f9', color: '#64748b', border: 'none', borderRadius: 10, padding: '10px', fontWeight: 700, cursor: 'pointer' }}>Cancel</button>
-                                <button onClick={confirmDelete} style={{ flex: 1, background: '#dc2626', color: 'white', border: 'none', borderRadius: 10, padding: '10px', fontWeight: 700, cursor: 'pointer' }}>Delete</button>
+                                <button onClick={() => setDeleteTarget(null)} style={{ flex: 1, background: '#f1f5f9', color: '#64748b', border: 'none', borderRadius: 10, padding: '10px', fontWeight: 700, cursor: 'pointer', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: 6 }}><X size={15} /> Cancel</button>
+                                <button onClick={confirmDelete} style={{ flex: 1, background: '#dc2626', color: 'white', border: 'none', borderRadius: 10, padding: '10px', fontWeight: 700, cursor: 'pointer', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: 6 }}><Trash2 size={15} /> Delete</button>
                             </div>
                         </div>
                     </div>

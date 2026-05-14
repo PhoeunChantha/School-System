@@ -18,6 +18,7 @@ use App\Http\Controllers\Backends\SchoolClassController;
 use App\Http\Controllers\Backends\SchoolSettingController;
 use App\Http\Controllers\Backends\StudentController;
 use App\Http\Controllers\Backends\TeacherController;
+use App\Http\Controllers\Backends\TeacherGradeController;
 use Illuminate\Support\Facades\Route;
 use Inertia\Inertia;
 use Laravel\Fortify\Features;
@@ -56,6 +57,8 @@ Route::prefix('admin')->name('admin.')->group(function () {
     Route::get('/teachers/export', [TeacherController::class, 'export'])->name('teachers.export');
     Route::get('/teachers/{teacher}/lesson-plans/create', [TeacherController::class, 'createLessonPlan'])->name('teachers.lesson-plans.create');
     Route::post('/teachers/{teacher}/lesson-plans', [TeacherController::class, 'storeLessonPlan'])->name('teachers.lesson-plans.store');
+    Route::get('/teachers/{teacher}/grades', [TeacherGradeController::class, 'index'])->name('teachers.grades');
+    Route::post('/teachers/{teacher}/grades', [TeacherGradeController::class, 'store'])->name('teachers.grades.store');
     Route::get('/teachers/{teacher}', [TeacherController::class, 'show'])->name('teachers.show');
     Route::post('/teachers', [TeacherController::class, 'store'])->name('teachers.store');
     Route::put('/teachers/{teacher}', [TeacherController::class, 'update'])->name('teachers.update');
@@ -93,6 +96,7 @@ Route::prefix('admin')->name('admin.')->group(function () {
     Route::put('/lesson-plans/{lessonPlan}', [LessonPlanController::class, 'update'])->name('lesson-plans.update');
     Route::delete('/lesson-plans/{lessonPlan}', [LessonPlanController::class, 'destroy'])->name('lesson-plans.destroy');
     Route::get('/homework-submissions', [HomeworkSubmissionController::class, 'index'])->name('homework-submissions');
+    Route::get('/homework-submissions/create', [HomeworkSubmissionController::class, 'create'])->name('homework-submissions.create');
     Route::post('/homework-submissions', [HomeworkSubmissionController::class, 'store'])->name('homework-submissions.store');
     Route::put('/homework-submissions/{homeworkSubmission}', [HomeworkSubmissionController::class, 'update'])->name('homework-submissions.update');
     Route::delete('/homework-submissions/{homeworkSubmission}', [HomeworkSubmissionController::class, 'destroy'])->name('homework-submissions.destroy');

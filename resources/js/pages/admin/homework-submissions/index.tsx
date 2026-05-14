@@ -1,4 +1,4 @@
-import { destroy, store, update } from '@/routes/admin/homework-submissions';
+import { create as createSubmission, destroy, store, update } from '@/routes/admin/homework-submissions';
 import { DatePicker } from '@/components/ui/date-picker';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import {
@@ -12,7 +12,7 @@ import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover
 import AdminShell from '@/pages/admin/shell';
 import { Avatar, Badge, KH, Pagination, PBar } from '@/pages/admin/ui';
 import { router, useForm } from '@inertiajs/react';
-import { Check, ChevronsUpDown, Edit3, Plus, Search, Trash2 } from 'lucide-react';
+import { Check, ChevronsUpDown, Edit3, FileText, Plus, Save, Search, Trash2, Upload, X } from 'lucide-react';
 import { FormEvent, useEffect, useMemo, useState } from 'react';
 import type { CSSProperties, ReactNode } from 'react';
 import { toast } from 'sonner';
@@ -45,9 +45,12 @@ interface SubmissionItem {
     studentId: number;
     studentNameKh: string;
     studentNameEn: string;
+    studentPhoto: string | null;
     level: string;
     submittedAt: string;
     score: number | null;
+    attachmentName: string;
+    attachmentUrl: string;
     status: HomeworkSubmissionStatus;
     feedback: string;
 }
@@ -331,6 +334,10 @@ export default function HomeworkSubmissionsPage({ submissions, assignments, stud
                         <Plus size={16} />
                         Add Submission
                     </button>
+                    <button onClick={() => router.visit(createSubmission.url())} style={{ ...primaryButton, background: '#16a34a' }}>
+                        <Upload size={16} />
+                        Student Submit
+                    </button>
                 </div>
 
                 <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill,minmax(150px,1fr))', gap: 12 }}>
@@ -397,9 +404,9 @@ export default function HomeworkSubmissionsPage({ submissions, assignments, stud
                             <button
                                 type="button"
                                 onClick={() => setSubmittedDate('')}
-                                style={{ background: '#f8fafc', color: '#64748b', border: '1px solid #e2e8f0', borderRadius: 8, padding: '6px 10px', fontSize: 12, fontWeight: 800, cursor: 'pointer' }}
+                                style={{ background: '#f8fafc', color: '#64748b', border: '1px solid #e2e8f0', borderRadius: 8, padding: '6px 10px', fontSize: 12, fontWeight: 800, cursor: 'pointer', display: 'inline-flex', alignItems: 'center', gap: 5 }}
                             >
-                                Clear date
+                                <X size={13} /> Clear date
                             </button>
                         )}
 
@@ -418,6 +425,7 @@ export default function HomeworkSubmissionsPage({ submissions, assignments, stud
                                 <th>Student</th>
                                 <th>Homework</th>
                                 <th>Submitted</th>
+                                <th>File</th>
                                 <th>Score</th>
                                 <th>Status</th>
                                 <th>Actions</th>
@@ -426,7 +434,7 @@ export default function HomeworkSubmissionsPage({ submissions, assignments, stud
                         <tbody>
                             {paginated.length === 0 ? (
                                 <tr>
-                                    <td colSpan={6} style={{ padding: '38px 24px', textAlign: 'center', color: '#64748b', fontSize: 14, fontWeight: 700 }}>
+                                    <td colSpan={7} style={{ padding: '38px 24px', textAlign: 'center', color: '#64748b', fontSize: 14, fontWeight: 700 }}>
                                         {search ? <>No homework submissions found for <strong>"{search}"</strong></> : 'No homework submissions found'}
                                     </td>
                                 </tr>
@@ -437,7 +445,7 @@ export default function HomeworkSubmissionsPage({ submissions, assignments, stud
                                     <tr key={submission.id}>
                                         <td>
                                             <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-                                                <Avatar name={submission.studentNameEn} size={34} />
+                                                <Avatar name={submission.studentNameEn} src={submission.studentPhoto} size={34} />
                                                 <div>
                                                     <KH style={{ fontWeight: 800, fontSize: 13, display: 'block' }}>{submission.studentNameKh}</KH>
                                                     <div style={{ fontSize: 11, color: '#94a3b8' }}>{submission.studentNameEn}</div>
@@ -449,6 +457,15 @@ export default function HomeworkSubmissionsPage({ submissions, assignments, stud
                                             <div style={{ fontSize: 11, color: '#94a3b8' }}>{submission.className || submission.dueOn}</div>
                                         </td>
                                         <td style={{ fontSize: 12, fontWeight: 800, color: '#475569' }}>{submission.submittedAt || '-'}</td>
+                                        <td>
+                                            {submission.attachmentUrl ? (
+                                                <a href={submission.attachmentUrl} target="_blank" rel="noreferrer" style={{ color: '#2563eb', fontSize: 12, fontWeight: 800, textDecoration: 'none', display: 'inline-flex', alignItems: 'center', gap: 5 }}>
+                                                    <FileText size={14} /> {submission.attachmentName || 'File'}
+                                                </a>
+                                            ) : (
+                                                <span style={{ color: '#94a3b8', fontSize: 12 }}>No file</span>
+                                            )}
+                                        </td>
                                         <td>
                                             <div style={{ display: 'flex', alignItems: 'center', gap: 8, minWidth: 140 }}>
                                                 <PBar value={percent} color={percent >= 75 ? 'green' : percent >= 50 ? 'blue' : 'red'} />
@@ -578,9 +595,9 @@ export default function HomeworkSubmissionsPage({ submissions, assignments, stud
                             </div>
 
                             <div style={{ marginTop: 'auto', padding: 24, borderTop: '1px solid #e2e8f0', display: 'flex', gap: 10 }}>
-                                <button type="button" onClick={closeDrawer} style={{ flex: 1, background: '#f1f5f9', color: '#64748b', border: 'none', borderRadius: 10, padding: '12px', fontWeight: 800, cursor: 'pointer' }}>Cancel</button>
-                                <button disabled={processing} type="submit" style={{ flex: 2, background: processing ? '#93c5fd' : '#2563eb', color: 'white', border: 'none', borderRadius: 10, padding: '12px', fontWeight: 800, cursor: processing ? 'default' : 'pointer' }}>
-                                    {drawerMode === 'create' ? 'Save Submission' : 'Save Changes'}
+                                <button type="button" onClick={closeDrawer} style={{ flex: 1, background: '#f1f5f9', color: '#64748b', border: 'none', borderRadius: 10, padding: '12px', fontWeight: 800, cursor: 'pointer', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: 6 }}><X size={16} /> Cancel</button>
+                                <button disabled={processing} type="submit" style={{ flex: 2, background: processing ? '#93c5fd' : '#2563eb', color: 'white', border: 'none', borderRadius: 10, padding: '12px', fontWeight: 800, cursor: processing ? 'default' : 'pointer', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: 6 }}>
+                                    <Save size={16} /> {drawerMode === 'create' ? 'Save Submission' : 'Save Changes'}
                                 </button>
                             </div>
                         </form>
@@ -596,8 +613,8 @@ export default function HomeworkSubmissionsPage({ submissions, assignments, stud
                             <div style={{ fontSize: 13, color: '#64748b', lineHeight: 1.5 }}>Remove submission for <strong>{deleteTarget.studentNameEn}</strong>?</div>
                         </div>
                         <div style={{ display: 'flex', gap: 10 }}>
-                            <button onClick={() => setDeleteTarget(null)} style={{ flex: 1, background: '#f1f5f9', color: '#64748b', border: 'none', borderRadius: 10, padding: '11px', fontWeight: 700, cursor: 'pointer', fontSize: 14 }}>Cancel</button>
-                            <button onClick={confirmDelete} style={{ flex: 1, background: '#ef4444', color: 'white', border: 'none', borderRadius: 10, padding: '11px', fontWeight: 700, cursor: 'pointer', fontSize: 14 }}>Delete</button>
+                            <button onClick={() => setDeleteTarget(null)} style={{ flex: 1, background: '#f1f5f9', color: '#64748b', border: 'none', borderRadius: 10, padding: '11px', fontWeight: 700, cursor: 'pointer', fontSize: 14, display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: 6 }}><X size={15} /> Cancel</button>
+                            <button onClick={confirmDelete} style={{ flex: 1, background: '#ef4444', color: 'white', border: 'none', borderRadius: 10, padding: '11px', fontWeight: 700, cursor: 'pointer', fontSize: 14, display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: 6 }}><Trash2 size={15} /> Delete</button>
                         </div>
                     </div>
                 </div>

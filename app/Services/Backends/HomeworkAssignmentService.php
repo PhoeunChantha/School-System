@@ -4,7 +4,9 @@ namespace App\Services\Backends;
 
 use App\Models\HomeworkAssignment;
 use App\Models\SchoolClass;
+use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Str;
 
 class HomeworkAssignmentService
 {
@@ -48,6 +50,8 @@ class HomeworkAssignmentService
                 'title_kh' => $homeworkAssignment->title_kh,
                 'title_en' => $homeworkAssignment->title_en ?? '',
                 'instructions' => $homeworkAssignment->instructions ?? '',
+                'attachment_name' => $homeworkAssignment->attachment_name ?? '',
+                'attachment_url' => $homeworkAssignment->attachment_path ? asset($homeworkAssignment->attachment_path) : '',
                 'points' => $homeworkAssignment->points,
                 'due_on' => $homeworkAssignment->due_on?->format('Y-m-d') ?? '',
                 'academic_year' => $homeworkAssignment->academic_year ?? '',
@@ -62,8 +66,11 @@ class HomeworkAssignmentService
      */
     public function create(array $data, ?int $userId): HomeworkAssignment
     {
+        $attachment = $this->storeAttachment($data['attachment_file'] ?? null);
+
         return DB::transaction(fn (): HomeworkAssignment => HomeworkAssignment::create([
             ...$this->normalizedData($data),
+            ...$attachment,
             'assigned_by' => $userId,
             'updated_by' => $userId,
         ]));
@@ -75,8 +82,16 @@ class HomeworkAssignmentService
     public function update(HomeworkAssignment $homeworkAssignment, array $data, ?int $userId): HomeworkAssignment
     {
         return DB::transaction(function () use ($homeworkAssignment, $data, $userId): HomeworkAssignment {
+            $attachment = [];
+
+            if (($data['attachment_file'] ?? null) instanceof UploadedFile) {
+                $this->deleteAttachment($homeworkAssignment->attachment_path);
+                $attachment = $this->storeAttachment($data['attachment_file']);
+            }
+
             $homeworkAssignment->update([
                 ...$this->normalizedData($data),
+                ...$attachment,
                 'updated_by' => $userId,
             ]);
 
@@ -121,6 +136,8 @@ class HomeworkAssignmentService
             'className' => $homeworkAssignment->schoolClass?->name ?? 'No class',
             'dueOn' => $homeworkAssignment->due_on?->format('Y-m-d') ?? '',
             'points' => $homeworkAssignment->points,
+            'attachmentName' => $homeworkAssignment->attachment_name ?? '',
+            'attachmentUrl' => $homeworkAssignment->attachment_path ? asset($homeworkAssignment->attachment_path) : '',
             'status' => $homeworkAssignment->status,
             'submitted' => $homeworkAssignment->submitted_count ?? 0,
             'total' => $total,
@@ -144,5 +161,36 @@ class HomeworkAssignmentService
             'academic_year' => $data['academic_year'] ?? null,
             'status' => $data['status'],
         ];
+    }
+
+    /**
+     * @return array{attachment_path?: string|null, attachment_name?: string|null}
+     */
+    private function storeAttachment(?UploadedFile $file): array
+    {
+        if (! $file) {
+            return [];
+        }
+
+        $filename = Str::uuid().'.'.$file->getClientOriginalExtension();
+        $destination = public_path('uploads/homework');
+
+        if (! is_dir($destination)) {
+            mkdir($destination, 0755, true);
+        }
+
+        $file->move($destination, $filename);
+
+        return [
+            'attachment_path' => 'uploads/homework/'.$filename,
+            'attachment_name' => $file->getClientOriginalName(),
+        ];
+    }
+
+    private function deleteAttachment(?string $path): void
+    {
+        if ($path && file_exists(public_path($path))) {
+            unlink(public_path($path));
+        }
     }
 }

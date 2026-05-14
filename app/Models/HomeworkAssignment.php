@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use Database\Factories\HomeworkAssignmentFactory;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
@@ -10,7 +11,7 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class HomeworkAssignment extends Model
 {
-    /** @use HasFactory<\Database\Factories\HomeworkAssignmentFactory> */
+    /** @use HasFactory<HomeworkAssignmentFactory> */
     use HasFactory;
 
     protected $fillable = [
@@ -18,6 +19,8 @@ class HomeworkAssignment extends Model
         'title_kh',
         'title_en',
         'instructions',
+        'attachment_path',
+        'attachment_name',
         'points',
         'due_on',
         'academic_year',

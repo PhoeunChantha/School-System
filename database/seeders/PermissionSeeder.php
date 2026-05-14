@@ -2,10 +2,8 @@
 
 namespace Database\Seeders;
 
-use App\Models\User;
 use Illuminate\Database\Seeder;
 use Spatie\Permission\Models\Permission;
-use Spatie\Permission\Models\Role;
 use Spatie\Permission\PermissionRegistrar;
 
 class PermissionSeeder extends Seeder
@@ -16,11 +14,13 @@ class PermissionSeeder extends Seeder
     private array $features = [
         'dashboard' => ['view'],
         'levels' => ['view', 'create', 'update', 'delete'],
-        'students' => ['view', 'create', 'update', 'delete'],
-        'teachers' => ['view', 'create', 'update', 'delete'],
+        'students' => ['view', 'show', 'create', 'update', 'delete', 'import', 'export', 'download-layout'],
+        'teachers' => ['view', 'show', 'create', 'update', 'delete', 'import', 'export', 'download-layout'],
+        'teacher-lesson-plans' => ['create'],
+        'teacher-grades' => ['view', 'update'],
         'classes' => ['view', 'create', 'update', 'delete'],
-        'attendance' => ['view', 'create', 'update', 'delete'],
-        'grades' => ['view', 'create', 'update', 'delete'],
+        'attendance' => ['view', 'mark', 'create', 'update', 'delete', 'import', 'export', 'download-layout'],
+        'grades' => ['view', 'create', 'update', 'delete', 'import', 'export', 'download-layout'],
         'homework' => ['view', 'create', 'update', 'delete'],
         'homework-submissions' => ['view', 'create', 'update', 'delete'],
         'lesson-plans' => ['view', 'create', 'update', 'delete'],
@@ -53,19 +53,6 @@ class PermissionSeeder extends Seeder
             'name' => $permission,
             'guard_name' => 'web',
         ]));
-
-        $superAdmin = Role::firstOrCreate([
-            'name' => 'super-admin',
-            'guard_name' => 'web',
-        ]);
-
-        $superAdmin->syncPermissions($permissions->all());
-
-        $admin = User::query()->where('email', 'admin@frania.edu.kh')->first();
-
-        if ($admin instanceof User) {
-            $admin->assignRole($superAdmin);
-        }
 
         app(PermissionRegistrar::class)->forgetCachedPermissions();
     }

@@ -6,7 +6,9 @@ use App\Models\HomeworkAssignment;
 use App\Models\HomeworkSubmission;
 use App\Models\Student;
 use Illuminate\Database\QueryException;
+use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Str;
 use Illuminate\Validation\ValidationException;
 
 class HomeworkSubmissionService
@@ -20,7 +22,7 @@ class HomeworkSubmissionService
             ->with([
                 'homeworkAssignment:id,title_kh,title_en,points,due_on,school_class_id',
                 'homeworkAssignment.schoolClass:id,name',
-                'student:id,name_kh,name_en,level_id,school_class_id',
+                'student:id,name_kh,name_en,profile_photo,level_id,school_class_id',
                 'student.level:id,name',
                 'student.schoolClass:id,name',
             ])
@@ -48,8 +50,11 @@ class HomeworkSubmissionService
     public function create(array $data, ?int $userId): HomeworkSubmission
     {
         try {
+            $attachment = $this->storeAttachment($data['attachment_file'] ?? null);
+
             return DB::transaction(fn (): HomeworkSubmission => HomeworkSubmission::create([
                 ...$this->normalizedData($data),
+                ...$attachment,
                 'created_by' => $userId,
                 'updated_by' => $userId,
             ]));
@@ -71,8 +76,16 @@ class HomeworkSubmissionService
     {
         try {
             return DB::transaction(function () use ($homeworkSubmission, $data, $userId): HomeworkSubmission {
+                $attachment = [];
+
+                if (($data['attachment_file'] ?? null) instanceof UploadedFile) {
+                    $this->deleteAttachment($homeworkSubmission->attachment_path);
+                    $attachment = $this->storeAttachment($data['attachment_file']);
+                }
+
                 $homeworkSubmission->update([
                     ...$this->normalizedData($data),
+                    ...$attachment,
                     'updated_by' => $userId,
                 ]);
 
@@ -92,6 +105,17 @@ class HomeworkSubmissionService
     public function delete(HomeworkSubmission $homeworkSubmission): void
     {
         DB::transaction(fn (): ?bool => $homeworkSubmission->delete());
+    }
+
+    /**
+     * @return array{assignments: mixed, students: mixed}
+     */
+    public function createData(): array
+    {
+        return [
+            'assignments' => $this->assignmentOptions(),
+            'students' => $this->studentOptions(),
+        ];
     }
 
     /**
@@ -148,9 +172,12 @@ class HomeworkSubmissionService
             'studentId' => $submission->student_id,
             'studentNameKh' => $submission->student?->name_kh ?? '',
             'studentNameEn' => $submission->student?->name_en ?? 'Unknown student',
+            'studentPhoto' => $submission->student?->profile_photo ? asset($submission->student->profile_photo) : null,
             'level' => $submission->student?->level?->name ?? '',
             'submittedAt' => $submission->submitted_at?->format('Y-m-d H:i') ?? '',
             'score' => $submission->score,
+            'attachmentName' => $submission->attachment_name ?? '',
+            'attachmentUrl' => $submission->attachment_path ? asset($submission->attachment_path) : '',
             'status' => $submission->status,
             'feedback' => $submission->feedback ?? '',
         ];
@@ -170,5 +197,36 @@ class HomeworkSubmissionService
             'status' => $data['status'],
             'feedback' => $data['feedback'] ?? null,
         ];
+    }
+
+    /**
+     * @return array{attachment_path?: string|null, attachment_name?: string|null}
+     */
+    private function storeAttachment(?UploadedFile $file): array
+    {
+        if (! $file) {
+            return [];
+        }
+
+        $filename = Str::uuid().'.'.$file->getClientOriginalExtension();
+        $destination = public_path('uploads/homework-submissions');
+
+        if (! is_dir($destination)) {
+            mkdir($destination, 0755, true);
+        }
+
+        $file->move($destination, $filename);
+
+        return [
+            'attachment_path' => 'uploads/homework-submissions/'.$filename,
+            'attachment_name' => $file->getClientOriginalName(),
+        ];
+    }
+
+    private function deleteAttachment(?string $path): void
+    {
+        if ($path && file_exists(public_path($path))) {
+            unlink(public_path($path));
+        }
     }
 }

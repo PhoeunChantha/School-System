@@ -1,12 +1,14 @@
 import { FormEvent, useEffect, useMemo, useRef, useState } from 'react';
+import { index as teacherGrades } from '@/actions/App/Http/Controllers/Backends/TeacherGradeController';
 import { lessonPlans as lessonPlanIndex } from '@/routes/admin';
 import { create as createTeacherLessonPlan } from '@/routes/admin/teachers/lesson-plans';
 import { destroy, downloadLayout as downloadTeacherLayout, exportMethod as exportTeachers, importMethod as importTeachers, show as showTeacher, store, update } from '@/actions/App/Http/Controllers/Backends/TeacherController';
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import AdminShell from '@/pages/admin/shell';
 import { KH, Avatar, Badge, Pagination } from '@/pages/admin/ui';
 import { Link, router, useForm } from '@inertiajs/react';
-import { ArrowLeft, Camera, Check, Download, Edit3, Eye, FileDown, GraduationCap, Phone, School, Trash2, Upload, User, X } from 'lucide-react';
+import { ArrowLeft, Camera, Check, ChevronDown, Download, Edit3, Eye, FileDown, GraduationCap, Phone, Save, School, Trash2, Upload, User, X } from 'lucide-react';
 import { toast } from 'sonner';
 
 type View = 'list' | 'add' | 'edit';
@@ -249,18 +251,37 @@ export default function TeachersPage({ teachers }: TeachersPageProps) {
                                         </td>
                                         <td><Badge type={t.status === 'active' ? 'green' : 'gray'}>{t.status}</Badge></td>
                                         <td>
-                                            <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
-                                                <Link href={createTeacherLessonPlan.url(t.id)} style={{ background: '#f8fafc', color: '#64748b', border: '1px solid #e2e8f0', borderRadius: 7, padding: '5px 9px', fontWeight: 800, fontSize: 11, textDecoration: 'none', whiteSpace: 'nowrap' }}>Plan</Link>
-                                                <Link href={showTeacher.url(t.id)} style={{ background: '#f0fdf4', color: '#16a34a', border: '1px solid #bbf7d0', borderRadius: 7, padding: '5px 9px', fontWeight: 800, fontSize: 11, textDecoration: 'none', display: 'inline-flex', alignItems: 'center', gap: 4 }}>
-                                                    <Eye size={13} /> View
-                                                </Link>
-                                                <button onClick={() => handleEdit(t)} style={{ background: '#eff6ff', color: '#2563eb', border: '1px solid #bfdbfe', borderRadius: 7, padding: '5px 9px', cursor: 'pointer', fontWeight: 800, fontSize: 11, display: 'inline-flex', alignItems: 'center', gap: 4 }}>
-                                                    <Edit3 size={13} /> Edit
-                                                </button>
-                                                <button onClick={() => handleDelete(t)} style={{ background: '#fff1f2', color: '#ef4444', border: '1px solid #fecaca', borderRadius: 7, padding: '5px 9px', cursor: 'pointer', fontWeight: 800, fontSize: 11, display: 'inline-flex', alignItems: 'center', gap: 4 }}>
-                                                    <Trash2 size={13} /> Delete
-                                                </button>
-                                            </div>
+                                            <DropdownMenu>
+                                                <DropdownMenuTrigger asChild>
+                                                    <button type="button" style={{ background: '#f8fafc', color: '#334155', border: '1px solid #dbe3ef', borderRadius: 8, padding: '7px 10px', cursor: 'pointer', fontWeight: 800, fontSize: 12, display: 'inline-flex', alignItems: 'center', gap: 6, whiteSpace: 'nowrap' }}>
+                                                        Actions <ChevronDown size={14} />
+                                                    </button>
+                                                </DropdownMenuTrigger>
+                                                <DropdownMenuContent align="end" className="w-48">
+                                                    <DropdownMenuItem asChild>
+                                                        <Link href={createTeacherLessonPlan.url(t.id)} className="flex items-center gap-2">
+                                                            <School size={14} /> Plan
+                                                        </Link>
+                                                    </DropdownMenuItem>
+                                                    <DropdownMenuItem asChild>
+                                                        <Link href={teacherGrades.url(t.id)} className="flex items-center gap-2">
+                                                            <Save size={14} /> Score management
+                                                        </Link>
+                                                    </DropdownMenuItem>
+                                                    <DropdownMenuItem asChild>
+                                                        <Link href={showTeacher.url(t.id)} className="flex items-center gap-2">
+                                                            <Eye size={14} /> View
+                                                        </Link>
+                                                    </DropdownMenuItem>
+                                                    <DropdownMenuItem onSelect={() => handleEdit(t)}>
+                                                        <Edit3 size={14} /> Edit
+                                                    </DropdownMenuItem>
+                                                    <DropdownMenuSeparator />
+                                                    <DropdownMenuItem onSelect={() => handleDelete(t)} className="text-red-600 focus:text-red-600">
+                                                        <Trash2 size={14} /> Delete
+                                                    </DropdownMenuItem>
+                                                </DropdownMenuContent>
+                                            </DropdownMenu>
                                         </td>
                                     </tr>
                                 ))}

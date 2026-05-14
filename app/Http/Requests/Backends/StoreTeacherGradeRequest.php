@@ -5,9 +5,8 @@ namespace App\Http\Requests\Backends;
 use Illuminate\Contracts\Validation\ValidationRule;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
-use Illuminate\Validation\Rules\File;
 
-class UpdateHomeworkSubmissionRequest extends FormRequest
+class StoreTeacherGradeRequest extends FormRequest
 {
     /**
      * Determine if the user is authorized to make this request.
@@ -25,13 +24,13 @@ class UpdateHomeworkSubmissionRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'homework_assignment_id' => ['required', 'integer', Rule::exists('homework_assignments', 'id')],
+            'grade_period_id' => ['required', 'integer', Rule::exists('grade_periods', 'id')],
             'student_id' => ['required', 'integer', Rule::exists('students', 'id')->whereNull('deleted_at')],
-            'submitted_at' => ['nullable', 'date'],
-            'score' => ['nullable', 'integer', 'min:0', 'max:1000'],
-            'attachment_file' => ['nullable', File::types(['pdf', 'doc', 'docx', 'xls', 'xlsx', 'ppt', 'pptx', 'jpg', 'jpeg', 'png'])->max(10 * 1024)],
-            'status' => ['required', 'string', Rule::in(['pending', 'submitted', 'graded', 'missing'])],
-            'feedback' => ['nullable', 'string', 'max:3000'],
+            'school_class_id' => ['required', 'integer', Rule::exists('school_classes', 'id')->whereNull('deleted_at')],
+            'speaking' => ['required', 'integer', 'min:0', 'max:100'],
+            'listening' => ['required', 'integer', 'min:0', 'max:100'],
+            'reading' => ['required', 'integer', 'min:0', 'max:100'],
+            'writing' => ['required', 'integer', 'min:0', 'max:100'],
         ];
     }
 }

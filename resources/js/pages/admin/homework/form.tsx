@@ -1,10 +1,11 @@
-import { FormEvent } from 'react';
+import { FormEvent, useRef } from 'react';
 import { index as homeworkIndex, store, update } from '@/actions/App/Http/Controllers/Backends/HomeworkAssignmentController';
 import AdminShell from '@/pages/admin/shell';
 import { Link, useForm } from '@inertiajs/react';
 import { toast } from 'sonner';
 import { Select, SelectTrigger, SelectContent, SelectItem, SelectValue } from '@/components/ui/select';
 import { DatePicker } from '@/components/ui/date-picker';
+import { FileText, Upload } from 'lucide-react';
 
 export interface HomeworkClassOption {
     id: number;
@@ -19,10 +20,14 @@ export interface HomeworkFormData {
     title_kh: string;
     title_en: string;
     instructions: string;
+    attachment_file: File | null;
+    attachment_name?: string;
+    attachment_url?: string;
     points: string | number;
     due_on: string;
     academic_year: string;
     status: 'assigned' | 'draft' | 'closed';
+    _method?: 'put';
 }
 
 interface HomeworkFormPageProps {
@@ -54,11 +59,15 @@ const labelStyle = {
 
 export default function HomeworkFormPage({ mode, homework, classes }: HomeworkFormPageProps) {
     const isEdit = mode === 'edit';
-    const { data, setData, post, put, processing, errors } = useForm<HomeworkFormData>({
+    const fileInputRef = useRef<HTMLInputElement>(null);
+    const { data, setData, post, processing, errors, transform } = useForm<HomeworkFormData>({
         school_class_id: homework?.school_class_id ?? classes[0]?.id ?? null,
         title_kh: homework?.title_kh ?? '',
         title_en: homework?.title_en ?? '',
         instructions: homework?.instructions ?? '',
+        attachment_file: null,
+        attachment_name: homework?.attachment_name ?? '',
+        attachment_url: homework?.attachment_url ?? '',
         points: homework?.points ?? 100,
         due_on: homework?.due_on ?? '',
         academic_year: homework?.academic_year ?? new Date().getFullYear().toString(),
@@ -68,13 +77,19 @@ export default function HomeworkFormPage({ mode, homework, classes }: HomeworkFo
     const submit = (event: FormEvent<HTMLFormElement>) => {
         event.preventDefault();
 
+        transform(formData => ({
+            ...formData,
+            ...(isEdit ? { _method: 'put' as const } : {}),
+        }));
+
         const options = {
             preserveScroll: true,
+            forceFormData: true,
             onSuccess: () => toast.success(isEdit ? 'Homework updated.' : 'Homework assigned.'),
         };
 
         if (isEdit && homework?.id) {
-            put(update.url(homework.id), options);
+            post(update.url(homework.id), options);
             return;
         }
 
@@ -135,7 +150,7 @@ export default function HomeworkFormPage({ mode, homework, classes }: HomeworkFo
                     </div>
 
                     <div>
-                        <label style={labelStyle}>Points *</label>
+                        <label style={labelStyle}>Score *</label>
                         <input type="number" min={1} style={fieldStyle} value={data.points} onChange={event => setData('points', event.target.value)} />
                         {errors.points && <div className="field-error">{errors.points}</div>}
                     </div>
@@ -165,6 +180,40 @@ export default function HomeworkFormPage({ mode, homework, classes }: HomeworkFo
                         <label style={labelStyle}>Instructions</label>
                         <textarea style={{ ...fieldStyle, minHeight: 130, resize: 'vertical' }} rows={5} value={data.instructions} onChange={event => setData('instructions', event.target.value)} placeholder="Additional instructions..." />
                         {errors.instructions && <div className="field-error">{errors.instructions}</div>}
+                    </div>
+
+                    <div style={{ gridColumn: '1 / -1' }}>
+                        <label style={labelStyle}>Homework File</label>
+                        <button
+                            type="button"
+                            onClick={() => fileInputRef.current?.click()}
+                            style={{ width: '100%', minHeight: 64, background: '#f8fafc', border: '1.5px dashed #cbd5e1', borderRadius: 12, padding: '14px 16px', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 12, textAlign: 'left' }}
+                        >
+                            <span style={{ width: 38, height: 38, borderRadius: 10, background: '#eff6ff', color: '#2563eb', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                                {data.attachment_file || data.attachment_name ? <FileText size={18} /> : <Upload size={18} />}
+                            </span>
+                            <span style={{ minWidth: 0, flex: 1 }}>
+                                <span style={{ display: 'block', fontSize: 13, fontWeight: 800, color: '#1e293b', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                                    {data.attachment_file?.name || data.attachment_name || 'Upload homework file'}
+                                </span>
+                                <span style={{ display: 'block', fontSize: 11, color: '#94a3b8', marginTop: 2 }}>
+                                    PDF, Word, Excel, PowerPoint, JPG, or PNG up to 10MB
+                                </span>
+                            </span>
+                        </button>
+                        <input
+                            ref={fileInputRef}
+                            type="file"
+                            accept=".pdf,.doc,.docx,.xls,.xlsx,.ppt,.pptx,.jpg,.jpeg,.png,application/pdf,application/msword,application/vnd.openxmlformats-officedocument.wordprocessingml.document,image/jpeg,image/png"
+                            style={{ display: 'none' }}
+                            onChange={event => setData('attachment_file', event.target.files?.[0] ?? null)}
+                        />
+                        {data.attachment_url && !data.attachment_file && (
+                            <a href={data.attachment_url} target="_blank" rel="noreferrer" style={{ display: 'inline-flex', marginTop: 8, fontSize: 12, fontWeight: 700, color: '#2563eb', textDecoration: 'none' }}>
+                                View current file
+                            </a>
+                        )}
+                        {errors.attachment_file && <div className="field-error">{errors.attachment_file}</div>}
                     </div>
 
                     <div style={{ gridColumn: '1 / -1', display: 'flex', gap: 10, justifyContent: 'flex-end', paddingTop: 8 }}>

@@ -31,7 +31,8 @@ class DatabaseSeeder extends Seeder
         );
 
         $this->call([
-            PermissionSeeder::class,   // 0 — roles + permissions
+            PermissionSeeder::class,   // 0 — feature action permissions
+            RoleSeeder::class,         // 0.1 — admin, teacher, student roles
             LevelSeeder::class,        // 1 — no dependencies
             TeacherSeeder::class,      // 2 — no dependencies
             SchoolClassSeeder::class,  // 3 — needs levels + teachers
