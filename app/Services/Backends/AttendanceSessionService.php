@@ -52,9 +52,11 @@ class AttendanceSessionService
                 ->get(['id', 'name'])
                 ->map(fn (SchoolClass $schoolClass): array => [
                     'id' => $schoolClass->id,
+                    'routeKey' => $schoolClass->routeKey(),
                     'name' => $schoolClass->name,
                     'students' => $schoolClass->students->map(fn ($student): array => [
                         'id' => $student->id,
+                        'routeKey' => $student->routeKey(),
                         'nameKh' => $student->name_kh,
                         'nameEn' => $student->name_en,
                         'province' => $student->province ?? '',
@@ -254,6 +256,7 @@ class AttendanceSessionService
 
         return [
             'id' => $session->id,
+            'routeKey' => $session->routeKey(),
             'schoolClassId' => $session->school_class_id,
             'className' => $session->schoolClass?->name ?? '',
             'attendanceDate' => $session->attendance_date?->format('Y-m-d') ?? '',

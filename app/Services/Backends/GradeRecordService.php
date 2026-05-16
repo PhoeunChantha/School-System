@@ -219,6 +219,7 @@ class GradeRecordService
     {
         return [
             'id' => $gradeRecord->id,
+            'routeKey' => $gradeRecord->routeKey(),
             'gradePeriodId' => $gradeRecord->grade_period_id,
             'periodName' => $gradeRecord->gradePeriod?->name ?? '',
             'studentId' => $gradeRecord->student_id,

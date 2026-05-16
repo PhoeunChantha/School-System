@@ -1,4 +1,4 @@
-import { index as submissionsIndex, store } from '@/actions/App/Http/Controllers/Backends/HomeworkSubmissionController';
+﻿import { index as submissionsIndex, store } from '@/actions/App/Http/Controllers/Backends/HomeworkSubmissionController';
 import AdminShell from '@/pages/admin/shell';
 import { Link, useForm } from '@inertiajs/react';
 import { Check, ChevronsUpDown, FileText, Search, Upload } from 'lucide-react';
@@ -8,6 +8,7 @@ import { toast } from 'sonner';
 
 interface HomeworkAssignmentOption {
     id: number;
+    routeKey?: string;
     titleKh: string;
     titleEn: string;
     className: string;
@@ -17,6 +18,7 @@ interface HomeworkAssignmentOption {
 
 interface StudentOption {
     id: number;
+    routeKey?: string;
     nameKh: string;
     nameEn: string;
     level: string;
@@ -272,3 +274,6 @@ function PickerOption({ selected, onClick, children }: { selected: boolean; onCl
         </button>
     );
 }
+
+
+

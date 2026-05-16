@@ -1,4 +1,4 @@
-import HomeworkFormPage, { HomeworkClassOption, HomeworkFormData } from './form';
+﻿import HomeworkFormPage, { HomeworkClassOption, HomeworkFormData } from './form';
 
 interface EditHomeworkPageProps {
     homework: HomeworkFormData;
@@ -8,3 +8,6 @@ interface EditHomeworkPageProps {
 export default function EditHomeworkPage({ homework, classes }: EditHomeworkPageProps) {
     return <HomeworkFormPage mode="edit" homework={homework} classes={classes} />;
 }
+
+
+

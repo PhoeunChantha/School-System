@@ -2,6 +2,8 @@
 
 namespace App\Models;
 
+use App\Models\Concerns\HasEncryptedRouteKey;
+use Database\Factories\AttendanceSessionFactory;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -9,8 +11,8 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class AttendanceSession extends Model
 {
-    /** @use HasFactory<\Database\Factories\AttendanceSessionFactory> */
-    use HasFactory;
+    /** @use HasFactory<AttendanceSessionFactory> */
+    use HasEncryptedRouteKey, HasFactory;
 
     protected $fillable = [
         'school_class_id',

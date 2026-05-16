@@ -33,6 +33,7 @@ class LessonPlanService
                 ->get(['id', 'name_en', 'profile_photo'])
                 ->map(fn (Teacher $teacher): array => [
                     'id' => $teacher->id,
+                    'routeKey' => $teacher->routeKey(),
                     'name' => $teacher->name_en,
                     'photo' => $teacher->profile_photo ? asset($teacher->profile_photo) : null,
                 ]),
@@ -43,6 +44,7 @@ class LessonPlanService
                 ->get(['id', 'teacher_id', 'name', 'room', 'starts_at', 'ends_at'])
                 ->map(fn (SchoolClass $schoolClass): array => [
                     'id' => $schoolClass->id,
+                    'routeKey' => $schoolClass->routeKey(),
                     'teacherId' => $schoolClass->teacher_id,
                     'name' => $schoolClass->name,
                     'teacher' => $schoolClass->teacher?->name_en ?? 'No teacher',
@@ -105,6 +107,7 @@ class LessonPlanService
     {
         return [
             'id' => $lessonPlan->id,
+            'routeKey' => $lessonPlan->routeKey(),
             'teacherId' => $lessonPlan->teacher_id,
             'teacher' => $lessonPlan->teacher?->name_en ?? 'No teacher',
             'teacherPhoto' => $lessonPlan->teacher?->profile_photo ? asset($lessonPlan->teacher->profile_photo) : null,

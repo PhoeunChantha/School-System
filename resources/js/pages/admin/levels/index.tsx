@@ -1,4 +1,4 @@
-import { FormEvent, useEffect, useMemo, useState } from 'react';
+﻿import { FormEvent, useEffect, useMemo, useState } from 'react';
 import { destroy, store, update } from '@/actions/App/Http/Controllers/Backends/LevelController';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
@@ -10,6 +10,7 @@ import { toast } from 'sonner';
 
 interface Level {
     id: number;
+    routeKey?: string;
     name: string;
     monthlyFee: number;
     sortOrder: number;
@@ -100,7 +101,7 @@ export default function LevelsPage({ levels }: LevelsPageProps) {
         event.preventDefault();
 
         if (editing) {
-            put(update.url(editing.id), {
+            put(update.url((editing.routeKey ?? editing.id) as never), {
                 preserveScroll: true,
                 onSuccess: () => {
                     toast.success('Level updated successfully!');
@@ -120,7 +121,7 @@ export default function LevelsPage({ levels }: LevelsPageProps) {
 
     const confirmDelete = () => {
         if (!deleteTarget) return;
-        router.delete(destroy.url(deleteTarget.id), {
+        router.delete(destroy.url((deleteTarget.routeKey ?? deleteTarget.id) as never), {
             preserveScroll: true,
             onSuccess: () => {
                 toast.success(`"${deleteTarget.name}" deleted.`);
@@ -170,7 +171,7 @@ export default function LevelsPage({ levels }: LevelsPageProps) {
                 <Dialog open={isModalOpen} onOpenChange={setIsModalOpen}>
                     <DialogContent className="sm:max-w-md">
                         <DialogHeader>
-                            <DialogTitle>{editing ? `Edit — ${editing.name}` : 'Add New Level'}</DialogTitle>
+                            <DialogTitle>{editing ? `Edit â€” ${editing.name}` : 'Add New Level'}</DialogTitle>
                             <DialogDescription>
                                 {editing ? 'Update the level details below.' : 'Create a new course level.'}
                             </DialogDescription>
@@ -279,7 +280,7 @@ export default function LevelsPage({ levels }: LevelsPageProps) {
                                         <td style={{ padding: '12px 16px', color: '#64748b', fontSize: 13 }}>{level.studentCount} student{level.studentCount !== 1 ? 's' : ''}</td>
                                         <td style={{ padding: '12px 16px' }}>
                                             <span style={{ display: 'inline-flex', alignItems: 'center', gap: 4, padding: '3px 10px', borderRadius: 20, fontSize: 11, fontWeight: 700, background: level.isActive ? '#f0fdf4' : '#fef2f2', color: level.isActive ? '#16a34a' : '#dc2626' }}>
-                                                {level.isActive ? '● Active' : '● Inactive'}
+                                                {level.isActive ? 'â— Active' : 'â— Inactive'}
                                             </span>
                                         </td>
                                         <td style={{ padding: '12px 16px', textAlign: 'right' }}>
@@ -326,3 +327,6 @@ export default function LevelsPage({ levels }: LevelsPageProps) {
         </AdminShell>
     );
 }
+
+
+

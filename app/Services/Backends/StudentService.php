@@ -79,6 +79,7 @@ class StudentService
         return [
             'student' => [
                 'id' => $student->id,
+                'routeKey' => $student->routeKey(),
                 'code' => $student->code,
                 'photo' => $student->profile_photo ? asset($student->profile_photo) : null,
                 'nameKh' => $student->name_kh,
@@ -112,6 +113,7 @@ class StudentService
                 ->values()
                 ->map(fn ($gr) => [
                     'id' => $gr->id,
+                    'routeKey' => $gr->routeKey(),
                     'period' => $gr->gradePeriod?->name ?? '—',
                     'type' => $gr->gradePeriod?->type ?? '',
                     'speaking' => (int) ($gr->speaking ?? 0),
@@ -131,6 +133,7 @@ class StudentService
                 ])->all(),
             'fees' => $student->feeCharges->map(fn ($fc) => [
                 'id' => $fc->id,
+                'routeKey' => $fc->routeKey(),
                 'billingMonth' => $fc->billing_month,
                 'amount' => (float) $fc->amount,
                 'discountAmount' => (float) $fc->discount_amount,
@@ -147,6 +150,7 @@ class StudentService
             ])->all(),
             'homework' => $student->homeworkSubmissions->map(fn ($hs) => [
                 'id' => $hs->id,
+                'routeKey' => $hs->routeKey(),
                 'title' => $hs->homeworkAssignment?->title_en ?? '—',
                 'points' => $hs->homeworkAssignment?->points ?? 0,
                 'dueOn' => $hs->homeworkAssignment?->due_on,
@@ -156,6 +160,7 @@ class StudentService
             ])->all(),
             'certificates' => $student->certificates->map(fn ($c) => [
                 'id' => $c->id,
+                'routeKey' => $c->routeKey(),
                 'type' => $c->type,
                 'title' => $c->title,
                 'number' => $c->certificate_number,
@@ -451,6 +456,7 @@ class StudentService
 
         return [
             'id' => $student->id,
+            'routeKey' => $student->routeKey(),
             'nameKh' => $student->name_kh,
             'nameEn' => $student->name_en,
             'photo' => $student->profile_photo ? asset($student->profile_photo) : null,
@@ -481,6 +487,7 @@ class StudentService
     {
         return [
             'id' => $student->id,
+            'routeKey' => $student->routeKey(),
             'level_id' => $student->level_id,
             'school_class_id' => $student->school_class_id,
             'code' => $student->code,

@@ -104,6 +104,7 @@ class ExamResultService
             ->get(['id', 'title', 'subject', 'exam_date'])
             ->map(fn (Exam $exam): array => [
                 'id' => $exam->id,
+                'routeKey' => $exam->routeKey(),
                 'title' => $exam->title,
                 'subject' => $exam->subject ?? '',
                 'examDate' => $exam->exam_date?->format('Y-m-d') ?? '',
@@ -122,6 +123,7 @@ class ExamResultService
             ->get(['id', 'level_id', 'school_class_id', 'name_kh', 'name_en'])
             ->map(fn (Student $student): array => [
                 'id' => $student->id,
+                'routeKey' => $student->routeKey(),
                 'nameKh' => $student->name_kh,
                 'nameEn' => $student->name_en,
                 'level' => $student->level?->name ?? '',
@@ -139,6 +141,7 @@ class ExamResultService
 
         return [
             'id' => $examResult->id,
+            'routeKey' => $examResult->routeKey(),
             'examId' => $examResult->exam_id,
             'examTitle' => $examResult->exam?->title ?? 'Unknown exam',
             'examSubject' => $examResult->exam?->subject ?? '',

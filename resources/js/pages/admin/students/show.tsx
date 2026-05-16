@@ -1,14 +1,15 @@
-import { useState } from 'react';
+﻿import { useState } from 'react';
 import { edit as editStudent, index as studentIndex } from '@/actions/App/Http/Controllers/Backends/StudentController';
 import AdminShell from '@/pages/admin/shell';
 import { Badge, KH, ScoreChip } from '@/pages/admin/ui';
 import { Head, Link } from '@inertiajs/react';
 import { ArrowLeft, Award, CalendarDays, Edit3, TriangleAlert } from 'lucide-react';
 
-// ── Types ─────────────────────────────────────────────────
+// â”€â”€ Types â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
 interface StudentDetail {
     id: number;
+    routeKey?: string;
     code: string | null;
     photo: string | null;
     nameKh: string;
@@ -38,6 +39,7 @@ interface StudentDetail {
 
 interface GradeRecord {
     id: number;
+    routeKey?: string;
     period: string;
     type: string;
     speaking: number;
@@ -50,6 +52,7 @@ interface GradeRecord {
 
 interface AttendanceRecord {
     id: number;
+    routeKey?: string;
     date: string | null;
     period: string;
     status: string;
@@ -58,6 +61,7 @@ interface AttendanceRecord {
 
 interface Payment {
     id: number;
+    routeKey?: string;
     amount: number;
     method: string;
     paidOn: string | null;
@@ -66,6 +70,7 @@ interface Payment {
 
 interface FeeCharge {
     id: number;
+    routeKey?: string;
     billingMonth: string;
     amount: number;
     discountAmount: number;
@@ -77,6 +82,7 @@ interface FeeCharge {
 
 interface HomeworkRecord {
     id: number;
+    routeKey?: string;
     title: string;
     points: number;
     dueOn: string | null;
@@ -87,6 +93,7 @@ interface HomeworkRecord {
 
 interface Certificate {
     id: number;
+    routeKey?: string;
     type: string;
     title: string;
     number: string;
@@ -103,7 +110,7 @@ interface ShowStudentProps {
     certificates: Certificate[];
 }
 
-// ── Helpers ───────────────────────────────────────────────
+// â”€â”€ Helpers â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
 type Tab = 'overview' | 'grades' | 'attendance' | 'fees' | 'homework';
 
@@ -118,7 +125,7 @@ const attBg = (status: string) => ({
     present: '#f0fdf4', late: '#fffbeb', excused: '#eff6ff', absent: '#fef2f2',
 } as Record<string, string>)[status] ?? '#f8fafc';
 
-// ═════════════════════════════════════════════════════════
+// â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
 export default function ShowStudentPage({ student, grades, attendance, fees, homework, certificates }: ShowStudentProps) {
     const [tab, setTab] = useState<Tab>('overview');
 
@@ -135,7 +142,7 @@ export default function ShowStudentPage({ student, grades, attendance, fees, hom
             <Head title={student.nameEn} />
             <div className="fade-in" style={{ padding: 24, display: 'flex', flexDirection: 'column', gap: 20 }}>
 
-                {/* ── Back ── */}
+                {/* â”€â”€ Back â”€â”€ */}
                 <div>
                     <Link href={studentIndex.url()} style={{ fontSize: 13, color: '#64748b', textDecoration: 'none', fontWeight: 600 }}>
                         <span style={{ display: 'inline-flex', alignItems: 'center', gap: 6 }}>
@@ -144,7 +151,7 @@ export default function ShowStudentPage({ student, grades, attendance, fees, hom
                     </Link>
                 </div>
 
-                {/* ── Hero card ── */}
+                {/* â”€â”€ Hero card â”€â”€ */}
                 <div className="card" style={{ padding: 24 }}>
                     <div style={{ display: 'flex', gap: 24, alignItems: 'flex-start', flexWrap: 'wrap' }}>
 
@@ -186,7 +193,7 @@ export default function ShowStudentPage({ student, grades, attendance, fees, hom
                             {[
                                 { label: 'Attendance', value: `${student.attendanceRate}%`, color: student.attendanceRate >= 80 ? '#10b981' : '#ef4444' },
                                 { label: 'Monthly Fee', value: `$${student.monthlyFee.toFixed(0)}`, color: '#2563eb' },
-                                { label: 'Enrolled', value: student.enrolledOn ?? '—', color: '#64748b' },
+                                { label: 'Enrolled', value: student.enrolledOn ?? 'â€”', color: '#64748b' },
                             ].map(s => (
                                 <div key={s.label} style={{ textAlign: 'center', background: '#f8fafc', borderRadius: 12, padding: '12px 16px', minWidth: 0 }}>
                                     <div style={{ fontWeight: 800, fontSize: 18, color: s.color }}>{s.value}</div>
@@ -196,7 +203,7 @@ export default function ShowStudentPage({ student, grades, attendance, fees, hom
                         </div>
 
                         {/* Edit button */}
-                        <Link href={editStudent.url(student.id)} style={{ background: '#2563eb', color: 'white', borderRadius: 10, padding: '10px 20px', fontWeight: 700, fontSize: 13, textDecoration: 'none', flexShrink: 0 }}>
+                        <Link href={editStudent.url((student.routeKey ?? student.id) as never)} style={{ background: '#2563eb', color: 'white', borderRadius: 10, padding: '10px 20px', fontWeight: 700, fontSize: 13, textDecoration: 'none', flexShrink: 0 }}>
                             <span style={{ display: 'inline-flex', alignItems: 'center', gap: 6 }}>
                                 <Edit3 size={14} /> Edit
                             </span>
@@ -204,7 +211,7 @@ export default function ShowStudentPage({ student, grades, attendance, fees, hom
                     </div>
                 </div>
 
-                {/* ── Tabs ── */}
+                {/* â”€â”€ Tabs â”€â”€ */}
                 <div style={{ display: 'flex', gap: 4, borderBottom: '2px solid #f1f5f9', paddingBottom: 0, flexWrap: 'wrap' }}>
                     {tabs.map(t => (
                         <button key={t.id} onClick={() => setTab(t.id)}
@@ -217,7 +224,7 @@ export default function ShowStudentPage({ student, grades, attendance, fees, hom
                     ))}
                 </div>
 
-                {/* ── Overview tab ── */}
+                {/* â”€â”€ Overview tab â”€â”€ */}
                 {tab === 'overview' && (
                     <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: 16 }}>
 
@@ -226,14 +233,14 @@ export default function ShowStudentPage({ student, grades, attendance, fees, hom
                             <div style={{ fontWeight: 700, fontSize: 14, color: '#1e293b', marginBottom: 14 }}>Personal Information</div>
                             <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
                                 {[
-                                    { label: 'Code',         value: student.code ?? '—' },
-                                    { label: 'Gender',       value: student.gender ? (student.gender === 'male' ? 'Male' : 'Female') : '—' },
-                                    { label: 'Date of Birth', value: student.dateOfBirth ?? '—' },
-                                    { label: 'Age',          value: student.age != null ? `${student.age} years` : '—' },
-                                    { label: 'Province',     value: student.province ?? '—' },
-                                    { label: 'District',     value: student.district ?? '—' },
-                                    { label: 'Commune',      value: student.commune ?? '—' },
-                                    { label: 'Village',      value: student.village ?? '—' },
+                                    { label: 'Code',         value: student.code ?? 'â€”' },
+                                    { label: 'Gender',       value: student.gender ? (student.gender === 'male' ? 'Male' : 'Female') : 'â€”' },
+                                    { label: 'Date of Birth', value: student.dateOfBirth ?? 'â€”' },
+                                    { label: 'Age',          value: student.age != null ? `${student.age} years` : 'â€”' },
+                                    { label: 'Province',     value: student.province ?? 'â€”' },
+                                    { label: 'District',     value: student.district ?? 'â€”' },
+                                    { label: 'Commune',      value: student.commune ?? 'â€”' },
+                                    { label: 'Village',      value: student.village ?? 'â€”' },
                                 ].map(row => (
                                     <div key={row.label} style={{ display: 'flex', justifyContent: 'space-between', fontSize: 13, borderBottom: '1px solid #f8fafc', paddingBottom: 8 }}>
                                         <span style={{ color: '#94a3b8', fontWeight: 600 }}>{row.label}</span>
@@ -249,8 +256,8 @@ export default function ShowStudentPage({ student, grades, attendance, fees, hom
                                 <div style={{ fontWeight: 700, fontSize: 14, color: '#1e293b', marginBottom: 14 }}>Contact</div>
                                 <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
                                     {[
-                                        { label: 'Parent Phone', value: student.parentPhone ?? '—' },
-                                        { label: 'Telegram',     value: student.telegram ?? '—' },
+                                        { label: 'Parent Phone', value: student.parentPhone ?? 'â€”' },
+                                        { label: 'Telegram',     value: student.telegram ?? 'â€”' },
                                     ].map(row => (
                                         <div key={row.label} style={{ display: 'flex', justifyContent: 'space-between', fontSize: 13, borderBottom: '1px solid #f8fafc', paddingBottom: 8 }}>
                                             <span style={{ color: '#94a3b8', fontWeight: 600 }}>{row.label}</span>
@@ -274,7 +281,7 @@ export default function ShowStudentPage({ student, grades, attendance, fees, hom
                                     ].map(row => (
                                         <div key={row.label} style={{ display: 'flex', justifyContent: 'space-between', fontSize: 13, borderBottom: '1px solid #f8fafc', paddingBottom: 8 }}>
                                             <span style={{ color: '#94a3b8', fontWeight: 600 }}>{row.label}</span>
-                                            <span style={{ color: '#1e293b', fontWeight: 700 }}>{row.value || '—'}</span>
+                                            <span style={{ color: '#1e293b', fontWeight: 700 }}>{row.value || 'â€”'}</span>
                                         </div>
                                     ))}
                                 </div>
@@ -283,7 +290,7 @@ export default function ShowStudentPage({ student, grades, attendance, fees, hom
                             {/* Latest grades */}
                             {grades[0] && (
                                 <div className="card" style={{ padding: 20 }}>
-                                    <div style={{ fontWeight: 700, fontSize: 14, color: '#1e293b', marginBottom: 14 }}>Latest Scores — {grades[0].period}</div>
+                                    <div style={{ fontWeight: 700, fontSize: 14, color: '#1e293b', marginBottom: 14 }}>Latest Scores â€” {grades[0].period}</div>
                                     <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 10 }}>
                                         {[
                                             { label: 'Speaking',  value: grades[0].speaking },
@@ -314,7 +321,7 @@ export default function ShowStudentPage({ student, grades, attendance, fees, hom
                                             <div key={c.id} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '8px 12px', background: '#fffbeb', borderRadius: 10, border: '1px solid #fde68a' }}>
                                                 <div>
                                                     <div style={{ fontWeight: 700, fontSize: 13 }}>{c.title}</div>
-                                                    <div style={{ fontSize: 11, color: '#92400e' }}>{c.number} · {c.issuedOn}</div>
+                                                    <div style={{ fontSize: 11, color: '#92400e' }}>{c.number} Â· {c.issuedOn}</div>
                                                 </div>
                                                 <Badge type="amber">{c.type}</Badge>
                                             </div>
@@ -326,7 +333,7 @@ export default function ShowStudentPage({ student, grades, attendance, fees, hom
                     </div>
                 )}
 
-                {/* ── Grades tab ── */}
+                {/* â”€â”€ Grades tab â”€â”€ */}
                 {tab === 'grades' && (
                     <div className="card" style={{ overflow: 'hidden' }}>
                         {grades.length === 0
@@ -356,7 +363,7 @@ export default function ShowStudentPage({ student, grades, attendance, fees, hom
                     </div>
                 )}
 
-                {/* ── Attendance tab ── */}
+                {/* â”€â”€ Attendance tab â”€â”€ */}
                 {tab === 'attendance' && (
                     <div className="card" style={{ overflow: 'hidden' }}>
                         <div style={{ padding: '14px 16px', borderBottom: '1px solid #f1f5f9', display: 'flex', gap: 16 }}>
@@ -386,7 +393,7 @@ export default function ShowStudentPage({ student, grades, attendance, fees, hom
                                                         {a.status}
                                                     </span>
                                                 </td>
-                                                <td style={{ fontSize: 12, color: '#94a3b8' }}>{a.note ?? '—'}</td>
+                                                <td style={{ fontSize: 12, color: '#94a3b8' }}>{a.note ?? 'â€”'}</td>
                                             </tr>
                                         ))}
                                     </tbody>
@@ -396,7 +403,7 @@ export default function ShowStudentPage({ student, grades, attendance, fees, hom
                     </div>
                 )}
 
-                {/* ── Fees tab ── */}
+                {/* â”€â”€ Fees tab â”€â”€ */}
                 {tab === 'fees' && (
                     <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
                         {fees.length === 0
@@ -424,7 +431,7 @@ export default function ShowStudentPage({ student, grades, attendance, fees, hom
                                                     <span style={{ display: 'inline-flex', alignItems: 'center', gap: 4 }}><CalendarDays size={12} /> {p.paidOn}</span>
                                                     <span style={{ fontWeight: 700 }}>${p.amount.toFixed(2)}</span>
                                                     <Badge type="blue">{p.method}</Badge>
-                                                    <span style={{ color: '#94a3b8' }}>{p.reference ?? '—'}</span>
+                                                    <span style={{ color: '#94a3b8' }}>{p.reference ?? 'â€”'}</span>
                                                 </div>
                                             ))}
                                         </div>
@@ -435,7 +442,7 @@ export default function ShowStudentPage({ student, grades, attendance, fees, hom
                     </div>
                 )}
 
-                {/* ── Homework tab ── */}
+                {/* â”€â”€ Homework tab â”€â”€ */}
                 {tab === 'homework' && (
                     <div className="card" style={{ overflow: 'hidden' }}>
                         {homework.length === 0
@@ -456,10 +463,10 @@ export default function ShowStudentPage({ student, grades, attendance, fees, hom
                                                 <td>
                                                     {h.score != null
                                                         ? <span style={{ fontWeight: 700 }}>{h.score} / {h.points}</span>
-                                                        : <span style={{ color: '#94a3b8' }}>— / {h.points}</span>
+                                                        : <span style={{ color: '#94a3b8' }}>â€” / {h.points}</span>
                                                     }
                                                 </td>
-                                                <td style={{ fontSize: 11, color: '#94a3b8' }}>{h.submittedAt ? h.submittedAt.slice(0, 10) : '—'}</td>
+                                                <td style={{ fontSize: 11, color: '#94a3b8' }}>{h.submittedAt ? h.submittedAt.slice(0, 10) : 'â€”'}</td>
                                             </tr>
                                         ))}
                                     </tbody>
@@ -473,3 +480,6 @@ export default function ShowStudentPage({ student, grades, attendance, fees, hom
         </AdminShell>
     );
 }
+
+
+

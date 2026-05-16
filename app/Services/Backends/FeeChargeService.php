@@ -69,6 +69,7 @@ class FeeChargeService
         return [
             'charge' => [
                 'id' => $feeCharge->id,
+                'routeKey' => $feeCharge->routeKey(),
                 'student_id' => $feeCharge->student_id,
                 'level_id' => $feeCharge->level_id,
                 'billing_month' => $feeCharge->billing_month?->format('Y-m-d') ?? '',
@@ -158,6 +159,7 @@ class FeeChargeService
             ->get(['id', 'level_id', 'school_class_id', 'name_kh', 'name_en', 'monthly_fee'])
             ->map(fn (Student $student): array => [
                 'id' => $student->id,
+                'routeKey' => $student->routeKey(),
                 'nameKh' => $student->name_kh,
                 'nameEn' => $student->name_en,
                 'levelId' => $student->level_id,
@@ -174,6 +176,7 @@ class FeeChargeService
     {
         return [
             'id' => $feeCharge->id,
+            'routeKey' => $feeCharge->routeKey(),
             'studentNameKh' => $feeCharge->student?->name_kh ?? '',
             'studentNameEn' => $feeCharge->student?->name_en ?? 'Unknown student',
             'level' => $feeCharge->student?->level?->name ?? '',

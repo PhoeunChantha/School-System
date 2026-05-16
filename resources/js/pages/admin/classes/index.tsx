@@ -1,4 +1,4 @@
-import { FormEvent, useEffect, useMemo, useState } from 'react';
+﻿import { FormEvent, useEffect, useMemo, useState } from 'react';
 import { destroy, store, update } from '@/actions/App/Http/Controllers/Backends/SchoolClassController';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import AdminShell from '@/pages/admin/shell';
@@ -12,6 +12,7 @@ type Weekday = 'Mon' | 'Tue' | 'Wed' | 'Thu' | 'Fri' | 'Sat' | 'Sun';
 
 interface SchoolClass {
     id: number;
+    routeKey?: string;
     levelId: number | null;
     teacherId: number | null;
     name: string;
@@ -29,12 +30,14 @@ interface SchoolClass {
 
 interface LevelOption {
     id: number;
+    routeKey?: string;
     name: string;
     monthly_fee: string;
 }
 
 interface TeacherOption {
     id: number;
+    routeKey?: string;
     name_en: string;
 }
 
@@ -44,7 +47,7 @@ interface ClassesPageProps {
     teachers: TeacherOption[];
 }
 
-// ── Sort options ──────────────────────────────────────────
+// â”€â”€ Sort options â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 type OrderKey = 'name-asc' | 'name-desc' | 'teacher-asc' | 'students-desc' | 'students-asc' | 'room-asc';
 const ORDER_OPTIONS: { value: OrderKey; label: string }[] = [
     { value: 'name-asc',      label: 'Name A-Z' },
@@ -82,7 +85,7 @@ export default function ClassesPage({ classes, levels, teachers }: ClassesPagePr
     const confirmDelete = () => {
         if (!deleteTarget) return;
 
-        router.delete(destroy.url(deleteTarget.id), {
+        router.delete(destroy.url((deleteTarget.routeKey ?? deleteTarget.id) as never), {
             preserveScroll: true,
             onSuccess: () => {
                 toast.success('Class deleted successfully!', {
@@ -115,7 +118,7 @@ export default function ClassesPage({ classes, levels, teachers }: ClassesPagePr
     return (
         <AdminShell>
 
-            {/* ── List view ── */}
+            {/* â”€â”€ List view â”€â”€ */}
             {view === 'list' && (
                 <div className="fade-in" style={{ padding: 24, display: 'flex', flexDirection: 'column', gap: 16 }}>
 
@@ -172,7 +175,7 @@ export default function ClassesPage({ classes, levels, teachers }: ClassesPagePr
 
                             <table className="data-table">
                                 <thead><tr>
-                                    <th>Class / ថ្នាក់</th>
+                                    <th>Class / ážáŸ’áž“áž¶áž€áŸ‹</th>
                                     <th>Teacher</th>
                                     <th>Room</th>
                                     <th>Schedule</th>
@@ -242,7 +245,7 @@ export default function ClassesPage({ classes, levels, teachers }: ClassesPagePr
                 </div>
             )}
 
-            {/* ── Add / Edit form ── */}
+            {/* â”€â”€ Add / Edit form â”€â”€ */}
             {(view === 'add' || view === 'edit') && (
                 <ClassForm
                     mode={view}
@@ -253,7 +256,7 @@ export default function ClassesPage({ classes, levels, teachers }: ClassesPagePr
                 />
             )}
 
-            {/* ── Delete confirmation modal ── */}
+            {/* â”€â”€ Delete confirmation modal â”€â”€ */}
             {deleteTarget && (
                 <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.45)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 200, padding: 16 }}
                     onClick={e => { if (e.target === e.currentTarget) setDeleteTarget(null); }}>
@@ -285,7 +288,7 @@ export default function ClassesPage({ classes, levels, teachers }: ClassesPagePr
     );
 }
 
-// ── Add / Edit Class form ─────────────────────────────────
+// â”€â”€ Add / Edit Class form â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 interface FormProps {
     mode: 'add' | 'edit';
     cls?: SchoolClass;
@@ -335,7 +338,7 @@ function ClassForm({ mode, cls, levels, teachers, onBack }: FormProps) {
         };
 
         if (isEdit && cls) {
-            put(update.url(cls.id), options);
+            put(update.url((cls.routeKey ?? cls.id) as never), options);
 
             return;
         }
@@ -362,7 +365,7 @@ function ClassForm({ mode, cls, levels, teachers, onBack }: FormProps) {
 
                 <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16 }}>
                     <div className="f-group" style={{ gridColumn: '1/-1' }}>
-                        <label className="f-label">Class Name / ឈ្មោះថ្នាក់ *</label>
+                        <label className="f-label">Class Name / ážˆáŸ’áž˜áŸ„áŸ‡ážáŸ’áž“áž¶áž€áŸ‹ *</label>
                         <Select
                             value={data.level_id?.toString() ?? ''}
                             onValueChange={e => {
@@ -387,7 +390,7 @@ function ClassForm({ mode, cls, levels, teachers, onBack }: FormProps) {
                         {errors.name && <div style={{ color: '#ef4444', fontSize: 11, marginTop: 4 }}>{errors.name}</div>}
                     </div>
                     <div className="f-group">
-                        <label className="f-label">Teacher / គ្រូ *</label>
+                        <label className="f-label">Teacher / áž‚áŸ’ážšáž¼ *</label>
                         <Select value={data.teacher_id?.toString() ?? ''} onValueChange={e => setData('teacher_id', e ? Number(e) : null)}>
                             <SelectTrigger className="f-input">
                                 <SelectValue placeholder="Select teacher..." />
@@ -401,22 +404,22 @@ function ClassForm({ mode, cls, levels, teachers, onBack }: FormProps) {
                         {errors.teacher_id && <div style={{ color: '#ef4444', fontSize: 11, marginTop: 4 }}>{errors.teacher_id}</div>}
                     </div>
                     <div className="f-group">
-                        <label className="f-label">Room / បន្ទប់ *</label>
+                        <label className="f-label">Room / áž”áž“áŸ’áž‘áž”áŸ‹ *</label>
                         <input className="f-input" placeholder="e.g. A1" value={data.room} onChange={e => setData('room', e.target.value)} />
                         {errors.room && <div style={{ color: '#ef4444', fontSize: 11, marginTop: 4 }}>{errors.room}</div>}
                     </div>
                     <div className="f-group">
-                        <label className="f-label">Start Time / ម៉ោងចាប់ផ្ដើម</label>
+                        <label className="f-label">Start Time / áž˜áŸ‰áŸ„áž„áž…áž¶áž”áŸ‹áž•áŸ’ážŠáž¾áž˜</label>
                         <input type="time" className="f-input" value={data.starts_at} onChange={e => setData('starts_at', e.target.value)} />
                         {errors.starts_at && <div style={{ color: '#ef4444', fontSize: 11, marginTop: 4 }}>{errors.starts_at}</div>}
                     </div>
                     <div className="f-group">
-                        <label className="f-label">End Time / ម៉ោងបញ្ចប់</label>
+                        <label className="f-label">End Time / áž˜áŸ‰áŸ„áž„áž”áž‰áŸ’áž…áž”áŸ‹</label>
                         <input type="time" className="f-input" value={data.ends_at} onChange={e => setData('ends_at', e.target.value)} />
                         {errors.ends_at && <div style={{ color: '#ef4444', fontSize: 11, marginTop: 4 }}>{errors.ends_at}</div>}
                     </div>
                     <div className="f-group" style={{ gridColumn: '1/-1' }}>
-                        <label className="f-label">Days / ថ្ងៃ *</label>
+                        <label className="f-label">Days / ážáŸ’áž„áŸƒ *</label>
                         <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
                             {(['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'] as Weekday[]).map(day => (
                                 <label key={day} style={{ display: 'flex', alignItems: 'center', gap: 6, cursor: 'pointer', background: '#f8fafc', borderRadius: 8, padding: '6px 12px', border: '1.5px solid #e2e8f0', fontSize: 12, fontWeight: 700 }}>
@@ -452,3 +455,6 @@ function ClassForm({ mode, cls, levels, teachers, onBack }: FormProps) {
         </div>
     );
 }
+
+
+

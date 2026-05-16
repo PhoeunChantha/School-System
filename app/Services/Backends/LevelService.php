@@ -19,11 +19,12 @@ class LevelService
                 ->orderBy('name')
                 ->get()
                 ->map(fn (Level $level): array => [
-                    'id'          => $level->id,
-                    'name'        => $level->name,
-                    'monthlyFee'  => (float) $level->monthly_fee,
-                    'sortOrder'   => $level->sort_order,
-                    'isActive'    => $level->is_active,
+                    'id' => $level->id,
+                    'routeKey' => $level->routeKey(),
+                    'name' => $level->name,
+                    'monthlyFee' => (float) $level->monthly_fee,
+                    'sortOrder' => $level->sort_order,
+                    'isActive' => $level->is_active,
                     'studentCount' => $level->students_count,
                 ]),
         ];
@@ -35,12 +36,12 @@ class LevelService
     public function create(array $data, ?int $userId): Level
     {
         return DB::transaction(fn (): Level => Level::create([
-            'name'        => $data['name'],
+            'name' => $data['name'],
             'monthly_fee' => $data['monthly_fee'],
-            'sort_order'  => $data['sort_order'] ?? 0,
-            'is_active'   => $data['is_active'] ?? true,
-            'created_by'  => $userId,
-            'updated_by'  => $userId,
+            'sort_order' => $data['sort_order'] ?? 0,
+            'is_active' => $data['is_active'] ?? true,
+            'created_by' => $userId,
+            'updated_by' => $userId,
         ]));
     }
 
@@ -51,11 +52,11 @@ class LevelService
     {
         return DB::transaction(function () use ($level, $data, $userId): Level {
             $level->update([
-                'name'        => $data['name'],
+                'name' => $data['name'],
                 'monthly_fee' => $data['monthly_fee'],
-                'sort_order'  => $data['sort_order'] ?? 0,
-                'is_active'   => $data['is_active'] ?? true,
-                'updated_by'  => $userId,
+                'sort_order' => $data['sort_order'] ?? 0,
+                'is_active' => $data['is_active'] ?? true,
+                'updated_by' => $userId,
             ]);
 
             return $level->refresh();

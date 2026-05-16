@@ -46,6 +46,7 @@ class TeacherService
                 ->get()
                 ->map(fn (Teacher $teacher): array => [
                     'id' => $teacher->id,
+                    'routeKey' => $teacher->routeKey(),
                     'nameKh' => $teacher->name_kh,
                     'nameEn' => $teacher->name_en,
                     'photo' => $teacher->profile_photo ? asset($teacher->profile_photo) : null,
@@ -58,6 +59,7 @@ class TeacherService
                     'lessons' => $teacher->lessonPlans
                         ->map(fn ($lessonPlan): array => [
                             'id' => $lessonPlan->id,
+                            'routeKey' => $lessonPlan->routeKey(),
                             'date' => $lessonPlan->lesson_date?->toDateString(),
                             'day' => $lessonPlan->lesson_date?->isToday() ? 'Today' : 'Tomorrow',
                             'title' => $lessonPlan->title,
@@ -71,6 +73,7 @@ class TeacherService
                     'schedule' => $teacher->schoolClasses
                         ->map(fn (SchoolClass $schoolClass): array => [
                             'id' => $schoolClass->id,
+                            'routeKey' => $schoolClass->routeKey(),
                             'name' => $schoolClass->name,
                             'time' => collect([$schoolClass->starts_at, $schoolClass->ends_at])->filter()->implode('-'),
                             'room' => $schoolClass->room ?? '',
@@ -97,6 +100,7 @@ class TeacherService
         return [
             'teacher' => [
                 'id' => $teacher->id,
+                'routeKey' => $teacher->routeKey(),
                 'nameKh' => $teacher->name_kh,
                 'nameEn' => $teacher->name_en,
                 'photo' => $teacher->profile_photo ? asset($teacher->profile_photo) : null,
@@ -109,6 +113,7 @@ class TeacherService
             ],
             'classes' => $teacher->schoolClasses->map(fn (SchoolClass $c) => [
                 'id' => $c->id,
+                'routeKey' => $c->routeKey(),
                 'name' => $c->name,
                 'room' => $c->room ?? '—',
                 'time' => collect([$c->starts_at, $c->ends_at])->filter()->implode('–'),
@@ -117,6 +122,7 @@ class TeacherService
                 'count' => $c->students_count,
                 'students' => $c->students->map(fn ($s) => [
                     'id' => $s->id,
+                    'routeKey' => $s->routeKey(),
                     'nameKh' => $s->name_kh,
                     'nameEn' => $s->name_en,
                     'photo' => $s->profile_photo ? asset($s->profile_photo) : null,

@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Models\Concerns\HasEncryptedRouteKey;
 use Database\Factories\SchoolClassFactory;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
@@ -13,7 +14,7 @@ use Illuminate\Database\Eloquent\SoftDeletes;
 class SchoolClass extends Model
 {
     /** @use HasFactory<SchoolClassFactory> */
-    use HasFactory, SoftDeletes;
+    use HasEncryptedRouteKey, HasFactory, SoftDeletes;
 
     protected $fillable = [
         'level_id',

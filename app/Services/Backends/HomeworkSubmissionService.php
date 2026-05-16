@@ -129,6 +129,7 @@ class HomeworkSubmissionService
             ->get(['id', 'school_class_id', 'title_kh', 'title_en', 'points', 'due_on'])
             ->map(fn (HomeworkAssignment $homeworkAssignment): array => [
                 'id' => $homeworkAssignment->id,
+                'routeKey' => $homeworkAssignment->routeKey(),
                 'titleKh' => $homeworkAssignment->title_kh,
                 'titleEn' => $homeworkAssignment->title_en ?? '',
                 'className' => $homeworkAssignment->schoolClass?->name ?? '',
@@ -149,6 +150,7 @@ class HomeworkSubmissionService
             ->get(['id', 'level_id', 'school_class_id', 'name_kh', 'name_en'])
             ->map(fn (Student $student): array => [
                 'id' => $student->id,
+                'routeKey' => $student->routeKey(),
                 'nameKh' => $student->name_kh,
                 'nameEn' => $student->name_en,
                 'level' => $student->level?->name ?? '',
@@ -163,6 +165,7 @@ class HomeworkSubmissionService
     {
         return [
             'id' => $submission->id,
+            'routeKey' => $submission->routeKey(),
             'homeworkAssignmentId' => $submission->homework_assignment_id,
             'assignmentTitleKh' => $submission->homeworkAssignment?->title_kh ?? '',
             'assignmentTitleEn' => $submission->homeworkAssignment?->title_en ?? '',

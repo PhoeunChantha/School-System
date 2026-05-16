@@ -1,4 +1,4 @@
-import { destroy, downloadLayout, exportMethod, importMethod, store, update } from '@/actions/App/Http/Controllers/Backends/GradeRecordController';
+﻿import { destroy, downloadLayout, exportMethod, importMethod, store, update } from '@/actions/App/Http/Controllers/Backends/GradeRecordController';
 import {
     Sheet,
     SheetContent,
@@ -9,7 +9,7 @@ import {
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import AdminShell from '@/pages/admin/shell';
-import { Avatar, Badge, KH, Pagination, PBar, ScoreChip } from '@/pages/admin/ui';
+import { AdminSelect, Avatar, Badge, KH, Pagination, PBar, ScoreChip } from '@/pages/admin/ui';
 import { router, useForm } from '@inertiajs/react';
 import { Check, ChevronsUpDown, Download, Edit3, FileDown, Save, Search, Trash2, Upload, X } from 'lucide-react';
 import { FormEvent, useEffect, useMemo, useRef, useState } from 'react';
@@ -17,6 +17,7 @@ import { toast } from 'sonner';
 
 interface GradePeriodOption {
     id: number;
+    routeKey?: string;
     name: string;
     type: string;
     academicYear: string;
@@ -25,6 +26,7 @@ interface GradePeriodOption {
 
 interface GradeStudentOption {
     id: number;
+    routeKey?: string;
     nameKh: string;
     nameEn: string;
     level: string;
@@ -34,11 +36,13 @@ interface GradeStudentOption {
 
 interface GradeClassOption {
     id: number;
+    routeKey?: string;
     name: string;
 }
 
 interface GradeRecordItem {
     id: number;
+    routeKey?: string;
     gradePeriodId: number;
     periodName: string;
     studentId: number;
@@ -285,7 +289,7 @@ export default function GradesPage({ records, periods, students, classes, summar
         };
 
         if (drawerMode === 'edit' && editingRecord) {
-            put(update.url(editingRecord.id), options);
+            put(update.url((editingRecord.routeKey ?? editingRecord.id) as never), options);
             return;
         }
 
@@ -295,7 +299,7 @@ export default function GradesPage({ records, periods, students, classes, summar
     const confirmDelete = () => {
         if (!deleteTarget) return;
 
-        router.delete(destroy.url(deleteTarget.id), {
+        router.delete(destroy.url((deleteTarget.routeKey ?? deleteTarget.id) as never), {
             preserveScroll: true,
             onSuccess: () => {
                 toast.success('Grade deleted.');
@@ -367,27 +371,47 @@ export default function GradesPage({ records, periods, students, classes, summar
 
                 <div className="card" style={{ overflowX: 'auto' }}>
                     <div style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '12px 16px', borderBottom: '1px solid #f1f5f9', flexWrap: 'wrap' }}>
-                        <select value={perPage} onChange={event => setPerPage(Number(event.target.value))} style={{ padding: '7px 10px', borderRadius: 8, border: '1.5px solid #e2e8f0', background: 'white', color: '#374151', fontSize: 12, fontWeight: 700, cursor: 'pointer', outline: 'none' }}>
-                            {[5, 10, 25, 50].map(size => <option key={size} value={size}>{size} per page</option>)}
-                        </select>
-                        <select value={selectedPeriod} onChange={event => setSelectedPeriod(event.target.value === 'all' ? 'all' : Number(event.target.value))} style={{ padding: '7px 10px', borderRadius: 8, border: '1.5px solid #e2e8f0', background: 'white', color: '#374151', fontSize: 12, fontWeight: 700, cursor: 'pointer', outline: 'none' }}>
-                            <option value="all">All periods</option>
-                            {periods.map(period => <option key={period.id} value={period.id}>{period.name}</option>)}
-                        </select>
-                        <select value={selectedClass} onChange={event => setSelectedClass(event.target.value === 'all' ? 'all' : Number(event.target.value))} style={{ padding: '7px 10px', borderRadius: 8, border: '1.5px solid #e2e8f0', background: 'white', color: '#374151', fontSize: 12, fontWeight: 700, cursor: 'pointer', outline: 'none' }}>
-                            <option value="all">All classes</option>
-                            {classes.map(schoolClass => <option key={schoolClass.id} value={schoolClass.id}>{schoolClass.name}</option>)}
-                        </select>
-                        <select value={performanceFilter} onChange={event => setPerformanceFilter(event.target.value as PerfFilter)} style={{ padding: '7px 10px', borderRadius: 8, border: '1.5px solid #e2e8f0', background: 'white', color: '#374151', fontSize: 12, fontWeight: 700, cursor: 'pointer', outline: 'none' }}>
-                            <option value="all">All performance</option>
-                            <option value="excellent">Excellent</option>
-                            <option value="good">Good</option>
-                            <option value="average">Average</option>
-                            <option value="poor">Needs Work</option>
-                        </select>
-                        <select value={orderBy} onChange={event => setOrderBy(event.target.value as OrderKey)} style={{ padding: '7px 10px', borderRadius: 8, border: '1.5px solid #e2e8f0', background: 'white', color: '#374151', fontSize: 12, fontWeight: 700, cursor: 'pointer', outline: 'none' }}>
-                            {ORDER_OPTIONS.map(option => <option key={option.value} value={option.value}>{option.label}</option>)}
-                        </select>
+                        <AdminSelect
+                            value={perPage.toString()}
+                            onChange={value => setPerPage(Number(value))}
+                            options={[5, 10, 25, 50].map(size => ({ value: size.toString(), label: `${size} per page` }))}
+                            style={{ minWidth: 130 }}
+                            triggerClassName="f-input h-9 min-h-9 px-3 py-1 text-xs font-bold"
+                        />
+                        <AdminSelect
+                            value={String(selectedPeriod)}
+                            onChange={value => setSelectedPeriod(value === 'all' ? 'all' : Number(value))}
+                            options={[{ value: 'all', label: 'All periods' }, ...periods.map(period => ({ value: String(period.id), label: period.name }))]}
+                            style={{ minWidth: 150 }}
+                            triggerClassName="f-input h-9 min-h-9 px-3 py-1 text-xs font-bold"
+                        />
+                        <AdminSelect
+                            value={String(selectedClass)}
+                            onChange={value => setSelectedClass(value === 'all' ? 'all' : Number(value))}
+                            options={[{ value: 'all', label: 'All classes' }, ...classes.map(schoolClass => ({ value: String(schoolClass.id), label: schoolClass.name }))]}
+                            style={{ minWidth: 150 }}
+                            triggerClassName="f-input h-9 min-h-9 px-3 py-1 text-xs font-bold"
+                        />
+                        <AdminSelect
+                            value={performanceFilter}
+                            onChange={value => setPerformanceFilter(value as PerfFilter)}
+                            options={[
+                                { value: 'all', label: 'All performance' },
+                                { value: 'excellent', label: 'Excellent' },
+                                { value: 'good', label: 'Good' },
+                                { value: 'average', label: 'Average' },
+                                { value: 'poor', label: 'Needs Work' },
+                            ]}
+                            style={{ minWidth: 160 }}
+                            triggerClassName="f-input h-9 min-h-9 px-3 py-1 text-xs font-bold"
+                        />
+                        <AdminSelect
+                            value={orderBy}
+                            onChange={value => setOrderBy(value as OrderKey)}
+                            options={ORDER_OPTIONS}
+                            style={{ minWidth: 160 }}
+                            triggerClassName="f-input h-9 min-h-9 px-3 py-1 text-xs font-bold"
+                        />
                         <span style={{ fontSize: 11, color: '#94a3b8' }}>{filtered.length} result{filtered.length !== 1 ? 's' : ''}</span>
                         <input
                             value={search}
@@ -507,7 +531,7 @@ export default function GradesPage({ records, periods, students, classes, summar
                                             style={{ minHeight: 42, display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 10, textAlign: 'left', opacity: drawerMode === 'edit' ? 0.7 : 1, cursor: drawerMode === 'edit' ? 'default' : 'pointer' }}
                                         >
                                             <span style={{ minWidth: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                                                {selectedStudent ? `${selectedStudent.nameEn} · ${selectedStudent.className || selectedStudent.level}` : 'Select student'}
+                                                {selectedStudent ? `${selectedStudent.nameEn} Â· ${selectedStudent.className || selectedStudent.level}` : 'Select student'}
                                             </span>
                                             <ChevronsUpDown size={16} style={{ color: '#94a3b8', flexShrink: 0 }} />
                                         </button>
@@ -541,7 +565,7 @@ export default function GradesPage({ records, periods, students, classes, summar
                                                         <Check size={15} style={{ color: selected ? '#2563eb' : 'transparent', flexShrink: 0 }} />
                                                         <span style={{ minWidth: 0 }}>
                                                             <span style={{ display: 'block', fontSize: 13, fontWeight: 800, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{student.nameEn}</span>
-                                                            <span style={{ display: 'block', fontSize: 11, color: '#94a3b8', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{student.nameKh} · {student.className || student.level}</span>
+                                                            <span style={{ display: 'block', fontSize: 11, color: '#94a3b8', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{student.nameKh} Â· {student.className || student.level}</span>
                                                         </span>
                                                     </button>
                                                 );
@@ -588,3 +612,6 @@ export default function GradesPage({ records, periods, students, classes, summar
         </AdminShell>
     );
 }
+
+
+

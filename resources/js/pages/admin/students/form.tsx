@@ -1,4 +1,4 @@
-import { FormEvent, useRef, useState } from 'react';
+﻿import { FormEvent, useRef, useState } from 'react';
 import { index as studentIndex, store, update } from '@/actions/App/Http/Controllers/Backends/StudentController';
 import { DatePicker } from '@/components/ui/date-picker';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
@@ -9,12 +9,14 @@ import { toast } from 'sonner';
 
 export interface LevelOption {
     id: number;
+    routeKey?: string;
     name: string;
     monthly_fee: string;
 }
 
 export interface ClassOption {
     id: number;
+    routeKey?: string;
     levelId: number | null;
     name: string;
     level: string | null;
@@ -45,6 +47,7 @@ export interface StudentFormData {
 }
 
 export interface StudentEditData extends Omit<StudentFormData, 'profile_photo'> {
+    routeKey?: string;
     profile_photo_url?: string | null;
 }
 
@@ -118,7 +121,7 @@ export default function StudentFormPage({ mode, student, levels, classes }: Stud
         };
 
         if (isEdit && student?.id) {
-            put(update.url(student.id), options);
+            put(update.url((student.routeKey ?? student.id) as never), options);
 
             return;
         }
@@ -184,7 +187,7 @@ export default function StudentFormPage({ mode, student, levels, classes }: Stud
                             </div>
                             <div className="f-group"><label className="f-label">Student Code</label><input className="f-input" value={data.code} onChange={event => setData('code', event.target.value)} />{inputError(errors.code)}</div>
                             <div className="f-group"><label className="f-label">Enrolled On</label><DatePicker value={data.enrolled_on} onChange={value => setData('enrolled_on', value)} />{inputError(errors.enrolled_on)}</div>
-                            <div className="f-group"><label className="f-label">ឈ្មោះ (ខ្មែរ) *</label><input className="f-input" value={data.name_kh} onChange={event => setData('name_kh', event.target.value)} />{inputError(errors.name_kh)}</div>
+                            <div className="f-group"><label className="f-label">ážˆáŸ’áž˜áŸ„áŸ‡ (ážáŸ’áž˜áŸ‚ážš) *</label><input className="f-input" value={data.name_kh} onChange={event => setData('name_kh', event.target.value)} />{inputError(errors.name_kh)}</div>
                             <div className="f-group"><label className="f-label">English Name *</label><input className="f-input" value={data.name_en} onChange={event => setData('name_en', event.target.value)} />{inputError(errors.name_en)}</div>
                             <div className="f-group"><label className="f-label">Date of Birth</label><DatePicker value={data.date_of_birth} onChange={value => setData('date_of_birth', value)} placeholder="Pick date of birth" />{inputError(errors.date_of_birth)}</div>
                             <div className="f-group">
@@ -292,3 +295,6 @@ export default function StudentFormPage({ mode, student, levels, classes }: Stud
         </AdminShell>
     );
 }
+
+
+

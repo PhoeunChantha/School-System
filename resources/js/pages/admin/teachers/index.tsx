@@ -1,4 +1,4 @@
-import { FormEvent, useEffect, useMemo, useRef, useState } from 'react';
+﻿import { FormEvent, useEffect, useMemo, useRef, useState } from 'react';
 import { index as teacherGrades } from '@/actions/App/Http/Controllers/Backends/TeacherGradeController';
 import { lessonPlans as lessonPlanIndex } from '@/routes/admin';
 import { create as createTeacherLessonPlan } from '@/routes/admin/teachers/lesson-plans';
@@ -16,6 +16,7 @@ type OrderKey = 'name-asc' | 'name-desc' | 'subject-asc' | 'classes-desc' | 'stu
 
 interface TeacherSchedule {
     id: number;
+    routeKey?: string;
     name: string;
     time: string;
     room: string;
@@ -25,6 +26,7 @@ interface TeacherSchedule {
 
 interface TeacherLesson {
     id: number;
+    routeKey?: string;
     date: string;
     day: 'Today' | 'Tomorrow';
     title: string;
@@ -37,6 +39,7 @@ interface TeacherLesson {
 
 interface Teacher {
     id: number;
+    routeKey?: string;
     nameKh: string;
     nameEn: string;
     photo: string | null;
@@ -93,7 +96,7 @@ export default function TeachersPage({ teachers }: TeachersPageProps) {
     const confirmDelete = () => {
         if (!deleteTarget) return;
 
-        router.delete(destroy.url(deleteTarget.id), {
+        router.delete(destroy.url((deleteTarget.routeKey ?? deleteTarget.id) as never), {
             preserveScroll: true,
             onSuccess: () => {
                 toast.success('Teacher deleted successfully!', {
@@ -245,7 +248,7 @@ export default function TeachersPage({ teachers }: TeachersPageProps) {
                                             ) : (
                                                 <Link href={lessonPlanIndex.url()} style={{ color: '#2563eb', fontSize: 12, fontWeight: 800, textDecoration: 'none' }}>
                                                     {t.lessons[0].title}
-                                                    <span style={{ color: '#94a3b8', fontWeight: 700 }}> · {t.lessons[0].day}</span>
+                                                    <span style={{ color: '#94a3b8', fontWeight: 700 }}> Â· {t.lessons[0].day}</span>
                                                 </Link>
                                             )}
                                         </td>
@@ -259,17 +262,17 @@ export default function TeachersPage({ teachers }: TeachersPageProps) {
                                                 </DropdownMenuTrigger>
                                                 <DropdownMenuContent align="end" className="w-48">
                                                     <DropdownMenuItem asChild>
-                                                        <Link href={createTeacherLessonPlan.url(t.id)} className="flex items-center gap-2">
+                                                        <Link href={createTeacherLessonPlan.url((t.routeKey ?? t.id) as never)} className="flex items-center gap-2">
                                                             <School size={14} /> Plan
                                                         </Link>
                                                     </DropdownMenuItem>
                                                     <DropdownMenuItem asChild>
-                                                        <Link href={teacherGrades.url(t.id)} className="flex items-center gap-2">
+                                                        <Link href={teacherGrades.url((t.routeKey ?? t.id) as never)} className="flex items-center gap-2">
                                                             <Save size={14} /> Score management
                                                         </Link>
                                                     </DropdownMenuItem>
                                                     <DropdownMenuItem asChild>
-                                                        <Link href={showTeacher.url(t.id)} className="flex items-center gap-2">
+                                                        <Link href={showTeacher.url((t.routeKey ?? t.id) as never)} className="flex items-center gap-2">
                                                             <Eye size={14} /> View
                                                         </Link>
                                                     </DropdownMenuItem>
@@ -339,7 +342,7 @@ export default function TeachersPage({ teachers }: TeachersPageProps) {
                                     </div>
                                     <div style={{ textAlign: 'right', flexShrink: 0 }}>
                                         <div style={{ fontSize: 12, fontWeight: 700, color: '#3b82f6' }}>{cls.time}</div>
-                                        <div style={{ fontSize: 11, color: '#94a3b8' }}>Room {cls.room} · {cls.count} students</div>
+                                        <div style={{ fontSize: 11, color: '#94a3b8' }}>Room {cls.room} Â· {cls.count} students</div>
                                     </div>
                                 </div>
                             ))}
@@ -383,7 +386,7 @@ export default function TeachersPage({ teachers }: TeachersPageProps) {
     );
 }
 
-// ── Add / Edit Teacher form ──
+// â”€â”€ Add / Edit Teacher form â”€â”€
 interface FormProps { mode: 'add' | 'edit'; teacher?: Teacher; onBack: () => void; }
 
 interface TeacherFormData {
@@ -433,7 +436,7 @@ function TeacherForm({ mode, teacher, onBack }: FormProps) {
         };
 
         if (isEdit && teacher) {
-            post(update.url(teacher.id), options);
+            post(update.url((teacher.routeKey ?? teacher.id) as never), options);
 
             return;
         }
@@ -490,8 +493,8 @@ function TeacherForm({ mode, teacher, onBack }: FormProps) {
                         {inputError(errors.profile_photo as string | undefined)}
                     </div>
                     <div className="f-group">
-                        <label className="f-label">ឈ្មោះ (ខ្មែរ) *</label>
-                        <input className="f-input" placeholder="ឧ. គ្រូ វុទ្ធី" value={data.name_kh} onChange={e => setData('name_kh', e.target.value)} />
+                        <label className="f-label">ážˆáŸ’áž˜áŸ„áŸ‡ (ážáŸ’áž˜áŸ‚ážš) *</label>
+                        <input className="f-input" placeholder="áž§. áž‚áŸ’ážšáž¼ ážœáž»áž‘áŸ’áž’áž¸" value={data.name_kh} onChange={e => setData('name_kh', e.target.value)} />
                         {inputError(errors.name_kh)}
                     </div>
                     <div className="f-group">
@@ -500,7 +503,7 @@ function TeacherForm({ mode, teacher, onBack }: FormProps) {
                         {inputError(errors.name_en)}
                     </div>
                     <div className="f-group" style={{ gridColumn: '1/-1' }}>
-                        <label className="f-label">Subject / មុខវិជ្ជា *</label>
+                        <label className="f-label">Subject / áž˜áž»ážážœáž·áž‡áŸ’áž‡áž¶ *</label>
                         <Select value={data.subject} onValueChange={value => setData('subject', value)}>
                             <SelectTrigger className="f-input">
                                 <SelectValue placeholder="Select subject..." />
@@ -514,12 +517,12 @@ function TeacherForm({ mode, teacher, onBack }: FormProps) {
                         {inputError(errors.subject)}
                     </div>
                     <div className="f-group">
-                        <label className="f-label">Phone / ទូរស័ព្ទ</label>
+                        <label className="f-label">Phone / áž‘áž¼ážšážŸáŸáž–áŸ’áž‘</label>
                         <input type="tel" className="f-input" placeholder="0xx-xxx-xxx" value={data.phone} onChange={e => setData('phone', e.target.value)} />
                         {inputError(errors.phone)}
                     </div>
                     <div className="f-group">
-                        <label className="f-label">Status / ស្ថានភាព</label>
+                        <label className="f-label">Status / ážŸáŸ’ážáž¶áž“áž—áž¶áž–</label>
                         <Select value={data.status} onValueChange={value => setData('status', value as 'active' | 'inactive')}>
                             <SelectTrigger className="f-input">
                                 <SelectValue />
@@ -548,3 +551,6 @@ function TeacherForm({ mode, teacher, onBack }: FormProps) {
         </div>
     );
 }
+
+
+

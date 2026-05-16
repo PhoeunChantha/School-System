@@ -1,4 +1,4 @@
-import {
+﻿import {
     destroyPermission,
     destroyRole,
     storePermission,
@@ -7,7 +7,9 @@ import {
     updateRole,
 } from '@/actions/App/Http/Controllers/Backends/RolePermissionController';
 import AdminShell from '@/pages/admin/shell';
-import { router, useForm } from '@inertiajs/react';
+import { AdminSelect } from '@/pages/admin/ui';
+import { type SharedData } from '@/types';
+import { router, useForm, usePage } from '@inertiajs/react';
 import { Edit3, Plus, ShieldCheck, Trash2 } from 'lucide-react';
 import { FormEvent, useMemo, useState } from 'react';
 import type { CSSProperties, ReactNode } from 'react';
@@ -15,6 +17,7 @@ import { toast } from 'sonner';
 
 interface RoleItem {
     id: number;
+    routeKey?: string;
     name: string;
     guardName: string;
     permissionIds: number[];
@@ -25,6 +28,7 @@ interface RoleItem {
 
 interface PermissionItem {
     id: number;
+    routeKey?: string;
     name: string;
     guardName: string;
     group: string;
@@ -65,6 +69,14 @@ type Mode = 'create' | 'edit';
 type DeleteTarget = { type: 'role'; item: RoleItem } | { type: 'permission'; item: PermissionItem };
 
 export default function RolePermissionPage({ roles, permissions, permissionGroups, summary }: RolePermissionPageProps) {
+    const { props } = usePage<SharedData>();
+    const userPermissions = useMemo(() => new Set(props.auth?.permissions ?? []), [props.auth?.permissions]);
+    const canCreateRole = userPermissions.has('roles.create');
+    const canUpdateRole = userPermissions.has('roles.update');
+    const canDeleteRole = userPermissions.has('roles.delete');
+    const canCreatePermission = userPermissions.has('permissions.create');
+    const canUpdatePermission = userPermissions.has('permissions.update');
+    const canDeletePermission = userPermissions.has('permissions.delete');
     const [tab, setTab] = useState<Tab>('roles');
     const [roleMode, setRoleMode] = useState<Mode>('create');
     const [permissionMode, setPermissionMode] = useState<Mode>('create');
@@ -72,6 +84,8 @@ export default function RolePermissionPage({ roles, permissions, permissionGroup
     const [editingPermission, setEditingPermission] = useState<PermissionItem | null>(null);
     const [deleteTarget, setDeleteTarget] = useState<DeleteTarget | null>(null);
     const [search, setSearch] = useState('');
+    const showRoleForm = roleMode === 'edit' ? canUpdateRole : canCreateRole;
+    const showPermissionForm = permissionMode === 'edit' ? canUpdatePermission : canCreatePermission;
 
     const roleForm = useForm<RoleFormData>({
         name: '',
@@ -145,7 +159,7 @@ export default function RolePermissionPage({ roles, permissions, permissionGroup
         };
 
         if (roleMode === 'edit' && editingRole) {
-            roleForm.put(updateRole.url(editingRole.id), options);
+            roleForm.put(updateRole.url((editingRole.routeKey ?? editingRole.id) as never), options);
             return;
         }
 
@@ -164,7 +178,7 @@ export default function RolePermissionPage({ roles, permissions, permissionGroup
         };
 
         if (permissionMode === 'edit' && editingPermission) {
-            permissionForm.put(updatePermission.url(editingPermission.id), options);
+            permissionForm.put(updatePermission.url((editingPermission.routeKey ?? editingPermission.id) as never), options);
             return;
         }
 
@@ -197,8 +211,8 @@ export default function RolePermissionPage({ roles, permissions, permissionGroup
         }
 
         const route = deleteTarget.type === 'role'
-            ? destroyRole.url(deleteTarget.item.id)
-            : destroyPermission.url(deleteTarget.item.id);
+            ? destroyRole.url((deleteTarget.item.routeKey ?? deleteTarget.item.id) as never)
+            : destroyPermission.url((deleteTarget.item.routeKey ?? deleteTarget.item.id) as never);
 
         router.delete(route, {
             preserveScroll: true,
@@ -218,14 +232,18 @@ export default function RolePermissionPage({ roles, permissions, permissionGroup
                         <div style={{ fontSize: 12, color: '#94a3b8' }}>Manage access groups and permission keys</div>
                     </div>
                     <div style={{ display: 'flex', gap: 8 }}>
-                        <button onClick={openCreatePermission} style={secondaryButton}>
-                            <Plus size={15} />
-                            Permission
-                        </button>
-                        <button onClick={openCreateRole} style={primaryButton}>
-                            <ShieldCheck size={15} />
-                            Role
-                        </button>
+                        {canCreatePermission && (
+                            <button onClick={openCreatePermission} style={secondaryButton}>
+                                <Plus size={15} />
+                                Permission
+                            </button>
+                        )}
+                        {canCreateRole && (
+                            <button onClick={openCreateRole} style={primaryButton}>
+                                <ShieldCheck size={15} />
+                                Role
+                            </button>
+                        )}
                     </div>
                 </div>
 
@@ -259,16 +277,19 @@ export default function RolePermissionPage({ roles, permissions, permissionGroup
                     </div>
 
                     {tab === 'roles' ? (
-                        <div style={{ display: 'grid', gridTemplateColumns: 'minmax(280px, 420px) 1fr', gap: 18, alignItems: 'start' }}>
+                        <div style={{ display: 'grid', gridTemplateColumns: showRoleForm ? 'repeat(auto-fit, minmax(min(100%, 420px), 1fr))' : '1fr', gap: 18, alignItems: 'start' }}>
+                            {showRoleForm && (
                             <form onSubmit={submitRole} style={formPanel}>
                                 <FormTitle>{roleMode === 'edit' ? `Edit ${editingRole?.name}` : 'Add Role'}</FormTitle>
                                 <Field label="Role Name" error={roleForm.errors.name}>
                                     <input className="f-input" value={roleForm.data.name} onChange={event => roleForm.setData('name', event.target.value)} placeholder="admin" />
                                 </Field>
                                 <Field label="Guard" error={roleForm.errors.guard_name}>
-                                    <select className="f-input" value={roleForm.data.guard_name} onChange={event => roleForm.setData('guard_name', event.target.value)}>
-                                        <option value="web">web</option>
-                                    </select>
+                                    <AdminSelect
+                                        value={roleForm.data.guard_name}
+                                        onChange={value => roleForm.setData('guard_name', value)}
+                                        options={[{ value: 'web', label: 'web' }]}
+                                    />
                                 </Field>
                                 <Field label="Permissions" error={roleForm.errors.permission_ids}>
                                     <div style={{ display: 'grid', gap: 10, maxHeight: 360, overflowY: 'auto', paddingRight: 4 }}>
@@ -315,6 +336,7 @@ export default function RolePermissionPage({ roles, permissions, permissionGroup
                                     </button>
                                 </div>
                             </form>
+                            )}
 
                             <div style={{ overflowX: 'auto' }}>
                                 <table className="data-table">
@@ -346,6 +368,8 @@ export default function RolePermissionPage({ roles, permissions, permissionGroup
                                                 <td style={{ fontSize: 12, fontWeight: 800, color: '#475569' }}>{role.userCount}</td>
                                                 <td>
                                                     <RowActions
+                                                        canEdit={canUpdateRole}
+                                                        canDelete={canDeleteRole}
                                                         onEdit={() => openEditRole(role)}
                                                         onDelete={() => setDeleteTarget({ type: 'role', item: role })}
                                                     />
@@ -357,16 +381,19 @@ export default function RolePermissionPage({ roles, permissions, permissionGroup
                             </div>
                         </div>
                     ) : (
-                        <div style={{ display: 'grid', gridTemplateColumns: 'minmax(280px, 360px) 1fr', gap: 18, alignItems: 'start' }}>
+                        <div style={{ display: 'grid', gridTemplateColumns: showPermissionForm ? 'repeat(auto-fit, minmax(min(100%, 360px), 1fr))' : '1fr', gap: 18, alignItems: 'start' }}>
+                            {showPermissionForm && (
                             <form onSubmit={submitPermission} style={formPanel}>
                                 <FormTitle>{permissionMode === 'edit' ? `Edit ${editingPermission?.name}` : 'Add Permission'}</FormTitle>
                                 <Field label="Permission Name" error={permissionForm.errors.name}>
                                     <input className="f-input" value={permissionForm.data.name} onChange={event => permissionForm.setData('name', event.target.value)} placeholder="students.view" />
                                 </Field>
                                 <Field label="Guard" error={permissionForm.errors.guard_name}>
-                                    <select className="f-input" value={permissionForm.data.guard_name} onChange={event => permissionForm.setData('guard_name', event.target.value)}>
-                                        <option value="web">web</option>
-                                    </select>
+                                    <AdminSelect
+                                        value={permissionForm.data.guard_name}
+                                        onChange={value => permissionForm.setData('guard_name', value)}
+                                        options={[{ value: 'web', label: 'web' }]}
+                                    />
                                 </Field>
                                 <div style={{ display: 'flex', gap: 10, marginTop: 16 }}>
                                     <button type="button" onClick={openCreatePermission} style={cancelButton}>Clear</button>
@@ -375,6 +402,7 @@ export default function RolePermissionPage({ roles, permissions, permissionGroup
                                     </button>
                                 </div>
                             </form>
+                            )}
 
                             <div style={{ overflowX: 'auto' }}>
                                 <table className="data-table">
@@ -399,6 +427,8 @@ export default function RolePermissionPage({ roles, permissions, permissionGroup
                                                 <td style={{ fontSize: 12, fontWeight: 800, color: '#475569' }}>{permission.roleCount}</td>
                                                 <td>
                                                     <RowActions
+                                                        canEdit={canUpdatePermission}
+                                                        canDelete={canDeletePermission}
                                                         onEdit={() => openEditPermission(permission)}
                                                         onDelete={() => setDeleteTarget({ type: 'permission', item: permission })}
                                                     />
@@ -478,11 +508,15 @@ function Chip({ children }: { children: ReactNode }) {
     );
 }
 
-function RowActions({ onEdit, onDelete }: { onEdit: () => void; onDelete: () => void }) {
+function RowActions({ canEdit, canDelete, onEdit, onDelete }: { canEdit: boolean; canDelete: boolean; onEdit: () => void; onDelete: () => void }) {
+    if (! canEdit && ! canDelete) {
+        return <span style={{ color: '#94a3b8', fontSize: 12 }}>-</span>;
+    }
+
     return (
         <div style={{ display: 'flex', gap: 6 }}>
-            <button onClick={onEdit} style={iconButton('#eff6ff', '#2563eb', '#bfdbfe')} title="Edit"><Edit3 size={14} /></button>
-            <button onClick={onDelete} style={iconButton('#fff1f2', '#ef4444', '#fecaca')} title="Delete"><Trash2 size={14} /></button>
+            {canEdit && <button onClick={onEdit} style={iconButton('#eff6ff', '#2563eb', '#bfdbfe')} title="Edit"><Edit3 size={14} /></button>}
+            {canDelete && <button onClick={onDelete} style={iconButton('#fff1f2', '#ef4444', '#fecaca')} title="Delete"><Trash2 size={14} /></button>}
         </div>
     );
 }
@@ -564,3 +598,6 @@ const emptyText: CSSProperties = {
     borderRadius: 10,
     background: '#f8fafc',
 };
+
+
+

@@ -1,4 +1,4 @@
-import { store, update } from '@/actions/App/Http/Controllers/Backends/AttendanceSessionController';
+﻿import { store, update } from '@/actions/App/Http/Controllers/Backends/AttendanceSessionController';
 import AdminShell from '@/pages/admin/shell';
 import { Avatar, KH } from '@/pages/admin/ui';
 import { router, useForm } from '@inertiajs/react';
@@ -12,6 +12,7 @@ type AttendanceStatus = 'present' | 'absent' | 'late' | 'excused';
 
 interface AttendanceStudent {
     id: number;
+    routeKey?: string;
     nameKh: string;
     nameEn: string;
     province: string;
@@ -19,12 +20,14 @@ interface AttendanceStudent {
 
 interface AttendanceClass {
     id: number;
+    routeKey?: string;
     name: string;
     students: AttendanceStudent[];
 }
 
 interface AttendanceRecordItem {
     id: number;
+    routeKey?: string;
     studentId: number;
     studentNameKh: string;
     studentNameEn: string;
@@ -35,6 +38,7 @@ interface AttendanceRecordItem {
 
 interface AttendanceSessionItem {
     id: number;
+    routeKey?: string;
     schoolClassId: number;
     className: string;
     attendanceDate: string;
@@ -49,6 +53,7 @@ interface AttendanceSessionItem {
 
 interface AttendanceFormRecord {
     student_id: number;
+    routeKey?: string;
     status: AttendanceStatus;
     note: string;
 }
@@ -184,7 +189,7 @@ export default function MarkAttendancePage({ classes, editingSession }: MarkAtte
         };
 
         if (isEdit && editingSession) {
-            put(update.url(editingSession.id), options);
+            put(update.url((editingSession.routeKey ?? editingSession.id) as never), options);
             return;
         }
 
@@ -299,3 +304,6 @@ export default function MarkAttendancePage({ classes, editingSession }: MarkAtte
         </AdminShell>
     );
 }
+
+
+

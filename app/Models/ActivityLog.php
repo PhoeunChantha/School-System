@@ -2,6 +2,8 @@
 
 namespace App\Models;
 
+use App\Models\Concerns\HasEncryptedRouteKey;
+use Database\Factories\ActivityLogFactory;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -9,8 +11,8 @@ use Illuminate\Database\Eloquent\Relations\MorphTo;
 
 class ActivityLog extends Model
 {
-    /** @use HasFactory<\Database\Factories\ActivityLogFactory> */
-    use HasFactory;
+    /** @use HasFactory<ActivityLogFactory> */
+    use HasEncryptedRouteKey, HasFactory;
 
     protected $fillable = [
         'user_id',

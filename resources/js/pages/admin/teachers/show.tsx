@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+﻿import { useEffect, useState } from 'react';
 import { index as teacherIndex } from '@/actions/App/Http/Controllers/Backends/TeacherController';
 import { show as showStudent } from '@/actions/App/Http/Controllers/Backends/StudentController';
 import AdminShell from '@/pages/admin/shell';
@@ -8,6 +8,7 @@ import { ArrowLeft, CalendarDays, ChevronDown, ChevronUp, Clock, DoorOpen, Phone
 
 interface StudentSummary {
     id: number;
+    routeKey?: string;
     nameKh: string;
     nameEn: string;
     photo: string | null;
@@ -17,6 +18,7 @@ interface StudentSummary {
 
 interface ClassDetail {
     id: number;
+    routeKey?: string;
     name: string;
     room: string;
     time: string;
@@ -28,6 +30,7 @@ interface ClassDetail {
 
 interface TeacherDetail {
     id: number;
+    routeKey?: string;
     nameKh: string;
     nameEn: string;
     photo: string | null;
@@ -44,7 +47,7 @@ interface ShowTeacherProps {
     classes: ClassDetail[];
 }
 
-/* ─── Responsive CSS injected once ─── */
+/* â”€â”€â”€ Responsive CSS injected once â”€â”€â”€ */
 const RESPONSIVE_CSS = `
 /* Hero card */
 @media (max-width: 640px) {
@@ -116,7 +119,7 @@ function useInjectCSS(css: string) {
     }, []);
 }
 
-/* ─── Mobile student card ─── */
+/* â”€â”€â”€ Mobile student card â”€â”€â”€ */
 function StudentMobileCard({ s }: { s: StudentSummary }) {
     return (
         <div style={{
@@ -136,7 +139,7 @@ function StudentMobileCard({ s }: { s: StudentSummary }) {
                 </div>
             </div>
             <Link
-                href={showStudent.url(s.id)}
+                href={showStudent.url((s.routeKey ?? s.id) as never)}
                 style={{ background: '#f0fdf4', color: '#16a34a', border: '1px solid #bbf7d0', borderRadius: 7, padding: '6px 12px', fontSize: 11, fontWeight: 700, textDecoration: 'none', whiteSpace: 'nowrap', flexShrink: 0 }}
             >
                 View
@@ -163,7 +166,7 @@ export default function ShowTeacherPage({ teacher, classes }: ShowTeacherProps) 
                     </Link>
                 </div>
 
-                {/* ── Hero card ── */}
+                {/* â”€â”€ Hero card â”€â”€ */}
                 <div className="card" style={{ padding: '20px' }}>
                     <div
                         className="teacher-hero-inner"
@@ -238,7 +241,7 @@ export default function ShowTeacherPage({ teacher, classes }: ShowTeacherProps) 
                     )}
                 </div>
 
-                {/* ── Classes ── */}
+                {/* â”€â”€ Classes â”€â”€ */}
                 <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
                     <div style={{ fontWeight: 700, fontSize: 15, color: '#1e293b' }}>
                         Classes <span style={{ fontSize: 12, fontWeight: 500, color: '#94a3b8' }}>({classes.length})</span>
@@ -332,7 +335,7 @@ export default function ShowTeacherPage({ teacher, classes }: ShowTeacherProps) 
                                                                 <Badge type={s.status === 'active' ? 'green' : 'gray'}>{s.status}</Badge>
                                                             </td>
                                                             <td>
-                                                                <Link href={showStudent.url(s.id)} style={{ background: '#f0fdf4', color: '#16a34a', border: '1px solid #bbf7d0', borderRadius: 7, padding: '5px 12px', fontSize: 11, fontWeight: 700, textDecoration: 'none', whiteSpace: 'nowrap' }}>
+                                                                <Link href={showStudent.url((s.routeKey ?? s.id) as never)} style={{ background: '#f0fdf4', color: '#16a34a', border: '1px solid #bbf7d0', borderRadius: 7, padding: '5px 12px', fontSize: 11, fontWeight: 700, textDecoration: 'none', whiteSpace: 'nowrap' }}>
                                                                     View
                                                                 </Link>
                                                             </td>
@@ -359,3 +362,6 @@ export default function ShowTeacherPage({ teacher, classes }: ShowTeacherProps) 
         </AdminShell>
     );
 }
+
+
+

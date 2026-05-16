@@ -1,4 +1,4 @@
-import FeeChargeFormPage, { FeeStudentOption } from './form';
+﻿import FeeChargeFormPage, { FeeStudentOption } from './form';
 
 interface CreateFeeChargePageProps {
     students: FeeStudentOption[];
@@ -7,3 +7,6 @@ interface CreateFeeChargePageProps {
 export default function CreateFeeChargePage({ students }: CreateFeeChargePageProps) {
     return <FeeChargeFormPage mode="create" students={students} />;
 }
+
+
+

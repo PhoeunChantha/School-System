@@ -1,4 +1,4 @@
-import { FormEvent, useRef } from 'react';
+﻿import { FormEvent, useRef } from 'react';
 import { index as homeworkIndex, store, update } from '@/actions/App/Http/Controllers/Backends/HomeworkAssignmentController';
 import AdminShell from '@/pages/admin/shell';
 import { Link, useForm } from '@inertiajs/react';
@@ -9,6 +9,7 @@ import { FileText, Upload } from 'lucide-react';
 
 export interface HomeworkClassOption {
     id: number;
+    routeKey?: string;
     name: string;
     room: string;
     student_count: number;
@@ -16,6 +17,7 @@ export interface HomeworkClassOption {
 
 export interface HomeworkFormData {
     id?: number;
+    routeKey?: string;
     school_class_id: number | null;
     title_kh: string;
     title_en: string;
@@ -89,7 +91,7 @@ export default function HomeworkFormPage({ mode, homework, classes }: HomeworkFo
         };
 
         if (isEdit && homework?.id) {
-            post(update.url(homework.id), options);
+            post(update.url((homework.routeKey ?? homework.id) as never), options);
             return;
         }
 
@@ -116,7 +118,7 @@ export default function HomeworkFormPage({ mode, homework, classes }: HomeworkFo
                 <form onSubmit={submit} className="card" style={{ padding: 24, display: 'grid', gridTemplateColumns: 'repeat(2, minmax(0, 1fr))', gap: 16 }}>
                     <div style={{ gridColumn: '1 / -1' }}>
                         <label style={labelStyle}>Title (Khmer) *</label>
-                        <input style={fieldStyle} value={data.title_kh} onChange={event => setData('title_kh', event.target.value)} placeholder="សរសេរចំណងជើងកិច្ចការ" />
+                        <input style={fieldStyle} value={data.title_kh} onChange={event => setData('title_kh', event.target.value)} placeholder="ážŸážšážŸáŸážšáž…áŸ†ážŽáž„áž‡áž¾áž„áž€áž·áž…áŸ’áž…áž€áž¶ážš" />
                         {errors.title_kh && <div className="field-error">{errors.title_kh}</div>}
                     </div>
 
@@ -135,7 +137,7 @@ export default function HomeworkFormPage({ mode, homework, classes }: HomeworkFo
                             <SelectContent>
                                 {classes.map(schoolClass => (
                                     <SelectItem key={schoolClass.id} value={String(schoolClass.id)}>
-                                        {schoolClass.name} {schoolClass.room ? `· ${schoolClass.room}` : ''}
+                                        {schoolClass.name} {schoolClass.room ? `Â· ${schoolClass.room}` : ''}
                                     </SelectItem>
                                 ))}
                             </SelectContent>
@@ -229,3 +231,6 @@ export default function HomeworkFormPage({ mode, homework, classes }: HomeworkFo
         </AdminShell>
     );
 }
+
+
+

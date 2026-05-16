@@ -1,4 +1,4 @@
-import { create as createHomework, destroy, edit as editHomework } from '@/actions/App/Http/Controllers/Backends/HomeworkAssignmentController';
+﻿import { create as createHomework, destroy, edit as editHomework } from '@/actions/App/Http/Controllers/Backends/HomeworkAssignmentController';
 import { create as createHomeworkSubmission } from '@/routes/admin/homework-submissions';
 import AdminShell from '@/pages/admin/shell';
 import { Badge, KH, Pagination, PBar } from '@/pages/admin/ui';
@@ -10,6 +10,7 @@ import { Edit3, FileText, Plus, Trash2, Upload, X } from 'lucide-react';
 
 export interface HomeworkItem {
     id: number;
+    routeKey?: string;
     titleKh: string;
     titleEn: string;
     className: string;
@@ -92,7 +93,7 @@ export default function HomeworkPage({ homework }: HomeworkPageProps) {
     const confirmDelete = () => {
         if (!deleteTarget) return;
 
-        router.delete(destroy.url(deleteTarget.id), {
+        router.delete(destroy.url((deleteTarget.routeKey ?? deleteTarget.id) as never), {
             preserveScroll: true,
             onSuccess: () => {
                 toast.success('Homework deleted.', {
@@ -110,7 +111,7 @@ export default function HomeworkPage({ homework }: HomeworkPageProps) {
                     <div>
                         <div style={{ fontWeight: 800, fontSize: 18, color: '#1e293b' }}>Homework List</div>
                         <div style={{ fontSize: 12, color: '#94a3b8', marginTop: 2 }}>
-                            {totalAssigned} assigned · {totalSubmissions} submissions received
+                            {totalAssigned} assigned Â· {totalSubmissions} submissions received
                         </div>
                     </div>
 
@@ -204,7 +205,7 @@ export default function HomeworkPage({ homework }: HomeworkPageProps) {
                                         <td>{statusBadge(item.status)}</td>
                                         <td>
                                             <div style={{ display: 'flex', gap: 6 }}>
-                                                <Link href={editHomework.url(item.id)} style={{ background: '#eff6ff', color: '#2563eb', border: '1px solid #bfdbfe', borderRadius: 7, padding: '5px 10px', cursor: 'pointer', fontSize: 11, fontWeight: 700, textDecoration: 'none', whiteSpace: 'nowrap', display: 'inline-flex', alignItems: 'center', gap: 5 }}><Edit3 size={13} /> Edit</Link>
+                                                <Link href={editHomework.url((item.routeKey ?? item.id) as never)} style={{ background: '#eff6ff', color: '#2563eb', border: '1px solid #bfdbfe', borderRadius: 7, padding: '5px 10px', cursor: 'pointer', fontSize: 11, fontWeight: 700, textDecoration: 'none', whiteSpace: 'nowrap', display: 'inline-flex', alignItems: 'center', gap: 5 }}><Edit3 size={13} /> Edit</Link>
                                                 <button onClick={() => setDeleteTarget(item)} style={{ background: '#fff1f2', color: '#ef4444', border: '1px solid #fecaca', borderRadius: 7, padding: '5px 10px', cursor: 'pointer', fontSize: 11, fontWeight: 700, whiteSpace: 'nowrap', display: 'inline-flex', alignItems: 'center', gap: 5 }}><Trash2 size={13} /> Delete</button>
                                             </div>
                                         </td>
@@ -237,3 +238,6 @@ export default function HomeworkPage({ homework }: HomeworkPageProps) {
         </AdminShell>
     );
 }
+
+
+

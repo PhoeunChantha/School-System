@@ -83,6 +83,7 @@ class CertificateService
             ->get(['id', 'level_id', 'school_class_id', 'name_kh', 'name_en'])
             ->map(fn (Student $student): array => [
                 'id' => $student->id,
+                'routeKey' => $student->routeKey(),
                 'nameKh' => $student->name_kh,
                 'nameEn' => $student->name_en,
                 'levelId' => $student->level_id,
@@ -103,6 +104,7 @@ class CertificateService
             ->get(['id', 'name'])
             ->map(fn (Level $level): array => [
                 'id' => $level->id,
+                'routeKey' => $level->routeKey(),
                 'name' => $level->name,
             ]);
     }
@@ -114,6 +116,7 @@ class CertificateService
     {
         return [
             'id' => $certificate->id,
+            'routeKey' => $certificate->routeKey(),
             'studentId' => $certificate->student_id,
             'studentNameKh' => $certificate->student?->name_kh ?? '',
             'studentNameEn' => $certificate->student?->name_en ?? 'Unknown student',

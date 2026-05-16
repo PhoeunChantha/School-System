@@ -1,4 +1,4 @@
-import HomeworkFormPage, { HomeworkClassOption } from './form';
+﻿import HomeworkFormPage, { HomeworkClassOption } from './form';
 
 interface CreateHomeworkPageProps {
     classes: HomeworkClassOption[];
@@ -7,3 +7,6 @@ interface CreateHomeworkPageProps {
 export default function CreateHomeworkPage({ classes }: CreateHomeworkPageProps) {
     return <HomeworkFormPage mode="create" classes={classes} />;
 }
+
+
+

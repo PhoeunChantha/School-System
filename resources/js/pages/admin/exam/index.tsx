@@ -1,4 +1,5 @@
-import { destroy, store, update } from '@/actions/App/Http/Controllers/Backends/ExamController';
+﻿import { destroy, store, update } from '@/actions/App/Http/Controllers/Backends/ExamController';
+import { DatePicker } from '@/components/ui/date-picker';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import AdminShell from '@/pages/admin/shell';
 import { Badge, Pagination } from '@/pages/admin/ui';
@@ -17,6 +18,7 @@ import { toast } from 'sonner';
 
 interface ExamClassOption {
     id: number;
+    routeKey?: string;
     name: string;
     room: string;
     studentCount: number;
@@ -24,6 +26,7 @@ interface ExamClassOption {
 
 interface ExamItem {
     id: number;
+    routeKey?: string;
     schoolClassId: number | null;
     className: string;
     title: string;
@@ -283,7 +286,7 @@ export default function ExamPage({ exams, classes, summary }: ExamPageProps) {
 
         if (editingExam) {
             transform(() => ({ ...payload, _method: 'put' as const }));
-            post(update.url(editingExam.id), options);
+            post(update.url((editingExam.routeKey ?? editingExam.id) as never), options);
             return;
         }
 
@@ -296,7 +299,7 @@ export default function ExamPage({ exams, classes, summary }: ExamPageProps) {
             return;
         }
 
-        router.delete(destroy.url(deleteTarget.id), {
+        router.delete(destroy.url((deleteTarget.routeKey ?? deleteTarget.id) as never), {
             preserveScroll: true,
             onSuccess: () => {
                 toast.success('Exam deleted.');
@@ -617,13 +620,18 @@ function ExamBuilder({
                         <input value={meta.subject} onChange={event => setMeta(current => ({ ...current, subject: event.target.value }))} style={fieldStyle} />
                     </Field>
                     <Field label="Class" error={errors.school_class_id}>
-                        <select value={meta.school_class_id ?? ''} onChange={event => setMeta(current => ({ ...current, school_class_id: Number(event.target.value) || null }))} style={fieldStyle}>
-                            <option value="">All classes</option>
-                            {classes.map(schoolClass => <option key={schoolClass.id} value={schoolClass.id}>{schoolClass.name}</option>)}
-                        </select>
+                        <Select value={meta.school_class_id ? String(meta.school_class_id) : 'all'} onValueChange={value => setMeta(current => ({ ...current, school_class_id: value === 'all' ? null : Number(value) }))}>
+                            <SelectTrigger className="f-input" style={{ minHeight: 40 }}>
+                                <SelectValue />
+                            </SelectTrigger>
+                            <SelectContent>
+                                <SelectItem value="all">All classes</SelectItem>
+                                {classes.map(schoolClass => <SelectItem key={schoolClass.id} value={String(schoolClass.id)}>{schoolClass.name}</SelectItem>)}
+                            </SelectContent>
+                        </Select>
                     </Field>
                     <Field label="Exam Date" error={errors.exam_date}>
-                        <input type="date" value={meta.exam_date} onChange={event => setMeta(current => ({ ...current, exam_date: event.target.value }))} style={fieldStyle} />
+                        <DatePicker value={meta.exam_date} onChange={value => setMeta(current => ({ ...current, exam_date: value }))} placeholder="Pick exam date" className="f-input min-h-10" />
                     </Field>
                     <Field label="Duration" error={errors.duration_minutes}>
                         <input type="number" min={1} max={1000} value={meta.duration_minutes ?? ''} onChange={event => setMeta(current => ({ ...current, duration_minutes: Number(event.target.value) || null }))} style={fieldStyle} />
@@ -632,11 +640,16 @@ function ExamBuilder({
                         <input value={meta.academic_year} onChange={event => setMeta(current => ({ ...current, academic_year: event.target.value }))} style={fieldStyle} />
                     </Field>
                     <Field label="Status" error={errors.status}>
-                        <select value={meta.status} onChange={event => setMeta(current => ({ ...current, status: event.target.value as ExamFormData['status'] }))} style={fieldStyle}>
-                            <option value="draft">Draft</option>
-                            <option value="published">Published</option>
-                            <option value="archived">Archived</option>
-                        </select>
+                        <Select value={meta.status} onValueChange={value => setMeta(current => ({ ...current, status: value as ExamFormData['status'] }))}>
+                            <SelectTrigger className="f-input" style={{ minHeight: 40 }}>
+                                <SelectValue />
+                            </SelectTrigger>
+                            <SelectContent>
+                                <SelectItem value="draft">Draft</SelectItem>
+                                <SelectItem value="published">Published</SelectItem>
+                                <SelectItem value="archived">Archived</SelectItem>
+                            </SelectContent>
+                        </Select>
                     </Field>
                     <Field label="Exam File" error={errors.attachment}>
                         <input
@@ -962,3 +975,6 @@ const fieldStyle: React.CSSProperties = {
     color: '#1e293b',
     outline: 'none',
 };
+
+
+

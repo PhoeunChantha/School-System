@@ -1,4 +1,4 @@
-import { store as saveTeacherGrade } from '@/actions/App/Http/Controllers/Backends/TeacherGradeController';
+﻿import { store as saveTeacherGrade } from '@/actions/App/Http/Controllers/Backends/TeacherGradeController';
 import { teachers as teachersIndex } from '@/routes/admin';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import AdminShell from '@/pages/admin/shell';
@@ -10,6 +10,7 @@ import { toast } from 'sonner';
 
 interface TeacherInfo {
     id: number;
+    routeKey?: string;
     nameKh: string;
     nameEn: string;
     photo: string | null;
@@ -18,6 +19,7 @@ interface TeacherInfo {
 
 interface PeriodOption {
     id: number;
+    routeKey?: string;
     name: string;
     type: string;
     academicYear: string;
@@ -26,6 +28,7 @@ interface PeriodOption {
 
 interface ClassOption {
     id: number;
+    routeKey?: string;
     name: string;
     room: string;
     students: number;
@@ -33,6 +36,7 @@ interface ClassOption {
 
 interface StudentOption {
     id: number;
+    routeKey?: string;
     schoolClassId: number;
     className: string;
     nameKh: string;
@@ -49,6 +53,7 @@ interface StudentOption {
 
 interface GradeRecordItem {
     id: number;
+    routeKey?: string;
     gradePeriodId: number;
     periodName: string;
     studentId: number;
@@ -200,7 +205,7 @@ export default function TeacherGradesPage({ teacher, periods, classes, students,
     const submit = (event: FormEvent<HTMLFormElement>) => {
         event.preventDefault();
 
-        post(saveTeacherGrade.url(teacher.id), {
+        post(saveTeacherGrade.url((teacher.routeKey ?? teacher.id) as never), {
             preserveScroll: true,
             onSuccess: () => toast.success('Student score saved.'),
         });
@@ -220,7 +225,7 @@ export default function TeacherGradesPage({ teacher, periods, classes, students,
                     <Avatar name={teacher.nameEn} src={teacher.photo} size={42} />
                     <div>
                         <KH style={{ display: 'block', color: '#1e293b', fontSize: 18, fontWeight: 900 }}>{teacher.nameKh}</KH>
-                        <div style={{ color: '#94a3b8', fontSize: 12 }}>{teacher.nameEn} · {teacher.subject || 'Teacher scores'}</div>
+                        <div style={{ color: '#94a3b8', fontSize: 12 }}>{teacher.nameEn} Â· {teacher.subject || 'Teacher scores'}</div>
                     </div>
                 </div>
 
@@ -247,7 +252,7 @@ export default function TeacherGradesPage({ teacher, periods, classes, students,
                                 <Avatar name={editingStudent.nameEn} src={editingStudent.photo} size={30} />
                                 <div>
                                     <KH style={{ display: 'block', fontWeight: 800, color: '#1e293b', fontSize: 12 }}>{editingStudent.nameKh}</KH>
-                                    <div style={{ color: '#94a3b8', fontSize: 11 }}>{editingStudent.nameEn} · {editingStudent.className}</div>
+                                    <div style={{ color: '#94a3b8', fontSize: 11 }}>{editingStudent.nameEn} Â· {editingStudent.className}</div>
                                 </div>
                             </div>
                         )}
@@ -391,3 +396,6 @@ export default function TeacherGradesPage({ teacher, periods, classes, students,
         </AdminShell>
     );
 }
+
+
+

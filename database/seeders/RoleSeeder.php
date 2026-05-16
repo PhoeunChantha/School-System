@@ -56,7 +56,6 @@ class RoleSeeder extends Seeder
             'homework.view',
             'homework-submissions.view',
             'homework-submissions.create',
-            'homework-submissions.update',
             'exam.view',
             'exam-results.view',
             'certificates.view',

@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Models\Concerns\HasEncryptedRouteKey;
 use Database\Factories\HomeworkSubmissionFactory;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
@@ -11,7 +12,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 class HomeworkSubmission extends Model
 {
     /** @use HasFactory<HomeworkSubmissionFactory> */
-    use HasFactory;
+    use HasEncryptedRouteKey, HasFactory;
 
     protected $fillable = [
         'homework_assignment_id',

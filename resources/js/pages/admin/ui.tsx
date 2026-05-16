@@ -1,5 +1,6 @@
-import { useState } from 'react';
+﻿import { useEffect, useState } from 'react';
 import type { CSSProperties, ReactNode } from 'react';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { ArrowLeft, ArrowRight, Check, X } from 'lucide-react';
 import type { Student } from './data';
 
@@ -11,10 +12,14 @@ export function KH({ children, className = '', style }: KHProps) {
 interface AvatarProps { name: string; size?: number; src?: string | null; }
 export function Avatar({ name, size = 36, src }: AvatarProps) {
     const [imgError, setImgError] = useState(false);
-    const clean = (name || '').replace(/[ក-៿\s]/g, '').trim();
-    const initials = clean.split(' ').filter(Boolean).map(w => w[0]).join('').slice(0, 2).toUpperCase() || (name || '?')[0];
+    const clean = (name || '').trim();
+    const initials = clean.split(/\s+/).filter(Boolean).map(w => w[0]).join('').slice(0, 2).toUpperCase() || (name || '?')[0];
     const pal = ['#3b82f6', '#8b5cf6', '#10b981', '#f59e0b', '#ef4444', '#06b6d4', '#6366f1', '#f97316'];
     const bg = pal[(name || '').charCodeAt(0) % pal.length];
+
+    useEffect(() => {
+        setImgError(false);
+    }, [src]);
 
     if (src && !imgError) {
         return (
@@ -70,7 +75,53 @@ export function ScoreChip({ score }: ScoreChipProps) {
     return <Badge type={type}>{score}</Badge>;
 }
 
-// ── Reusable Pagination ───────────────────────────────────
+interface AdminSelectOption {
+    value: string;
+    label: ReactNode;
+}
+
+interface AdminSelectProps {
+    value: string;
+    onChange: (value: string) => void;
+    options: AdminSelectOption[];
+    placeholder?: string;
+    className?: string;
+    triggerClassName?: string;
+    contentClassName?: string;
+    style?: CSSProperties;
+    disabled?: boolean;
+}
+
+export function AdminSelect({
+    value,
+    onChange,
+    options,
+    placeholder = 'Select',
+    className,
+    triggerClassName = 'f-input',
+    contentClassName,
+    style,
+    disabled,
+}: AdminSelectProps) {
+    return (
+        <div className={className} style={style}>
+            <Select value={value} onValueChange={onChange} disabled={disabled}>
+                <SelectTrigger className={triggerClassName}>
+                    <SelectValue placeholder={placeholder} />
+                </SelectTrigger>
+                <SelectContent className={contentClassName}>
+                    {options.map(option => (
+                        <SelectItem key={option.value} value={option.value}>
+                            {option.label}
+                        </SelectItem>
+                    ))}
+                </SelectContent>
+            </Select>
+        </div>
+    );
+}
+
+// â”€â”€ Reusable Pagination â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 export interface PaginationProps {
     total: number;
     page: number;
@@ -92,14 +143,14 @@ export function Pagination({
     const to   = Math.min(page * perPage, total);
 
     // Build visible page numbers with ellipsis
-    const pageNums: (number | '…')[] = [];
+    const pageNums: (number | 'â€¦')[] = [];
     if (totalPages <= 7) {
         for (let i = 1; i <= totalPages; i++) pageNums.push(i);
     } else {
         pageNums.push(1);
-        if (page > 3) pageNums.push('…');
+        if (page > 3) pageNums.push('â€¦');
         for (let i = Math.max(2, page - 1); i <= Math.min(totalPages - 1, page + 1); i++) pageNums.push(i);
-        if (page < totalPages - 2) pageNums.push('…');
+        if (page < totalPages - 2) pageNums.push('â€¦');
         pageNums.push(totalPages);
     }
 
@@ -119,7 +170,7 @@ export function Pagination({
             <div style={{ fontSize: 12, color: '#64748b', fontWeight: 600 }}>
                 {total === 0
                     ? 'No results'
-                    : <>Showing <strong style={{ color: '#1e293b' }}>{from}–{to}</strong> of <strong style={{ color: '#1e293b' }}>{total}</strong></>
+                    : <>Showing <strong style={{ color: '#1e293b' }}>{from}â€“{to}</strong> of <strong style={{ color: '#1e293b' }}>{total}</strong></>
                 }
             </div>
 
@@ -132,8 +183,8 @@ export function Pagination({
                     <ArrowLeft size={14} />
                 </button>
                 {pageNums.map((p, i) =>
-                    p === '…'
-                        ? <span key={`e${i}`} style={{ width: 28, textAlign: 'center', color: '#94a3b8', fontSize: 13 }}>…</span>
+                    p === 'â€¦'
+                        ? <span key={`e${i}`} style={{ width: 28, textAlign: 'center', color: '#94a3b8', fontSize: 13 }}>â€¦</span>
                         : <button key={p} onClick={() => onPageChange(p as number)} style={btn(p === page, false)}>{p}</button>
                 )}
                 <button
@@ -144,17 +195,18 @@ export function Pagination({
                 </button>
             </div>
 
-            {/* Per page — only shown when showPerPage=true */}
+            {/* Per page â€” only shown when showPerPage=true */}
             {showPerPage && (
-                <select
-                    value={perPage}
-                    onChange={e => { onPerPageChange(Number(e.target.value)); onPageChange(1); }}
-                    style={{ padding: '5px 10px', borderRadius: 8, border: '1.5px solid #e2e8f0', background: 'white', color: '#374151', fontSize: 12, fontWeight: 700, cursor: 'pointer', outline: 'none' }}>
-                    {perPageOptions.map(n => (
-                        <option key={n} value={n}>{n} per page</option>
-                    ))}
-                </select>
+                <AdminSelect
+                    value={perPage.toString()}
+                    onChange={value => { onPerPageChange(Number(value)); onPageChange(1); }}
+                    options={perPageOptions.map(n => ({ value: n.toString(), label: `${n} per page` }))}
+                    triggerClassName="f-input h-8 min-h-8 min-w-[118px] px-3 py-1 text-xs font-bold"
+                />
             )}
         </div>
     );
 }
+
+
+

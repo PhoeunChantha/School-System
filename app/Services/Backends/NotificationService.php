@@ -91,6 +91,7 @@ class NotificationService
             ->get(['id', 'name_kh', 'name_en'])
             ->map(fn (Student $student): array => [
                 'id' => $student->id,
+                'routeKey' => $student->routeKey(),
                 'nameKh' => $student->name_kh,
                 'nameEn' => $student->name_en,
             ]);
@@ -106,6 +107,7 @@ class NotificationService
             ->get(['id', 'name', 'email'])
             ->map(fn (User $user): array => [
                 'id' => $user->id,
+                'routeKey' => $user->routeKey(),
                 'name' => $user->name,
                 'email' => $user->email,
             ]);
@@ -120,6 +122,7 @@ class NotificationService
 
         return [
             'id' => $notification->id,
+            'routeKey' => $notification->routeKey(),
             'category' => $notification->category,
             'titleKh' => $data['titleKh'] ?? '',
             'title' => $notification->title,

@@ -1,7 +1,7 @@
-import { useEffect, useMemo, useRef, useState } from 'react';
+﻿import { useEffect, useMemo, useRef, useState } from 'react';
 import { create as createStudent, destroy, downloadLayout as downloadStudentLayout, edit as editStudent, exportMethod as exportStudents, importMethod as importStudents, show as showStudent } from '@/actions/App/Http/Controllers/Backends/StudentController';
 import AdminShell from '@/pages/admin/shell';
-import { Avatar, Badge, FeeTag, KH, Pagination, PBar, ScoreChip } from '@/pages/admin/ui';
+import { AdminSelect, Avatar, Badge, FeeTag, KH, Pagination, PBar, ScoreChip } from '@/pages/admin/ui';
 import { Link, router } from '@inertiajs/react';
 import { Download, Edit3, Eye, FileDown, Plus, Trash2, Upload, X } from 'lucide-react';
 import { toast } from 'sonner';
@@ -15,6 +15,7 @@ export interface Grade {
 
 export interface Student {
     id: number;
+    routeKey?: string;
     nameKh: string;
     nameEn: string;
     photo: string | null;
@@ -66,7 +67,7 @@ function sortStudents(list: Student[], order: OrderKey): Student[] {
     });
 }
 
-/* ─── Responsive styles injected once ─── */
+/* â”€â”€â”€ Responsive styles injected once â”€â”€â”€ */
 const RESPONSIVE_CSS = `
 @media (max-width: 768px) {
     .students-topbar {
@@ -153,7 +154,7 @@ function useInjectCSS(css: string) {
     }, []);
 }
 
-/* ─── Mobile card for one student ─── */
+/* â”€â”€â”€ Mobile card for one student â”€â”€â”€ */
 function StudentCard({ student, onSelect, selected, onEdit, onDelete }: {
     student: Student;
     selected: boolean;
@@ -210,13 +211,13 @@ function StudentCard({ student, onSelect, selected, onEdit, onDelete }: {
             {/* Actions */}
             <div style={{ display: 'flex', gap: 8 }} onClick={e => e.stopPropagation()}>
                 <Link
-                    href={showStudent.url(student.id)}
+                    href={showStudent.url((student.routeKey ?? student.id) as never)}
                     style={{ flex: 1, textAlign: 'center', background: '#f0fdf4', color: '#16a34a', border: '1px solid #bbf7d0', borderRadius: 8, padding: '7px', fontSize: 12, fontWeight: 700, textDecoration: 'none', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: 5 }}
                 >
                     <Eye size={13} /> View
                 </Link>
                 <Link
-                    href={editStudent.url(student.id)}
+                    href={editStudent.url((student.routeKey ?? student.id) as never)}
                     style={{ flex: 1, textAlign: 'center', background: '#eff6ff', color: '#2563eb', border: '1px solid #bfdbfe', borderRadius: 8, padding: '7px', fontSize: 12, fontWeight: 700, textDecoration: 'none', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: 5 }}
                 >
                     <Edit3 size={13} /> Edit
@@ -268,7 +269,7 @@ export default function StudentsPage({ students }: StudentsPageProps) {
 
     const confirmDelete = () => {
         if (!deleteTarget) return;
-        router.delete(destroy.url(deleteTarget.id), {
+        router.delete(destroy.url((deleteTarget.routeKey ?? deleteTarget.id) as never), {
             preserveScroll: true,
             onSuccess: () => {
                 toast.success('Student deleted successfully!', {
@@ -308,7 +309,7 @@ export default function StudentsPage({ students }: StudentsPageProps) {
         <AdminShell>
             <div className="fade-in" style={{ padding: '16px', display: 'flex', flexDirection: 'column', gap: 16 }}>
 
-                {/* ── Top bar: stats + add button ── */}
+                {/* â”€â”€ Top bar: stats + add button â”€â”€ */}
                 <div className="students-topbar" style={{ display: 'flex', gap: 12, flexWrap: 'wrap', alignItems: 'center' }}>
                     <div className="students-stats" style={{ display: 'flex', gap: 12, flexWrap: 'wrap' }}>
                         {[
@@ -351,7 +352,7 @@ export default function StudentsPage({ students }: StudentsPageProps) {
                     </div>
                 </div>
 
-                {/* ── Table card ── */}
+                {/* â”€â”€ Table card â”€â”€ */}
                 <div className="card" style={{ overflowX: 'auto' }}>
 
                     {/* Toolbar */}
@@ -360,21 +361,21 @@ export default function StudentsPage({ students }: StudentsPageProps) {
                         {/* Row 1 on mobile: sort + per-page + result count */}
                         <div className="students-toolbar-row1" style={{ display: 'flex', gap: 8, alignItems: 'center', flexWrap: 'wrap' }}>
                             <span style={{ fontSize: 11, fontWeight: 700, color: '#94a3b8', whiteSpace: 'nowrap' }}>Sort by</span>
-                            <select
+                            <AdminSelect
                                 value={orderBy}
-                                onChange={e => setOrderBy(e.target.value as OrderKey)}
-                                style={{ padding: '5px 10px', borderRadius: 8, border: '1.5px solid #e2e8f0', background: 'white', color: '#374151', fontSize: 12, fontWeight: 700, cursor: 'pointer', outline: 'none' }}
-                            >
-                                {ORDER_OPTIONS.map(o => <option key={o.value} value={o.value}>{o.label}</option>)}
-                            </select>
+                                onChange={value => setOrderBy(value as OrderKey)}
+                                options={ORDER_OPTIONS}
+                                style={{ minWidth: 150 }}
+                                triggerClassName="f-input h-9 min-h-9 px-3 py-1 text-xs font-bold"
+                            />
                             <div style={{ width: 1, height: 18, background: '#e2e8f0', margin: '0 2px' }} />
-                            <select
-                                value={perPage}
-                                onChange={e => { setPerPage(Number(e.target.value)); setPage(1); }}
-                                style={{ padding: '5px 10px', borderRadius: 8, border: '1.5px solid #e2e8f0', background: 'white', color: '#374151', fontSize: 12, fontWeight: 700, cursor: 'pointer', outline: 'none' }}
-                            >
-                                {[5, 10, 25, 50].map(size => <option key={size} value={size}>{size} / page</option>)}
-                            </select>
+                            <AdminSelect
+                                value={perPage.toString()}
+                                onChange={value => { setPerPage(Number(value)); setPage(1); }}
+                                options={[5, 10, 25, 50].map(size => ({ value: size.toString(), label: `${size} / page` }))}
+                                style={{ minWidth: 120 }}
+                                triggerClassName="f-input h-9 min-h-9 px-3 py-1 text-xs font-bold"
+                            />
                             <span style={{ fontSize: 11, color: '#94a3b8' }}>{filtered.length} result{filtered.length !== 1 ? 's' : ''}</span>
                         </div>
 
@@ -401,7 +402,7 @@ export default function StudentsPage({ students }: StudentsPageProps) {
                         />
                     </div>
 
-                    {/* ── Desktop table ── */}
+                    {/* â”€â”€ Desktop table â”€â”€ */}
                     <div className="students-table-wrap">
                         <table className="data-table">
                             <thead>
@@ -445,8 +446,8 @@ export default function StudentsPage({ students }: StudentsPageProps) {
                                         <td style={{ fontSize: 12, color: '#64748b' }}>{student.province}</td>
                                         <td onClick={e => e.stopPropagation()}>
                                             <div style={{ display: 'flex', gap: 6 }}>
-                                                <Link href={showStudent.url(student.id)} style={{ background: '#f0fdf4', color: '#16a34a', border: '1px solid #bbf7d0', borderRadius: 7, padding: '5px 10px', cursor: 'pointer', fontSize: 11, fontWeight: 700, textDecoration: 'none', whiteSpace: 'nowrap', display: 'inline-flex', alignItems: 'center', gap: 5 }}><Eye size={13} /> View</Link>
-                                                <Link href={editStudent.url(student.id)} style={{ background: '#eff6ff', color: '#2563eb', border: '1px solid #bfdbfe', borderRadius: 7, padding: '5px 10px', cursor: 'pointer', fontSize: 11, fontWeight: 700, textDecoration: 'none', whiteSpace: 'nowrap', display: 'inline-flex', alignItems: 'center', gap: 5 }}><Edit3 size={13} /> Edit</Link>
+                                                <Link href={showStudent.url((student.routeKey ?? student.id) as never)} style={{ background: '#f0fdf4', color: '#16a34a', border: '1px solid #bbf7d0', borderRadius: 7, padding: '5px 10px', cursor: 'pointer', fontSize: 11, fontWeight: 700, textDecoration: 'none', whiteSpace: 'nowrap', display: 'inline-flex', alignItems: 'center', gap: 5 }}><Eye size={13} /> View</Link>
+                                                <Link href={editStudent.url((student.routeKey ?? student.id) as never)} style={{ background: '#eff6ff', color: '#2563eb', border: '1px solid #bfdbfe', borderRadius: 7, padding: '5px 10px', cursor: 'pointer', fontSize: 11, fontWeight: 700, textDecoration: 'none', whiteSpace: 'nowrap', display: 'inline-flex', alignItems: 'center', gap: 5 }}><Edit3 size={13} /> Edit</Link>
                                                 <button onClick={() => setDeleteTarget(student)} style={{ background: '#fff1f2', color: '#ef4444', border: '1px solid #fecaca', borderRadius: 7, padding: '5px 10px', cursor: 'pointer', fontSize: 11, fontWeight: 700, whiteSpace: 'nowrap', display: 'inline-flex', alignItems: 'center', gap: 5 }}><Trash2 size={13} /> Delete</button>
                                             </div>
                                         </td>
@@ -456,7 +457,7 @@ export default function StudentsPage({ students }: StudentsPageProps) {
                         </table>
                     </div>
 
-                    {/* ── Mobile card list ── */}
+                    {/* â”€â”€ Mobile card list â”€â”€ */}
                     <div
                         className="students-card-list"
                         style={{ display: 'none', flexDirection: 'column', gap: 12, padding: '12px 16px' }}
@@ -489,7 +490,7 @@ export default function StudentsPage({ students }: StudentsPageProps) {
                     )}
                 </div>
 
-                {/* ── Selected student detail panel ── */}
+                {/* â”€â”€ Selected student detail panel â”€â”€ */}
                 {selected && (
                     <div className="card fade-in" style={{ padding: 20 }}>
                         <div
@@ -512,7 +513,7 @@ export default function StudentsPage({ students }: StudentsPageProps) {
                                 className="student-detail-actions"
                                 style={{ display: 'flex', gap: 8, flexShrink: 0 }}
                             >
-                                <Link href={editStudent.url(selected.id)} style={{ background: '#eff6ff', color: '#2563eb', border: '1px solid #bfdbfe', borderRadius: 9, padding: '8px 16px', cursor: 'pointer', fontSize: 13, fontWeight: 700, textDecoration: 'none', textAlign: 'center', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: 6 }}><Edit3 size={14} /> Edit</Link>
+                                <Link href={editStudent.url((selected.routeKey ?? selected.id) as never)} style={{ background: '#eff6ff', color: '#2563eb', border: '1px solid #bfdbfe', borderRadius: 9, padding: '8px 16px', cursor: 'pointer', fontSize: 13, fontWeight: 700, textDecoration: 'none', textAlign: 'center', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: 6 }}><Edit3 size={14} /> Edit</Link>
                                 <button onClick={() => setDeleteTarget(selected)} style={{ background: '#fff1f2', color: '#ef4444', border: '1px solid #fecaca', borderRadius: 9, padding: '8px 16px', cursor: 'pointer', fontSize: 13, fontWeight: 700, display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: 6 }}><Trash2 size={14} /> Delete</button>
                             </div>
                         </div>
@@ -536,7 +537,7 @@ export default function StudentsPage({ students }: StudentsPageProps) {
                 )}
             </div>
 
-            {/* ── Delete confirmation modal ── */}
+            {/* â”€â”€ Delete confirmation modal â”€â”€ */}
             {deleteTarget && (
                 <div
                     style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.45)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 200, padding: 16 }}
@@ -559,3 +560,6 @@ export default function StudentsPage({ students }: StudentsPageProps) {
         </AdminShell>
     );
 }
+
+
+

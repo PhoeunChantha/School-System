@@ -1,4 +1,4 @@
-import { destroy, store, update } from '@/actions/App/Http/Controllers/Backends/ActivityLogController';
+﻿import { destroy, store, update } from '@/actions/App/Http/Controllers/Backends/ActivityLogController';
 import {
     Sheet,
     SheetContent,
@@ -7,7 +7,7 @@ import {
     SheetTitle,
 } from '@/components/ui/sheet';
 import AdminShell from '@/pages/admin/shell';
-import { Avatar, Badge, KH, Pagination } from '@/pages/admin/ui';
+import { AdminSelect, Avatar, Badge, KH, Pagination } from '@/pages/admin/ui';
 import { router, useForm } from '@inertiajs/react';
 import { Edit3, Plus, Trash2 } from 'lucide-react';
 import { FormEvent, useEffect, useMemo, useState } from 'react';
@@ -16,6 +16,7 @@ import { toast } from 'sonner';
 
 interface ActivityLogItem {
     id: number;
+    routeKey?: string;
     userId: number | null;
     userName: string;
     userEmail: string;
@@ -30,6 +31,7 @@ interface ActivityLogItem {
 
 interface UserOption {
     id: number;
+    routeKey?: string;
     name: string;
     email: string;
 }
@@ -153,7 +155,7 @@ export default function ActivityLogsPage({ logs, users, events, summary }: Activ
         };
 
         if (drawerMode === 'edit' && editingLog) {
-            put(update.url(editingLog.id), options);
+            put(update.url((editingLog.routeKey ?? editingLog.id) as never), options);
             return;
         }
 
@@ -165,7 +167,7 @@ export default function ActivityLogsPage({ logs, users, events, summary }: Activ
             return;
         }
 
-        router.delete(destroy.url(deleteTarget.id), {
+        router.delete(destroy.url((deleteTarget.routeKey ?? deleteTarget.id) as never), {
             preserveScroll: true,
             onSuccess: () => {
                 toast.success('Activity log deleted.');
@@ -180,7 +182,7 @@ export default function ActivityLogsPage({ logs, users, events, summary }: Activ
                 <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 12 }}>
                     <div>
                         <div style={{ fontWeight: 800, fontSize: 18, color: '#1e293b' }}>Activity Logs</div>
-                        <KH style={{ fontSize: 12, color: '#94a3b8', display: 'block' }}>កត់ត្រាសកម្មភាព · Audit system activity</KH>
+                        <KH style={{ fontSize: 12, color: '#94a3b8', display: 'block' }}>áž€ážáŸ‹ážáŸ’ážšáž¶ážŸáž€áž˜áŸ’áž˜áž—áž¶áž– Â· Audit system activity</KH>
                     </div>
                     <button onClick={openCreateDrawer} style={primaryButton}>
                         <Plus size={16} />
@@ -204,17 +206,27 @@ export default function ActivityLogsPage({ logs, users, events, summary }: Activ
 
                 <div className="card" style={{ overflowX: 'auto' }}>
                     <div style={{ padding: '12px 16px', borderBottom: '1px solid #f1f5f9', display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap' }}>
-                        <select style={selectStyle} value={selectedEvent} onChange={event => setSelectedEvent(event.target.value)}>
-                            <option value="all">All events</option>
-                            {events.map(event => <option key={event} value={event}>{event}</option>)}
-                        </select>
-                        <select style={selectStyle} value={selectedUser} onChange={event => setSelectedUser(event.target.value === 'all' ? 'all' : Number(event.target.value))}>
-                            <option value="all">All users</option>
-                            {users.map(user => <option key={user.id} value={user.id}>{user.name}</option>)}
-                        </select>
-                        <select style={selectStyle} value={perPage} onChange={event => setPerPage(Number(event.target.value))}>
-                            {[5, 10, 25, 50].map(size => <option key={size} value={size}>{size} per page</option>)}
-                        </select>
+                        <AdminSelect
+                            value={selectedEvent}
+                            onChange={setSelectedEvent}
+                            options={[{ value: 'all', label: 'All events' }, ...events.map(event => ({ value: event, label: event }))]}
+                            style={{ minWidth: 150 }}
+                            triggerClassName="f-input h-9 min-h-9 px-3 py-1 text-xs font-extrabold"
+                        />
+                        <AdminSelect
+                            value={String(selectedUser)}
+                            onChange={value => setSelectedUser(value === 'all' ? 'all' : Number(value))}
+                            options={[{ value: 'all', label: 'All users' }, ...users.map(user => ({ value: String(user.id), label: user.name }))]}
+                            style={{ minWidth: 150 }}
+                            triggerClassName="f-input h-9 min-h-9 px-3 py-1 text-xs font-extrabold"
+                        />
+                        <AdminSelect
+                            value={perPage.toString()}
+                            onChange={value => setPerPage(Number(value))}
+                            options={[5, 10, 25, 50].map(size => ({ value: size.toString(), label: `${size} per page` }))}
+                            style={{ minWidth: 130 }}
+                            triggerClassName="f-input h-9 min-h-9 px-3 py-1 text-xs font-extrabold"
+                        />
                         <span style={{ fontSize: 11, color: '#94a3b8' }}>{filtered.length} result{filtered.length !== 1 ? 's' : ''}</span>
                         <input
                             value={search}
@@ -304,10 +316,11 @@ export default function ActivityLogsPage({ logs, users, events, summary }: Activ
 
                             <div style={{ padding: 24, display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16 }}>
                                 <Field label="User" error={errors.user_id} wide>
-                                    <select style={fieldStyle} value={data.user_id ?? ''} onChange={event => setData('user_id', Number(event.target.value) || null)}>
-                                        <option value="">System</option>
-                                        {users.map(user => <option key={user.id} value={user.id}>{user.name}</option>)}
-                                    </select>
+                                    <AdminSelect
+                                        value={data.user_id ? String(data.user_id) : 'system'}
+                                        onChange={value => setData('user_id', value === 'system' ? null : Number(value))}
+                                        options={[{ value: 'system', label: 'System' }, ...users.map(user => ({ value: String(user.id), label: user.name }))]}
+                                    />
                                 </Field>
                                 <Field label="Event" error={errors.event}>
                                     <input style={fieldStyle} value={data.event} onChange={event => setData('event', event.target.value)} />
@@ -393,18 +406,6 @@ const primaryButton: CSSProperties = {
     gap: 8,
 };
 
-const selectStyle: CSSProperties = {
-    padding: '7px 10px',
-    borderRadius: 8,
-    border: '1.5px solid #e2e8f0',
-    background: 'white',
-    color: '#374151',
-    fontSize: 12,
-    fontWeight: 800,
-    cursor: 'pointer',
-    outline: 'none',
-};
-
 const fieldStyle: CSSProperties = {
     width: '100%',
     minHeight: 42,
@@ -416,3 +417,6 @@ const fieldStyle: CSSProperties = {
     color: '#1e293b',
     outline: 'none',
 };
+
+
+

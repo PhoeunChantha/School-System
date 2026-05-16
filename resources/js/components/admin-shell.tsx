@@ -1,5 +1,5 @@
 import '@/pages/admin/admin.css';
-import { useEffect, useState, type ReactNode } from 'react';
+import { useEffect, useMemo, useState, type ReactNode } from 'react';
 import { Head, Link, router, usePage } from '@inertiajs/react';
 import { type SharedData } from '@/types';
 import { KH, Avatar } from '@/pages/admin/ui';
@@ -42,6 +42,7 @@ import {
     School,
     Star,
     Sun,
+    UserCog,
     Users,
 } from 'lucide-react';
 import type { LucideIcon } from 'lucide-react';
@@ -50,6 +51,30 @@ interface NavGroup { group: string; }
 interface NavItem  { id: string; icon: LucideIcon; label: string; sub: string; href: string; }
 type NavEntry = NavGroup | NavItem;
 const isItem = (e: NavEntry): e is NavItem => 'id' in e;
+
+const NAV_PERMISSIONS: Record<string, string[]> = {
+    dashboard: ['dashboard.view'],
+    students: ['students.view'],
+    teachers: ['teachers.view'],
+    classes: ['classes.view'],
+    levels: ['levels.view'],
+    attendance: ['attendance.view'],
+    grades: ['grades.view'],
+    homework: ['homework.view'],
+    'lesson-plans': ['lesson-plans.view'],
+    'homework-submissions': ['homework-submissions.view'],
+    fee: ['fee.view'],
+    exam: ['exam.view'],
+    'exam-results': ['exam-results.view'],
+    reports: ['reports.view'],
+    certs: ['certificates.view'],
+    'honor-roll': ['honor-roll.view'],
+    notifications: ['notifications.view'],
+    'activity-logs': ['activity-logs.view'],
+    users: ['users.view'],
+    'roles-permissions': ['roles.view', 'permissions.view'],
+    settings: ['settings.view'],
+};
 
 const NAV: NavEntry[] = [
     { group: 'ទំព័រដើម / Main' },
@@ -76,16 +101,9 @@ const NAV: NavEntry[] = [
     { group: 'ផ្សេងៗ / Other' },
     { id: 'notifications', icon: Bell,  label: 'ការជូនដំណឹង',   sub: 'Notifications',  href: '/admin/notifications' },
     { id: 'activity-logs', icon: History,  label: 'កត់ត្រា',       sub: 'Activity Logs',  href: '/admin/activity-logs' },
+    { id: 'users', icon: UserCog, label: 'Users', sub: 'User Accounts', href: '/admin/users' },
     { id: 'roles-permissions', icon: ShieldCheck, label: 'Roles', sub: 'Roles & Permissions', href: '/admin/roles-permissions' },
     { id: 'settings',      icon: Settings,  label: 'កំណត់',           sub: 'Settings',       href: '/admin/settings' },
-];
-
-const MOBILE_NAV = [
-    { id: 'dashboard',  icon: Home, lk: 'ទំព័រ',  href: '/admin/dashboard' },
-    { id: 'students',   icon: Users, lk: 'សិស្ស',   href: '/admin/students' },
-    { id: 'attendance', icon: ClipboardCheck, lk: 'វត្តមាន', href: '/admin/attendance' },
-    { id: 'fee',        icon: CreditCard, lk: 'ថ្លៃ',    href: '/admin/fee' },
-    { id: 'exam',       icon: FileText, lk: 'ប្រឡង',  href: '/admin/exam' },
 ];
 
 const PAGE_TITLES: Record<string, { kh: string; en: string }> = {
@@ -107,6 +125,7 @@ const PAGE_TITLES: Record<string, { kh: string; en: string }> = {
     'honor-roll':  { kh: 'តារាងកិត្តិយស', en: 'Honor Roll' },
     notifications: { kh: 'ការជូនដំណឹង', en: 'Notifications' },
     'activity-logs': { kh: 'កត់ត្រាសកម្មភាព', en: 'Activity Logs' },
+    users: { kh: 'Users', en: 'Users' },
     'roles-permissions': { kh: 'Roles & Permissions', en: 'Roles & Permissions' },
     settings:      { kh: 'កំណត់',        en: 'Settings' },
 };
@@ -116,6 +135,27 @@ interface AdminShellProps { children: ReactNode; }
 export default function AdminShell({ children }: AdminShellProps) {
     const { url, props } = usePage<SharedData>();
     const user = props.auth?.user;
+    const permissionSet = useMemo(() => new Set(props.auth?.permissions ?? []), [props.auth?.permissions]);
+    const canAccess = (id: string) => (NAV_PERMISSIONS[id] ?? []).every(permission => permissionSet.has(permission));
+    const visibleNav = useMemo(() => NAV.reduce<{ entries: NavEntry[]; pendingGroup: NavGroup | null }>((state, entry) => {
+        if (! isItem(entry)) {
+            return { ...state, pendingGroup: entry };
+        }
+
+        if (! canAccess(entry.id)) {
+            return state;
+        }
+
+        return {
+            entries: [
+                ...state.entries,
+                ...(state.pendingGroup ? [state.pendingGroup] : []),
+                entry,
+            ],
+            pendingGroup: null,
+        };
+    }, { entries: [], pendingGroup: null }).entries, [permissionSet]);
+    const visibleMobileNav = useMemo(() => visibleNav.filter(isItem), [visibleNav]);
     const [collapsed, setCollapsed] = useState(false);
     const [mobileOpen, setMobileOpen] = useState(false);
     const [lang, setLang] = useState<'kh' | 'en'>('kh');
@@ -170,7 +210,7 @@ export default function AdminShell({ children }: AdminShellProps) {
                     </div>
 
                     <div className="sidebar-nav">
-                        {NAV.map((entry, i) => {
+                        {visibleNav.map((entry, i) => {
                             if (isItem(entry)) {
                                 const Icon = entry.icon;
 
@@ -207,7 +247,7 @@ export default function AdminShell({ children }: AdminShellProps) {
             </div>
 
             {/* Main area */}
-            <div style={{ flex: 1, display: 'flex', flexDirection: 'column', overflow: 'hidden', minWidth: 0 }}>
+            <div className="admin-body" style={{ flex: 1, display: 'flex', flexDirection: 'column', overflow: 'hidden', minWidth: 0 }}>
                 <div className="topbar">
                     <button className="mobile-only" onClick={() => setMobileOpen(o => !o)}
                         style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#64748b', padding: '4px', flexShrink: 0, display: 'inline-flex', alignItems: 'center', justifyContent: 'center' }}
@@ -285,7 +325,7 @@ export default function AdminShell({ children }: AdminShellProps) {
                     </DropdownMenu>
                 </div>
 
-                <main className="main-content vh-100" style={{ flex: 1, overflowY: 'auto', overflowX: 'hidden' }}>
+                <main className="main-content" style={{ flex: 1, minHeight: 0, overflowY: 'auto', overflowX: 'hidden' }}>
                     {children}
                 </main>
                 <AdminFooter />
@@ -293,13 +333,13 @@ export default function AdminShell({ children }: AdminShellProps) {
 
             {/* Mobile bottom nav */}
             <div className="mobile-bottom-nav">
-                {MOBILE_NAV.map(item => {
+                {visibleMobileNav.map(item => {
                     const Icon = item.icon;
 
                     return (
                     <Link key={item.id} href={item.href} className={`mob-nav-btn${active === item.id ? ' active' : ''}`}>
                         <span className="mni" style={{ opacity: active === item.id ? 1 : 0.45 }}><Icon size={22} strokeWidth={2.2} /></span>
-                        <KH className="mnl" style={{ color: active === item.id ? '#2563eb' : '#94a3b8' }}>{item.lk}</KH>
+                        <KH className="mnl" style={{ color: active === item.id ? '#eaf2ff' : '#b8c2d8' }}>{item.label}</KH>
                     </Link>
                     );
                 })}

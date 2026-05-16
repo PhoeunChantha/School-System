@@ -2,14 +2,16 @@
 
 namespace App\Models;
 
+use App\Models\Concerns\HasEncryptedRouteKey;
+use Database\Factories\ExamResultFactory;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 class ExamResult extends Model
 {
-    /** @use HasFactory<\Database\Factories\ExamResultFactory> */
-    use HasFactory;
+    /** @use HasFactory<ExamResultFactory> */
+    use HasEncryptedRouteKey, HasFactory;
 
     protected $fillable = [
         'exam_id',

@@ -46,6 +46,7 @@ class HomeworkAssignmentService
         return [
             'homework' => [
                 'id' => $homeworkAssignment->id,
+                'routeKey' => $homeworkAssignment->routeKey(),
                 'school_class_id' => $homeworkAssignment->school_class_id,
                 'title_kh' => $homeworkAssignment->title_kh,
                 'title_en' => $homeworkAssignment->title_en ?? '',
@@ -116,6 +117,7 @@ class HomeworkAssignmentService
             ->get(['id', 'name', 'room'])
             ->map(fn (SchoolClass $schoolClass): array => [
                 'id' => $schoolClass->id,
+                'routeKey' => $schoolClass->routeKey(),
                 'name' => $schoolClass->name,
                 'room' => $schoolClass->room ?? '',
                 'student_count' => $schoolClass->students_count,
@@ -131,6 +133,7 @@ class HomeworkAssignmentService
 
         return [
             'id' => $homeworkAssignment->id,
+            'routeKey' => $homeworkAssignment->routeKey(),
             'titleKh' => $homeworkAssignment->title_kh,
             'titleEn' => $homeworkAssignment->title_en ?? '',
             'className' => $homeworkAssignment->schoolClass?->name ?? 'No class',

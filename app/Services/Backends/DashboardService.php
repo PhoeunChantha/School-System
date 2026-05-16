@@ -2,9 +2,15 @@
 
 namespace App\Services\Backends;
 
+use App\Models\FeeCharge;
+use App\Models\GradeRecord;
+use App\Models\HomeworkAssignment;
+use App\Models\HomeworkSubmission;
+use App\Models\LessonPlan;
 use App\Models\SchoolClass;
 use App\Models\Student;
 use App\Models\Teacher;
+use App\Models\User;
 use Illuminate\Support\Facades\DB;
 
 class DashboardService
@@ -21,6 +27,64 @@ class DashboardService
             'recentPayments' => $this->recentPayments(),
             'recentStudents' => $this->recentStudents(),
             'classes' => $this->classes(),
+        ];
+    }
+
+    public function teacherData(User $user): array
+    {
+        $teacher = $this->teacherFor($user);
+        $classIds = $teacher
+            ? SchoolClass::query()->where('teacher_id', $teacher->id)->pluck('id')
+            : collect();
+
+        return [
+            'profile' => [
+                'name' => $teacher?->name_en ?? $user->name,
+                'subject' => $teacher?->subject ?? 'Teacher',
+                'photo' => $teacher?->profile_photo ? asset($teacher->profile_photo) : ($user->avatar ? asset($user->avatar) : null),
+                'assignedClassCount' => $classIds->count(),
+            ],
+            'stats' => [
+                'classes' => $classIds->count(),
+                'students' => $classIds->isEmpty() ? 0 : Student::active()->whereIn('school_class_id', $classIds)->count(),
+                'lessonPlansThisWeek' => LessonPlan::query()
+                    ->when($teacher, fn ($query) => $query->where('teacher_id', $teacher->id), fn ($query) => $query->where('created_by', $user->id))
+                    ->whereBetween('lesson_date', [now()->startOfWeek()->toDateString(), now()->endOfWeek()->toDateString()])
+                    ->count(),
+                'pendingSubmissions' => $classIds->isEmpty()
+                    ? 0
+                    : HomeworkSubmission::query()
+                        ->whereHas('homeworkAssignment', fn ($query) => $query->whereIn('school_class_id', $classIds))
+                        ->whereIn('status', ['submitted', 'late'])
+                        ->count(),
+            ],
+            'classes' => $this->teacherClasses($classIds->all()),
+            'lessonPlans' => $this->teacherLessonPlans($user, $teacher),
+            'homework' => $this->teacherHomework($user, $classIds->all()),
+        ];
+    }
+
+    public function studentData(User $user): array
+    {
+        $student = $this->studentFor($user);
+
+        return [
+            'profile' => [
+                'name' => $student?->name_en ?? $user->name,
+                'code' => $student?->code ?? '',
+                'photo' => $student?->profile_photo ? asset($student->profile_photo) : ($user->avatar ? asset($user->avatar) : null),
+                'className' => $student?->schoolClass?->name ?? 'No class assigned',
+                'level' => $student?->level?->name ?? '',
+            ],
+            'stats' => [
+                'attendanceRate' => $student ? $this->studentAttendanceRate($student) : 0,
+                'latestAverage' => (int) round((float) ($student?->gradeRecords()->latest('graded_at')->value('average') ?? 0)),
+                'homeworkSubmitted' => $student ? $student->homeworkSubmissions()->whereIn('status', ['submitted', 'graded'])->count() : 0,
+                'unpaidFees' => $student ? $student->feeCharges()->whereIn('status', ['unpaid', 'partial'])->count() : 0,
+            ],
+            'latestGrades' => $this->studentGrades($student),
+            'homework' => $this->studentHomework($student),
+            'fees' => $this->studentFees($student),
         ];
     }
 
@@ -262,6 +326,171 @@ class DashboardService
                 'room' => $c->room ?? '',
                 'count' => $c->students_count,
                 'days' => implode(' ', array_map('ucfirst', $c->days ?? [])),
+            ])
+            ->all();
+    }
+
+    private function teacherFor(User $user): ?Teacher
+    {
+        return Teacher::query()
+            ->where('name_en', $user->name)
+            ->orWhere('name_kh', $user->name)
+            ->first();
+    }
+
+    private function studentFor(User $user): ?Student
+    {
+        return Student::query()
+            ->with(['level:id,name', 'schoolClass:id,name'])
+            ->where('name_en', $user->name)
+            ->orWhere('name_kh', $user->name)
+            ->first();
+    }
+
+    /**
+     * @param  array<int, int>  $classIds
+     */
+    private function teacherClasses(array $classIds): array
+    {
+        if ($classIds === []) {
+            return [];
+        }
+
+        return SchoolClass::query()
+            ->withCount('students')
+            ->whereIn('id', $classIds)
+            ->orderBy('name')
+            ->get(['id', 'name', 'room', 'starts_at', 'ends_at'])
+            ->map(fn (SchoolClass $schoolClass): array => [
+                'id' => $schoolClass->id,
+                'name' => $schoolClass->name,
+                'room' => $schoolClass->room ?? '',
+                'time' => collect([$schoolClass->starts_at, $schoolClass->ends_at])->filter()->implode(' - '),
+                'students' => $schoolClass->students_count,
+            ])
+            ->all();
+    }
+
+    private function teacherLessonPlans(User $user, ?Teacher $teacher): array
+    {
+        return LessonPlan::query()
+            ->with('schoolClass:id,name')
+            ->when($teacher, fn ($query) => $query->where('teacher_id', $teacher->id), fn ($query) => $query->where('created_by', $user->id))
+            ->latest('lesson_date')
+            ->take(5)
+            ->get(['id', 'school_class_id', 'lesson_date', 'title', 'status'])
+            ->map(fn (LessonPlan $lessonPlan): array => [
+                'id' => $lessonPlan->id,
+                'title' => $lessonPlan->title,
+                'className' => $lessonPlan->schoolClass?->name ?? '',
+                'date' => $lessonPlan->lesson_date?->format('Y-m-d') ?? '',
+                'status' => $lessonPlan->status,
+            ])
+            ->all();
+    }
+
+    /**
+     * @param  array<int, int>  $classIds
+     */
+    private function teacherHomework(User $user, array $classIds): array
+    {
+        return HomeworkAssignment::query()
+            ->with('schoolClass:id,name')
+            ->withCount('submissions')
+            ->when($classIds !== [], fn ($query) => $query->whereIn('school_class_id', $classIds), fn ($query) => $query->where('assigned_by', $user->id))
+            ->latest('due_on')
+            ->take(5)
+            ->get(['id', 'school_class_id', 'title_en', 'due_on', 'status'])
+            ->map(fn (HomeworkAssignment $homework): array => [
+                'id' => $homework->id,
+                'title' => $homework->title_en,
+                'className' => $homework->schoolClass?->name ?? '',
+                'due' => $homework->due_on?->format('Y-m-d') ?? '',
+                'status' => $homework->status,
+                'submissions' => $homework->submissions_count,
+            ])
+            ->all();
+    }
+
+    private function studentAttendanceRate(Student $student): int
+    {
+        $total = $student->attendanceRecords()->count();
+
+        if ($total === 0) {
+            return 0;
+        }
+
+        $present = $student->attendanceRecords()->whereIn('status', ['present', 'late', 'excused'])->count();
+
+        return (int) round(($present / $total) * 100);
+    }
+
+    private function studentGrades(?Student $student): array
+    {
+        if (! $student) {
+            return [];
+        }
+
+        return GradeRecord::query()
+            ->with('gradePeriod:id,name')
+            ->where('student_id', $student->id)
+            ->latest('graded_at')
+            ->take(5)
+            ->get(['id', 'grade_period_id', 'speaking', 'listening', 'reading', 'writing', 'average', 'graded_at'])
+            ->map(fn (GradeRecord $grade): array => [
+                'id' => $grade->id,
+                'period' => $grade->gradePeriod?->name ?? 'Grade',
+                'average' => (float) $grade->average,
+                'speaking' => $grade->speaking,
+                'listening' => $grade->listening,
+                'reading' => $grade->reading,
+                'writing' => $grade->writing,
+                'date' => $grade->graded_at?->format('Y-m-d') ?? '',
+            ])
+            ->all();
+    }
+
+    private function studentHomework(?Student $student): array
+    {
+        if (! $student) {
+            return [];
+        }
+
+        return HomeworkSubmission::query()
+            ->with('homeworkAssignment:id,title_en,due_on')
+            ->where('student_id', $student->id)
+            ->latest('submitted_at')
+            ->take(5)
+            ->get(['id', 'homework_assignment_id', 'submitted_at', 'score', 'status'])
+            ->map(fn (HomeworkSubmission $submission): array => [
+                'id' => $submission->id,
+                'title' => $submission->homeworkAssignment?->title_en ?? 'Homework',
+                'due' => $submission->homeworkAssignment?->due_on?->format('Y-m-d') ?? '',
+                'submitted' => $submission->submitted_at?->format('Y-m-d') ?? '',
+                'score' => $submission->score,
+                'status' => $submission->status,
+            ])
+            ->all();
+    }
+
+    private function studentFees(?Student $student): array
+    {
+        if (! $student) {
+            return [];
+        }
+
+        return FeeCharge::query()
+            ->where('student_id', $student->id)
+            ->latest('billing_month')
+            ->take(5)
+            ->get(['id', 'billing_month', 'due_on', 'amount', 'paid_amount', 'status'])
+            ->map(fn (FeeCharge $fee): array => [
+                'id' => $fee->id,
+                'month' => $fee->billing_month?->format('M Y') ?? '',
+                'due' => $fee->due_on?->format('Y-m-d') ?? '',
+                'amount' => (float) $fee->amount,
+                'paid' => (float) $fee->paid_amount,
+                'status' => $fee->status,
             ])
             ->all();
     }

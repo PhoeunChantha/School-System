@@ -49,6 +49,7 @@ class TeacherController extends Controller
         return Inertia::render('admin/teachers/lesson-plan-form', [
             'teacher' => [
                 'id' => $teacher->id,
+                'routeKey' => $teacher->routeKey(),
                 'nameKh' => $teacher->name_kh,
                 'nameEn' => $teacher->name_en,
                 'photo' => $teacher->profile_photo ? asset($teacher->profile_photo) : null,
@@ -56,6 +57,7 @@ class TeacherController extends Controller
             ],
             'classes' => $teacher->schoolClasses->map(fn ($schoolClass): array => [
                 'id' => $schoolClass->id,
+                'routeKey' => $schoolClass->routeKey(),
                 'name' => $schoolClass->name,
                 'room' => $schoolClass->room ?? '',
                 'time' => collect([$schoolClass->starts_at, $schoolClass->ends_at])->filter()->implode('-'),

@@ -1,6 +1,7 @@
-import { create as createFee, destroy, edit as editFee, payment as recordPayment } from '@/actions/App/Http/Controllers/Backends/FeeChargeController';
+﻿import { create as createFee, destroy, edit as editFee, payment as recordPayment } from '@/actions/App/Http/Controllers/Backends/FeeChargeController';
+import { DatePicker } from '@/components/ui/date-picker';
 import AdminShell from '@/pages/admin/shell';
-import { Avatar, Badge, KH, Pagination } from '@/pages/admin/ui';
+import { AdminSelect, Avatar, Badge, KH, Pagination } from '@/pages/admin/ui';
 import { Link, router, useForm } from '@inertiajs/react';
 import { CheckCircle2, Edit3, Trash2, Wallet, X } from 'lucide-react';
 import { FormEvent, useEffect, useMemo, useState } from 'react';
@@ -8,6 +9,7 @@ import { toast } from 'sonner';
 
 export interface FeeChargeItem {
     id: number;
+    routeKey?: string;
     studentNameKh: string;
     studentNameEn: string;
     level: string;
@@ -22,6 +24,7 @@ export interface FeeChargeItem {
 
 export interface PaymentItem {
     id: number;
+    routeKey?: string;
     studentNameKh: string;
     studentNameEn: string;
     amount: number;
@@ -187,7 +190,7 @@ export default function FeePage({ charges, payments, summary }: FeePageProps) {
         event.preventDefault();
         if (!payTarget) return;
 
-        paymentForm.post(recordPayment.url(payTarget.id), {
+        paymentForm.post(recordPayment.url((payTarget.routeKey ?? payTarget.id) as never), {
             preserveScroll: true,
             onSuccess: () => {
                 toast.success('Payment recorded successfully.');
@@ -200,7 +203,7 @@ export default function FeePage({ charges, payments, summary }: FeePageProps) {
     const confirmDelete = () => {
         if (!deleteTarget) return;
 
-        router.delete(destroy.url(deleteTarget.id), {
+        router.delete(destroy.url((deleteTarget.routeKey ?? deleteTarget.id) as never), {
             preserveScroll: true,
             onSuccess: () => {
                 toast.success('Fee charge deleted.');
@@ -251,12 +254,20 @@ export default function FeePage({ charges, payments, summary }: FeePageProps) {
                     </div>
                     <div style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '12px 16px', borderBottom: '1px solid #f1f5f9', flexWrap: 'wrap' }}>
                         <span style={{ fontSize: 11, fontWeight: 700, color: '#94a3b8', whiteSpace: 'nowrap' }}>Sort by</span>
-                        <select value={chargeOrderBy} onChange={event => setChargeOrderBy(event.target.value as ChargeOrderKey)} style={{ padding: '5px 10px', borderRadius: 8, border: '1.5px solid #e2e8f0', background: 'white', color: '#374151', fontSize: 12, fontWeight: 700, cursor: 'pointer', outline: 'none' }}>
-                            {CHARGE_ORDER_OPTIONS.map(option => <option key={option.value} value={option.value}>{option.label}</option>)}
-                        </select>
-                        <select value={chargePerPage} onChange={event => setChargePerPage(Number(event.target.value))} style={{ padding: '5px 10px', borderRadius: 8, border: '1.5px solid #e2e8f0', background: 'white', color: '#374151', fontSize: 12, fontWeight: 700, cursor: 'pointer', outline: 'none' }}>
-                            {[5, 10, 25, 50].map(size => <option key={size} value={size}>{size} per page</option>)}
-                        </select>
+                        <AdminSelect
+                            value={chargeOrderBy}
+                            onChange={value => setChargeOrderBy(value as ChargeOrderKey)}
+                            options={CHARGE_ORDER_OPTIONS}
+                            style={{ minWidth: 150 }}
+                            triggerClassName="f-input h-9 min-h-9 px-3 py-1 text-xs font-bold"
+                        />
+                        <AdminSelect
+                            value={chargePerPage.toString()}
+                            onChange={value => setChargePerPage(Number(value))}
+                            options={[5, 10, 25, 50].map(size => ({ value: size.toString(), label: `${size} per page` }))}
+                            style={{ minWidth: 130 }}
+                            triggerClassName="f-input h-9 min-h-9 px-3 py-1 text-xs font-bold"
+                        />
                         <span style={{ fontSize: 11, color: '#94a3b8', marginLeft: 4 }}>{filteredCharges.length} charge{filteredCharges.length !== 1 ? 's' : ''}</span>
                         <input value={chargeSearch} onChange={event => setChargeSearch(event.target.value)} className="f-input" style={{ width: 260, maxWidth: '100%', marginLeft: 'auto' }} placeholder="Search fee charges..." />
                     </div>
@@ -301,7 +312,7 @@ export default function FeePage({ charges, payments, summary }: FeePageProps) {
                                                 {charge.status !== 'paid' && (
                                                     <button onClick={() => openPayment(charge)} style={{ background: '#f0fdf4', color: '#16a34a', border: '1px solid #bbf7d0', borderRadius: 7, padding: '5px 10px', cursor: 'pointer', fontSize: 11, fontWeight: 700, display: 'inline-flex', alignItems: 'center', gap: 5 }}><Wallet size={13} /> Pay</button>
                                                 )}
-                                                <Link href={editFee.url(charge.id)} style={{ background: '#eff6ff', color: '#2563eb', border: '1px solid #bfdbfe', borderRadius: 7, padding: '5px 10px', cursor: 'pointer', fontSize: 11, fontWeight: 700, textDecoration: 'none', display: 'inline-flex', alignItems: 'center', gap: 5 }}><Edit3 size={13} /> Edit</Link>
+                                                <Link href={editFee.url((charge.routeKey ?? charge.id) as never)} style={{ background: '#eff6ff', color: '#2563eb', border: '1px solid #bfdbfe', borderRadius: 7, padding: '5px 10px', cursor: 'pointer', fontSize: 11, fontWeight: 700, textDecoration: 'none', display: 'inline-flex', alignItems: 'center', gap: 5 }}><Edit3 size={13} /> Edit</Link>
                                                 <button onClick={() => setDeleteTarget(charge)} style={{ background: '#fff1f2', color: '#ef4444', border: '1px solid #fecaca', borderRadius: 7, padding: '5px 10px', cursor: 'pointer', fontSize: 11, fontWeight: 700, display: 'inline-flex', alignItems: 'center', gap: 5 }}><Trash2 size={13} /> Delete</button>
                                             </div>
                                         </td>
@@ -316,12 +327,20 @@ export default function FeePage({ charges, payments, summary }: FeePageProps) {
                 <div className="card" style={{ overflowX: 'auto' }}>
                     <div style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '12px 16px', borderBottom: '1px solid #f1f5f9', flexWrap: 'wrap' }}>
                         <span style={{ fontSize: 11, fontWeight: 700, color: '#94a3b8', whiteSpace: 'nowrap' }}>Payments</span>
-                        <select value={paymentOrderBy} onChange={event => setPaymentOrderBy(event.target.value as PaymentOrderKey)} style={{ padding: '5px 10px', borderRadius: 8, border: '1.5px solid #e2e8f0', background: 'white', color: '#374151', fontSize: 12, fontWeight: 700, cursor: 'pointer', outline: 'none' }}>
-                            {PAYMENT_ORDER_OPTIONS.map(option => <option key={option.value} value={option.value}>{option.label}</option>)}
-                        </select>
-                        <select value={paymentPerPage} onChange={event => setPaymentPerPage(Number(event.target.value))} style={{ padding: '5px 10px', borderRadius: 8, border: '1.5px solid #e2e8f0', background: 'white', color: '#374151', fontSize: 12, fontWeight: 700, cursor: 'pointer', outline: 'none' }}>
-                            {[5, 10, 25, 50].map(size => <option key={size} value={size}>{size} per page</option>)}
-                        </select>
+                        <AdminSelect
+                            value={paymentOrderBy}
+                            onChange={value => setPaymentOrderBy(value as PaymentOrderKey)}
+                            options={PAYMENT_ORDER_OPTIONS}
+                            style={{ minWidth: 150 }}
+                            triggerClassName="f-input h-9 min-h-9 px-3 py-1 text-xs font-bold"
+                        />
+                        <AdminSelect
+                            value={paymentPerPage.toString()}
+                            onChange={value => setPaymentPerPage(Number(value))}
+                            options={[5, 10, 25, 50].map(size => ({ value: size.toString(), label: `${size} per page` }))}
+                            style={{ minWidth: 130 }}
+                            triggerClassName="f-input h-9 min-h-9 px-3 py-1 text-xs font-bold"
+                        />
                         <span style={{ fontSize: 11, color: '#94a3b8', marginLeft: 4 }}>{sortedPayments.length} result{sortedPayments.length !== 1 ? 's' : ''}</span>
                         <input value={paymentSearch} onChange={event => setPaymentSearch(event.target.value)} className="f-input" style={{ width: 260, maxWidth: '100%', marginLeft: 'auto' }} placeholder="Search payments..." />
                     </div>
@@ -351,17 +370,21 @@ export default function FeePage({ charges, payments, summary }: FeePageProps) {
                     <form onSubmit={submitPayment} style={{ background: 'white', borderRadius: 20, padding: 28, maxWidth: 440, width: '100%', boxShadow: '0 24px 60px rgba(0,0,0,0.15)', display: 'flex', flexDirection: 'column', gap: 14 }}>
                         <div>
                             <div style={{ fontSize: 18, fontWeight: 800, color: '#1e293b' }}>Record Payment</div>
-                            <div style={{ fontSize: 12, color: '#94a3b8', marginTop: 2 }}>{payTarget.studentNameEn} · {payTarget.billingMonth}</div>
+                            <div style={{ fontSize: 12, color: '#94a3b8', marginTop: 2 }}>{payTarget.studentNameEn} Â· {payTarget.billingMonth}</div>
                         </div>
                         <input type="number" step="0.01" className="f-input" value={paymentForm.data.amount} onChange={event => paymentForm.setData('amount', event.target.value)} />
-                        <select className="f-input" value={paymentForm.data.method} onChange={event => paymentForm.setData('method', event.target.value)}>
-                            <option value="aba">ABA</option>
-                            <option value="acleda">ACLEDA</option>
-                            <option value="wing">Wing</option>
-                            <option value="cash">Cash</option>
-                            <option value="bank">Bank</option>
-                        </select>
-                        <input type="date" className="f-input" value={paymentForm.data.paid_on} onChange={event => paymentForm.setData('paid_on', event.target.value)} />
+                        <AdminSelect
+                            value={paymentForm.data.method}
+                            onChange={value => paymentForm.setData('method', value)}
+                            options={[
+                                { value: 'aba', label: 'ABA' },
+                                { value: 'acleda', label: 'ACLEDA' },
+                                { value: 'wing', label: 'Wing' },
+                                { value: 'cash', label: 'Cash' },
+                                { value: 'bank', label: 'Bank' },
+                            ]}
+                        />
+                        <DatePicker value={paymentForm.data.paid_on} onChange={value => paymentForm.setData('paid_on', value)} className="f-input min-h-[42px]" />
                         <input className="f-input" placeholder="Reference" value={paymentForm.data.reference} onChange={event => paymentForm.setData('reference', event.target.value)} />
                         <div style={{ display: 'flex', gap: 10 }}>
                             <button type="button" onClick={() => setPayTarget(null)} style={{ flex: 1, background: '#f1f5f9', color: '#64748b', border: 'none', borderRadius: 10, padding: '11px', fontWeight: 700, cursor: 'pointer', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: 6 }}><X size={15} /> Cancel</button>
@@ -388,3 +411,6 @@ export default function FeePage({ charges, payments, summary }: FeePageProps) {
         </AdminShell>
     );
 }
+
+
+

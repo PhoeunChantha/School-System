@@ -18,8 +18,11 @@ use App\Models\SchoolClass;
 use App\Models\SchoolSetting;
 use App\Models\Student;
 use App\Models\Teacher;
+use App\Models\User;
 use App\Policies\FeaturePermissionPolicy;
+use App\Support\EncryptedRouteKey;
 use Illuminate\Support\Facades\Gate;
+use Illuminate\Support\Facades\Route;
 use Illuminate\Support\ServiceProvider;
 use Spatie\Permission\Models\Permission;
 use Spatie\Permission\Models\Role;
@@ -55,6 +58,7 @@ class AppServiceProvider extends ServiceProvider
             Certificate::class,
             Notification::class,
             ActivityLog::class,
+            User::class,
             Role::class,
             Permission::class,
             SchoolSetting::class,
@@ -68,5 +72,21 @@ class AppServiceProvider extends ServiceProvider
         Gate::define('viewReports', fn ($user): bool => $user->can('reports.view'));
         Gate::define('viewHonorRoll', fn ($user): bool => $user->can('honor-roll.view'));
         Gate::define('viewRolesPermissions', fn ($user): bool => $user->can('roles.view') && $user->can('permissions.view'));
+
+        Route::bind('role', function (string $value): Role {
+            $key = EncryptedRouteKey::decrypt($value);
+
+            abort_if($key === null, 404);
+
+            return Role::query()->whereKey($key)->firstOrFail();
+        });
+
+        Route::bind('permission', function (string $value): Permission {
+            $key = EncryptedRouteKey::decrypt($value);
+
+            abort_if($key === null, 404);
+
+            return Permission::query()->whereKey($key)->firstOrFail();
+        });
     }
 }

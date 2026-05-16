@@ -1,11 +1,14 @@
-import { FormEvent } from 'react';
+﻿import { FormEvent } from 'react';
 import { index as feeIndex, store, update } from '@/actions/App/Http/Controllers/Backends/FeeChargeController';
+import { DatePicker } from '@/components/ui/date-picker';
 import AdminShell from '@/pages/admin/shell';
+import { AdminSelect } from '@/pages/admin/ui';
 import { Link, useForm } from '@inertiajs/react';
 import { toast } from 'sonner';
 
 export interface FeeStudentOption {
     id: number;
+    routeKey?: string;
     nameKh: string;
     nameEn: string;
     levelId: number | null;
@@ -16,6 +19,7 @@ export interface FeeStudentOption {
 
 export interface FeeChargeFormData {
     id?: number;
+    routeKey?: string;
     student_id: number | null;
     level_id: number | null;
     billing_month: string;
@@ -70,7 +74,7 @@ export default function FeeChargeFormPage({ mode, charge, students }: FeeChargeF
         };
 
         if (isEdit && charge?.id) {
-            put(update.url(charge.id), options);
+            put(update.url((charge.routeKey ?? charge.id) as never), options);
             return;
         }
 
@@ -101,19 +105,22 @@ export default function FeeChargeFormPage({ mode, charge, students }: FeeChargeF
                 <form onSubmit={submit} className="card" style={{ padding: 24, display: 'grid', gridTemplateColumns: 'repeat(2, minmax(0, 1fr))', gap: 16 }}>
                     <div style={{ gridColumn: '1 / -1' }}>
                         <label style={labelStyle}>Student *</label>
-                        <select style={fieldStyle} value={data.student_id ?? ''} onChange={event => selectStudent(Number(event.target.value))}>
-                            {students.map(student => <option key={student.id} value={student.id}>{student.nameEn} · {student.level}</option>)}
-                        </select>
+                        <AdminSelect
+                            value={data.student_id ? String(data.student_id) : ''}
+                            onChange={value => selectStudent(Number(value))}
+                            options={students.map(student => ({ value: String(student.id), label: `${student.nameEn} Â· ${student.level}` }))}
+                            placeholder="Select student"
+                        />
                         {errors.student_id && <div className="field-error">{errors.student_id}</div>}
                     </div>
                     <div>
                         <label style={labelStyle}>Billing Month *</label>
-                        <input type="date" style={fieldStyle} value={data.billing_month} onChange={event => setData('billing_month', event.target.value)} />
+                        <DatePicker value={data.billing_month} onChange={value => setData('billing_month', value)} className="f-input min-h-[42px]" />
                         {errors.billing_month && <div className="field-error">{errors.billing_month}</div>}
                     </div>
                     <div>
                         <label style={labelStyle}>Due Date</label>
-                        <input type="date" style={fieldStyle} value={data.due_on} onChange={event => setData('due_on', event.target.value)} />
+                        <DatePicker value={data.due_on} onChange={value => setData('due_on', value)} placeholder="Pick due date" className="f-input min-h-[42px]" />
                         {errors.due_on && <div className="field-error">{errors.due_on}</div>}
                     </div>
                     <div>
@@ -133,11 +140,15 @@ export default function FeeChargeFormPage({ mode, charge, students }: FeeChargeF
                     </div>
                     <div>
                         <label style={labelStyle}>Status *</label>
-                        <select style={fieldStyle} value={data.status} onChange={event => setData('status', event.target.value as FeeChargeFormData['status'])}>
-                            <option value="unpaid">Unpaid</option>
-                            <option value="partial">Partial</option>
-                            <option value="paid">Paid</option>
-                        </select>
+                        <AdminSelect
+                            value={data.status}
+                            onChange={value => setData('status', value as FeeChargeFormData['status'])}
+                            options={[
+                                { value: 'unpaid', label: 'Unpaid' },
+                                { value: 'partial', label: 'Partial' },
+                                { value: 'paid', label: 'Paid' },
+                            ]}
+                        />
                         {errors.status && <div className="field-error">{errors.status}</div>}
                     </div>
                     <div>
@@ -154,3 +165,6 @@ export default function FeeChargeFormPage({ mode, charge, students }: FeeChargeF
         </AdminShell>
     );
 }
+
+
+

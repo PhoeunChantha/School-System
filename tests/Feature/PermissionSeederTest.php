@@ -36,6 +36,7 @@ class PermissionSeederTest extends TestCase
         $this->assertDatabaseHas('permissions', ['name' => 'attendance.export', 'guard_name' => 'web']);
         $this->assertDatabaseHas('permissions', ['name' => 'homework-submissions.update', 'guard_name' => 'web']);
         $this->assertDatabaseHas('permissions', ['name' => 'notifications.mark-all-read', 'guard_name' => 'web']);
+        $this->assertDatabaseHas('permissions', ['name' => 'users.update', 'guard_name' => 'web']);
         $this->assertDatabaseHas('permissions', ['name' => 'permissions.delete', 'guard_name' => 'web']);
 
         $adminRole = Role::where('name', 'admin')->firstOrFail();
@@ -49,6 +50,7 @@ class PermissionSeederTest extends TestCase
         $this->assertTrue($teacherRole->hasPermissionTo('homework-submissions.update'));
         $this->assertFalse($teacherRole->hasPermissionTo('roles.delete'));
         $this->assertTrue($studentRole->hasPermissionTo('homework-submissions.create'));
+        $this->assertFalse($studentRole->hasPermissionTo('homework-submissions.update'));
         $this->assertFalse($studentRole->hasPermissionTo('students.delete'));
         $this->assertTrue($admin->hasRole('admin'));
         $this->assertSame(Permission::count(), $adminRole->permissions()->count());

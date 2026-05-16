@@ -67,6 +67,7 @@ class ActivityLogService
             ->get(['id', 'name', 'email'])
             ->map(fn (User $user): array => [
                 'id' => $user->id,
+                'routeKey' => $user->routeKey(),
                 'name' => $user->name,
                 'email' => $user->email,
             ]);
@@ -79,6 +80,7 @@ class ActivityLogService
     {
         return [
             'id' => $activityLog->id,
+            'routeKey' => $activityLog->routeKey(),
             'userId' => $activityLog->user_id,
             'userName' => $activityLog->user?->name ?? '',
             'userEmail' => $activityLog->user?->email ?? '',

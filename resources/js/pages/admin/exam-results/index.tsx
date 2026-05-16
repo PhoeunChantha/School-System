@@ -1,4 +1,4 @@
-import { destroy, store, update } from '@/actions/App/Http/Controllers/Backends/ExamResultController';
+﻿import { destroy, store, update } from '@/actions/App/Http/Controllers/Backends/ExamResultController';
 import {
     Sheet,
     SheetContent,
@@ -17,6 +17,7 @@ import { toast } from 'sonner';
 
 interface ExamOption {
     id: number;
+    routeKey?: string;
     title: string;
     subject: string;
     examDate: string;
@@ -24,6 +25,7 @@ interface ExamOption {
 
 interface StudentOption {
     id: number;
+    routeKey?: string;
     nameKh: string;
     nameEn: string;
     level: string;
@@ -32,6 +34,7 @@ interface StudentOption {
 
 interface ExamResultItem {
     id: number;
+    routeKey?: string;
     examId: number;
     examTitle: string;
     examSubject: string;
@@ -204,7 +207,7 @@ export default function ExamResultsPage({ results, exams, students, summary }: E
         };
 
         if (drawerMode === 'edit' && editingResult) {
-            put(update.url(editingResult.id), options);
+            put(update.url((editingResult.routeKey ?? editingResult.id) as never), options);
             return;
         }
 
@@ -216,7 +219,7 @@ export default function ExamResultsPage({ results, exams, students, summary }: E
             return;
         }
 
-        router.delete(destroy.url(deleteTarget.id), {
+        router.delete(destroy.url((deleteTarget.routeKey ?? deleteTarget.id) as never), {
             preserveScroll: true,
             onSuccess: () => {
                 toast.success('Exam result deleted.');
@@ -231,7 +234,7 @@ export default function ExamResultsPage({ results, exams, students, summary }: E
                 <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 12 }}>
                     <div>
                         <div style={{ fontWeight: 800, fontSize: 18, color: '#1e293b' }}>Exam Results</div>
-                        <KH style={{ fontSize: 12, color: '#94a3b8', display: 'block' }}>លទ្ធផលប្រឡង · Record student exam scores</KH>
+                        <KH style={{ fontSize: 12, color: '#94a3b8', display: 'block' }}>áž›áž‘áŸ’áž’áž•áž›áž”áŸ’ážšáž¡áž„ Â· Record student exam scores</KH>
                     </div>
                     <button onClick={openCreateDrawer} style={primaryButton}>
                         <Plus size={16} />
@@ -380,14 +383,24 @@ export default function ExamResultsPage({ results, exams, students, summary }: E
 
                             <div style={{ padding: 24, display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16 }}>
                                 <Field label="Exam" error={errors.exam_id} wide>
-                                    <select style={fieldStyle} value={data.exam_id ?? ''} onChange={event => setData('exam_id', Number(event.target.value) || null)}>
-                                        {exams.map(exam => <option key={exam.id} value={exam.id}>{exam.title}</option>)}
-                                    </select>
+                                    <Select value={data.exam_id ? String(data.exam_id) : ''} onValueChange={value => setData('exam_id', Number(value) || null)}>
+                                        <SelectTrigger className="f-input" style={{ minHeight: 42 }}>
+                                            <SelectValue placeholder="Select exam" />
+                                        </SelectTrigger>
+                                        <SelectContent>
+                                            {exams.map(exam => <SelectItem key={exam.id} value={String(exam.id)}>{exam.title}</SelectItem>)}
+                                        </SelectContent>
+                                    </Select>
                                 </Field>
                                 <Field label="Student" error={errors.student_id} wide>
-                                    <select style={fieldStyle} value={data.student_id ?? ''} onChange={event => setData('student_id', Number(event.target.value) || null)}>
-                                        {students.map(student => <option key={student.id} value={student.id}>{student.nameEn} · {student.className || student.level}</option>)}
-                                    </select>
+                                    <Select value={data.student_id ? String(data.student_id) : ''} onValueChange={value => setData('student_id', Number(value) || null)}>
+                                        <SelectTrigger className="f-input" style={{ minHeight: 42 }}>
+                                            <SelectValue placeholder="Select student" />
+                                        </SelectTrigger>
+                                        <SelectContent>
+                                            {students.map(student => <SelectItem key={student.id} value={String(student.id)}>{student.nameEn} Â· {student.className || student.level}</SelectItem>)}
+                                        </SelectContent>
+                                    </Select>
                                 </Field>
                                 <Field label="Score" error={errors.score}>
                                     <input type="number" step="0.01" min={0} style={fieldStyle} value={data.score ?? ''} onChange={event => setData('score', event.target.value === '' ? null : Number(event.target.value))} />
@@ -396,12 +409,17 @@ export default function ExamResultsPage({ results, exams, students, summary }: E
                                     <input type="number" step="0.01" min={1} style={fieldStyle} value={data.max_score} onChange={event => setData('max_score', Number(event.target.value) || 100)} />
                                 </Field>
                                 <Field label="Status" error={errors.status} wide>
-                                    <select style={fieldStyle} value={data.status} onChange={event => setData('status', event.target.value as ExamResultStatus)}>
-                                        <option value="pending">Pending</option>
-                                        <option value="passed">Passed</option>
-                                        <option value="failed">Failed</option>
-                                        <option value="absent">Absent</option>
-                                    </select>
+                                    <Select value={data.status} onValueChange={value => setData('status', value as ExamResultStatus)}>
+                                        <SelectTrigger className="f-input" style={{ minHeight: 42 }}>
+                                            <SelectValue />
+                                        </SelectTrigger>
+                                        <SelectContent>
+                                            <SelectItem value="pending">Pending</SelectItem>
+                                            <SelectItem value="passed">Passed</SelectItem>
+                                            <SelectItem value="failed">Failed</SelectItem>
+                                            <SelectItem value="absent">Absent</SelectItem>
+                                        </SelectContent>
+                                    </Select>
                                 </Field>
                                 <Field label="Note" error={errors.note} wide>
                                     <textarea style={{ ...fieldStyle, minHeight: 110, resize: 'vertical' }} value={data.note} onChange={event => setData('note', event.target.value)} />
@@ -486,3 +504,6 @@ const fieldStyle: CSSProperties = {
     color: '#1e293b',
     outline: 'none',
 };
+
+
+

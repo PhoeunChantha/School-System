@@ -1,4 +1,4 @@
-import { FormEvent } from 'react';
+﻿import { FormEvent } from 'react';
 import { store } from '@/routes/admin/teachers/lesson-plans';
 import { teachers as teachersIndex } from '@/routes/admin';
 import { DatePicker } from '@/components/ui/date-picker';
@@ -18,6 +18,7 @@ type LessonStatus = 'planned' | 'taught' | 'cancelled';
 
 interface Teacher {
     id: number;
+    routeKey?: string;
     nameKh: string;
     nameEn: string;
     photo: string | null;
@@ -26,6 +27,7 @@ interface Teacher {
 
 interface ClassOption {
     id: number;
+    routeKey?: string;
     name: string;
     room: string;
     time: string;
@@ -39,6 +41,7 @@ interface TeacherLessonPlanFormProps {
 
 interface LessonPlanFormData {
     teacher_id: number;
+    routeKey?: string;
     school_class_id: number | null;
     lesson_date: string;
     title: string;
@@ -78,7 +81,7 @@ export default function TeacherLessonPlanForm({ teacher, classes, today }: Teach
             homework: formData.homework || null,
         }));
 
-        post(store.url(teacher.id), {
+        post(store.url((teacher.routeKey ?? teacher.id) as never), {
             preserveScroll: true,
             onSuccess: () => {
                 toast.success('Lesson plan created successfully.', {
@@ -267,3 +270,6 @@ function RichTextEditor({
         </div>
     );
 }
+
+
+

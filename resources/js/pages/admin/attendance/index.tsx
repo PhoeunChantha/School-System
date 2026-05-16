@@ -1,6 +1,6 @@
-import { create, destroy, downloadLayout, edit, exportMethod, importMethod } from '@/actions/App/Http/Controllers/Backends/AttendanceSessionController';
+﻿import { create, destroy, downloadLayout, edit, exportMethod, importMethod } from '@/actions/App/Http/Controllers/Backends/AttendanceSessionController';
 import AdminShell from '@/pages/admin/shell';
-import { Badge, KH, Pagination } from '@/pages/admin/ui';
+import { AdminSelect, Badge, KH, Pagination } from '@/pages/admin/ui';
 import { router } from '@inertiajs/react';
 import { Download, Edit3, FileDown, Trash2, Upload, X } from 'lucide-react';
 import { useEffect, useMemo, useRef, useState } from 'react';
@@ -11,12 +11,14 @@ type OrderKey = 'date-desc' | 'date-asc' | 'class-asc' | 'present-desc' | 'absen
 
 interface AttendanceClass {
     id: number;
+    routeKey?: string;
     name: string;
     students: { id: number; nameKh: string; nameEn: string; province: string }[];
 }
 
 interface AttendanceRecordItem {
     id: number;
+    routeKey?: string;
     studentId: number;
     studentNameKh: string;
     studentNameEn: string;
@@ -27,6 +29,7 @@ interface AttendanceRecordItem {
 
 interface AttendanceSessionItem {
     id: number;
+    routeKey?: string;
     schoolClassId: number;
     className: string;
     attendanceDate: string;
@@ -129,7 +132,7 @@ export default function AttendancePage({ sessions, classes, summary }: Attendanc
     const confirmDelete = () => {
         if (!deleteTarget) return;
 
-        router.delete(destroy.url(deleteTarget.id), {
+        router.delete(destroy.url((deleteTarget.routeKey ?? deleteTarget.id) as never), {
             preserveScroll: true,
             onSuccess: () => {
                 toast.success('Attendance deleted.');
@@ -191,17 +194,28 @@ export default function AttendancePage({ sessions, classes, summary }: Attendanc
                 <div className="card" style={{ overflowX: 'auto' }}>
                     <div style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '12px 16px', borderBottom: '1px solid #f1f5f9', flexWrap: 'wrap' }}>
                         <span style={{ fontSize: 11, fontWeight: 700, color: '#94a3b8', whiteSpace: 'nowrap' }}>Sort by</span>
-                        <select value={orderBy} onChange={event => setOrderBy(event.target.value as OrderKey)} style={{ padding: '7px 10px', borderRadius: 8, border: '1.5px solid #e2e8f0', background: 'white', color: '#374151', fontSize: 12, fontWeight: 700, cursor: 'pointer', outline: 'none' }}>
-                            {ORDER_OPTIONS.map(option => <option key={option.value} value={option.value}>{option.label}</option>)}
-                        </select>
+                        <AdminSelect
+                            value={orderBy}
+                            onChange={value => setOrderBy(value as OrderKey)}
+                            options={ORDER_OPTIONS}
+                            style={{ minWidth: 150 }}
+                            triggerClassName="f-input h-9 min-h-9 px-3 py-1 text-xs font-bold"
+                        />
                         <div style={{ width: 1, height: 18, background: '#e2e8f0', margin: '0 2px' }} />
-                        <select value={perPage} onChange={event => setPerPage(Number(event.target.value))} style={{ padding: '7px 10px', borderRadius: 8, border: '1.5px solid #e2e8f0', background: 'white', color: '#374151', fontSize: 12, fontWeight: 700, cursor: 'pointer', outline: 'none' }}>
-                            {[5, 10, 25, 50].map(size => <option key={size} value={size}>{size} per page</option>)}
-                        </select>
-                        <select value={selectedClass} onChange={event => setSelectedClass(event.target.value === 'all' ? 'all' : Number(event.target.value))} style={{ padding: '7px 10px', borderRadius: 8, border: '1.5px solid #e2e8f0', background: 'white', color: '#374151', fontSize: 12, fontWeight: 700, cursor: 'pointer', outline: 'none' }}>
-                            <option value="all">All classes</option>
-                            {classes.map(schoolClass => <option key={schoolClass.id} value={schoolClass.id}>{schoolClass.name}</option>)}
-                        </select>
+                        <AdminSelect
+                            value={perPage.toString()}
+                            onChange={value => setPerPage(Number(value))}
+                            options={[5, 10, 25, 50].map(size => ({ value: size.toString(), label: `${size} per page` }))}
+                            style={{ minWidth: 130 }}
+                            triggerClassName="f-input h-9 min-h-9 px-3 py-1 text-xs font-bold"
+                        />
+                        <AdminSelect
+                            value={String(selectedClass)}
+                            onChange={value => setSelectedClass(value === 'all' ? 'all' : Number(value))}
+                            options={[{ value: 'all', label: 'All classes' }, ...classes.map(schoolClass => ({ value: String(schoolClass.id), label: schoolClass.name }))]}
+                            style={{ minWidth: 150 }}
+                            triggerClassName="f-input h-9 min-h-9 px-3 py-1 text-xs font-bold"
+                        />
                         <span style={{ fontSize: 11, color: '#94a3b8' }}>{filtered.length} result{filtered.length !== 1 ? 's' : ''}</span>
                         <input value={search} onChange={event => setSearch(event.target.value)} className="f-input" style={{ width: 260, maxWidth: '100%', marginLeft: 'auto' }} placeholder="Search attendance..." />
                     </div>
@@ -240,7 +254,7 @@ export default function AttendancePage({ sessions, classes, summary }: Attendanc
                                     <td style={{ color: '#2563eb', fontWeight: 900 }}>{session.excusedCount}</td>
                                     <td>
                                         <div style={{ display: 'flex', gap: 6 }}>
-                                            <button onClick={() => router.visit(edit.url(session.id))} style={{ background: '#eff6ff', color: '#2563eb', border: '1px solid #bfdbfe', borderRadius: 7, padding: '5px 10px', cursor: 'pointer', fontSize: 11, fontWeight: 700, display: 'inline-flex', alignItems: 'center', gap: 5 }}><Edit3 size={13} /> Edit</button>
+                                            <button onClick={() => router.visit(edit.url((session.routeKey ?? session.id) as never))} style={{ background: '#eff6ff', color: '#2563eb', border: '1px solid #bfdbfe', borderRadius: 7, padding: '5px 10px', cursor: 'pointer', fontSize: 11, fontWeight: 700, display: 'inline-flex', alignItems: 'center', gap: 5 }}><Edit3 size={13} /> Edit</button>
                                             <button onClick={() => setDeleteTarget(session)} style={{ background: '#fff1f2', color: '#ef4444', border: '1px solid #fecaca', borderRadius: 7, padding: '5px 10px', cursor: 'pointer', fontSize: 11, fontWeight: 700, display: 'inline-flex', alignItems: 'center', gap: 5 }}><Trash2 size={13} /> Delete</button>
                                         </div>
                                     </td>
@@ -269,3 +283,6 @@ export default function AttendancePage({ sessions, classes, summary }: Attendanc
         </AdminShell>
     );
 }
+
+
+

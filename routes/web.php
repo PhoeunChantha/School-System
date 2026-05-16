@@ -19,6 +19,7 @@ use App\Http\Controllers\Backends\SchoolSettingController;
 use App\Http\Controllers\Backends\StudentController;
 use App\Http\Controllers\Backends\TeacherController;
 use App\Http\Controllers\Backends\TeacherGradeController;
+use App\Http\Controllers\Backends\UserController;
 use Illuminate\Support\Facades\Route;
 use Inertia\Inertia;
 use Laravel\Fortify\Features;
@@ -133,6 +134,10 @@ Route::middleware(['auth', 'verified'])->prefix('admin')->name('admin.')->group(
     Route::post('/activity-logs', [ActivityLogController::class, 'store'])->middleware('can:create,App\Models\ActivityLog')->name('activity-logs.store');
     Route::put('/activity-logs/{activityLog}', [ActivityLogController::class, 'update'])->middleware('can:update,activityLog')->name('activity-logs.update');
     Route::delete('/activity-logs/{activityLog}', [ActivityLogController::class, 'destroy'])->middleware('can:delete,activityLog')->name('activity-logs.destroy');
+    Route::get('/users', [UserController::class, 'index'])->middleware('can:view,App\Models\User')->name('users');
+    Route::post('/users', [UserController::class, 'store'])->middleware('can:create,App\Models\User')->name('users.store');
+    Route::put('/users/{user}', [UserController::class, 'update'])->middleware('can:update,user')->name('users.update');
+    Route::delete('/users/{user}', [UserController::class, 'destroy'])->middleware('can:delete,user')->name('users.destroy');
     Route::get('/roles-permissions', [RolePermissionController::class, 'index'])
         ->middleware('can:viewRolesPermissions')
         ->name('roles-permissions');

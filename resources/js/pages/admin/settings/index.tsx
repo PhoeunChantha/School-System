@@ -1,4 +1,4 @@
-import { update } from '@/actions/App/Http/Controllers/Backends/SchoolSettingController';
+﻿import { update } from '@/actions/App/Http/Controllers/Backends/SchoolSettingController';
 import AdminShell from '@/pages/admin/shell';
 import { KH } from '@/pages/admin/ui';
 import { router } from '@inertiajs/react';
@@ -89,7 +89,7 @@ export default function SettingsPage({ settings }: SettingsPageProps) {
             <div className="fade-in" style={{ padding: 24, display: 'flex', flexDirection: 'column', gap: 20 }}>
                 <div>
                     <div style={{ fontWeight: 800, fontSize: 18, color: '#1e293b' }}>Settings</div>
-                    <KH style={{ fontSize: 12, color: '#94a3b8', display: 'block' }}>កំណត់ · System configuration</KH>
+                    <KH style={{ fontSize: 12, color: '#94a3b8', display: 'block' }}>áž€áŸ†ážŽážáŸ‹ Â· System configuration</KH>
                 </div>
 
                 <div style={{ display: 'flex', gap: 20, flexWrap: 'wrap', alignItems: 'flex-start' }}>
@@ -191,10 +191,10 @@ export default function SettingsPage({ settings }: SettingsPageProps) {
                             <SettingsPanel title="Notification Settings" onSave={() => saveGroup('notifications', notifications)} saving={savingGroup === 'notifications'}>
                                 <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
                                     {[
-                                        { key: 'attendanceAlert' as const, labelKh: 'ការជូនដំណឹងវត្តមាន', label: 'Low Attendance Alerts' },
-                                        { key: 'feeReminder' as const, labelKh: 'រំលឹកការទូទាត់', label: 'Fee Payment Reminders' },
-                                        { key: 'homeworkDue' as const, labelKh: 'ការជូនដំណឹងកិច្ចការ', label: 'Homework Due Alerts' },
-                                        { key: 'systemUpdates' as const, labelKh: 'ការធ្វើបច្ចុប្បន្នភាព', label: 'System Updates' },
+                                        { key: 'attendanceAlert' as const, labelKh: 'áž€áž¶ážšáž‡áž¼áž“ážŠáŸ†ážŽáž¹áž„ážœážáŸ’ážáž˜áž¶áž“', label: 'Low Attendance Alerts' },
+                                        { key: 'feeReminder' as const, labelKh: 'ážšáŸ†áž›áž¹áž€áž€áž¶ážšáž‘áž¼áž‘áž¶ážáŸ‹', label: 'Fee Payment Reminders' },
+                                        { key: 'homeworkDue' as const, labelKh: 'áž€áž¶ážšáž‡áž¼áž“ážŠáŸ†ážŽáž¹áž„áž€áž·áž…áŸ’áž…áž€áž¶ážš', label: 'Homework Due Alerts' },
+                                        { key: 'systemUpdates' as const, labelKh: 'áž€áž¶ážšáž’áŸ’ážœáž¾áž”áž…áŸ’áž…áž»áž”áŸ’áž”áž“áŸ’áž“áž—áž¶áž–', label: 'System Updates' },
                                     ].map(item => (
                                         <div key={item.key} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '14px 16px', background: '#f8fafc', borderRadius: 12, gap: 12 }}>
                                             <div>
@@ -320,3 +320,6 @@ const inputStyle: CSSProperties = {
     color: '#1e293b',
     outline: 'none',
 };
+
+
+

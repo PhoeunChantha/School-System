@@ -22,6 +22,7 @@ class SchoolClassService
                 ->get()
                 ->map(fn (SchoolClass $schoolClass): array => [
                     'id' => $schoolClass->id,
+                    'routeKey' => $schoolClass->routeKey(),
                     'levelId' => $schoolClass->level_id,
                     'teacherId' => $schoolClass->teacher_id,
                     'name' => $schoolClass->name,

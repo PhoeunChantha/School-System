@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Models\Concerns\HasEncryptedRouteKey;
 use Database\Factories\LessonPlanFactory;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
@@ -11,7 +12,7 @@ use Illuminate\Database\Eloquent\SoftDeletes;
 class LessonPlan extends Model
 {
     /** @use HasFactory<LessonPlanFactory> */
-    use HasFactory, SoftDeletes;
+    use HasEncryptedRouteKey, HasFactory, SoftDeletes;
 
     protected $fillable = [
         'teacher_id',

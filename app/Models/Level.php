@@ -2,6 +2,8 @@
 
 namespace App\Models;
 
+use App\Models\Concerns\HasEncryptedRouteKey;
+use Database\Factories\LevelFactory;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
@@ -11,8 +13,8 @@ use Illuminate\Database\Eloquent\SoftDeletes;
 
 class Level extends Model
 {
-    /** @use HasFactory<\Database\Factories\LevelFactory> */
-    use HasFactory, SoftDeletes;
+    /** @use HasFactory<LevelFactory> */
+    use HasEncryptedRouteKey, HasFactory, SoftDeletes;
 
     protected $fillable = [
         'name',

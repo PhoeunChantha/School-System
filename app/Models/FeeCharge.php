@@ -2,6 +2,8 @@
 
 namespace App\Models;
 
+use App\Models\Concerns\HasEncryptedRouteKey;
+use Database\Factories\FeeChargeFactory;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
@@ -10,8 +12,8 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class FeeCharge extends Model
 {
-    /** @use HasFactory<\Database\Factories\FeeChargeFactory> */
-    use HasFactory;
+    /** @use HasFactory<FeeChargeFactory> */
+    use HasEncryptedRouteKey, HasFactory;
 
     protected $fillable = [
         'student_id',

@@ -52,6 +52,7 @@ class TeacherGradeService
         return [
             'teacher' => [
                 'id' => $teacher->id,
+                'routeKey' => $teacher->routeKey(),
                 'nameKh' => $teacher->name_kh,
                 'nameEn' => $teacher->name_en,
                 'photo' => $teacher->profile_photo ? asset($teacher->profile_photo) : null,
@@ -66,6 +67,7 @@ class TeacherGradeService
             ]),
             'classes' => $teacher->schoolClasses->map(fn (SchoolClass $schoolClass): array => [
                 'id' => $schoolClass->id,
+                'routeKey' => $schoolClass->routeKey(),
                 'name' => $schoolClass->name,
                 'room' => $schoolClass->room ?? '',
                 'students' => $schoolClass->students->count(),
@@ -73,6 +75,7 @@ class TeacherGradeService
             'students' => $teacher->schoolClasses
                 ->flatMap(fn (SchoolClass $schoolClass) => $schoolClass->students->map(fn (Student $student): array => [
                     'id' => $student->id,
+                    'routeKey' => $student->routeKey(),
                     'schoolClassId' => $schoolClass->id,
                     'className' => $schoolClass->name,
                     'nameKh' => $student->name_kh,
@@ -145,6 +148,7 @@ class TeacherGradeService
     {
         return [
             'id' => $record->id,
+            'routeKey' => $record->routeKey(),
             'gradePeriodId' => $record->grade_period_id,
             'periodName' => $record->gradePeriod?->name ?? '',
             'studentId' => $record->student_id,

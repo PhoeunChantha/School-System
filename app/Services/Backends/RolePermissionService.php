@@ -2,6 +2,7 @@
 
 namespace App\Services\Backends;
 
+use App\Support\EncryptedRouteKey;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
 use Spatie\Permission\Models\Permission;
@@ -134,6 +135,7 @@ class RolePermissionService
     {
         return [
             'id' => $role->id,
+            'routeKey' => EncryptedRouteKey::encrypt((string) $role->getKey()),
             'name' => $role->name,
             'guardName' => $role->guard_name,
             'permissionIds' => $role->permissions->pluck('id')->values()->all(),
@@ -150,6 +152,7 @@ class RolePermissionService
     {
         return [
             'id' => $permission->id,
+            'routeKey' => EncryptedRouteKey::encrypt((string) $permission->getKey()),
             'name' => $permission->name,
             'guardName' => $permission->guard_name,
             'group' => str($permission->name)->before('.')->toString(),

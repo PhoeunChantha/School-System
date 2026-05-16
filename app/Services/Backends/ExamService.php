@@ -90,6 +90,7 @@ class ExamService
             ->get(['id', 'name', 'room'])
             ->map(fn (SchoolClass $schoolClass): array => [
                 'id' => $schoolClass->id,
+                'routeKey' => $schoolClass->routeKey(),
                 'name' => $schoolClass->name,
                 'room' => $schoolClass->room ?? '',
                 'studentCount' => $schoolClass->students_count,
@@ -105,6 +106,7 @@ class ExamService
 
         return [
             'id' => $exam->id,
+            'routeKey' => $exam->routeKey(),
             'schoolClassId' => $exam->school_class_id,
             'className' => $exam->schoolClass?->name ?? '',
             'title' => $exam->title,

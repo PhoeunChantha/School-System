@@ -1,4 +1,4 @@
-import { destroy, markAllRead, markRead, store, update } from '@/actions/App/Http/Controllers/Backends/NotificationController';
+﻿import { destroy, markAllRead, markRead, store, update } from '@/actions/App/Http/Controllers/Backends/NotificationController';
 import {
     Sheet,
     SheetContent,
@@ -7,7 +7,7 @@ import {
     SheetTitle,
 } from '@/components/ui/sheet';
 import AdminShell from '@/pages/admin/shell';
-import { Badge, KH } from '@/pages/admin/ui';
+import { AdminSelect, Badge, KH } from '@/pages/admin/ui';
 import { router, useForm } from '@inertiajs/react';
 import { Bell, Check, Edit3, Plus, Trash2 } from 'lucide-react';
 import { FormEvent, useMemo, useState } from 'react';
@@ -21,6 +21,7 @@ type DrawerMode = 'create' | 'edit';
 
 interface NotificationItem {
     id: number;
+    routeKey?: string;
     category: NotificationCategory;
     titleKh: string;
     title: string;
@@ -37,12 +38,14 @@ interface NotificationItem {
 
 interface StudentOption {
     id: number;
+    routeKey?: string;
     nameKh: string;
     nameEn: string;
 }
 
 interface UserOption {
     id: number;
+    routeKey?: string;
     name: string;
     email: string;
 }
@@ -71,10 +74,10 @@ interface NotificationFormData {
 }
 
 const CATEGORY_LABELS: Record<NotificationCategory, { kh: string; label: string; color: string; bg: string }> = {
-    attendance: { kh: 'វត្តមាន', label: 'Attendance', color: '#2563eb', bg: '#eff6ff' },
-    fees: { kh: 'ថ្លៃ', label: 'Fees', color: '#d97706', bg: '#fffbeb' },
-    homework: { kh: 'ការងារ', label: 'Homework', color: '#7c3aed', bg: '#f5f3ff' },
-    system: { kh: 'ប្រព័ន្ធ', label: 'System', color: '#64748b', bg: '#f1f5f9' },
+    attendance: { kh: 'ážœážáŸ’ážáž˜áž¶áž“', label: 'Attendance', color: '#2563eb', bg: '#eff6ff' },
+    fees: { kh: 'ážáŸ’áž›áŸƒ', label: 'Fees', color: '#d97706', bg: '#fffbeb' },
+    homework: { kh: 'áž€áž¶ážšáž„áž¶ážš', label: 'Homework', color: '#7c3aed', bg: '#f5f3ff' },
+    system: { kh: 'áž”áŸ’ážšáž–áŸáž“áŸ’áž’', label: 'System', color: '#64748b', bg: '#f1f5f9' },
 };
 
 const severityType = {
@@ -154,7 +157,7 @@ export default function NotificationsPage({ notifications, students, users, summ
         };
 
         if (drawerMode === 'edit' && editingNotification) {
-            put(update.url(editingNotification.id), options);
+            put(update.url((editingNotification.routeKey ?? editingNotification.id) as never), options);
             return;
         }
 
@@ -166,7 +169,7 @@ export default function NotificationsPage({ notifications, students, users, summ
             return;
         }
 
-        router.put(markRead.url(notification.id), {}, {
+        router.put(markRead.url((notification.routeKey ?? notification.id) as never), {}, {
             preserveScroll: true,
             onSuccess: () => toast.success('Notification marked as read.'),
         });
@@ -184,7 +187,7 @@ export default function NotificationsPage({ notifications, students, users, summ
             return;
         }
 
-        router.delete(destroy.url(deleteTarget.id), {
+        router.delete(destroy.url((deleteTarget.routeKey ?? deleteTarget.id) as never), {
             preserveScroll: true,
             onSuccess: () => {
                 toast.success('Notification deleted.');
@@ -206,7 +209,7 @@ export default function NotificationsPage({ notifications, students, users, summ
                                 </span>
                             )}
                         </div>
-                        <KH style={{ fontSize: 12, color: '#94a3b8', display: 'block' }}>ការជូនដំណឹង · School notifications</KH>
+                        <KH style={{ fontSize: 12, color: '#94a3b8', display: 'block' }}>áž€áž¶ážšáž‡áž¼áž“ážŠáŸ†ážŽáž¹áž„ Â· School notifications</KH>
                     </div>
                     <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
                         {summary.unreadCount > 0 && (
@@ -276,8 +279,8 @@ export default function NotificationsPage({ notifications, students, users, summ
                                     <div style={{ fontSize: 13, color: '#64748b', lineHeight: 1.5 }}>{notification.body || '-'}</div>
                                     <div style={{ fontSize: 11, color: '#94a3b8', marginTop: 6 }}>
                                         {notification.time}
-                                        {notification.studentName && ` · Student: ${notification.studentName}`}
-                                        {notification.userName && ` · User: ${notification.userName}`}
+                                        {notification.studentName && ` Â· Student: ${notification.studentName}`}
+                                        {notification.userName && ` Â· User: ${notification.userName}`}
                                     </div>
                                 </div>
 
@@ -310,16 +313,22 @@ export default function NotificationsPage({ notifications, students, users, summ
 
                             <div style={{ padding: 24, display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16 }}>
                                 <Field label="Category" error={errors.category}>
-                                    <select style={fieldStyle} value={data.category} onChange={event => setData('category', event.target.value as NotificationCategory)}>
-                                        {Object.entries(CATEGORY_LABELS).map(([id, meta]) => <option key={id} value={id}>{meta.label}</option>)}
-                                    </select>
+                                    <AdminSelect
+                                        value={data.category}
+                                        onChange={value => setData('category', value as NotificationCategory)}
+                                        options={Object.entries(CATEGORY_LABELS).map(([id, meta]) => ({ value: id, label: meta.label }))}
+                                    />
                                 </Field>
                                 <Field label="Severity" error={errors.severity}>
-                                    <select style={fieldStyle} value={data.severity} onChange={event => setData('severity', event.target.value as NotificationSeverity)}>
-                                        <option value="info">Info</option>
-                                        <option value="warning">Warning</option>
-                                        <option value="urgent">Urgent</option>
-                                    </select>
+                                    <AdminSelect
+                                        value={data.severity}
+                                        onChange={value => setData('severity', value as NotificationSeverity)}
+                                        options={[
+                                            { value: 'info', label: 'Info' },
+                                            { value: 'warning', label: 'Warning' },
+                                            { value: 'urgent', label: 'Urgent' },
+                                        ]}
+                                    />
                                 </Field>
                                 <Field label="Khmer Title" error={errors.title_kh} wide>
                                     <input style={fieldStyle} value={data.title_kh} onChange={event => setData('title_kh', event.target.value)} />
@@ -331,16 +340,18 @@ export default function NotificationsPage({ notifications, students, users, summ
                                     <textarea style={{ ...fieldStyle, minHeight: 118, resize: 'vertical' }} value={data.body} onChange={event => setData('body', event.target.value)} />
                                 </Field>
                                 <Field label="Student" error={errors.student_id}>
-                                    <select style={fieldStyle} value={data.student_id ?? ''} onChange={event => setData('student_id', Number(event.target.value) || null)}>
-                                        <option value="">No student</option>
-                                        {students.map(student => <option key={student.id} value={student.id}>{student.nameEn}</option>)}
-                                    </select>
+                                    <AdminSelect
+                                        value={data.student_id ? String(data.student_id) : 'none'}
+                                        onChange={value => setData('student_id', value === 'none' ? null : Number(value))}
+                                        options={[{ value: 'none', label: 'No student' }, ...students.map(student => ({ value: String(student.id), label: student.nameEn }))]}
+                                    />
                                 </Field>
                                 <Field label="User" error={errors.user_id}>
-                                    <select style={fieldStyle} value={data.user_id ?? ''} onChange={event => setData('user_id', Number(event.target.value) || null)}>
-                                        <option value="">No user</option>
-                                        {users.map(user => <option key={user.id} value={user.id}>{user.name}</option>)}
-                                    </select>
+                                    <AdminSelect
+                                        value={data.user_id ? String(data.user_id) : 'none'}
+                                        onChange={value => setData('user_id', value === 'none' ? null : Number(value))}
+                                        options={[{ value: 'none', label: 'No user' }, ...users.map(user => ({ value: String(user.id), label: user.name }))]}
+                                    />
                                 </Field>
                                 <label style={{ gridColumn: '1 / -1', display: 'flex', alignItems: 'center', gap: 10, fontSize: 13, fontWeight: 800, color: '#64748b' }}>
                                     <input type="checkbox" checked={data.is_read} onChange={event => setData('is_read', event.target.checked)} />
@@ -428,3 +439,6 @@ const fieldStyle: CSSProperties = {
     color: '#1e293b',
     outline: 'none',
 };
+
+
+

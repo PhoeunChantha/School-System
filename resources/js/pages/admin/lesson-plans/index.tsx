@@ -1,5 +1,5 @@
-import { FormEvent, useEffect, useMemo, useState } from 'react';
-import { destroy, store, update } from '@/routes/admin/lesson-plans';
+﻿import { FormEvent, useEffect, useMemo, useState } from 'react';
+import { destroy, edit, store, update } from '@/routes/admin/lesson-plans';
 import AdminShell from '@/pages/admin/shell';
 import { Avatar, Badge, Pagination } from '@/pages/admin/ui';
 import { Link, router, useForm } from '@inertiajs/react';
@@ -15,6 +15,7 @@ type OrderKey = 'date-asc' | 'date-desc' | 'teacher-asc' | 'class-asc' | 'status
 
 interface LessonPlan {
     id: number;
+    routeKey?: string;
     teacherId: number | null;
     teacher: string;
     teacherPhoto: string | null;
@@ -34,12 +35,14 @@ interface LessonPlan {
 
 interface TeacherOption {
     id: number;
+    routeKey?: string;
     name: string;
     photo: string | null;
 }
 
 interface ClassOption {
     id: number;
+    routeKey?: string;
     teacherId: number | null;
     name: string;
     teacher: string;
@@ -131,7 +134,7 @@ export default function LessonPlansPage({ lessonPlans, teachers, classes, today,
     const confirmDelete = () => {
         if (!deleteTarget) return;
 
-        router.delete(destroy.url(deleteTarget.id), {
+        router.delete(destroy.url((deleteTarget.routeKey ?? deleteTarget.id) as never), {
             preserveScroll: true,
             onSuccess: () => {
                 toast.success('Lesson plan deleted successfully!', {
@@ -235,7 +238,7 @@ export default function LessonPlansPage({ lessonPlans, teachers, classes, today,
                                         </td>
                                         <td>
                                             <div style={{ fontSize: 13, fontWeight: 800, color: '#334155' }}>{lessonPlan.className}</div>
-                                            <div style={{ fontSize: 11, color: '#94a3b8' }}>Room {lessonPlan.room || 'N/A'} · {lessonPlan.time || 'No time'}</div>
+                                            <div style={{ fontSize: 11, color: '#94a3b8' }}>Room {lessonPlan.room || 'N/A'} Â· {lessonPlan.time || 'No time'}</div>
                                         </td>
                                         <td style={{ maxWidth: 380 }}>
                                             <div style={{ fontSize: 13, fontWeight: 900, color: '#0f172a' }}>{lessonPlan.title}</div>
@@ -244,7 +247,7 @@ export default function LessonPlansPage({ lessonPlans, teachers, classes, today,
                                         <td><Badge type={statusBadge[lessonPlan.status]}>{lessonPlan.status}</Badge></td>
                                         <td>
                                             <div style={{ display: 'flex', gap: 6 }}>
-                                                <Link href={`/admin/lesson-plans/${lessonPlan.id}/edit`} style={{ background: '#eff6ff', color: '#2563eb', border: '1px solid #bfdbfe', borderRadius: 7, padding: '5px 10px', cursor: 'pointer', fontWeight: 800, fontSize: 11, display: 'inline-flex', alignItems: 'center', gap: 5, textDecoration: 'none' }}>
+                                                <Link href={edit.url((lessonPlan.routeKey ?? lessonPlan.id) as never)} style={{ background: '#eff6ff', color: '#2563eb', border: '1px solid #bfdbfe', borderRadius: 7, padding: '5px 10px', cursor: 'pointer', fontWeight: 800, fontSize: 11, display: 'inline-flex', alignItems: 'center', gap: 5, textDecoration: 'none' }}>
                                                     <Edit3 size={13} /> Edit
                                                 </Link>
                                                 <button onClick={() => setDeleteTarget(lessonPlan)}
@@ -368,7 +371,7 @@ function LessonPlanForm({ mode, lessonPlan, teachers, classes, today, onBack }: 
         };
 
         if (isEdit && lessonPlan) {
-            put(update.url(lessonPlan.id), options);
+            put(update.url((lessonPlan.routeKey ?? lessonPlan.id) as never), options);
 
             return;
         }
@@ -474,3 +477,6 @@ function LessonPlanForm({ mode, lessonPlan, teachers, classes, today, onBack }: 
         </div>
     );
 }
+
+
+

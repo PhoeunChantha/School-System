@@ -2,14 +2,16 @@
 
 namespace App\Models;
 
+use App\Models\Concerns\HasEncryptedRouteKey;
+use Database\Factories\CertificateFactory;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 class Certificate extends Model
 {
-    /** @use HasFactory<\Database\Factories\CertificateFactory> */
-    use HasFactory;
+    /** @use HasFactory<CertificateFactory> */
+    use HasEncryptedRouteKey, HasFactory;
 
     protected $fillable = [
         'student_id',

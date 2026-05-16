@@ -1,4 +1,4 @@
-import { create as createSubmission, destroy, store, update } from '@/routes/admin/homework-submissions';
+﻿import { create as createSubmission, destroy, store, update } from '@/routes/admin/homework-submissions';
 import { DatePicker } from '@/components/ui/date-picker';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import {
@@ -19,6 +19,7 @@ import { toast } from 'sonner';
 
 interface HomeworkAssignmentOption {
     id: number;
+    routeKey?: string;
     titleKh: string;
     titleEn: string;
     className: string;
@@ -28,6 +29,7 @@ interface HomeworkAssignmentOption {
 
 interface StudentOption {
     id: number;
+    routeKey?: string;
     nameKh: string;
     nameEn: string;
     level: string;
@@ -36,6 +38,7 @@ interface StudentOption {
 
 interface SubmissionItem {
     id: number;
+    routeKey?: string;
     homeworkAssignmentId: number;
     assignmentTitleKh: string;
     assignmentTitleEn: string;
@@ -301,7 +304,7 @@ export default function HomeworkSubmissionsPage({ submissions, assignments, stud
         };
 
         if (drawerMode === 'edit' && editingSubmission) {
-            put(update.url(editingSubmission.id), options);
+            put(update.url((editingSubmission.routeKey ?? editingSubmission.id) as never), options);
             return;
         }
 
@@ -313,7 +316,7 @@ export default function HomeworkSubmissionsPage({ submissions, assignments, stud
             return;
         }
 
-        router.delete(destroy.url(deleteTarget.id), {
+        router.delete(destroy.url((deleteTarget.routeKey ?? deleteTarget.id) as never), {
             preserveScroll: true,
             onSuccess: () => {
                 toast.success('Homework submission deleted.');
@@ -745,3 +748,6 @@ const fieldStyle: CSSProperties = {
     color: '#1e293b',
     outline: 'none',
 };
+
+
+

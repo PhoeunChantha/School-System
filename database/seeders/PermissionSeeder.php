@@ -33,6 +33,7 @@ class PermissionSeeder extends Seeder
         'honor-roll' => ['view'],
         'notifications' => ['view', 'create', 'update', 'delete', 'mark-read', 'mark-all-read'],
         'activity-logs' => ['view', 'create', 'update', 'delete'],
+        'users' => ['view', 'create', 'update', 'delete'],
         'roles' => ['view', 'create', 'update', 'delete'],
         'permissions' => ['view', 'create', 'update', 'delete'],
         'settings' => ['view', 'update'],
