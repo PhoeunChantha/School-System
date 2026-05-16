@@ -38,6 +38,7 @@ class StoreStudentRequest extends FormRequest
             'village' => ['nullable', 'string', 'max:255'],
             'parent_phone' => ['nullable', 'string', 'max:255'],
             'telegram_username' => ['nullable', 'string', 'max:255'],
+            'parent_telegram_id' => ['nullable', 'string', 'max:64'],
             'monthly_fee' => ['required', 'numeric', 'min:0', 'max:999999.99'],
             'scholarship_amount' => ['nullable', 'numeric', 'min:0', 'max:999999.99'],
             'fee_status' => ['required', 'string', Rule::in(['paid', 'unpaid', 'partial'])],

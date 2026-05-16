@@ -1,0 +1,7 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(php -r \"echo date\\('Y_m_d_His'\\);\")"
+    ]
+  }
+}
