@@ -23,11 +23,18 @@ export interface NavItem {
     isActive?: boolean;
 }
 
+export interface SchoolSharedData {
+    nameEn: string;
+    logo: string | null;
+    favicon: string | null;
+}
+
 export interface SharedData {
     name: string;
     quote: { message: string; author: string };
     auth: Auth;
     sidebarOpen: boolean;
+    school: SchoolSharedData;
     [key: string]: unknown;
 }
 

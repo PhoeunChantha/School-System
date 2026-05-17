@@ -98,6 +98,41 @@ class SchoolSettingService
     }
 
     /**
+     * Move an uploaded image to public/uploads/school/, delete the old file, and
+     * merge the new path into the saved school settings.
+     */
+    public function uploadImage(string $type, \Illuminate\Http\UploadedFile $file, ?int $userId): string
+    {
+        $destination = public_path('uploads/school');
+
+        if (! is_dir($destination)) {
+            mkdir($destination, 0755, true);
+        }
+
+        $current = $this->settingValue('school');
+
+        // Remove old file if it exists
+        if (! empty($current[$type])) {
+            $oldPath = public_path($current[$type]);
+
+            if (file_exists($oldPath)) {
+                @unlink($oldPath);
+            }
+        }
+
+        $ext = $file->getClientOriginalExtension() ?: 'png';
+        $filename = $type.'_'.time().'.'.$ext;
+        $file->move($destination, $filename);
+
+        $path = 'uploads/school/'.$filename;
+        $current[$type] = $path;
+
+        $this->update('school', $current, $userId);
+
+        return $path;
+    }
+
+    /**
      * @return array<string, mixed>
      */
     private function defaults(string $group): array
@@ -112,6 +147,8 @@ class SchoolSettingService
                 'telegram' => '@frania_school',
                 'principal' => 'Mr. Vuthy',
                 'founded' => '2018',
+                'logo' => null,
+                'favicon' => null,
             ],
             'fees' => [
                 'levelFees' => Level::query()

@@ -1,9 +1,9 @@
-﻿import { update } from '@/actions/App/Http/Controllers/Backends/SchoolSettingController';
+﻿import { update, uploadImage } from '@/actions/App/Http/Controllers/Backends/SchoolSettingController';
 import AdminShell from '@/pages/admin/shell';
 import { KH } from '@/pages/admin/ui';
 import { router } from '@inertiajs/react';
-import { Bell, CalendarDays, CreditCard, School, Save } from 'lucide-react';
-import { useState } from 'react';
+import { Bell, CalendarDays, CreditCard, School, Save, Upload, X } from 'lucide-react';
+import { useRef, useState } from 'react';
 import type { CSSProperties, ElementType, ReactNode } from 'react';
 import { toast } from 'sonner';
 
@@ -18,6 +18,8 @@ interface SchoolSettings {
     telegram: string;
     principal: string;
     founded: string;
+    logo: string | null;
+    favicon: string | null;
 }
 
 interface LevelFeeSetting {
@@ -74,6 +76,11 @@ export default function SettingsPage({ settings }: SettingsPageProps) {
     const [classes, setClasses] = useState<ClassSettings>(settings.classes);
     const [notifications, setNotifications] = useState<NotificationSettings>(settings.notifications);
     const [savingGroup, setSavingGroup] = useState<SettingsTab | null>(null);
+    const [logoPreview, setLogoPreview] = useState<string | null>(settings.school.logo ?? null);
+    const [faviconPreview, setFaviconPreview] = useState<string | null>(settings.school.favicon ?? null);
+    const [uploadingType, setUploadingType] = useState<'logo' | 'favicon' | null>(null);
+    const logoInputRef = useRef<HTMLInputElement>(null);
+    const faviconInputRef = useRef<HTMLInputElement>(null);
 
     const saveGroup = (group: SettingsTab, value: object) => {
         setSavingGroup(group);
@@ -81,6 +88,25 @@ export default function SettingsPage({ settings }: SettingsPageProps) {
             preserveScroll: true,
             onSuccess: () => toast.success('Settings saved.'),
             onFinish: () => setSavingGroup(null),
+        });
+    };
+
+    const handleImageUpload = (type: 'logo' | 'favicon', file: File) => {
+        const previewUrl = URL.createObjectURL(file);
+        if (type === 'logo') setLogoPreview(previewUrl);
+        else setFaviconPreview(previewUrl);
+
+        setUploadingType(type);
+        router.post(uploadImage.url(), { type, image: file }, {
+            forceFormData: true,
+            preserveScroll: true,
+            onSuccess: () => toast.success(`${type === 'logo' ? 'Logo' : 'Favicon'} uploaded successfully.`),
+            onError: () => {
+                if (type === 'logo') setLogoPreview(settings.school.logo ?? null);
+                else setFaviconPreview(settings.school.favicon ?? null);
+                toast.error('Upload failed. Please try again.');
+            },
+            onFinish: () => setUploadingType(null),
         });
     };
 
@@ -110,6 +136,59 @@ export default function SettingsPage({ settings }: SettingsPageProps) {
                     <div style={{ flex: 1, minWidth: 0 }}>
                         {tab === 'school' && (
                             <SettingsPanel title="School Information" onSave={() => saveGroup('school', school)} saving={savingGroup === 'school'}>
+                                {/* Logo & Favicon upload */}
+                                <div style={{ display: 'flex', gap: 20, marginBottom: 24, flexWrap: 'wrap' }}>
+                                    {/* Logo */}
+                                    <div style={{ flex: '1 1 200px' }}>
+                                        <label style={{ display: 'block', fontSize: 12, fontWeight: 800, color: '#64748b', marginBottom: 8 }}>School Logo</label>
+                                        <input ref={logoInputRef} type="file" accept="image/*" style={{ display: 'none' }}
+                                            onChange={e => { const f = e.target.files?.[0]; if (f) handleImageUpload('logo', f); e.target.value = ''; }} />
+                                        <div
+                                            onClick={() => logoInputRef.current?.click()}
+                                            style={{ position: 'relative', width: '100%', height: 80, background: '#f8fafc', border: '2px dashed #e2e8f0', borderRadius: 12, display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', overflow: 'hidden', transition: 'border-color 0.15s' }}
+                                            onMouseEnter={e => (e.currentTarget.style.borderColor = '#3b82f6')}
+                                            onMouseLeave={e => (e.currentTarget.style.borderColor = '#e2e8f0')}>
+                                            {logoPreview ? (
+                                                <>
+                                                    <img src={logoPreview} alt="Logo preview" style={{ maxHeight: 70, maxWidth: '90%', objectFit: 'contain' }} />
+                                                    <button type="button" onClick={e => { e.stopPropagation(); setLogoPreview(null); }}
+                                                        style={{ position: 'absolute', top: 4, right: 4, width: 20, height: 20, borderRadius: '50%', background: '#ef4444', border: 'none', color: 'white', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                                                        <X size={11} />
+                                                    </button>
+                                                </>
+                                            ) : (
+                                                <div style={{ textAlign: 'center', color: '#94a3b8' }}>
+                                                    <Upload size={20} style={{ margin: '0 auto 4px' }} />
+                                                    <div style={{ fontSize: 11, fontWeight: 700 }}>{uploadingType === 'logo' ? 'Uploading…' : 'Click to upload logo'}</div>
+                                                </div>
+                                            )}
+                                        </div>
+                                        <div style={{ fontSize: 10, color: '#94a3b8', marginTop: 4 }}>Recommended: 300×80 px · PNG/SVG</div>
+                                    </div>
+
+                                    {/* Favicon */}
+                                    <div style={{ flex: '0 0 120px' }}>
+                                        <label style={{ display: 'block', fontSize: 12, fontWeight: 800, color: '#64748b', marginBottom: 8 }}>Favicon</label>
+                                        <input ref={faviconInputRef} type="file" accept="image/*" style={{ display: 'none' }}
+                                            onChange={e => { const f = e.target.files?.[0]; if (f) handleImageUpload('favicon', f); e.target.value = ''; }} />
+                                        <div
+                                            onClick={() => faviconInputRef.current?.click()}
+                                            style={{ width: 80, height: 80, background: '#f8fafc', border: '2px dashed #e2e8f0', borderRadius: 12, display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', overflow: 'hidden', transition: 'border-color 0.15s' }}
+                                            onMouseEnter={e => (e.currentTarget.style.borderColor = '#3b82f6')}
+                                            onMouseLeave={e => (e.currentTarget.style.borderColor = '#e2e8f0')}>
+                                            {faviconPreview ? (
+                                                <img src={faviconPreview} alt="Favicon preview" style={{ width: 40, height: 40, objectFit: 'contain' }} />
+                                            ) : (
+                                                <div style={{ textAlign: 'center', color: '#94a3b8' }}>
+                                                    <Upload size={16} style={{ margin: '0 auto 2px' }} />
+                                                    <div style={{ fontSize: 10, fontWeight: 700 }}>{uploadingType === 'favicon' ? '…' : '.ico'}</div>
+                                                </div>
+                                            )}
+                                        </div>
+                                        <div style={{ fontSize: 10, color: '#94a3b8', marginTop: 4 }}>32×32 px</div>
+                                    </div>
+                                </div>
+
                                 <div style={formGrid}>
                                     <Field label="Khmer Name">
                                         <input style={inputStyle} value={school.nameKh} onChange={event => setSchool(current => ({ ...current, nameKh: event.target.value }))} />

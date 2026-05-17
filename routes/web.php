@@ -149,6 +149,7 @@ Route::middleware(['auth', 'verified'])->prefix('admin')->name('admin.')->group(
     Route::delete('/permissions/{permission}', [RolePermissionController::class, 'destroyPermission'])->middleware('can:delete,permission')->name('permissions.destroy');
     Route::get('/settings', [SchoolSettingController::class, 'index'])->middleware('can:view,App\Models\SchoolSetting')->name('settings');
     Route::put('/settings/{group}', [SchoolSettingController::class, 'update'])->middleware('can:update,App\Models\SchoolSetting')->name('settings.update');
+    Route::post('/settings/upload-image', [SchoolSettingController::class, 'uploadImage'])->middleware('can:update,App\Models\SchoolSetting')->name('settings.upload-image');
 });
 
 require __DIR__.'/settings.php';

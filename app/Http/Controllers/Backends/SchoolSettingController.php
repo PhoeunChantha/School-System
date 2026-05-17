@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Backends;
 
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Backends\UpdateSchoolSettingRequest;
+use App\Http\Requests\Backends\UploadSchoolImageRequest;
 use App\Services\Backends\SchoolSettingService;
 use Illuminate\Http\RedirectResponse;
 use Inertia\Inertia;
@@ -37,6 +38,23 @@ class SchoolSettingController extends Controller
             report($exception);
 
             return back()->with('error', 'Unable to save settings. Please try again.');
+        }
+    }
+
+    public function uploadImage(UploadSchoolImageRequest $request): RedirectResponse
+    {
+        try {
+            $this->schoolSettingService->uploadImage(
+                $request->validated('type'),
+                $request->file('image'),
+                $request->user()?->id,
+            );
+
+            return back()->with('success', ucfirst($request->validated('type')).' uploaded successfully.');
+        } catch (Throwable $exception) {
+            report($exception);
+
+            return back()->with('error', 'Unable to upload image. Please try again.');
         }
     }
 }
