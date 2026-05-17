@@ -2,6 +2,7 @@
 
 namespace App\Http\Middleware;
 
+use App\Models\SchoolSetting;
 use Illuminate\Foundation\Inspiring;
 use Illuminate\Http\Request;
 use Inertia\Middleware;
@@ -57,6 +58,18 @@ class HandleInertiaRequests extends Middleware
                 'permissions' => $user?->getAllPermissions()->pluck('name')->values()->all() ?? [],
             ],
             'sidebarOpen' => ! $request->hasCookie('sidebar_state') || $request->cookie('sidebar_state') === 'true',
+            'school' => function (): array {
+                $value = SchoolSetting::query()
+                    ->where('group', 'school')
+                    ->where('key', 'profile')
+                    ->value('value') ?? [];
+
+                return [
+                    'nameEn'  => $value['nameEn'] ?? 'Frania English School',
+                    'logo'    => ! empty($value['logo']) ? asset($value['logo']) : null,
+                    'favicon' => ! empty($value['favicon']) ? asset($value['favicon']) : null,
+                ];
+            },
         ];
     }
 }

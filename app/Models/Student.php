@@ -31,6 +31,7 @@ class Student extends Model
         'village',
         'parent_phone',
         'telegram_username',
+        'parent_telegram_id',
         'monthly_fee',
         'scholarship_amount',
         'fee_status',

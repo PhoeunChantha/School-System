@@ -39,6 +39,7 @@ export interface StudentFormData {
     village: string;
     parent_phone: string;
     telegram_username: string;
+    parent_telegram_id: string;
     monthly_fee: string | number;
     scholarship_amount: string | number;
     fee_status: 'paid' | 'unpaid' | 'partial';
@@ -78,6 +79,7 @@ export default function StudentFormPage({ mode, student, levels, classes }: Stud
         village: student?.village ?? '',
         parent_phone: student?.parent_phone ?? '',
         telegram_username: student?.telegram_username ?? '',
+        parent_telegram_id: student?.parent_telegram_id ?? '',
         monthly_fee: student?.monthly_fee ?? 0,
         scholarship_amount: student?.scholarship_amount ?? 0,
         fee_status: student?.fee_status ?? 'unpaid',
@@ -107,6 +109,7 @@ export default function StudentFormPage({ mode, student, levels, classes }: Stud
             village: formData.village || null,
             parent_phone: formData.parent_phone || null,
             telegram_username: formData.telegram_username || null,
+            parent_telegram_id: formData.parent_telegram_id || null,
             scholarship_amount: formData.scholarship_amount || 0,
             enrolled_on: formData.enrolled_on || null,
         }));
@@ -279,6 +282,12 @@ export default function StudentFormPage({ mode, student, levels, classes }: Stud
                             <div className="f-group"><label className="f-label">Village</label><input className="f-input" value={data.village} onChange={event => setData('village', event.target.value)} />{inputError(errors.village)}</div>
                             <div className="f-group"><label className="f-label">Parent Phone</label><input className="f-input" value={data.parent_phone} onChange={event => setData('parent_phone', event.target.value)} />{inputError(errors.parent_phone)}</div>
                             <div className="f-group"><label className="f-label">Telegram Username</label><input className="f-input" value={data.telegram_username} onChange={event => setData('telegram_username', event.target.value)} />{inputError(errors.telegram_username)}</div>
+                            <div className="f-group">
+                                <label className="f-label">Parent Telegram Chat ID</label>
+                                <input className="f-input" value={data.parent_telegram_id} onChange={event => setData('parent_telegram_id', event.target.value)} placeholder="e.g. 123456789" />
+                                <div style={{ fontSize: 11, color: '#94a3b8', marginTop: 4 }}>Numeric ID from Telegram. Parent must message the school bot first to get their ID.</div>
+                                {inputError(errors.parent_telegram_id)}
+                            </div>
                         </div>
                     )}
 

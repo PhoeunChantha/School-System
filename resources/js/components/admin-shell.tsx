@@ -135,6 +135,7 @@ interface AdminShellProps { children: ReactNode; }
 export default function AdminShell({ children }: AdminShellProps) {
     const { url, props } = usePage<SharedData>();
     const user = props.auth?.user;
+    const school = props.school;
     const permissionSet = useMemo(() => new Set(props.auth?.permissions ?? []), [props.auth?.permissions]);
     const canAccess = (id: string) => (NAV_PERMISSIONS[id] ?? []).every(permission => permissionSet.has(permission));
     const visibleNav = useMemo(() => NAV.reduce<{ entries: NavEntry[]; pendingGroup: NavGroup | null }>((state, entry) => {
@@ -185,7 +186,9 @@ export default function AdminShell({ children }: AdminShellProps) {
 
     return (
         <div className="admin-wrap" style={{ display: 'flex', height: '100vh', overflow: 'hidden' }}>
-            <Head title={title.en} />
+            <Head title={title.en}>
+                {school?.favicon && <link rel="icon" href={school.favicon} />}
+            </Head>
 
             {mobileOpen && (
                 <div className="sidebar-overlay" style={{ display: 'block' }} onClick={() => setMobileOpen(false)} />
@@ -195,12 +198,16 @@ export default function AdminShell({ children }: AdminShellProps) {
             <div style={{ position: mobileOpen ? 'fixed' : 'relative', inset: mobileOpen ? '0 auto 0 0' : undefined, zIndex: mobileOpen ? 40 : 1 }}>
                 <nav className={`sidebar${collapsed ? ' collapsed' : ''}${mobileOpen ? ' mobile-open' : ''}`}>
                     <div className="sidebar-logo">
-                        <div style={{ width: 34, height: 34, background: 'linear-gradient(135deg,#3b82f6,#6366f1)', borderRadius: 10, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
-                            <Building2 size={18} color="white" strokeWidth={2.4} />
-                        </div>
+                        {school?.logo ? (
+                            <img src={school.logo} alt="School logo" style={{ height: 34, maxWidth: 120, objectFit: 'contain', borderRadius: 4, flexShrink: 0 }} />
+                        ) : (
+                            <div style={{ width: 34, height: 34, background: 'linear-gradient(135deg,#3b82f6,#6366f1)', borderRadius: 10, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                                <Building2 size={18} color="white" strokeWidth={2.4} />
+                            </div>
+                        )}
                         {!collapsed && (
                             <div>
-                                <div style={{ color: 'white', fontWeight: 800, fontSize: 15, fontFamily: "'Noto Sans Khmer',sans-serif", lineHeight: 1.2 }}>Frania</div>
+                                <div style={{ color: 'white', fontWeight: 800, fontSize: 15, fontFamily: "'Noto Sans Khmer',sans-serif", lineHeight: 1.2 }}>{school?.nameEn ?? 'Frania'}</div>
                                 <div style={{ color: 'rgba(255,255,255,0.4)', fontSize: 10 }}>School System</div>
                             </div>
                         )}
