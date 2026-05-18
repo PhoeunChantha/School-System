@@ -151,7 +151,10 @@ const SIDEBAR_ITEMS: {
     },
     {
         group: 'ហិរញ្ញ / Finance',
-        items: [{ id: 'fee', label: 'ការទូទាត់', sub: 'Fees' }],
+        items: [
+            { id: 'fee', label: 'ការទូទាត់', sub: 'Fees' },
+            { id: 'expenses', label: 'ចំណាយ', sub: 'Expenses' },
+        ],
     },
     {
         group: 'ការប្រឡង / Exam',

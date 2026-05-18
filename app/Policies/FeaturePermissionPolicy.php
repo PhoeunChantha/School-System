@@ -7,6 +7,8 @@ use App\Models\AttendanceSession;
 use App\Models\Certificate;
 use App\Models\Exam;
 use App\Models\ExamResult;
+use App\Models\Expense;
+use App\Models\ExpenseCategory;
 use App\Models\FeeCharge;
 use App\Models\GradeRecord;
 use App\Models\HomeworkAssignment;
@@ -37,6 +39,8 @@ class FeaturePermissionPolicy
         HomeworkAssignment::class => 'homework',
         HomeworkSubmission::class => 'homework-submissions',
         LessonPlan::class => 'lesson-plans',
+        Expense::class => 'expenses',
+        ExpenseCategory::class => 'expense-categories',
         FeeCharge::class => 'fee',
         Exam::class => 'exam',
         ExamResult::class => 'exam-results',
@@ -62,6 +66,8 @@ class FeaturePermissionPolicy
         'homework' => 'homework',
         'homework-submissions' => 'homework-submissions',
         'lesson-plans' => 'lesson-plans',
+        'expenses' => 'expenses',
+        'expense-categories' => 'expense-categories',
         'fee' => 'fee',
         'exam' => 'exam',
         'exam-results' => 'exam-results',
@@ -73,6 +79,11 @@ class FeaturePermissionPolicy
         'permissions' => 'permissions',
         'settings' => 'settings',
     ];
+
+    public function viewAny(User $user, mixed $subject = null): bool
+    {
+        return $this->allows($user, $subject, 'view');
+    }
 
     public function view(User $user, mixed $subject = null): bool
     {

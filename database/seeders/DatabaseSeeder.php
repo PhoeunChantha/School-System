@@ -47,6 +47,8 @@ class DatabaseSeeder extends Seeder
             NotificationSeeder::class, // 12 — needs students + users
             SchoolSettingSeeder::class, // 13 — no dependencies
             ActivityLogSeeder::class,  // 14 — needs students + users
+            ExpenseCategorySeeder::class, // 15 — no dependencies
+            ExpenseSeeder::class,         // 16 — needs expense categories
         ]);
     }
 }

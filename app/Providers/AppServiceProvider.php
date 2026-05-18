@@ -7,6 +7,8 @@ use App\Models\AttendanceSession;
 use App\Models\Certificate;
 use App\Models\Exam;
 use App\Models\ExamResult;
+use App\Models\Expense;
+use App\Models\ExpenseCategory;
 use App\Models\FeeCharge;
 use App\Models\GradeRecord;
 use App\Models\HomeworkAssignment;
@@ -63,6 +65,8 @@ class AppServiceProvider extends ServiceProvider
             HomeworkAssignment::class,
             HomeworkSubmission::class,
             LessonPlan::class,
+            Expense::class,
+            ExpenseCategory::class,
             FeeCharge::class,
             Exam::class,
             ExamResult::class,

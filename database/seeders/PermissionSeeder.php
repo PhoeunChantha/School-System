@@ -26,6 +26,8 @@ class PermissionSeeder extends Seeder
         'lesson-plans' => ['view', 'create', 'update', 'delete'],
         'fee' => ['view', 'create', 'update', 'delete'],
         'fee-payments' => ['create'],
+        'expenses' => ['view', 'create', 'update', 'delete'],
+        'expense-categories' => ['view', 'create', 'update', 'delete'],
         'exam' => ['view', 'create', 'update', 'delete'],
         'exam-results' => ['view', 'create', 'update', 'delete'],
         'reports' => ['view'],
