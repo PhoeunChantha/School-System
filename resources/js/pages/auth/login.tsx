@@ -21,83 +21,140 @@ export default function Login({ status, canResetPassword }: LoginProps) {
     const school = props.school;
     const hasBg = !!school?.loginBg;
     return (
-        <div style={{
-            minHeight: '100vh',
-            background: hasBg ? `url(${school!.loginBg}) center/cover no-repeat` : 'linear-gradient(135deg,#f8fafc,#eff6ff)',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            padding: 24,
-            fontFamily: "'Plus Jakarta Sans','Noto Sans Khmer',sans-serif",
-            position: 'relative',
-        }}>
+        <div
+            style={{
+                minHeight: '100vh',
+                background: hasBg
+                    ? `url(${school!.loginBg}) center/cover no-repeat`
+                    : 'linear-gradient(135deg,#f8fafc,#eff6ff)',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                padding: 24,
+                fontFamily: "'Plus Jakarta Sans','Noto Sans Khmer',sans-serif",
+                position: 'relative',
+            }}
+        >
             {hasBg && (
-                <div style={{ position: 'absolute', inset: 0, background: 'rgba(0,0,0,0.38)', zIndex: 0 }} />
+                <div
+                    style={{
+                        position: 'absolute',
+                        inset: 0,
+                        background: 'rgba(0,0,0,0.38)',
+                        zIndex: 0,
+                    }}
+                />
             )}
             <Head title="Log in" />
 
-            <div style={{
-                position: 'relative',
-                zIndex: 1,
-                width: '100%',
-                maxWidth: 440,
-                background: hasBg ? '' : 'white',
-                backdropFilter: hasBg ? 'blur(2px)' : undefined,
-                WebkitBackdropFilter: hasBg ? 'blur(18px)' : undefined,
-                borderRadius: 24,
-                padding: 40,
-                boxShadow: hasBg ? '0 20px 60px rgba(0,0,0,0.3), 0 0 0 1px rgba(255,255,255,0.25)' : '0 20px 60px rgba(0,0,0,0.1)',
-                border: hasBg ? '1px solid rgba(255,255,255,0.3)' : undefined,
-            }}>
+            <div
+                style={{
+                    position: 'relative',
+                    zIndex: 1,
+                    width: '100%',
+                    maxWidth: 440,
+                    background: hasBg ? '' : 'white',
+                    backdropFilter: hasBg ? 'blur(2px)' : undefined,
+                    WebkitBackdropFilter: hasBg ? 'blur(18px)' : undefined,
+                    borderRadius: 24,
+                    padding: 40,
+                    boxShadow: hasBg
+                        ? '0 20px 60px rgba(0,0,0,0.3), 0 0 0 1px rgba(255,255,255,0.25)'
+                        : '0 20px 60px rgba(0,0,0,0.1)',
+                    border: hasBg
+                        ? '1px solid rgba(255,255,255,0.3)'
+                        : undefined,
+                }}
+            >
                 {/* School branding */}
                 <div style={{ textAlign: 'center', marginBottom: 32 }}>
                     {school?.logo ? (
                         <img
                             src={school.logo}
                             alt="School logo"
-                            style={{ maxHeight: 80, maxWidth: 200, objectFit: 'contain', margin: '0 auto 16px', display: 'block' }}
+                            style={{
+                                maxHeight: 80,
+                                maxWidth: 200,
+                                objectFit: 'contain',
+                                margin: '0 auto 16px',
+                                display: 'block',
+                            }}
                         />
                     ) : (
-                        <div style={{
-                            width: 80, height: 80,
-                            background: 'linear-gradient(135deg,#2563eb,#4f46e5)',
-                            borderRadius: 24,
-                            display: 'flex', alignItems: 'center', justifyContent: 'center',
-                            margin: '0 auto 16px',
-                            boxShadow: '0 8px 24px rgba(37,99,235,0.3)',
-                        }}>
-                            <Building2 size={40} color="white" strokeWidth={2.2} />
+                        <div
+                            style={{
+                                width: 80,
+                                height: 80,
+                                background:
+                                    'linear-gradient(135deg,#2563eb,#4f46e5)',
+                                borderRadius: 24,
+                                display: 'flex',
+                                alignItems: 'center',
+                                justifyContent: 'center',
+                                margin: '0 auto 16px',
+                                boxShadow: '0 8px 24px rgba(37,99,235,0.3)',
+                            }}
+                        >
+                            <Building2
+                                size={40}
+                                color="white"
+                                strokeWidth={2.2}
+                            />
                         </div>
                     )}
 
-                    <span style={{
-                        fontSize: 26, fontWeight: 800, display: 'block',
-                        color: hasBg ? 'white' : '#1e293b', marginBottom: 4,
-                        fontFamily: "'Noto Sans Khmer','Plus Jakarta Sans',sans-serif",
-                        textShadow: hasBg ? '0 1px 4px rgba(0,0,0,0.4)' : undefined,
-                    }}>
-                        សាលា Frania
+                    <span
+                        style={{
+                            fontSize: 26,
+                            fontWeight: 800,
+                            display: 'block',
+                            color: hasBg ? 'white' : '#1e293b',
+                            marginBottom: 4,
+                            fontFamily:
+                                "'Noto Sans Khmer','Plus Jakarta Sans',sans-serif",
+                            textShadow: hasBg
+                                ? '0 1px 4px rgba(0,0,0,0.4)'
+                                : undefined,
+                        }}
+                    >
+                        {school?.nameEn ?? 'Frania English School'}
                     </span>
-                    <div style={{ color: hasBg ? 'rgba(255,255,255,0.85)' : '#94a3b8', fontSize: 14 }}>
+                    <div
+                        style={{
+                            color: hasBg ? 'rgba(255,255,255,0.85)' : '#94a3b8',
+                            fontSize: 14,
+                        }}
+                    >
                         {school?.nameEn ?? 'Frania English School'} · Cambodia
                     </div>
-                    <div style={{
-                        color: hasBg ? 'rgba(255,255,255,0.75)' : '#94a3b8', fontSize: 12,
-                        marginTop: 8,
-                        fontFamily: "'Noto Sans Khmer','Plus Jakarta Sans',sans-serif",
-                    }}>
-                        ចូលគណនីរបស់អ្នក / Sign in to your account
+                    <div
+                        style={{
+                            color: hasBg ? 'rgba(255,255,255,0.75)' : '#94a3b8',
+                            fontSize: 12,
+                            marginTop: 8,
+                            fontFamily:
+                                "'Noto Sans Khmer','Plus Jakarta Sans',sans-serif",
+                        }}
+                    >
+                        Sign in to your account
                     </div>
                 </div>
 
                 {/* Status message */}
                 {status && (
-                    <div style={{
-                        marginBottom: 20, padding: '10px 14px',
-                        background: '#f0fdf4', border: '1px solid #bbf7d0',
-                        borderRadius: 10, fontSize: 13,
-                        color: '#16a34a', fontWeight: 600, textAlign: 'center',
-                    }}>
+                    <div
+                        style={{
+                            marginBottom: 20,
+                            padding: '10px 14px',
+                            background: '#f0fdf4',
+                            border: '1px solid #bbf7d0',
+                            borderRadius: 10,
+                            fontSize: 13,
+                            color: '#16a34a',
+                            fontWeight: 600,
+                            textAlign: 'center',
+                        }}
+                    >
                         {status}
                     </div>
                 )}
@@ -106,14 +163,31 @@ export default function Login({ status, canResetPassword }: LoginProps) {
                 <Form
                     {...store.form()}
                     resetOnSuccess={['password']}
-                    style={{ display: 'flex', flexDirection: 'column', gap: 16 }}
+                    style={{
+                        display: 'flex',
+                        flexDirection: 'column',
+                        gap: 16,
+                    }}
                 >
                     {({ processing, errors }) => (
                         <>
                             {/* Email */}
-                            <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
-                                <label htmlFor="email" style={{ fontSize: 12, fontWeight: 700, color: hasBg ? 'white' : '#64748b' }}>
-                                    Email Address / អ៊ីម៉ែល
+                            <div
+                                style={{
+                                    display: 'flex',
+                                    flexDirection: 'column',
+                                    gap: 6,
+                                }}
+                            >
+                                <label
+                                    htmlFor="email"
+                                    style={{
+                                        fontSize: 12,
+                                        fontWeight: 700,
+                                        color: hasBg ? 'white' : '#64748b',
+                                    }}
+                                >
+                                    Email Address
                                 </label>
                                 <Input
                                     id="email"
@@ -125,9 +199,15 @@ export default function Login({ status, canResetPassword }: LoginProps) {
                                     autoComplete="email"
                                     placeholder="email@example.com"
                                     style={{
-                                        background: hasBg ? '' : '#f8fafc',
-                                        border: hasBg ? '1.5px solid rgba(255,255,255,0.35)' : '1.5px solid #e2e8f0',
-                                        borderRadius: 10, padding: '10px 14px', fontSize: 14,
+                                        background: hasBg
+                                            ? 'transparent'
+                                            : '#f8fafc',
+                                        border: hasBg
+                                            ? '1.5px solid rgba(255,255,255,0.35)'
+                                            : '1.5px solid #e2e8f0',
+                                        borderRadius: 10,
+                                        padding: '10px 14px',
+                                        fontSize: 14,
                                         color: hasBg ? 'white' : '#1e293b',
                                     }}
                                 />
@@ -135,13 +215,40 @@ export default function Login({ status, canResetPassword }: LoginProps) {
                             </div>
 
                             {/* Password */}
-                            <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
-                                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-                                    <label htmlFor="password" style={{ fontSize: 12, fontWeight: 700, color: hasBg ? 'white' : '#64748b' }}>
-                                        Password / លេខសម្ងាត់
+                            <div
+                                style={{
+                                    display: 'flex',
+                                    flexDirection: 'column',
+                                    gap: 6,
+                                }}
+                            >
+                                <div
+                                    style={{
+                                        display: 'flex',
+                                        alignItems: 'center',
+                                        justifyContent: 'space-between',
+                                    }}
+                                >
+                                    <label
+                                        htmlFor="password"
+                                        style={{
+                                            fontSize: 12,
+                                            fontWeight: 700,
+                                            color: hasBg ? 'white' : '#64748b',
+                                        }}
+                                    >
+                                        Password
                                     </label>
                                     {canResetPassword && (
-                                        <TextLink href={request()} tabIndex={5} className={hasBg ? 'text-xs text-white/80 hover:text-white' : 'text-xs text-blue-600 hover:text-blue-700'}>
+                                        <TextLink
+                                            href={request()}
+                                            tabIndex={5}
+                                            className={
+                                                hasBg
+                                                    ? 'text-xs text-white/80 hover:text-white'
+                                                    : 'text-xs text-blue-600 hover:text-blue-700'
+                                            }
+                                        >
                                             Forgot password?
                                         </TextLink>
                                     )}
@@ -153,11 +260,17 @@ export default function Login({ status, canResetPassword }: LoginProps) {
                                     required
                                     tabIndex={2}
                                     autoComplete="current-password"
-                                    placeholder="••••••••"
+                                    placeholder="Password"
                                     style={{
-                                        background: hasBg ? '' : '#f8fafc',
-                                        border: hasBg ? '1.5px solid rgba(255,255,255,0.35)' : '1.5px solid #e2e8f0',
-                                        borderRadius: 10, padding: '10px 14px', fontSize: 14,
+                                        background: hasBg
+                                            ? 'transparent'
+                                            : '#f8fafc',
+                                        border: hasBg
+                                            ? '1.5px solid rgba(255,255,255,0.35)'
+                                            : '1.5px solid #e2e8f0',
+                                        borderRadius: 10,
+                                        padding: '10px 14px',
+                                        fontSize: 14,
                                         color: hasBg ? 'white' : '#1e293b',
                                     }}
                                 />
@@ -165,9 +278,28 @@ export default function Login({ status, canResetPassword }: LoginProps) {
                             </div>
 
                             {/* Remember me */}
-                            <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                                <Checkbox id="remember" name="remember" tabIndex={3} />
-                                <label htmlFor="remember" style={{ fontSize: 13, color: hasBg ? 'rgba(255,255,255,0.85)' : '#64748b', cursor: 'pointer' }}>
+                            <div
+                                style={{
+                                    display: 'flex',
+                                    alignItems: 'center',
+                                    gap: 8,
+                                }}
+                            >
+                                <Checkbox
+                                    id="remember"
+                                    name="remember"
+                                    tabIndex={3}
+                                />
+                                <label
+                                    htmlFor="remember"
+                                    style={{
+                                        fontSize: 13,
+                                        color: hasBg
+                                            ? 'rgba(255,255,255,0.85)'
+                                            : '#64748b',
+                                        cursor: 'pointer',
+                                    }}
+                                >
                                     Remember me
                                 </label>
                             </div>
@@ -179,33 +311,65 @@ export default function Login({ status, canResetPassword }: LoginProps) {
                                 disabled={processing}
                                 data-test="login-button"
                                 style={{
-                                    width: '100%', padding: '13px',
-                                    borderRadius: 14, border: 'none',
-                                    fontWeight: 800, fontSize: 15,
-                                    cursor: processing ? 'not-allowed' : 'pointer',
+                                    width: '100%',
+                                    padding: '13px',
+                                    borderRadius: 14,
+                                    border: 'none',
+                                    fontWeight: 800,
+                                    fontSize: 15,
+                                    cursor: processing
+                                        ? 'not-allowed'
+                                        : 'pointer',
                                     background: processing
                                         ? '#e2e8f0'
                                         : 'linear-gradient(135deg,#2563eb,#4f46e5)',
                                     color: processing ? '#94a3b8' : 'white',
-                                    boxShadow: processing ? 'none' : '0 8px 24px rgba(37,99,235,0.3)',
-                                    display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8,
+                                    boxShadow: processing
+                                        ? 'none'
+                                        : '0 8px 24px rgba(37,99,235,0.3)',
+                                    display: 'flex',
+                                    alignItems: 'center',
+                                    justifyContent: 'center',
+                                    gap: 8,
                                     transition: 'all 0.2s',
-                                    fontFamily: "'Noto Sans Khmer','Plus Jakarta Sans',sans-serif",
+                                    fontFamily:
+                                        "'Noto Sans Khmer','Plus Jakarta Sans',sans-serif",
                                     marginTop: 4,
                                 }}
                             >
                                 {processing && <Spinner />}
-                                {processing ? 'កំពុងចូល...' : <><span>ចូលប្រព័ន្ធ</span><ArrowRight size={16} /><span>Log in</span></>}
+                                {processing ? (
+                                    'Signing in...'
+                                ) : (
+                                    <>
+                                        <span>Log in</span>
+                                        <ArrowRight size={16} />
+                                    </>
+                                )}
                             </button>
-
                         </>
                     )}
                 </Form>
 
                 {/* Footer */}
-                <div style={{ marginTop: 24, paddingTop: 20, borderTop: hasBg ? '1px solid rgba(255,255,255,0.2)' : '1px solid #f1f5f9', textAlign: 'center' }}>
-                    <div style={{ fontSize: 11, color: hasBg ? 'rgba(255,255,255,0.55)' : '#cbd5e1' }}>
-                        © {new Date().getFullYear()} Frania School System · Cambodia
+                <div
+                    style={{
+                        marginTop: 24,
+                        paddingTop: 20,
+                        borderTop: hasBg
+                            ? '1px solid rgba(255,255,255,0.2)'
+                            : '1px solid #f1f5f9',
+                        textAlign: 'center',
+                    }}
+                >
+                    <div
+                        style={{
+                            fontSize: 11,
+                            color: hasBg ? 'rgba(255,255,255,0.55)' : '#cbd5e1',
+                        }}
+                    >
+                        © {new Date().getFullYear()} Frania School System ·
+                        Cambodia
                     </div>
                 </div>
             </div>

@@ -36,6 +36,9 @@ export interface SharedData {
     auth: Auth;
     sidebarOpen: boolean;
     school: SchoolSharedData;
+    translations?: {
+        admin?: Record<'en' | 'kh', Record<string, unknown>>;
+    };
     [key: string]: unknown;
 }
 

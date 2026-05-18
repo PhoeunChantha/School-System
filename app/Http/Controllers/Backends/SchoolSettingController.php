@@ -6,9 +6,12 @@ use App\Http\Controllers\Controller;
 use App\Http\Requests\Backends\UpdateSchoolSettingRequest;
 use App\Http\Requests\Backends\UploadSchoolImageRequest;
 use App\Services\Backends\SchoolSettingService;
+use Illuminate\Contracts\Auth\MustVerifyEmail;
 use Illuminate\Http\RedirectResponse;
+use Illuminate\Http\Request;
 use Inertia\Inertia;
 use Inertia\Response;
+use Laravel\Fortify\Features;
 use Throwable;
 
 class SchoolSettingController extends Controller
@@ -23,9 +26,17 @@ class SchoolSettingController extends Controller
         $this->schoolSettingService = $schoolSettingService;
     }
 
-    public function index(): Response
+    public function index(Request $request): Response
     {
-        return Inertia::render('admin/settings/index', $this->schoolSettingService->indexData());
+        return Inertia::render('admin/settings/index', array_merge(
+            $this->schoolSettingService->indexData(),
+            [
+                'mustVerifyEmail' => $request->user() instanceof MustVerifyEmail,
+                'profileStatus' => $request->session()->get('status'),
+                'twoFactorEnabled' => (bool) ($request->user()?->two_factor_secret),
+                'requiresConfirmation' => Features::optionEnabled(Features::twoFactorAuthentication(), 'confirm'),
+            ],
+        ));
     }
 
     public function update(UpdateSchoolSettingRequest $request, string $group): RedirectResponse

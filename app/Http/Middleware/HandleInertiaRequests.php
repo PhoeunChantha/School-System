@@ -5,6 +5,7 @@ namespace App\Http\Middleware;
 use App\Models\SchoolSetting;
 use Illuminate\Foundation\Inspiring;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Lang;
 use Inertia\Middleware;
 
 class HandleInertiaRequests extends Middleware
@@ -65,12 +66,18 @@ class HandleInertiaRequests extends Middleware
                     ->value('value') ?? [];
 
                 return [
-                    'nameEn'  => $value['nameEn'] ?? 'Frania English School',
-                    'logo'    => ! empty($value['logo']) ? asset($value['logo']) : null,
+                    'nameEn' => $value['nameEn'] ?? 'Frania English School',
+                    'logo' => ! empty($value['logo']) ? asset($value['logo']) : null,
                     'favicon' => ! empty($value['favicon']) ? asset($value['favicon']) : null,
                     'loginBg' => ! empty($value['loginBg']) ? asset($value['loginBg']) : null,
                 ];
             },
+            'translations' => [
+                'admin' => [
+                    'en' => Lang::get('admin', [], 'en'),
+                    'kh' => Lang::get('admin', [], 'kh'),
+                ],
+            ],
         ];
     }
 }
