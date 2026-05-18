@@ -136,6 +136,24 @@ export default function AdminShell({ children }: AdminShellProps) {
     const { url, props } = usePage<SharedData>();
     const user = props.auth?.user;
     const school = props.school;
+    const [hiddenNavItems, setHiddenNavItems] = useState<Set<string>>(() => {
+        if (typeof window === 'undefined') return new Set();
+        try {
+            const stored = window.localStorage.getItem('admin-sidebar-hidden');
+            return new Set(stored ? JSON.parse(stored) : []);
+        } catch { return new Set(); }
+    });
+
+    useEffect(() => {
+        const handler = () => {
+            try {
+                const stored = window.localStorage.getItem('admin-sidebar-hidden');
+                setHiddenNavItems(new Set(stored ? JSON.parse(stored) : []));
+            } catch { setHiddenNavItems(new Set()); }
+        };
+        window.addEventListener('sidebar-hidden-change', handler);
+        return () => window.removeEventListener('sidebar-hidden-change', handler);
+    }, []);
     const permissionSet = useMemo(() => new Set(props.auth?.permissions ?? []), [props.auth?.permissions]);
     const canAccess = (id: string) => (NAV_PERMISSIONS[id] ?? []).every(permission => permissionSet.has(permission));
     const visibleNav = useMemo(() => NAV.reduce<{ entries: NavEntry[]; pendingGroup: NavGroup | null }>((state, entry) => {
@@ -143,7 +161,7 @@ export default function AdminShell({ children }: AdminShellProps) {
             return { ...state, pendingGroup: entry };
         }
 
-        if (! canAccess(entry.id)) {
+        if (! canAccess(entry.id) || hiddenNavItems.has(entry.id)) {
             return state;
         }
 
@@ -155,7 +173,7 @@ export default function AdminShell({ children }: AdminShellProps) {
             ],
             pendingGroup: null,
         };
-    }, { entries: [], pendingGroup: null }).entries, [permissionSet]);
+    }, { entries: [], pendingGroup: null }).entries, [permissionSet, hiddenNavItems]);
     const visibleMobileNav = useMemo(() => visibleNav.filter(isItem), [visibleNav]);
     const [collapsed, setCollapsed] = useState(false);
     const [mobileOpen, setMobileOpen] = useState(false);

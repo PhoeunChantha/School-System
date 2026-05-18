@@ -1,13 +1,14 @@
 ﻿import { update, uploadImage } from '@/actions/App/Http/Controllers/Backends/SchoolSettingController';
 import AdminShell from '@/pages/admin/shell';
 import { KH } from '@/pages/admin/ui';
-import { router } from '@inertiajs/react';
-import { Bell, CalendarDays, CreditCard, School, Save, Upload, X } from 'lucide-react';
-import { useRef, useState } from 'react';
+import { router, usePage } from '@inertiajs/react';
+import type { SharedData } from '@/types';
+import { Bell, CalendarDays, CreditCard, School, Save, Upload, X, PanelLeft } from 'lucide-react';
+import { useRef, useState, useMemo } from 'react';
 import type { CSSProperties, ElementType, ReactNode } from 'react';
 import { toast } from 'sonner';
 
-type SettingsTab = 'school' | 'fees' | 'classes' | 'notifications';
+type SettingsTab = 'school' | 'fees' | 'classes' | 'notifications' | 'sidebar';
 
 interface SchoolSettings {
     nameKh: string;
@@ -20,6 +21,7 @@ interface SchoolSettings {
     founded: string;
     logo: string | null;
     favicon: string | null;
+    loginBg: string | null;
 }
 
 interface LevelFeeSetting {
@@ -67,20 +69,82 @@ const tabs: { id: SettingsTab; label: string; icon: ElementType }[] = [
     { id: 'fees', label: 'Fee Settings', icon: CreditCard },
     { id: 'classes', label: 'Class Schedule', icon: CalendarDays },
     { id: 'notifications', label: 'Notifications', icon: Bell },
+    { id: 'sidebar', label: 'Sidebar', icon: PanelLeft },
+];
+
+const SIDEBAR_ITEMS: { group: string; items: { id: string; label: string; sub: string }[] }[] = [
+    { group: 'ទំព័រដើម / Main', items: [
+        { id: 'dashboard', label: 'ទំព័រដើម', sub: 'Dashboard' },
+        { id: 'students', label: 'សិស្ស', sub: 'Students' },
+        { id: 'teachers', label: 'គ្រូ', sub: 'Teachers' },
+        { id: 'classes', label: 'ថ្នាក់', sub: 'Classes' },
+        { id: 'levels', label: 'កម្រិត', sub: 'Levels' },
+    ]},
+    { group: 'ការបង្រៀន / Teaching', items: [
+        { id: 'attendance', label: 'វត្តមាន', sub: 'Attendance' },
+        { id: 'grades', label: 'ពិន្ទុ', sub: 'Grades' },
+        { id: 'homework', label: 'កិច្ចការ', sub: 'Homework' },
+        { id: 'lesson-plans', label: 'Lesson Plans', sub: 'Lesson Plans' },
+        { id: 'homework-submissions', label: 'Submissions', sub: 'Homework Submissions' },
+    ]},
+    { group: 'ហិរញ្ញ / Finance', items: [
+        { id: 'fee', label: 'ការទូទាត់', sub: 'Fees' },
+    ]},
+    { group: 'ការប្រឡង / Exam', items: [
+        { id: 'exam', label: 'ប្រឡង', sub: 'Exams' },
+        { id: 'exam-results', label: 'លទ្ធផល', sub: 'Exam Results' },
+    ]},
+    { group: 'រាយការណ៍ / Reports', items: [
+        { id: 'reports', label: 'រាយការណ៍', sub: 'Reports' },
+        { id: 'certs', label: 'វិញ្ញាបនបត្រ', sub: 'Certificates' },
+        { id: 'honor-roll', label: 'តារាងកិត្តិយស', sub: 'Honor Roll' },
+    ]},
+    { group: 'ផ្សេងៗ / Other', items: [
+        { id: 'notifications', label: 'ការជូនដំណឹង', sub: 'Notifications' },
+        { id: 'activity-logs', label: 'កត់ត្រា', sub: 'Activity Logs' },
+        { id: 'users', label: 'Users', sub: 'User Accounts' },
+        { id: 'roles-permissions', label: 'Roles', sub: 'Roles & Permissions' },
+    ]},
 ];
 
 export default function SettingsPage({ settings }: SettingsPageProps) {
+    const { props } = usePage<SharedData>();
+    const permissionSet = useMemo(() => new Set(props.auth?.permissions ?? []), [props.auth?.permissions]);
+    const visibleTabs = useMemo(() => tabs.filter(t => t.id !== 'sidebar' || permissionSet.has('sidebar.view') || permissionSet.has('settings.view')), [permissionSet]);
     const [tab, setTab] = useState<SettingsTab>('school');
     const [school, setSchool] = useState<SchoolSettings>(settings.school);
     const [fees, setFees] = useState<FeeSettings>(settings.fees);
     const [classes, setClasses] = useState<ClassSettings>(settings.classes);
     const [notifications, setNotifications] = useState<NotificationSettings>(settings.notifications);
     const [savingGroup, setSavingGroup] = useState<SettingsTab | null>(null);
-    const [logoPreview, setLogoPreview] = useState<string | null>(settings.school.logo ?? null);
-    const [faviconPreview, setFaviconPreview] = useState<string | null>(settings.school.favicon ?? null);
-    const [uploadingType, setUploadingType] = useState<'logo' | 'favicon' | null>(null);
+    const [hiddenItems, setHiddenItems] = useState<Set<string>>(() => {
+        try {
+            const stored = window.localStorage.getItem('admin-sidebar-hidden');
+            return new Set(stored ? JSON.parse(stored) : []);
+        } catch { return new Set(); }
+    });
+
+    const toggleSidebarItem = (id: string) => {
+        setHiddenItems(prev => {
+            const next = new Set(prev);
+            if (next.has(id)) next.delete(id); else next.add(id);
+            window.localStorage.setItem('admin-sidebar-hidden', JSON.stringify([...next]));
+            window.dispatchEvent(new CustomEvent('sidebar-hidden-change'));
+            return next;
+        });
+        toast.success('Sidebar updated.');
+    };
+    const toUrl = (path: string | null | undefined): string | null => {
+        if (!path) return null;
+        return path.startsWith('http') || path.startsWith('/') ? path : `/${path}`;
+    };
+    const [logoPreview, setLogoPreview] = useState<string | null>(toUrl(settings.school.logo));
+    const [faviconPreview, setFaviconPreview] = useState<string | null>(toUrl(settings.school.favicon));
+    const [loginBgPreview, setLoginBgPreview] = useState<string | null>(toUrl(settings.school.loginBg));
+    const [uploadingType, setUploadingType] = useState<'logo' | 'favicon' | 'loginBg' | null>(null);
     const logoInputRef = useRef<HTMLInputElement>(null);
     const faviconInputRef = useRef<HTMLInputElement>(null);
+    const loginBgInputRef = useRef<HTMLInputElement>(null);
 
     const saveGroup = (group: SettingsTab, value: object) => {
         setSavingGroup(group);
@@ -91,19 +155,21 @@ export default function SettingsPage({ settings }: SettingsPageProps) {
         });
     };
 
-    const handleImageUpload = (type: 'logo' | 'favicon', file: File) => {
+    const handleImageUpload = (type: 'logo' | 'favicon' | 'loginBg', file: File) => {
         const previewUrl = URL.createObjectURL(file);
         if (type === 'logo') setLogoPreview(previewUrl);
-        else setFaviconPreview(previewUrl);
+        else if (type === 'favicon') setFaviconPreview(previewUrl);
+        else setLoginBgPreview(previewUrl);
 
         setUploadingType(type);
         router.post(uploadImage.url(), { type, image: file }, {
             forceFormData: true,
             preserveScroll: true,
-            onSuccess: () => toast.success(`${type === 'logo' ? 'Logo' : 'Favicon'} uploaded successfully.`),
+            onSuccess: () => toast.success(`${type === 'logo' ? 'Logo' : type === 'favicon' ? 'Favicon' : 'Login background'} uploaded successfully.`),
             onError: () => {
-                if (type === 'logo') setLogoPreview(settings.school.logo ?? null);
-                else setFaviconPreview(settings.school.favicon ?? null);
+                if (type === 'logo') setLogoPreview(toUrl(settings.school.logo));
+                else if (type === 'favicon') setFaviconPreview(toUrl(settings.school.favicon));
+                else setLoginBgPreview(toUrl(settings.school.loginBg));
                 toast.error('Upload failed. Please try again.');
             },
             onFinish: () => setUploadingType(null),
@@ -121,7 +187,7 @@ export default function SettingsPage({ settings }: SettingsPageProps) {
                 <div style={{ display: 'flex', gap: 20, flexWrap: 'wrap', alignItems: 'flex-start' }}>
                     <div style={{ width: 210, flexShrink: 0 }}>
                         <div className="card" style={{ padding: 8 }}>
-                            {tabs.map(item => {
+                            {visibleTabs.map(item => {
                                 const Icon = item.icon;
                                 return (
                                     <button key={item.id} onClick={() => setTab(item.id)} style={tabButton(tab === item.id)}>
@@ -136,7 +202,34 @@ export default function SettingsPage({ settings }: SettingsPageProps) {
                     <div style={{ flex: 1, minWidth: 0 }}>
                         {tab === 'school' && (
                             <SettingsPanel title="School Information" onSave={() => saveGroup('school', school)} saving={savingGroup === 'school'}>
-                                {/* Logo & Favicon upload */}
+                                <div style={formGrid}>
+                                    <Field label="Khmer Name">
+                                        <input style={inputStyle} value={school.nameKh} onChange={event => setSchool(current => ({ ...current, nameKh: event.target.value }))} />
+                                    </Field>
+                                    <Field label="English Name">
+                                        <input style={inputStyle} value={school.nameEn} onChange={event => setSchool(current => ({ ...current, nameEn: event.target.value }))} />
+                                    </Field>
+                                    <Field label="Address" wide>
+                                        <input style={inputStyle} value={school.address} onChange={event => setSchool(current => ({ ...current, address: event.target.value }))} />
+                                    </Field>
+                                    <Field label="Phone">
+                                        <input style={inputStyle} type="tel" value={school.phone} onChange={event => setSchool(current => ({ ...current, phone: event.target.value }))} />
+                                    </Field>
+                                    <Field label="Email">
+                                        <input style={inputStyle} type="email" value={school.email} onChange={event => setSchool(current => ({ ...current, email: event.target.value }))} />
+                                    </Field>
+                                    <Field label="Telegram">
+                                        <input style={inputStyle} value={school.telegram} onChange={event => setSchool(current => ({ ...current, telegram: event.target.value }))} />
+                                    </Field>
+                                    <Field label="Principal">
+                                        <input style={inputStyle} value={school.principal} onChange={event => setSchool(current => ({ ...current, principal: event.target.value }))} />
+                                    </Field>
+                                    <Field label="Year Founded">
+                                        <input style={inputStyle} value={school.founded} onChange={event => setSchool(current => ({ ...current, founded: event.target.value }))} />
+                                    </Field>
+                                </div>
+                                
+                                 {/* Logo & Favicon upload */}
                                 <div style={{ display: 'flex', gap: 20, marginBottom: 24, flexWrap: 'wrap' }}>
                                     {/* Logo */}
                                     <div style={{ flex: '1 1 200px' }}>
@@ -189,31 +282,32 @@ export default function SettingsPage({ settings }: SettingsPageProps) {
                                     </div>
                                 </div>
 
-                                <div style={formGrid}>
-                                    <Field label="Khmer Name">
-                                        <input style={inputStyle} value={school.nameKh} onChange={event => setSchool(current => ({ ...current, nameKh: event.target.value }))} />
-                                    </Field>
-                                    <Field label="English Name">
-                                        <input style={inputStyle} value={school.nameEn} onChange={event => setSchool(current => ({ ...current, nameEn: event.target.value }))} />
-                                    </Field>
-                                    <Field label="Address" wide>
-                                        <input style={inputStyle} value={school.address} onChange={event => setSchool(current => ({ ...current, address: event.target.value }))} />
-                                    </Field>
-                                    <Field label="Phone">
-                                        <input style={inputStyle} type="tel" value={school.phone} onChange={event => setSchool(current => ({ ...current, phone: event.target.value }))} />
-                                    </Field>
-                                    <Field label="Email">
-                                        <input style={inputStyle} type="email" value={school.email} onChange={event => setSchool(current => ({ ...current, email: event.target.value }))} />
-                                    </Field>
-                                    <Field label="Telegram">
-                                        <input style={inputStyle} value={school.telegram} onChange={event => setSchool(current => ({ ...current, telegram: event.target.value }))} />
-                                    </Field>
-                                    <Field label="Principal">
-                                        <input style={inputStyle} value={school.principal} onChange={event => setSchool(current => ({ ...current, principal: event.target.value }))} />
-                                    </Field>
-                                    <Field label="Year Founded">
-                                        <input style={inputStyle} value={school.founded} onChange={event => setSchool(current => ({ ...current, founded: event.target.value }))} />
-                                    </Field>
+                                {/* Login Background */}
+                                <div>
+                                    <label style={{ display: 'block', fontSize: 12, fontWeight: 800, color: '#64748b', marginBottom: 8 }}>Login Page Background</label>
+                                    <input ref={loginBgInputRef} type="file" accept="image/*" style={{ display: 'none' }}
+                                        onChange={e => { const f = e.target.files?.[0]; if (f) handleImageUpload('loginBg', f); e.target.value = ''; }} />
+                                    <div
+                                        onClick={() => loginBgInputRef.current?.click()}
+                                        style={{ position: 'relative', width: '100%', height: 120, background: '#f8fafc', border: '2px dashed #e2e8f0', borderRadius: 12, display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', overflow: 'hidden', transition: 'border-color 0.15s' }}
+                                        onMouseEnter={e => (e.currentTarget.style.borderColor = '#3b82f6')}
+                                        onMouseLeave={e => (e.currentTarget.style.borderColor = '#e2e8f0')}>
+                                        {loginBgPreview ? (
+                                            <>
+                                                <img src={loginBgPreview} alt="Login background preview" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                                                <button type="button" onClick={e => { e.stopPropagation(); setLoginBgPreview(null); }}
+                                                    style={{ position: 'absolute', top: 6, right: 6, width: 22, height: 22, borderRadius: '50%', background: '#ef4444', border: 'none', color: 'white', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                                                    <X size={12} />
+                                                </button>
+                                            </>
+                                        ) : (
+                                            <div style={{ textAlign: 'center', color: '#94a3b8' }}>
+                                                <Upload size={22} style={{ margin: '0 auto 6px' }} />
+                                                <div style={{ fontSize: 12, fontWeight: 700 }}>{uploadingType === 'loginBg' ? 'Uploading…' : 'Click to upload background image'}</div>
+                                                <div style={{ fontSize: 11, marginTop: 2 }}>Shown behind the login card · JPG/PNG/WebP</div>
+                                            </div>
+                                        )}
+                                    </div>
                                 </div>
                             </SettingsPanel>
                         )}
@@ -264,6 +358,36 @@ export default function SettingsPage({ settings }: SettingsPageProps) {
                                     ))}
                                 </div>
                             </SettingsPanel>
+                        )}
+
+                        {tab === 'sidebar' && (
+                            <div className="card" style={{ padding: 28 }}>
+                                <div style={{ fontWeight: 900, fontSize: 15, color: '#1e293b', marginBottom: 4 }}>Sidebar Visibility</div>
+                                <KH style={{ fontSize: 12, color: '#94a3b8', display: 'block', marginBottom: 20 }}>Choose which items appear in the navigation sidebar.</KH>
+                                <div style={{ display: 'flex', flexDirection: 'column', gap: 24 }}>
+                                    {SIDEBAR_ITEMS.map(group => (
+                                        <div key={group.group}>
+                                            <div style={{ fontSize: 11, fontWeight: 800, color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: 8 }}>{group.group}</div>
+                                            <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+                                                {group.items.map(item => (
+                                                    <div key={item.id} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '12px 16px', background: '#f8fafc', borderRadius: 12, gap: 12 }}>
+                                                        <div>
+                                                            <KH style={{ fontWeight: 800, fontSize: 13, display: 'block' }}>{item.label}</KH>
+                                                            <div style={{ fontSize: 12, color: '#64748b' }}>{item.sub}</div>
+                                                        </div>
+                                                        <button type="button" onClick={() => toggleSidebarItem(item.id)} style={toggleStyle(!hiddenItems.has(item.id))}>
+                                                            <span style={toggleKnobStyle(!hiddenItems.has(item.id))} />
+                                                        </button>
+                                                    </div>
+                                                ))}
+                                            </div>
+                                        </div>
+                                    ))}
+                                </div>
+                                <div style={{ marginTop: 20, padding: '10px 14px', background: '#eff6ff', borderRadius: 10, fontSize: 12, color: '#2563eb', fontWeight: 600 }}>
+                                    Changes take effect after page reload. Saved to this browser only.
+                                </div>
+                            </div>
                         )}
 
                         {tab === 'notifications' && (

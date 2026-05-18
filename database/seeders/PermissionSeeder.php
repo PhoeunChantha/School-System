@@ -37,6 +37,7 @@ class PermissionSeeder extends Seeder
         'roles' => ['view', 'create', 'update', 'delete'],
         'permissions' => ['view', 'create', 'update', 'delete'],
         'settings' => ['view', 'update'],
+        'sidebar' => ['view', 'update'],
     ];
 
     public function run(): void

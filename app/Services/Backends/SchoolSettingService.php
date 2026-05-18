@@ -149,6 +149,7 @@ class SchoolSettingService
                 'founded' => '2018',
                 'logo' => null,
                 'favicon' => null,
+                'loginBg' => null,
             ],
             'fees' => [
                 'levelFees' => Level::query()

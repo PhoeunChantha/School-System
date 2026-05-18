@@ -68,6 +68,7 @@ class HandleInertiaRequests extends Middleware
                     'nameEn'  => $value['nameEn'] ?? 'Frania English School',
                     'logo'    => ! empty($value['logo']) ? asset($value['logo']) : null,
                     'favicon' => ! empty($value['favicon']) ? asset($value['favicon']) : null,
+                    'loginBg' => ! empty($value['loginBg']) ? asset($value['loginBg']) : null,
                 ];
             },
         ];

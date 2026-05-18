@@ -23,6 +23,7 @@ use App\Policies\FeaturePermissionPolicy;
 use App\Support\EncryptedRouteKey;
 use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\Facades\Route;
+use Illuminate\Support\Facades\View;
 use Illuminate\Support\ServiceProvider;
 use Spatie\Permission\Models\Permission;
 use Spatie\Permission\Models\Role;
@@ -42,6 +43,16 @@ class AppServiceProvider extends ServiceProvider
      */
     public function boot(): void
     {
+        // Share school favicon with the root blade so browsers pick it up immediately
+        View::composer('app', function (\Illuminate\View\View $view): void {
+            $value = SchoolSetting::query()
+                ->where('group', 'school')
+                ->where('key', 'profile')
+                ->value('value') ?? [];
+
+            $view->with('schoolFavicon', ! empty($value['favicon']) ? asset($value['favicon']) : null);
+        });
+
         $policyModels = [
             Level::class,
             Student::class,

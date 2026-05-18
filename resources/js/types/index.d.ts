@@ -27,6 +27,7 @@ export interface SchoolSharedData {
     nameEn: string;
     logo: string | null;
     favicon: string | null;
+    loginBg: string | null;
 }
 
 export interface SharedData {
