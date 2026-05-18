@@ -1,4 +1,4 @@
-﻿import { FormEvent, useEffect, useMemo, useState } from 'react';
+import { FormEvent, useEffect, useMemo, useState } from 'react';
 import { destroy, edit, store, update } from '@/routes/admin/lesson-plans';
 import AdminShell from '@/pages/admin/shell';
 import { Avatar, Badge, Pagination } from '@/pages/admin/ui';
@@ -238,7 +238,7 @@ export default function LessonPlansPage({ lessonPlans, teachers, classes, today,
                                         </td>
                                         <td>
                                             <div style={{ fontSize: 13, fontWeight: 800, color: '#334155' }}>{lessonPlan.className}</div>
-                                            <div style={{ fontSize: 11, color: '#94a3b8' }}>Room {lessonPlan.room || 'N/A'} Â· {lessonPlan.time || 'No time'}</div>
+                                            <div style={{ fontSize: 11, color: '#94a3b8' }}>Room {lessonPlan.room || 'N/A'} - {lessonPlan.time || 'No time'}</div>
                                         </td>
                                         <td style={{ maxWidth: 380 }}>
                                             <div style={{ fontSize: 13, fontWeight: 900, color: '#0f172a' }}>{lessonPlan.title}</div>

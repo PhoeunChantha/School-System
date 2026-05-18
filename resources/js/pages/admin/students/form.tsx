@@ -1,10 +1,21 @@
-﻿import { FormEvent, useRef, useState } from 'react';
-import { index as studentIndex, store, update } from '@/actions/App/Http/Controllers/Backends/StudentController';
+﻿import {
+    store,
+    index as studentIndex,
+    update,
+} from '@/actions/App/Http/Controllers/Backends/StudentController';
 import { DatePicker } from '@/components/ui/date-picker';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import {
+    Select,
+    SelectContent,
+    SelectItem,
+    SelectTrigger,
+    SelectValue,
+} from '@/components/ui/select';
+import { useAdminTranslation } from '@/hooks/use-admin-translation';
 import AdminShell from '@/pages/admin/shell';
 import { Link, useForm } from '@inertiajs/react';
 import { ArrowLeft, ArrowRight, Camera, Save, User, X } from 'lucide-react';
+import { FormEvent, useRef, useState } from 'react';
 import { toast } from 'sonner';
 
 export interface LevelOption {
@@ -25,6 +36,7 @@ export interface ClassOption {
 
 export interface StudentFormData {
     id?: number;
+    _method?: 'put';
     level_id: number | null;
     school_class_id: number | null;
     code: string;
@@ -47,7 +59,8 @@ export interface StudentFormData {
     enrolled_on: string;
 }
 
-export interface StudentEditData extends Omit<StudentFormData, 'profile_photo'> {
+export interface StudentEditData
+    extends Omit<StudentFormData, 'profile_photo'> {
     routeKey?: string;
     profile_photo_url?: string | null;
 }
@@ -59,45 +72,58 @@ interface StudentFormPageProps {
     classes: ClassOption[];
 }
 
-export default function StudentFormPage({ mode, student, levels, classes }: StudentFormPageProps) {
+export default function StudentFormPage({
+    mode,
+    student,
+    levels,
+    classes,
+}: StudentFormPageProps) {
     const isEdit = mode === 'edit';
+    const { translateText } = useAdminTranslation();
     const [step, setStep] = useState(1);
-    const [photoPreview, setPhotoPreview] = useState<string | null>(student?.profile_photo_url ?? null);
+    const [photoPreview, setPhotoPreview] = useState<string | null>(
+        student?.profile_photo_url ?? null,
+    );
     const fileInputRef = useRef<HTMLInputElement>(null);
-    const { data, setData, post, put, processing, errors, transform } = useForm<StudentFormData>({
-        level_id: student?.level_id ?? null,
-        school_class_id: student?.school_class_id ?? null,
-        code: student?.code ?? '',
-        profile_photo: null,
-        name_kh: student?.name_kh ?? '',
-        name_en: student?.name_en ?? '',
-        date_of_birth: student?.date_of_birth ?? '',
-        gender: student?.gender ?? '',
-        province: student?.province ?? '',
-        district: student?.district ?? '',
-        commune: student?.commune ?? '',
-        village: student?.village ?? '',
-        parent_phone: student?.parent_phone ?? '',
-        telegram_username: student?.telegram_username ?? '',
-        parent_telegram_id: student?.parent_telegram_id ?? '',
-        monthly_fee: student?.monthly_fee ?? 0,
-        scholarship_amount: student?.scholarship_amount ?? 0,
-        fee_status: student?.fee_status ?? 'unpaid',
-        status: student?.status ?? 'active',
-        enrolled_on: student?.enrolled_on ?? new Date().toISOString().slice(0, 10),
-    });
+    const { data, setData, post, processing, errors, transform } =
+        useForm<StudentFormData>({
+            level_id: student?.level_id ?? null,
+            school_class_id: student?.school_class_id ?? null,
+            code: student?.code ?? '',
+            profile_photo: null,
+            name_kh: student?.name_kh ?? '',
+            name_en: student?.name_en ?? '',
+            date_of_birth: student?.date_of_birth ?? '',
+            gender: student?.gender ?? '',
+            province: student?.province ?? '',
+            district: student?.district ?? '',
+            commune: student?.commune ?? '',
+            village: student?.village ?? '',
+            parent_phone: student?.parent_phone ?? '',
+            telegram_username: student?.telegram_username ?? '',
+            parent_telegram_id: student?.parent_telegram_id ?? '',
+            monthly_fee: student?.monthly_fee ?? 0,
+            scholarship_amount: student?.scholarship_amount ?? 0,
+            fee_status: student?.fee_status ?? 'unpaid',
+            status: student?.status ?? 'active',
+            enrolled_on:
+                student?.enrolled_on ?? new Date().toISOString().slice(0, 10),
+        });
 
     const filteredClasses = data.level_id
-        ? classes.filter(schoolClass => schoolClass.levelId === data.level_id)
+        ? classes.filter((schoolClass) => schoolClass.levelId === data.level_id)
         : classes;
 
-    const selectedLevel = levels.find(level => level.id === data.level_id);
+    const selectedLevel = levels.find((level) => level.id === data.level_id);
 
-    const submit = (event: FormEvent<HTMLFormElement>) => {
+    const preventNativeSubmit = (event: FormEvent<HTMLFormElement>) => {
         event.preventDefault();
+    };
 
-        transform(formData => ({
+    const saveStudent = () => {
+        transform((formData) => ({
             ...formData,
+            ...(isEdit ? { _method: 'put' as const } : {}),
             level_id: formData.level_id || null,
             school_class_id: formData.school_class_id || null,
             code: formData.code || null,
@@ -116,15 +142,26 @@ export default function StudentFormPage({ mode, student, levels, classes }: Stud
 
         const options = {
             preserveScroll: true,
+            forceFormData: true,
             onSuccess: () => {
-                toast.success(isEdit ? 'Student updated successfully!' : 'Student added successfully!', {
-                    description: isEdit ? `${data.name_en} has been updated.` : 'New student has been enrolled.',
-                });
+                toast.success(
+                    isEdit
+                        ? 'Student updated successfully!'
+                        : 'Student added successfully!',
+                    {
+                        description: isEdit
+                            ? `${data.name_en} has been updated.`
+                            : 'New student has been enrolled.',
+                    },
+                );
             },
         };
 
         if (isEdit && student?.id) {
-            put(update.url((student.routeKey ?? student.id) as never), options);
+            post(
+                update.url((student.routeKey ?? student.id) as never),
+                options,
+            );
 
             return;
         }
@@ -132,76 +169,328 @@ export default function StudentFormPage({ mode, student, levels, classes }: Stud
         post(store.url(), options);
     };
 
-    const inputError = (message?: string) => message ? <div style={{ color: '#ef4444', fontSize: 11, marginTop: 4 }}>{message}</div> : null;
+    const inputError = (message?: string) =>
+        message ? (
+            <div style={{ color: '#ef4444', fontSize: 11, marginTop: 4 }}>
+                {message}
+            </div>
+        ) : null;
 
     return (
         <AdminShell>
             <div className="fade-in" style={{ padding: 24 }}>
-                <form className="card" onSubmit={submit} style={{ padding: 28, maxWidth: 720, width: '100%', margin: '0 auto' }}>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 24 }}>
-                        <div style={{ width: 40, height: 40, borderRadius: 10, background: isEdit ? '#eff6ff' : '#f0fdf4', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 20 }}>
-                            {isEdit ? 'Edit' : 'Add'}
+                <form
+                    data-no-translate="true"
+                    className="card"
+                    onSubmit={preventNativeSubmit}
+                    style={{
+                        padding: 28,
+                        maxWidth: 720,
+                        width: '100%',
+                        margin: '0 auto',
+                    }}
+                >
+                    <div
+                        style={{
+                            display: 'flex',
+                            alignItems: 'center',
+                            gap: 12,
+                            marginBottom: 24,
+                        }}
+                    >
+                        <div
+                            style={{
+                                width: 40,
+                                height: 40,
+                                borderRadius: 10,
+                                background: isEdit ? '#eff6ff' : '#f0fdf4',
+                                display: 'flex',
+                                alignItems: 'center',
+                                justifyContent: 'center',
+                                fontSize: 20,
+                            }}
+                        >
+                            {isEdit
+                                ? translateText('Edit')
+                                : translateText('Add')}
                         </div>
                         <div>
-                            <div style={{ fontWeight: 800, fontSize: 16, color: '#1e293b' }}>{isEdit ? 'Edit Student' : 'Add New Student'}</div>
-                            {isEdit && <div style={{ fontSize: 12, color: '#94a3b8' }}>{student?.name_en}</div>}
+                            <div
+                                style={{
+                                    fontWeight: 800,
+                                    fontSize: 16,
+                                    color: '#1e293b',
+                                }}
+                            >
+                                {isEdit
+                                    ? translateText('Edit Student')
+                                    : translateText('Add New Student')}
+                            </div>
+                            {isEdit && (
+                                <div style={{ fontSize: 12, color: '#94a3b8' }}>
+                                    {student?.name_en}
+                                </div>
+                            )}
                         </div>
                     </div>
 
-                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 8, marginBottom: 28, flexWrap: 'wrap' }}>
+                    <div
+                        style={{
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'space-between',
+                            gap: 8,
+                            marginBottom: 28,
+                            flexWrap: 'wrap',
+                        }}
+                    >
                         {[1, 2, 3].map((number, index) => (
-                            <div key={number} style={{ display: 'flex', alignItems: 'center', flex: index < 2 ? 1 : undefined, minWidth: 0 }}>
-                                <div style={{ width: 36, height: 36, borderRadius: '50%', background: step >= number ? '#2563eb' : '#f1f5f9', color: step >= number ? 'white' : '#94a3b8', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 800, fontSize: 14 }}>{number}</div>
-                                {index < 2 && <div style={{ flex: 1, minWidth: 20, height: 2, background: step > number ? '#2563eb' : '#f1f5f9', margin: '0 8px' }} />}
+                            <div
+                                key={number}
+                                style={{
+                                    display: 'flex',
+                                    alignItems: 'center',
+                                    flex: index < 2 ? 1 : undefined,
+                                    minWidth: 0,
+                                }}
+                            >
+                                <div
+                                    style={{
+                                        width: 36,
+                                        height: 36,
+                                        borderRadius: '50%',
+                                        background:
+                                            step >= number
+                                                ? '#2563eb'
+                                                : '#f1f5f9',
+                                        color:
+                                            step >= number
+                                                ? 'white'
+                                                : '#94a3b8',
+                                        display: 'flex',
+                                        alignItems: 'center',
+                                        justifyContent: 'center',
+                                        fontWeight: 800,
+                                        fontSize: 14,
+                                    }}
+                                >
+                                    {number}
+                                </div>
+                                {index < 2 && (
+                                    <div
+                                        style={{
+                                            flex: 1,
+                                            minWidth: 20,
+                                            height: 2,
+                                            background:
+                                                step > number
+                                                    ? '#2563eb'
+                                                    : '#f1f5f9',
+                                            margin: '0 8px',
+                                        }}
+                                    />
+                                )}
                             </div>
                         ))}
                     </div>
 
                     {step === 1 && (
-                        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))', gap: 16 }}>
-                            <div style={{ gridColumn: '1 / -1', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 10, marginBottom: 4 }}>
+                        <div
+                            style={{
+                                display: 'grid',
+                                gridTemplateColumns:
+                                    'repeat(auto-fit, minmax(240px, 1fr))',
+                                gap: 16,
+                            }}
+                        >
+                            <div
+                                style={{
+                                    gridColumn: '1 / -1',
+                                    display: 'flex',
+                                    flexDirection: 'column',
+                                    alignItems: 'center',
+                                    gap: 10,
+                                    marginBottom: 4,
+                                }}
+                            >
                                 <div
-                                    onClick={() => fileInputRef.current?.click()}
-                                    style={{ width: 96, height: 96, borderRadius: '50%', background: '#f1f5f9', border: '2px dashed #cbd5e1', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', overflow: 'hidden', position: 'relative', flexShrink: 0 }}
-                                >
-                                    {photoPreview
-                                        ? <img src={photoPreview} alt="Preview" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
-                                        : <User size={36} color="#94a3b8" />
+                                    onClick={() =>
+                                        fileInputRef.current?.click()
                                     }
-                                    <div style={{ position: 'absolute', bottom: 4, right: 4, width: 24, height: 24, borderRadius: '50%', background: '#2563eb', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                                    style={{
+                                        width: 96,
+                                        height: 96,
+                                        borderRadius: '50%',
+                                        background: '#f1f5f9',
+                                        border: '2px dashed #cbd5e1',
+                                        display: 'flex',
+                                        alignItems: 'center',
+                                        justifyContent: 'center',
+                                        cursor: 'pointer',
+                                        overflow: 'hidden',
+                                        position: 'relative',
+                                        flexShrink: 0,
+                                    }}
+                                >
+                                    {photoPreview ? (
+                                        <img
+                                            src={photoPreview}
+                                            alt="Preview"
+                                            style={{
+                                                width: '100%',
+                                                height: '100%',
+                                                objectFit: 'cover',
+                                            }}
+                                        />
+                                    ) : (
+                                        <User size={36} color="#94a3b8" />
+                                    )}
+                                    <div
+                                        style={{
+                                            position: 'absolute',
+                                            bottom: 4,
+                                            right: 4,
+                                            width: 24,
+                                            height: 24,
+                                            borderRadius: '50%',
+                                            background: '#2563eb',
+                                            display: 'flex',
+                                            alignItems: 'center',
+                                            justifyContent: 'center',
+                                        }}
+                                    >
                                         <Camera size={12} color="white" />
                                     </div>
                                 </div>
-                                <div style={{ fontSize: 12, color: '#94a3b8', textAlign: 'center' }}>
-                                    {data.profile_photo ? data.profile_photo.name : 'Click to upload profile photo'}
+                                <div
+                                    style={{
+                                        fontSize: 12,
+                                        color: '#94a3b8',
+                                        textAlign: 'center',
+                                    }}
+                                >
+                                    {data.profile_photo
+                                        ? data.profile_photo.name
+                                        : translateText(
+                                              'Click to upload profile photo',
+                                          )}
                                 </div>
                                 <input
                                     ref={fileInputRef}
                                     type="file"
                                     accept="image/jpeg,image/png,image/jpg,image/webp"
                                     style={{ display: 'none' }}
-                                    onChange={event => {
-                                        const file = event.target.files?.[0] ?? null;
+                                    onChange={(event) => {
+                                        const file =
+                                            event.target.files?.[0] ?? null;
                                         setData('profile_photo', file);
-                                        setPhotoPreview(file ? URL.createObjectURL(file) : (student?.profile_photo_url ?? null));
+                                        setPhotoPreview(
+                                            file
+                                                ? URL.createObjectURL(file)
+                                                : (student?.profile_photo_url ??
+                                                      null),
+                                        );
                                     }}
                                 />
-                                {inputError(errors.profile_photo as string | undefined)}
+                                {inputError(
+                                    errors.profile_photo as string | undefined,
+                                )}
                             </div>
-                            <div className="f-group"><label className="f-label">Student Code</label><input className="f-input" value={data.code} onChange={event => setData('code', event.target.value)} />{inputError(errors.code)}</div>
-                            <div className="f-group"><label className="f-label">Enrolled On</label><DatePicker value={data.enrolled_on} onChange={value => setData('enrolled_on', value)} />{inputError(errors.enrolled_on)}</div>
-                            <div className="f-group"><label className="f-label">ážˆáŸ’áž˜áŸ„áŸ‡ (ážáŸ’áž˜áŸ‚ážš) *</label><input className="f-input" value={data.name_kh} onChange={event => setData('name_kh', event.target.value)} />{inputError(errors.name_kh)}</div>
-                            <div className="f-group"><label className="f-label">English Name *</label><input className="f-input" value={data.name_en} onChange={event => setData('name_en', event.target.value)} />{inputError(errors.name_en)}</div>
-                            <div className="f-group"><label className="f-label">Date of Birth</label><DatePicker value={data.date_of_birth} onChange={value => setData('date_of_birth', value)} placeholder="Pick date of birth" />{inputError(errors.date_of_birth)}</div>
                             <div className="f-group">
-                                <label className="f-label">Gender</label>
-                                <Select value={data.gender} onValueChange={value => setData('gender', value as StudentFormData['gender'])}>
+                                <label className="f-label">
+                                    {translateText('Student Code')}
+                                </label>
+                                <input
+                                    className="f-input"
+                                    value={data.code}
+                                    onChange={(event) =>
+                                        setData('code', event.target.value)
+                                    }
+                                />
+                                {inputError(errors.code)}
+                            </div>
+                            <div className="f-group">
+                                <label className="f-label">
+                                    {translateText('Enrolled On')}
+                                </label>
+                                <DatePicker
+                                    className="f-input flex min-h-[48px] items-center justify-start px-4 py-3"
+                                    value={data.enrolled_on}
+                                    onChange={(value) =>
+                                        setData('enrolled_on', value)
+                                    }
+                                />
+                                {inputError(errors.enrolled_on)}
+                            </div>
+                            <div className="f-group">
+                                <label className="f-label">
+                                    {translateText('Khmer Name')} *
+                                </label>
+                                <input
+                                    className="f-input"
+                                    value={data.name_kh}
+                                    onChange={(event) =>
+                                        setData('name_kh', event.target.value)
+                                    }
+                                />
+                                {inputError(errors.name_kh)}
+                            </div>
+                            <div className="f-group">
+                                <label className="f-label">
+                                    {translateText('English Name')} *
+                                </label>
+                                <input
+                                    className="f-input"
+                                    value={data.name_en}
+                                    onChange={(event) =>
+                                        setData('name_en', event.target.value)
+                                    }
+                                />
+                                {inputError(errors.name_en)}
+                            </div>
+                            <div className="f-group">
+                                <label className="f-label">
+                                    {translateText('Date of Birth')}
+                                </label>
+                                <DatePicker
+                                    className="f-input flex min-h-[48px] items-center justify-start px-4 py-3"
+                                    value={data.date_of_birth}
+                                    onChange={(value) =>
+                                        setData('date_of_birth', value)
+                                    }
+                                    placeholder={translateText(
+                                        'Pick date of birth',
+                                    )}
+                                />
+                                {inputError(errors.date_of_birth)}
+                            </div>
+                            <div className="f-group">
+                                <label className="f-label">
+                                    {translateText('Gender')}
+                                </label>
+                                <Select
+                                    value={data.gender}
+                                    onValueChange={(value) =>
+                                        setData(
+                                            'gender',
+                                            value as StudentFormData['gender'],
+                                        )
+                                    }
+                                >
                                     <SelectTrigger className="f-input">
-                                        <SelectValue placeholder="Select..." />
+                                        <SelectValue
+                                            placeholder={translateText(
+                                                'Select...',
+                                            )}
+                                        />
                                     </SelectTrigger>
                                     <SelectContent>
-                                        <SelectItem value="male">Male</SelectItem>
-                                        <SelectItem value="female">Female</SelectItem>
+                                        <SelectItem value="male">
+                                            {translateText('Male')}
+                                        </SelectItem>
+                                        <SelectItem value="female">
+                                            {translateText('Female')}
+                                        </SelectItem>
                                     </SelectContent>
                                 </Select>
                                 {inputError(errors.gender)}
@@ -210,63 +499,193 @@ export default function StudentFormPage({ mode, student, levels, classes }: Stud
                     )}
 
                     {step === 2 && (
-                        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))', gap: 16 }}>
+                        <div
+                            style={{
+                                display: 'grid',
+                                gridTemplateColumns:
+                                    'repeat(auto-fit, minmax(240px, 1fr))',
+                                gap: 16,
+                            }}
+                        >
                             <div className="f-group">
-                                <label className="f-label">Level *</label>
-                                <Select value={data.level_id?.toString() ?? ''} onValueChange={event => {
-                                    const level = levels.find(item => item.id === Number(event));
-                                    setData(current => ({ ...current, level_id: level?.id ?? null, monthly_fee: level?.monthly_fee ?? current.monthly_fee, school_class_id: null }));
-                                }}>
+                                <label className="f-label">
+                                    {translateText('Level')} *
+                                </label>
+                                <Select
+                                    value={data.level_id?.toString() ?? ''}
+                                    onValueChange={(event) => {
+                                        const level = levels.find(
+                                            (item) => item.id === Number(event),
+                                        );
+                                        setData((current) => ({
+                                            ...current,
+                                            level_id: level?.id ?? null,
+                                            monthly_fee:
+                                                level?.monthly_fee ??
+                                                current.monthly_fee,
+                                            school_class_id: null,
+                                        }));
+                                    }}
+                                >
                                     <SelectTrigger className="f-input">
-                                        <SelectValue placeholder="Select level..." />
+                                        <SelectValue
+                                            placeholder={translateText(
+                                                'Select level...',
+                                            )}
+                                        />
                                     </SelectTrigger>
                                     <SelectContent>
-                                        {levels.map(level => (
-                                            <SelectItem key={level.id} value={level.id.toString()}>{level.name}</SelectItem>
+                                        {levels.map((level) => (
+                                            <SelectItem
+                                                key={level.id}
+                                                value={level.id.toString()}
+                                            >
+                                                {level.name}
+                                            </SelectItem>
                                         ))}
                                     </SelectContent>
                                 </Select>
                                 {inputError(errors.level_id)}
                             </div>
                             <div className="f-group">
-                                <label className="f-label">Class *</label>
-                                <Select value={data.school_class_id?.toString() ?? ''} onValueChange={event => setData('school_class_id', event ? Number(event) : null)}>
+                                <label className="f-label">
+                                    {translateText('Class')} *
+                                </label>
+                                <Select
+                                    value={
+                                        data.school_class_id?.toString() ?? ''
+                                    }
+                                    onValueChange={(event) =>
+                                        setData(
+                                            'school_class_id',
+                                            event ? Number(event) : null,
+                                        )
+                                    }
+                                >
                                     <SelectTrigger className="f-input">
-                                        <SelectValue placeholder="Select class..." />
+                                        <SelectValue
+                                            placeholder={translateText(
+                                                'Select class...',
+                                            )}
+                                        />
                                     </SelectTrigger>
                                     <SelectContent>
-                                        {filteredClasses.map(schoolClass => (
-                                            <SelectItem key={schoolClass.id} value={schoolClass.id.toString()}>{schoolClass.name} {schoolClass.time ? `(${schoolClass.time})` : ''}</SelectItem>
+                                        {filteredClasses.map((schoolClass) => (
+                                            <SelectItem
+                                                key={schoolClass.id}
+                                                value={schoolClass.id.toString()}
+                                            >
+                                                {schoolClass.name}{' '}
+                                                {schoolClass.time
+                                                    ? `(${schoolClass.time})`
+                                                    : ''}
+                                            </SelectItem>
                                         ))}
                                     </SelectContent>
                                 </Select>
                                 {inputError(errors.school_class_id)}
                             </div>
-                            <div className="f-group"><label className="f-label">Monthly Fee</label><input type="number" className="f-input" value={data.monthly_fee} min={0} onChange={event => setData('monthly_fee', event.target.value)} />{selectedLevel && <div style={{ fontSize: 11, color: '#94a3b8', marginTop: 4 }}>Level default: ${selectedLevel.monthly_fee}</div>}{inputError(errors.monthly_fee)}</div>
-                            <div className="f-group"><label className="f-label">Scholarship Amount</label><input type="number" className="f-input" value={data.scholarship_amount} min={0} onChange={event => setData('scholarship_amount', event.target.value)} />{inputError(errors.scholarship_amount)}</div>
                             <div className="f-group">
-                                <label className="f-label">Fee Status</label>
-                                <Select value={data.fee_status} onValueChange={value => setData('fee_status', value as StudentFormData['fee_status'])}>
+                                <label className="f-label">
+                                    {translateText('Monthly Fee')}
+                                </label>
+                                <input
+                                    type="number"
+                                    className="f-input"
+                                    value={data.monthly_fee}
+                                    min={0}
+                                    onChange={(event) =>
+                                        setData(
+                                            'monthly_fee',
+                                            event.target.value,
+                                        )
+                                    }
+                                />
+                                {selectedLevel && (
+                                    <div
+                                        style={{
+                                            fontSize: 11,
+                                            color: '#94a3b8',
+                                            marginTop: 4,
+                                        }}
+                                    >
+                                        {translateText('Level default')}: $
+                                        {selectedLevel.monthly_fee}
+                                    </div>
+                                )}
+                                {inputError(errors.monthly_fee)}
+                            </div>
+                            <div className="f-group">
+                                <label className="f-label">
+                                    {translateText('Scholarship Amount')}
+                                </label>
+                                <input
+                                    type="number"
+                                    className="f-input"
+                                    value={data.scholarship_amount}
+                                    min={0}
+                                    onChange={(event) =>
+                                        setData(
+                                            'scholarship_amount',
+                                            event.target.value,
+                                        )
+                                    }
+                                />
+                                {inputError(errors.scholarship_amount)}
+                            </div>
+                            <div className="f-group">
+                                <label className="f-label">
+                                    {translateText('Fee Status')}
+                                </label>
+                                <Select
+                                    value={data.fee_status}
+                                    onValueChange={(value) =>
+                                        setData(
+                                            'fee_status',
+                                            value as StudentFormData['fee_status'],
+                                        )
+                                    }
+                                >
                                     <SelectTrigger className="f-input">
                                         <SelectValue />
                                     </SelectTrigger>
                                     <SelectContent>
-                                        <SelectItem value="unpaid">Unpaid</SelectItem>
-                                        <SelectItem value="partial">Partial</SelectItem>
-                                        <SelectItem value="paid">Paid</SelectItem>
+                                        <SelectItem value="unpaid">
+                                            {translateText('Unpaid')}
+                                        </SelectItem>
+                                        <SelectItem value="partial">
+                                            {translateText('Partial')}
+                                        </SelectItem>
+                                        <SelectItem value="paid">
+                                            {translateText('Paid')}
+                                        </SelectItem>
                                     </SelectContent>
                                 </Select>
                                 {inputError(errors.fee_status)}
                             </div>
                             <div className="f-group">
-                                <label className="f-label">Status</label>
-                                <Select value={data.status} onValueChange={value => setData('status', value as StudentFormData['status'])}>
+                                <label className="f-label">
+                                    {translateText('Status')}
+                                </label>
+                                <Select
+                                    value={data.status}
+                                    onValueChange={(value) =>
+                                        setData(
+                                            'status',
+                                            value as StudentFormData['status'],
+                                        )
+                                    }
+                                >
                                     <SelectTrigger className="f-input">
                                         <SelectValue />
                                     </SelectTrigger>
                                     <SelectContent>
-                                        <SelectItem value="active">Active</SelectItem>
-                                        <SelectItem value="inactive">Inactive</SelectItem>
+                                        <SelectItem value="active">
+                                            {translateText('Active')}
+                                        </SelectItem>
+                                        <SelectItem value="inactive">
+                                            {translateText('Inactive')}
+                                        </SelectItem>
                                     </SelectContent>
                                 </Select>
                                 {inputError(errors.status)}
@@ -275,35 +694,234 @@ export default function StudentFormPage({ mode, student, levels, classes }: Stud
                     )}
 
                     {step === 3 && (
-                        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))', gap: 16 }}>
-                            <div className="f-group"><label className="f-label">Province</label><input className="f-input" value={data.province} onChange={event => setData('province', event.target.value)} />{inputError(errors.province)}</div>
-                            <div className="f-group"><label className="f-label">District</label><input className="f-input" value={data.district} onChange={event => setData('district', event.target.value)} />{inputError(errors.district)}</div>
-                            <div className="f-group"><label className="f-label">Commune</label><input className="f-input" value={data.commune} onChange={event => setData('commune', event.target.value)} />{inputError(errors.commune)}</div>
-                            <div className="f-group"><label className="f-label">Village</label><input className="f-input" value={data.village} onChange={event => setData('village', event.target.value)} />{inputError(errors.village)}</div>
-                            <div className="f-group"><label className="f-label">Parent Phone</label><input className="f-input" value={data.parent_phone} onChange={event => setData('parent_phone', event.target.value)} />{inputError(errors.parent_phone)}</div>
-                            <div className="f-group"><label className="f-label">Telegram Username</label><input className="f-input" value={data.telegram_username} onChange={event => setData('telegram_username', event.target.value)} />{inputError(errors.telegram_username)}</div>
+                        <div
+                            style={{
+                                display: 'grid',
+                                gridTemplateColumns:
+                                    'repeat(auto-fit, minmax(240px, 1fr))',
+                                gap: 16,
+                            }}
+                        >
                             <div className="f-group">
-                                <label className="f-label">Parent Telegram Chat ID</label>
-                                <input className="f-input" value={data.parent_telegram_id} onChange={event => setData('parent_telegram_id', event.target.value)} placeholder="e.g. 123456789" />
-                                <div style={{ fontSize: 11, color: '#94a3b8', marginTop: 4 }}>Numeric ID from Telegram. Parent must message the school bot first to get their ID.</div>
+                                <label className="f-label">
+                                    {translateText('Province')}
+                                </label>
+                                <input
+                                    className="f-input"
+                                    value={data.province}
+                                    onChange={(event) =>
+                                        setData('province', event.target.value)
+                                    }
+                                />
+                                {inputError(errors.province)}
+                            </div>
+                            <div className="f-group">
+                                <label className="f-label">
+                                    {translateText('District')}
+                                </label>
+                                <input
+                                    className="f-input"
+                                    value={data.district}
+                                    onChange={(event) =>
+                                        setData('district', event.target.value)
+                                    }
+                                />
+                                {inputError(errors.district)}
+                            </div>
+                            <div className="f-group">
+                                <label className="f-label">
+                                    {translateText('Commune')}
+                                </label>
+                                <input
+                                    className="f-input"
+                                    value={data.commune}
+                                    onChange={(event) =>
+                                        setData('commune', event.target.value)
+                                    }
+                                />
+                                {inputError(errors.commune)}
+                            </div>
+                            <div className="f-group">
+                                <label className="f-label">
+                                    {translateText('Village')}
+                                </label>
+                                <input
+                                    className="f-input"
+                                    value={data.village}
+                                    onChange={(event) =>
+                                        setData('village', event.target.value)
+                                    }
+                                />
+                                {inputError(errors.village)}
+                            </div>
+                            <div className="f-group">
+                                <label className="f-label">
+                                    {translateText('Parent Phone')}
+                                </label>
+                                <input
+                                    className="f-input"
+                                    value={data.parent_phone}
+                                    onChange={(event) =>
+                                        setData(
+                                            'parent_phone',
+                                            event.target.value,
+                                        )
+                                    }
+                                />
+                                {inputError(errors.parent_phone)}
+                            </div>
+                            <div className="f-group">
+                                <label className="f-label">
+                                    {translateText('Telegram Username')}
+                                </label>
+                                <input
+                                    className="f-input"
+                                    value={data.telegram_username}
+                                    onChange={(event) =>
+                                        setData(
+                                            'telegram_username',
+                                            event.target.value,
+                                        )
+                                    }
+                                />
+                                {inputError(errors.telegram_username)}
+                            </div>
+                            <div className="f-group">
+                                <label className="f-label">
+                                    {translateText('Parent Telegram Chat ID')}
+                                </label>
+                                <input
+                                    className="f-input"
+                                    value={data.parent_telegram_id}
+                                    onChange={(event) =>
+                                        setData(
+                                            'parent_telegram_id',
+                                            event.target.value,
+                                        )
+                                    }
+                                    placeholder="e.g. 123456789"
+                                />
+                                <div
+                                    style={{
+                                        fontSize: 11,
+                                        color: '#94a3b8',
+                                        marginTop: 4,
+                                    }}
+                                >
+                                    {translateText(
+                                        'Numeric ID from Telegram. Parent must message the school bot first to get their ID.',
+                                    )}
+                                </div>
                                 {inputError(errors.parent_telegram_id)}
                             </div>
                         </div>
                     )}
 
-                    <div style={{ display: 'flex', gap: 12, marginTop: 16, flexWrap: 'wrap' }}>
-                        <Link href={studentIndex.url()} style={{ flex: '1 1 140px', textAlign: 'center', background: '#f1f5f9', color: '#64748b', border: 'none', borderRadius: 10, padding: '12px 20px', fontWeight: 700, cursor: 'pointer', textDecoration: 'none', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: 6 }}><X size={16} /> Cancel</Link>
-                        {step > 1 && <button type="button" onClick={() => setStep(value => value - 1)} style={{ flex: '1 1 140px', background: '#f1f5f9', color: '#64748b', border: 'none', borderRadius: 10, padding: '12px', fontWeight: 700, cursor: 'pointer', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: 6 }}><ArrowLeft size={16} /> Back</button>}
-                        {step < 3
-                            ? <button type="button" onClick={() => setStep(value => value + 1)} style={{ flex: '2 1 180px', background: '#2563eb', color: 'white', border: 'none', borderRadius: 10, padding: '12px', fontWeight: 700, fontSize: 14, cursor: 'pointer', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: 6 }}>Next <ArrowRight size={16} /></button>
-                            : <button type="submit" disabled={processing} style={{ flex: '2 1 180px', background: isEdit ? '#2563eb' : '#10b981', color: 'white', border: 'none', borderRadius: 10, padding: '12px', fontWeight: 700, fontSize: 14, cursor: 'pointer', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: 6 }}><Save size={16} /> {processing ? 'Saving...' : isEdit ? 'Update Student' : 'Save Student'}</button>
-                        }
+                    <div
+                        style={{
+                            display: 'flex',
+                            gap: 12,
+                            marginTop: 16,
+                            flexWrap: 'wrap',
+                        }}
+                    >
+                        <Link
+                            href={studentIndex.url()}
+                            style={{
+                                flex: '1 1 140px',
+                                textAlign: 'center',
+                                background: '#f1f5f9',
+                                color: '#64748b',
+                                border: 'none',
+                                borderRadius: 10,
+                                padding: '12px 20px',
+                                fontWeight: 700,
+                                cursor: 'pointer',
+                                textDecoration: 'none',
+                                display: 'inline-flex',
+                                alignItems: 'center',
+                                justifyContent: 'center',
+                                gap: 6,
+                            }}
+                        >
+                            <X size={16} /> {translateText('Cancel')}
+                        </Link>
+                        {step > 1 && (
+                            <button
+                                type="button"
+                                onClick={() => setStep((value) => value - 1)}
+                                style={{
+                                    flex: '1 1 140px',
+                                    background: '#f1f5f9',
+                                    color: '#64748b',
+                                    border: 'none',
+                                    borderRadius: 10,
+                                    padding: '12px',
+                                    fontWeight: 700,
+                                    cursor: 'pointer',
+                                    display: 'inline-flex',
+                                    alignItems: 'center',
+                                    justifyContent: 'center',
+                                    gap: 6,
+                                }}
+                            >
+                                <ArrowLeft size={16} /> {translateText('Back')}
+                            </button>
+                        )}
+                        {step < 3 ? (
+                            <button
+                                type="button"
+                                onClick={() => setStep((value) => value + 1)}
+                                style={{
+                                    flex: '2 1 180px',
+                                    background: '#2563eb',
+                                    color: 'white',
+                                    border: 'none',
+                                    borderRadius: 10,
+                                    padding: '12px',
+                                    fontWeight: 700,
+                                    fontSize: 14,
+                                    cursor: 'pointer',
+                                    display: 'inline-flex',
+                                    alignItems: 'center',
+                                    justifyContent: 'center',
+                                    gap: 6,
+                                }}
+                            >
+                                {translateText('Next')} <ArrowRight size={16} />
+                            </button>
+                        ) : (
+                            <button
+                                type="button"
+                                onClick={saveStudent}
+                                disabled={processing}
+                                style={{
+                                    flex: '2 1 180px',
+                                    background: isEdit ? '#2563eb' : '#10b981',
+                                    color: 'white',
+                                    border: 'none',
+                                    borderRadius: 10,
+                                    padding: '12px',
+                                    fontWeight: 700,
+                                    fontSize: 14,
+                                    cursor: 'pointer',
+                                    display: 'inline-flex',
+                                    alignItems: 'center',
+                                    justifyContent: 'center',
+                                    gap: 6,
+                                }}
+                            >
+                                <Save size={16} />{' '}
+                                {processing
+                                    ? translateText('Saving...')
+                                    : isEdit
+                                      ? translateText('Update Student')
+                                      : translateText('Save Student')}
+                            </button>
+                        )}
                     </div>
                 </form>
             </div>
         </AdminShell>
     );
 }
-
-
-

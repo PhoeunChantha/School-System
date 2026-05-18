@@ -1,4 +1,4 @@
-﻿import { FormEvent, useRef } from 'react';
+import { FormEvent, useRef } from 'react';
 import { index as homeworkIndex, store, update } from '@/actions/App/Http/Controllers/Backends/HomeworkAssignmentController';
 import AdminShell from '@/pages/admin/shell';
 import { Link, useForm } from '@inertiajs/react';
@@ -137,7 +137,7 @@ export default function HomeworkFormPage({ mode, homework, classes }: HomeworkFo
                             <SelectContent>
                                 {classes.map(schoolClass => (
                                     <SelectItem key={schoolClass.id} value={String(schoolClass.id)}>
-                                        {schoolClass.name} {schoolClass.room ? `Â· ${schoolClass.room}` : ''}
+                                        {schoolClass.name} {schoolClass.room ? `- ${schoolClass.room}` : ''}
                                     </SelectItem>
                                 ))}
                             </SelectContent>

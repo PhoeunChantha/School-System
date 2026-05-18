@@ -182,7 +182,7 @@ export default function ActivityLogsPage({ logs, users, events, summary }: Activ
                 <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 12 }}>
                     <div>
                         <div style={{ fontWeight: 800, fontSize: 18, color: '#1e293b' }}>Activity Logs</div>
-                        <KH style={{ fontSize: 12, color: '#94a3b8', display: 'block' }}>áž€ážáŸ‹ážáŸ’ážšáž¶ážŸáž€áž˜áŸ’áž˜áž—áž¶áž– Â· Audit system activity</KH>
+                        <KH style={{ fontSize: 12, color: '#94a3b8', display: 'block' }}>កំណត់ត្រាសកម្មភាព - Audit system activity</KH>
                     </div>
                     <button onClick={openCreateDrawer} style={primaryButton}>
                         <Plus size={16} />

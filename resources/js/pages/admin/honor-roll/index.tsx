@@ -11,21 +11,21 @@ const MEDALS = [
         outerA: '#fde68a', outerB: '#f59e0b', outerC: '#d97706',
         innerBg: '#fffbeb', badgeBg: 'linear-gradient(135deg,#fbbf24,#d97706)',
         glow: 'rgba(245,158,11,0.55)', size: 138, nameColor: '#92400e',
-        star: 'â˜…',
+        star: '*',
     },
     {
         rank: 2,
         outerA: '#f1f5f9', outerB: '#cbd5e1', outerC: '#94a3b8',
         innerBg: '#f8fafc', badgeBg: 'linear-gradient(135deg,#e2e8f0,#64748b)',
         glow: 'rgba(100,116,139,0.45)', size: 110, nameColor: '#334155',
-        star: 'â˜…',
+        star: '*',
     },
     {
         rank: 3,
         outerA: '#fef3c7', outerB: '#d97706', outerC: '#92400e',
         innerBg: '#fef9ee', badgeBg: 'linear-gradient(135deg,#fcd34d,#92400e)',
         glow: 'rgba(180,83,9,0.45)', size: 110, nameColor: '#78350f',
-        star: 'â˜…',
+        star: '*',
     },
     {
         rank: 4,
@@ -54,8 +54,8 @@ function getTopStudents(className: string): Student[] {
 function StarDivider({ color = '#d97706' }: { color?: string }) {
     return (
         <div style={{ display: 'flex', alignItems: 'center', gap: 6, justifyContent: 'center' }}>
-            {['â€”','âœ¦','â€”','â˜…','â€”','âœ¦','â€”'].map((c, i) => (
-                <span key={i} style={{ color, fontSize: c === 'â˜…' ? 16 : 11, fontWeight: 700,
+            {['-','*','-','*','-','*','-'].map((c, i) => (
+                <span key={i} style={{ color, fontSize: c === '*' ? 16 : 11, fontWeight: 700,
                     fontFamily: "'Cinzel',serif" }}>{c}</span>
             ))}
         </div>
@@ -217,14 +217,14 @@ function HonorRollPoster({ className, term, students }: {
                         fontSize: 11, color: '#1e3a8a', letterSpacing: '0.08em',
                         fontStyle: 'italic', marginTop: 3, opacity: 0.85,
                     }}>
-                        Nation Â· Religion Â· King
+                        Nation - Religion - King
                     </div>
                     <div style={{
                         display: 'flex', alignItems: 'center', gap: 10,
                         margin: '10px 0 0',
                     }}>
                         <div style={{ flex: 1, height: 1.5, background: 'linear-gradient(90deg, transparent, #d97706)' }} />
-                        <span style={{ color: '#d97706', fontSize: 16 }}>â§</span>
+                        <span style={{ color: '#d97706', fontSize: 16 }}>*</span>
                         <div style={{ flex: 1, height: 1.5, background: 'linear-gradient(90deg, #d97706, transparent)' }} />
                     </div>
                 </div>
@@ -311,7 +311,7 @@ function HonorRollPoster({ className, term, students }: {
                             fontSize: 11, color: '#475569', letterSpacing: '0.14em',
                             fontFamily: "'Cinzel',serif", fontWeight: 700,
                         }}>
-                            FRANIA ENGLISH SCHOOL &nbsp;Â·&nbsp; CAMBODIA
+                            FRANIA ENGLISH SCHOOL &nbsp;-&nbsp; CAMBODIA
                         </div>
                         <div style={{ fontSize: 10, color: '#94a3b8', marginTop: 4, letterSpacing: '0.04em' }}>
                             {today}
@@ -363,7 +363,7 @@ export default function HonorRollPage() {
                             Honor Roll Chart
                         </div>
                         <KH style={{ fontSize: 12, color: '#94a3b8', display: 'block' }}>
-                            ážáž¶ážšáž¶áž„áž€áž·ážáŸ’ážáž·áž™ážŸ Â· Outstanding Students
+                            តារាងកិត្តិយស - Outstanding Students
                         </KH>
                     </div>
 
@@ -372,7 +372,7 @@ export default function HonorRollPage() {
                             value={term}
                             onChange={e => setTerm(e.target.value)}
                             className="f-input"
-                            placeholder="Term nameâ€¦"
+                            placeholder="Term name..."
                             style={{ width: 170, padding: '8px 12px', fontSize: 13 }}
                         />
                         <AdminSelect

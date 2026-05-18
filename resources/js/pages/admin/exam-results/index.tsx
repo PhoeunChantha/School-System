@@ -1,4 +1,4 @@
-﻿import { destroy, store, update } from '@/actions/App/Http/Controllers/Backends/ExamResultController';
+import { destroy, store, update } from '@/actions/App/Http/Controllers/Backends/ExamResultController';
 import {
     Sheet,
     SheetContent,
@@ -234,7 +234,7 @@ export default function ExamResultsPage({ results, exams, students, summary }: E
                 <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 12 }}>
                     <div>
                         <div style={{ fontWeight: 800, fontSize: 18, color: '#1e293b' }}>Exam Results</div>
-                        <KH style={{ fontSize: 12, color: '#94a3b8', display: 'block' }}>áž›áž‘áŸ’áž’áž•áž›áž”áŸ’ážšáž¡áž„ Â· Record student exam scores</KH>
+                        <KH style={{ fontSize: 12, color: '#94a3b8', display: 'block' }}>លទ្ធផលប្រឡង - Record student exam scores</KH>
                     </div>
                     <button onClick={openCreateDrawer} style={primaryButton}>
                         <Plus size={16} />
@@ -398,7 +398,7 @@ export default function ExamResultsPage({ results, exams, students, summary }: E
                                             <SelectValue placeholder="Select student" />
                                         </SelectTrigger>
                                         <SelectContent>
-                                            {students.map(student => <SelectItem key={student.id} value={String(student.id)}>{student.nameEn} Â· {student.className || student.level}</SelectItem>)}
+                                            {students.map(student => <SelectItem key={student.id} value={String(student.id)}>{student.nameEn} - {student.className || student.level}</SelectItem>)}
                                         </SelectContent>
                                     </Select>
                                 </Field>

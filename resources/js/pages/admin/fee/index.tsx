@@ -1,4 +1,4 @@
-﻿import { create as createFee, destroy, edit as editFee, payment as recordPayment } from '@/actions/App/Http/Controllers/Backends/FeeChargeController';
+import { create as createFee, destroy, edit as editFee, payment as recordPayment } from '@/actions/App/Http/Controllers/Backends/FeeChargeController';
 import { DatePicker } from '@/components/ui/date-picker';
 import AdminShell from '@/pages/admin/shell';
 import { AdminSelect, Avatar, Badge, KH, Pagination } from '@/pages/admin/ui';
@@ -370,7 +370,7 @@ export default function FeePage({ charges, payments, summary }: FeePageProps) {
                     <form onSubmit={submitPayment} style={{ background: 'white', borderRadius: 20, padding: 28, maxWidth: 440, width: '100%', boxShadow: '0 24px 60px rgba(0,0,0,0.15)', display: 'flex', flexDirection: 'column', gap: 14 }}>
                         <div>
                             <div style={{ fontSize: 18, fontWeight: 800, color: '#1e293b' }}>Record Payment</div>
-                            <div style={{ fontSize: 12, color: '#94a3b8', marginTop: 2 }}>{payTarget.studentNameEn} Â· {payTarget.billingMonth}</div>
+                            <div style={{ fontSize: 12, color: '#94a3b8', marginTop: 2 }}>{payTarget.studentNameEn} - {payTarget.billingMonth}</div>
                         </div>
                         <input type="number" step="0.01" className="f-input" value={paymentForm.data.amount} onChange={event => paymentForm.setData('amount', event.target.value)} />
                         <AdminSelect

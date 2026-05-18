@@ -1,4 +1,4 @@
-﻿import { destroy, store, update } from '@/actions/App/Http/Controllers/Backends/CertificateController';
+import { destroy, store, update } from '@/actions/App/Http/Controllers/Backends/CertificateController';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import {
@@ -301,7 +301,7 @@ export default function CertificatesPage({ certificates, students, levels, summa
                 <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 12 }}>
                     <div>
                         <div style={{ fontWeight: 800, fontSize: 18, color: '#1e293b' }}>Certificates</div>
-                        <KH style={{ fontSize: 12, color: '#94a3b8', display: 'block' }}>ážœáž·áž‰áŸ’áž‰áž¶áž”áž“áž”ážáŸ’ážš Â· Manage issued certificates</KH>
+                        <KH style={{ fontSize: 12, color: '#94a3b8', display: 'block' }}>វិញ្ញាបនបត្រ - Manage issued certificates</KH>
                     </div>
                     <button onClick={openCreateDrawer} style={{ background: '#2563eb', color: 'white', border: 'none', borderRadius: 10, padding: '9px 18px', fontWeight: 800, fontSize: 13, cursor: 'pointer', display: 'inline-flex', alignItems: 'center', gap: 8 }}>
                         <Plus size={16} />
@@ -654,8 +654,8 @@ function CertificatePreview({ certificate, onClose }: { certificate: Certificate
                     <KH style={{ fontSize: 30, fontWeight: 900, display: 'block', marginBottom: 4 }}>{certificate.studentNameKh}</KH>
                     <div style={{ fontSize: 17, opacity: 0.86, marginBottom: 20 }}>{certificate.studentNameEn}</div>
                     <div style={{ fontSize: 13, opacity: 0.72 }}>has received <strong>{certificate.title}</strong></div>
-                    <div style={{ fontSize: 12, opacity: 0.58, marginTop: 8 }}>{certificate.levelName} Â· {certificate.academicYear}</div>
-                    <div style={{ fontSize: 11, opacity: 0.5, marginTop: 22 }}>{certificate.certificateNumber} Â· Issued {certificate.issuedOn}</div>
+                    <div style={{ fontSize: 12, opacity: 0.58, marginTop: 8 }}>{certificate.levelName} - {certificate.academicYear}</div>
+                    <div style={{ fontSize: 11, opacity: 0.5, marginTop: 22 }}>{certificate.certificateNumber} - Issued {certificate.issuedOn}</div>
                 </div>
                 <div style={{ padding: 22, display: 'flex', gap: 10 }}>
                     <button onClick={onClose} style={{ flex: 1, background: '#f1f5f9', color: '#64748b', border: 'none', borderRadius: 10, padding: '11px', fontWeight: 800, cursor: 'pointer' }}>Close</button>

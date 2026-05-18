@@ -171,7 +171,7 @@ export default function LevelsPage({ levels }: LevelsPageProps) {
                 <Dialog open={isModalOpen} onOpenChange={setIsModalOpen}>
                     <DialogContent className="sm:max-w-md">
                         <DialogHeader>
-                            <DialogTitle>{editing ? `Edit â€” ${editing.name}` : 'Add New Level'}</DialogTitle>
+                            <DialogTitle>{editing ? `Edit - ${editing.name}` : 'Add New Level'}</DialogTitle>
                             <DialogDescription>
                                 {editing ? 'Update the level details below.' : 'Create a new course level.'}
                             </DialogDescription>
@@ -280,7 +280,7 @@ export default function LevelsPage({ levels }: LevelsPageProps) {
                                         <td style={{ padding: '12px 16px', color: '#64748b', fontSize: 13 }}>{level.studentCount} student{level.studentCount !== 1 ? 's' : ''}</td>
                                         <td style={{ padding: '12px 16px' }}>
                                             <span style={{ display: 'inline-flex', alignItems: 'center', gap: 4, padding: '3px 10px', borderRadius: 20, fontSize: 11, fontWeight: 700, background: level.isActive ? '#f0fdf4' : '#fef2f2', color: level.isActive ? '#16a34a' : '#dc2626' }}>
-                                                {level.isActive ? 'â— Active' : 'â— Inactive'}
+                                                {level.isActive ? 'Active' : 'Inactive'}
                                             </span>
                                         </td>
                                         <td style={{ padding: '12px 16px', textAlign: 'right' }}>

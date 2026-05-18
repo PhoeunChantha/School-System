@@ -22,7 +22,7 @@ export default function ReportsPage() {
     const unpaidCount    = STUDENTS.filter(s => s.fees === 'Unpaid').length;
 
     const handleExport = (type: string) =>
-        toast.success(`Exporting ${type} reportâ€¦`, { description: 'CSV download will start shortly.' });
+        toast.success(`Exporting ${type} report...`, { description: 'CSV download will start shortly.' });
     const handlePrint = () => window.print();
 
     const TABS: { id: ReportTab; label: string; icon: LucideIcon }[] = [
@@ -42,7 +42,7 @@ export default function ReportsPage() {
                             <ChartNoAxesColumn size={20} color="#2563eb" />
                             Reports
                         </div>
-                        <KH style={{ fontSize: 12, color: '#94a3b8', display: 'block' }}>ážšáž¶áž™áž€áž¶ážšážŽáŸážŸáž¶áž›áž¶ Â· May 2026</KH>
+                        <KH style={{ fontSize: 12, color: '#94a3b8', display: 'block' }}>របាយការណ៍សាលា - May 2026</KH>
                     </div>
                     <div style={{ display: 'flex', gap: 8 }}>
                         <button onClick={() => handleExport(tab)} style={{ background: '#f0fdf4', color: '#16a34a', border: '1px solid #bbf7d0', borderRadius: 8, padding: '8px 16px', fontWeight: 700, fontSize: 12, cursor: 'pointer', display: 'inline-flex', alignItems: 'center', gap: 6 }}>
@@ -123,8 +123,8 @@ export default function ReportsPage() {
                         {/* Student attendance table */}
                         <div className="card" style={{ overflowX: 'auto' }}>
                             <div style={{ padding: '16px 20px 0' }}>
-                                <KH style={{ fontWeight: 800, fontSize: 15, display: 'block', marginBottom: 4 }}>ážœážáŸ’ážáž˜áž¶áž“ážáž¶áž˜ážŸáž·ážŸáŸ’ážŸ</KH>
-                                <div style={{ fontSize: 12, color: '#94a3b8', marginBottom: 12 }}>Individual attendance â€” May 2026</div>
+                                <KH style={{ fontWeight: 800, fontSize: 15, display: 'block', marginBottom: 4 }}>វត្តមានតាមសិស្ស</KH>
+                                <div style={{ fontSize: 12, color: '#94a3b8', marginBottom: 12 }}>Individual attendance - May 2026</div>
                             </div>
                             <table className="data-table">
                                 <thead><tr><th>Student</th><th>Class</th><th>Attendance</th><th>Status</th></tr></thead>
@@ -229,8 +229,8 @@ export default function ReportsPage() {
                         {/* Payment history */}
                         <div className="card" style={{ overflowX: 'auto' }}>
                             <div style={{ padding: '16px 20px 0', marginBottom: 4 }}>
-                                <KH style={{ fontWeight: 800, fontSize: 15, display: 'block' }}>áž”áŸ’ážšážœážáŸ’ážáž·áž€áž¶ážšáž‘áž¼áž‘áž¶ážáŸ‹</KH>
-                                <div style={{ fontSize: 12, color: '#94a3b8', marginBottom: 12 }}>Payment History â€” May 2026</div>
+                                <KH style={{ fontWeight: 800, fontSize: 15, display: 'block' }}>ប្រវត្តិការទូទាត់</KH>
+                                <div style={{ fontSize: 12, color: '#94a3b8', marginBottom: 12 }}>Payment History - May 2026</div>
                             </div>
                             <table className="data-table">
                                 <thead><tr><th>Student</th><th>Amount</th><th>Method</th><th>Date</th><th>Status</th></tr></thead>

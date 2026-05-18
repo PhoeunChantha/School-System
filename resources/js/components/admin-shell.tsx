@@ -8,7 +8,9 @@ import {
     DropdownMenuSeparator,
     DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
+import { useAdminDomTranslations } from '@/hooks/use-admin-dom-translations';
 import { useAdminTranslation } from '@/hooks/use-admin-translation';
+import { cn } from '@/lib/utils';
 import '@/pages/admin/admin.css';
 import { Avatar, KH } from '@/pages/admin/ui';
 import { logout } from '@/routes';
@@ -260,7 +262,8 @@ export default function AdminShell({ children }: AdminShellProps) {
     const { url, props } = usePage<SharedData>();
     const user = props.auth?.user;
     const school = props.school;
-    const { lang, setLang, t, tSecondary } = useAdminTranslation();
+    const { lang, setLang, t } = useAdminTranslation();
+    useAdminDomTranslations();
     const [hiddenNavItems, setHiddenNavItems] = useState<Set<string>>(() => {
         if (typeof window === 'undefined') return new Set();
         try {
@@ -392,7 +395,11 @@ export default function AdminShell({ children }: AdminShellProps) {
                 }}
             >
                 <nav
-                    className={`sidebar${collapsed ? ' collapsed' : ''}${mobileOpen ? ' mobile-open' : ''}`}
+                    className={cn(
+                        'sidebar',
+                        collapsed && 'collapsed',
+                        mobileOpen && 'mobile-open',
+                    )}
                 >
                     <div className="sidebar-logo">
                         {school?.logo ? (
@@ -490,7 +497,10 @@ export default function AdminShell({ children }: AdminShellProps) {
                                         key={entry.id}
                                         href={entry.href}
                                         onClick={() => setMobileOpen(false)}
-                                        className={`nav-item${active === entry.id ? ' active' : ''}`}
+                                        className={cn(
+                                            'nav-item',
+                                            active === entry.id && 'active',
+                                        )}
                                         style={{
                                             display: 'flex',
                                             alignItems: 'center',
@@ -631,9 +641,6 @@ export default function AdminShell({ children }: AdminShellProps) {
                         >
                             {t(`nav_items.${titleKey}`)}
                         </KH>
-                        <div style={{ fontSize: 11, color: '#94a3b8' }}>
-                            {tSecondary(`nav_items.${titleKey}`)}
-                        </div>
                     </div>
 
                     {/* Lang toggle */}
@@ -883,7 +890,10 @@ export default function AdminShell({ children }: AdminShellProps) {
                         <Link
                             key={item.id}
                             href={item.href}
-                            className={`mob-nav-btn${active === item.id ? ' active' : ''}`}
+                            className={cn(
+                                'mob-nav-btn',
+                                active === item.id && 'active',
+                            )}
                         >
                             <span
                                 className="mni"

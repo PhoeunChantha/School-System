@@ -9,6 +9,10 @@ const ADMIN_LANGUAGE_CHANGE_EVENT = 'admin-language-change';
 
 type TranslationDictionary = Record<string, unknown>;
 
+const escapeRegExp = (value: string): string => {
+    return value.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+};
+
 const getInitialLanguage = (): AdminLanguage => {
     if (typeof window === 'undefined') {
         return 'kh';
@@ -136,5 +140,61 @@ export function useAdminTranslation() {
         [fallbackTranslations, secondaryTranslations],
     );
 
-    return { lang, setLang, t, tSecondary };
+    const translateText = useCallback(
+        (value: string): string => {
+            const trimmed = value.trim();
+
+            if (!trimmed) {
+                return value;
+            }
+
+            const contentTranslations = getNestedValue(
+                currentTranslations,
+                'content_text',
+            );
+            const fallbackContentTranslations = getNestedValue(
+                fallbackTranslations,
+                'content_text',
+            );
+
+            const dictionary =
+                contentTranslations && typeof contentTranslations === 'object'
+                    ? (contentTranslations as Record<string, unknown>)
+                    : fallbackContentTranslations &&
+                        typeof fallbackContentTranslations === 'object'
+                      ? (fallbackContentTranslations as Record<string, unknown>)
+                      : {};
+
+            const translated =
+                dictionary[trimmed] ??
+                Object.entries(dictionary).find(
+                    ([source]) =>
+                        source.toLowerCase() === trimmed.toLowerCase(),
+                )?.[1];
+
+            if (typeof translated !== 'string') {
+                return Object.entries(dictionary)
+                    .filter(
+                        ([source, replacement]) =>
+                            source.length > 3 &&
+                            typeof replacement === 'string' &&
+                            new RegExp(escapeRegExp(source), 'i').test(value),
+                    )
+                    .sort(([a], [b]) => b.length - a.length)
+                    .reduce(
+                        (content, [source, replacement]) =>
+                            content.replace(
+                                new RegExp(escapeRegExp(source), 'gi'),
+                                replacement as string,
+                            ),
+                        value,
+                    );
+            }
+
+            return value.replace(trimmed, translated);
+        },
+        [currentTranslations, fallbackTranslations],
+    );
+
+    return { lang, setLang, t, tSecondary, translateText };
 }

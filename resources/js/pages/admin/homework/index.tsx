@@ -1,4 +1,4 @@
-﻿import { create as createHomework, destroy, edit as editHomework } from '@/actions/App/Http/Controllers/Backends/HomeworkAssignmentController';
+import { create as createHomework, destroy, edit as editHomework } from '@/actions/App/Http/Controllers/Backends/HomeworkAssignmentController';
 import { create as createHomeworkSubmission } from '@/routes/admin/homework-submissions';
 import AdminShell from '@/pages/admin/shell';
 import { Badge, KH, Pagination, PBar } from '@/pages/admin/ui';
@@ -111,7 +111,7 @@ export default function HomeworkPage({ homework }: HomeworkPageProps) {
                     <div>
                         <div style={{ fontWeight: 800, fontSize: 18, color: '#1e293b' }}>Homework List</div>
                         <div style={{ fontSize: 12, color: '#94a3b8', marginTop: 2 }}>
-                            {totalAssigned} assigned Â· {totalSubmissions} submissions received
+                            {totalAssigned} assigned - {totalSubmissions} submissions received
                         </div>
                     </div>
 

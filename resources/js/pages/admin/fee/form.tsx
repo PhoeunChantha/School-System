@@ -1,4 +1,4 @@
-﻿import { FormEvent } from 'react';
+import { FormEvent } from 'react';
 import { index as feeIndex, store, update } from '@/actions/App/Http/Controllers/Backends/FeeChargeController';
 import { DatePicker } from '@/components/ui/date-picker';
 import AdminShell from '@/pages/admin/shell';
@@ -108,7 +108,7 @@ export default function FeeChargeFormPage({ mode, charge, students }: FeeChargeF
                         <AdminSelect
                             value={data.student_id ? String(data.student_id) : ''}
                             onChange={value => selectStudent(Number(value))}
-                            options={students.map(student => ({ value: String(student.id), label: `${student.nameEn} Â· ${student.level}` }))}
+                            options={students.map(student => ({ value: String(student.id), label: `${student.nameEn} - ${student.level}` }))}
                             placeholder="Select student"
                         />
                         {errors.student_id && <div className="field-error">{errors.student_id}</div>}

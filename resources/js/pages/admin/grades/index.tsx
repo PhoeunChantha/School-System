@@ -1,4 +1,4 @@
-﻿import { destroy, downloadLayout, exportMethod, importMethod, store, update } from '@/actions/App/Http/Controllers/Backends/GradeRecordController';
+import { destroy, downloadLayout, exportMethod, importMethod, store, update } from '@/actions/App/Http/Controllers/Backends/GradeRecordController';
 import {
     Sheet,
     SheetContent,
@@ -531,7 +531,7 @@ export default function GradesPage({ records, periods, students, classes, summar
                                             style={{ minHeight: 42, display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 10, textAlign: 'left', opacity: drawerMode === 'edit' ? 0.7 : 1, cursor: drawerMode === 'edit' ? 'default' : 'pointer' }}
                                         >
                                             <span style={{ minWidth: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                                                {selectedStudent ? `${selectedStudent.nameEn} Â· ${selectedStudent.className || selectedStudent.level}` : 'Select student'}
+                                                {selectedStudent ? `${selectedStudent.nameEn} - ${selectedStudent.className || selectedStudent.level}` : 'Select student'}
                                             </span>
                                             <ChevronsUpDown size={16} style={{ color: '#94a3b8', flexShrink: 0 }} />
                                         </button>
@@ -565,7 +565,7 @@ export default function GradesPage({ records, periods, students, classes, summar
                                                         <Check size={15} style={{ color: selected ? '#2563eb' : 'transparent', flexShrink: 0 }} />
                                                         <span style={{ minWidth: 0 }}>
                                                             <span style={{ display: 'block', fontSize: 13, fontWeight: 800, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{student.nameEn}</span>
-                                                            <span style={{ display: 'block', fontSize: 11, color: '#94a3b8', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{student.nameKh} Â· {student.className || student.level}</span>
+                                                            <span style={{ display: 'block', fontSize: 11, color: '#94a3b8', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{student.nameKh} - {student.className || student.level}</span>
                                                         </span>
                                                     </button>
                                                 );

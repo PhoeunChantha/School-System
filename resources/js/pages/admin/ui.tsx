@@ -1,6 +1,7 @@
 ﻿import { useEffect, useState } from 'react';
 import type { CSSProperties, ReactNode } from 'react';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { useAdminTranslation } from '@/hooks/use-admin-translation';
 import { ArrowLeft, ArrowRight, Check, X } from 'lucide-react';
 import type { Student } from './data';
 
@@ -63,9 +64,11 @@ function badgeContent(Icon: typeof Check, label: string) {
 }
 
 export function FeeTag({ status }: FeeTagProps) {
-    if (status === 'Paid')    return <Badge type="green">{badgeContent(Check, 'Paid')}</Badge>;
-    if (status === 'Unpaid')  return <Badge type="red">{badgeContent(X, 'Unpaid')}</Badge>;
-    if (status === 'Partial') return <Badge type="amber">~ Partial</Badge>;
+    const { translateText } = useAdminTranslation();
+
+    if (status === 'Paid')    return <Badge type="green">{badgeContent(Check, translateText('Paid'))}</Badge>;
+    if (status === 'Unpaid')  return <Badge type="red">{badgeContent(X, translateText('Unpaid'))}</Badge>;
+    if (status === 'Partial') return <Badge type="amber">{translateText('Partial')}</Badge>;
     return null;
 }
 
@@ -103,16 +106,20 @@ export function AdminSelect({
     style,
     disabled,
 }: AdminSelectProps) {
+    const { translateText } = useAdminTranslation();
+    const renderLabel = (label: ReactNode): ReactNode =>
+        typeof label === 'string' ? translateText(label) : label;
+
     return (
         <div className={className} style={style}>
             <Select value={value} onValueChange={onChange} disabled={disabled}>
                 <SelectTrigger className={triggerClassName}>
-                    <SelectValue placeholder={placeholder} />
+                    <SelectValue placeholder={translateText(placeholder)} />
                 </SelectTrigger>
                 <SelectContent className={contentClassName}>
                     {options.map(option => (
                         <SelectItem key={option.value} value={option.value}>
-                            {option.label}
+                            {renderLabel(option.label)}
                         </SelectItem>
                     ))}
                 </SelectContent>
@@ -138,19 +145,20 @@ export function Pagination({
     perPageOptions = [5, 10, 25, 50],
     showPerPage = true,
 }: PaginationProps) {
+    const { translateText } = useAdminTranslation();
     const totalPages = Math.max(1, Math.ceil(total / perPage));
     const from = total === 0 ? 0 : Math.min((page - 1) * perPage + 1, total);
     const to   = Math.min(page * perPage, total);
 
     // Build visible page numbers with ellipsis
-    const pageNums: (number | 'â€¦')[] = [];
+    const pageNums: (number | '...')[] = [];
     if (totalPages <= 7) {
         for (let i = 1; i <= totalPages; i++) pageNums.push(i);
     } else {
         pageNums.push(1);
-        if (page > 3) pageNums.push('â€¦');
+        if (page > 3) pageNums.push('...');
         for (let i = Math.max(2, page - 1); i <= Math.min(totalPages - 1, page + 1); i++) pageNums.push(i);
-        if (page < totalPages - 2) pageNums.push('â€¦');
+        if (page < totalPages - 2) pageNums.push('...');
         pageNums.push(totalPages);
     }
 
@@ -167,10 +175,10 @@ export function Pagination({
     return (
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '12px 20px', borderTop: '1px solid #f1f5f9', flexWrap: 'wrap', gap: 10 }}>
             {/* Result info */}
-            <div style={{ fontSize: 12, color: '#64748b', fontWeight: 600 }}>
+            <div data-no-translate="true" style={{ fontSize: 12, color: '#64748b', fontWeight: 600 }}>
                 {total === 0
-                    ? 'No results'
-                    : <>Showing <strong style={{ color: '#1e293b' }}>{from}â€“{to}</strong> of <strong style={{ color: '#1e293b' }}>{total}</strong></>
+                    ? translateText('No results')
+                    : <>{translateText('Showing')} <strong style={{ color: '#1e293b' }}>{from} - {to}</strong> {translateText('of')} <strong style={{ color: '#1e293b' }}>{total}</strong></>
                 }
             </div>
 
@@ -183,8 +191,8 @@ export function Pagination({
                     <ArrowLeft size={14} />
                 </button>
                 {pageNums.map((p, i) =>
-                    p === 'â€¦'
-                        ? <span key={`e${i}`} style={{ width: 28, textAlign: 'center', color: '#94a3b8', fontSize: 13 }}>â€¦</span>
+                    p === '...'
+                        ? <span key={`e${i}`} style={{ width: 28, textAlign: 'center', color: '#94a3b8', fontSize: 13 }}>...</span>
                         : <button key={p} onClick={() => onPageChange(p as number)} style={btn(p === page, false)}>{p}</button>
                 )}
                 <button
@@ -195,7 +203,7 @@ export function Pagination({
                 </button>
             </div>
 
-            {/* Per page â€” only shown when showPerPage=true */}
+            {/* Per page - only shown when showPerPage=true */}
             {showPerPage && (
                 <AdminSelect
                     value={perPage.toString()}

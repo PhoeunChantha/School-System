@@ -1,4 +1,4 @@
-﻿import { destroy, markAllRead, markRead, store, update } from '@/actions/App/Http/Controllers/Backends/NotificationController';
+import { destroy, markAllRead, markRead, store, update } from '@/actions/App/Http/Controllers/Backends/NotificationController';
 import {
     Sheet,
     SheetContent,
@@ -209,7 +209,7 @@ export default function NotificationsPage({ notifications, students, users, summ
                                 </span>
                             )}
                         </div>
-                        <KH style={{ fontSize: 12, color: '#94a3b8', display: 'block' }}>áž€áž¶ážšáž‡áž¼áž“ážŠáŸ†ážŽáž¹áž„ Â· School notifications</KH>
+                        <KH style={{ fontSize: 12, color: '#94a3b8', display: 'block' }}>ការជូនដំណឹង - School notifications</KH>
                     </div>
                     <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
                         {summary.unreadCount > 0 && (
@@ -279,8 +279,8 @@ export default function NotificationsPage({ notifications, students, users, summ
                                     <div style={{ fontSize: 13, color: '#64748b', lineHeight: 1.5 }}>{notification.body || '-'}</div>
                                     <div style={{ fontSize: 11, color: '#94a3b8', marginTop: 6 }}>
                                         {notification.time}
-                                        {notification.studentName && ` Â· Student: ${notification.studentName}`}
-                                        {notification.userName && ` Â· User: ${notification.userName}`}
+                                        {notification.studentName && ` - Student: ${notification.studentName}`}
+                                        {notification.userName && ` - User: ${notification.userName}`}
                                     </div>
                                 </div>
 

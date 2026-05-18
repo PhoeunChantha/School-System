@@ -352,7 +352,7 @@ export default function SettingsPage({
                             display: 'block',
                         }}
                     >
-                        áž€áŸ†ážŽážáŸ‹ Â· System configuration
+                        កំណត់ - System configuration
                     </KH>
                 </div>
 
