@@ -5,11 +5,13 @@ namespace App\Services\Backends;
 use App\Models\Level;
 use App\Models\SchoolClass;
 use App\Models\Student;
+use App\Models\User;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Support\Str;
 use Illuminate\Validation\Rule;
+use Spatie\Permission\Models\Role;
 
 class StudentService
 {
@@ -197,12 +199,28 @@ class StudentService
     {
         $photoPath = $this->storePhoto($data['profile_photo'] ?? null);
 
-        return DB::transaction(fn (): Student => Student::create([
-            ...$this->normalizedData($data),
-            'profile_photo' => $photoPath,
-            'created_by' => $userId,
-            'updated_by' => $userId,
-        ]));
+        return DB::transaction(function () use ($data, $userId, $photoPath): Student {
+            $student = Student::create([
+                ...$this->normalizedData($data),
+                'profile_photo' => $photoPath,
+                'created_by' => $userId,
+                'updated_by' => $userId,
+            ]);
+
+            if (blank($student->code)) {
+                $student->forceFill([
+                    'code' => $this->studentCode($student),
+                ])->save();
+            }
+
+            $loginUser = $this->ensureLoginUser($student);
+
+            $student->forceFill([
+                'user_id' => $loginUser->id,
+            ])->save();
+
+            return $student->refresh();
+        });
     }
 
     /**
@@ -223,6 +241,20 @@ class StudentService
                 'profile_photo' => $photoPath,
                 'updated_by' => $userId,
             ]);
+
+            if (blank($student->code)) {
+                $student->forceFill([
+                    'code' => $this->studentCode($student),
+                ])->save();
+            }
+
+            $loginUser = $this->ensureLoginUser($student);
+
+            if ($student->user_id !== $loginUser->id) {
+                $student->forceFill([
+                    'user_id' => $loginUser->id,
+                ])->save();
+            }
 
             return $student->refresh();
         });
@@ -287,16 +319,44 @@ class StudentService
                         ...$this->normalizedData($data),
                         'updated_by' => $userId,
                     ]);
+
+                    if (blank($student->code)) {
+                        $student->forceFill([
+                            'code' => $this->studentCode($student),
+                        ])->save();
+                    }
+
+                    $loginUser = $this->ensureLoginUser($student);
+
+                    if ($student->user_id !== $loginUser->id) {
+                        $student->forceFill([
+                            'user_id' => $loginUser->id,
+                        ])->save();
+                    }
+
                     $summary['updated']++;
 
                     return;
                 }
 
-                Student::create([
+                $student = Student::create([
                     ...$this->normalizedData($data),
                     'created_by' => $userId,
                     'updated_by' => $userId,
                 ]);
+
+                if (blank($student->code)) {
+                    $student->forceFill([
+                        'code' => $this->studentCode($student),
+                    ])->save();
+                }
+
+                $loginUser = $this->ensureLoginUser($student);
+
+                $student->forceFill([
+                    'user_id' => $loginUser->id,
+                ])->save();
+
                 $summary['created']++;
             });
         }
@@ -510,6 +570,70 @@ class StudentService
             'status' => $student->status,
             'enrolled_on' => $student->enrolled_on?->format('Y-m-d'),
         ];
+    }
+
+    private function ensureLoginUser(Student $student): User
+    {
+        $user = $student->user()->first();
+
+        if ($user instanceof User) {
+            $user->update([
+                'name' => $student->name_en,
+                'email' => $this->studentEmail($student),
+            ]);
+
+            if (! $user->hasRole('student')) {
+                $user->assignRole($this->studentRole());
+            }
+
+            return $user;
+        }
+
+        $user = User::create([
+            'name' => $student->name_en,
+            'email' => $this->studentEmail($student),
+            'password' => $student->code,
+            'email_verified_at' => now(),
+        ]);
+
+        $user->assignRole($this->studentRole());
+
+        return $user;
+    }
+
+    private function studentRole(): Role
+    {
+        return Role::query()->firstOrCreate([
+            'name' => 'student',
+            'guard_name' => 'web',
+        ]);
+    }
+
+    private function studentEmail(Student $student): string
+    {
+        return Str::of($student->code)
+            ->lower()
+            ->replaceMatches('/[^a-z0-9]+/', '.')
+            ->trim('.')
+            ->append('@student.frania.local')
+            ->toString();
+    }
+
+    private function studentCode(Student $student): string
+    {
+        $next = $student->id;
+
+        do {
+            $code = 'STU-'.str_pad((string) $next, 4, '0', STR_PAD_LEFT);
+            $exists = Student::query()
+                ->where('code', $code)
+                ->whereKeyNot($student->id)
+                ->withTrashed()
+                ->exists();
+            $next++;
+        } while ($exists);
+
+        return $code;
     }
 
     private function storePhoto(?UploadedFile $file): ?string

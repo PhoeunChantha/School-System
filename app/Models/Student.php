@@ -17,6 +17,7 @@ class Student extends Model
     use HasEncryptedRouteKey, HasFactory, SoftDeletes;
 
     protected $fillable = [
+        'user_id',
         'level_id',
         'school_class_id',
         'code',
@@ -59,6 +60,11 @@ class Student extends Model
     public function level(): BelongsTo
     {
         return $this->belongsTo(Level::class);
+    }
+
+    public function user(): BelongsTo
+    {
+        return $this->belongsTo(User::class);
     }
 
     public function schoolClass(): BelongsTo

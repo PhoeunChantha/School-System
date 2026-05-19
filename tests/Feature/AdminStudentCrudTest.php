@@ -6,8 +6,10 @@ use App\Models\Level;
 use App\Models\SchoolClass;
 use App\Models\Student;
 use App\Models\User;
+use App\Services\Student\StudentPortalService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Http\UploadedFile;
+use Illuminate\Support\Facades\Hash;
 use Tests\TestCase;
 
 class AdminStudentCrudTest extends TestCase
@@ -60,6 +62,36 @@ class AdminStudentCrudTest extends TestCase
             'created_by' => $user->id,
             'updated_by' => $user->id,
         ]);
+
+        $student = Student::query()->where('code', 'STU-1001')->firstOrFail();
+        $loginUser = User::query()->findOrFail($student->user_id);
+
+        $this->assertSame('Sokh Dara', $loginUser->name);
+        $this->assertSame('stu.1001@student.frania.local', $loginUser->email);
+        $this->assertTrue(Hash::check('STU-1001', $loginUser->password));
+        $this->assertTrue($loginUser->hasRole('student'));
+        $this->assertTrue(app(StudentPortalService::class)->findStudent($loginUser)->is($student));
+    }
+
+    public function test_admin_can_create_student_with_generated_code_and_login_user(): void
+    {
+        $user = User::factory()->create();
+        $level = Level::factory()->create();
+        $schoolClass = SchoolClass::factory()->for($level)->create();
+        $payload = $this->validPayload($level->id, $schoolClass->id);
+        $payload['code'] = null;
+
+        $this->actingAs($user)
+            ->post(route('admin.students.store'), $payload)
+            ->assertRedirect(route('admin.students'));
+
+        $student = Student::query()->where('name_en', 'Sokh Dara')->firstOrFail();
+        $loginUser = User::query()->findOrFail($student->user_id);
+
+        $this->assertSame('STU-'.str_pad((string) $student->id, 4, '0', STR_PAD_LEFT), $student->code);
+        $this->assertSame(strtolower(str_replace('-', '.', $student->code)).'@student.frania.local', $loginUser->email);
+        $this->assertTrue(Hash::check($student->code, $loginUser->password));
+        $this->assertTrue($loginUser->hasRole('student'));
     }
 
     public function test_admin_can_view_edit_student_page(): void
@@ -160,6 +192,12 @@ class AdminStudentCrudTest extends TestCase
             'created_by' => $user->id,
             'updated_by' => $user->id,
         ]);
+
+        $student = Student::query()->where('code', 'STU-3001')->firstOrFail();
+        $loginUser = User::query()->findOrFail($student->user_id);
+
+        $this->assertSame('stu.3001@student.frania.local', $loginUser->email);
+        $this->assertTrue($loginUser->hasRole('student'));
     }
 
     /**

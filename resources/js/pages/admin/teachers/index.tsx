@@ -22,6 +22,7 @@ import {
     SelectTrigger,
     SelectValue,
 } from '@/components/ui/select';
+import { useAdminPermissions } from '@/hooks/use-admin-permissions';
 import { useAdminTranslation } from '@/hooks/use-admin-translation';
 import AdminShell from '@/pages/admin/shell';
 import { Avatar, Badge, KH, Pagination } from '@/pages/admin/ui';
@@ -133,7 +134,24 @@ function sortTeachers(list: Teacher[], order: OrderKey): Teacher[] {
 }
 
 export default function TeachersPage({ teachers }: TeachersPageProps) {
+    const { can, canAny } = useAdminPermissions();
     const { translateText } = useAdminTranslation();
+    const canShow = can('teachers.show');
+    const canCreate = can('teachers.create');
+    const canUpdate = can('teachers.update');
+    const canDelete = can('teachers.delete');
+    const canImport = can('teachers.import');
+    const canExport = can('teachers.export');
+    const canDownloadLayout = can('teachers.download-layout');
+    const canCreateLessonPlan = can('teacher-lesson-plans.create');
+    const canViewTeacherGrades = can('teacher-grades.view');
+    const canManageTeachers = canAny([
+        'teachers.show',
+        'teachers.update',
+        'teachers.delete',
+        'teacher-lesson-plans.create',
+        'teacher-grades.view',
+    ]);
     const [view, setView] = useState<View>('list');
     const [search, setSearch] = useState('');
     const [orderBy, setOrderBy] = useState<OrderKey>('name-asc');
@@ -145,12 +163,26 @@ export default function TeachersPage({ teachers }: TeachersPageProps) {
     const importInputRef = useRef<HTMLInputElement>(null);
 
     const handleEdit = (t: Teacher) => {
+        if (!canUpdate) {
+            return;
+        }
+
         setEditing(t);
         setView('edit');
     };
-    const handleDelete = (t: Teacher) => setDeleteTarget(t);
+    const handleDelete = (t: Teacher) => {
+        if (!canDelete) {
+            return;
+        }
+
+        setDeleteTarget(t);
+    };
     const confirmDelete = () => {
         if (!deleteTarget) return;
+        if (!canDelete) {
+            setDeleteTarget(null);
+            return;
+        }
 
         router.delete(
             destroy.url((deleteTarget.routeKey ?? deleteTarget.id) as never),
@@ -168,6 +200,7 @@ export default function TeachersPage({ teachers }: TeachersPageProps) {
 
     const importFile = (file: File | null) => {
         if (!file) return;
+        if (!canImport) return;
 
         router.post(
             importTeachers.url(),
@@ -242,7 +275,7 @@ export default function TeachersPage({ teachers }: TeachersPageProps) {
                                 alignItems: 'center',
                             }}
                         >
-                            <a
+                            {canDownloadLayout && <a
                                 href={downloadTeacherLayout.url()}
                                 style={{
                                     background: '#f8fafc',
@@ -261,8 +294,8 @@ export default function TeachersPage({ teachers }: TeachersPageProps) {
                                 }}
                             >
                                 <Download size={14} /> Layout
-                            </a>
-                            <button
+                            </a>}
+                            {canImport && <button
                                 type="button"
                                 onClick={() => importInputRef.current?.click()}
                                 style={{
@@ -281,8 +314,8 @@ export default function TeachersPage({ teachers }: TeachersPageProps) {
                                 }}
                             >
                                 <Upload size={14} /> Import
-                            </button>
-                            <a
+                            </button>}
+                            {canExport && <a
                                 href={exportTeachers.url()}
                                 style={{
                                     background: '#f0fdf4',
@@ -301,8 +334,8 @@ export default function TeachersPage({ teachers }: TeachersPageProps) {
                                 }}
                             >
                                 <FileDown size={14} /> Export
-                            </a>
-                            <button
+                            </a>}
+                            {canCreate && <button
                                 onClick={() => setView('add')}
                                 style={{
                                     background: '#2563eb',
@@ -316,7 +349,7 @@ export default function TeachersPage({ teachers }: TeachersPageProps) {
                                 }}
                             >
                                 + Add Teacher
-                            </button>
+                            </button>}
                             <input
                                 ref={importInputRef}
                                 type="file"
@@ -443,7 +476,7 @@ export default function TeachersPage({ teachers }: TeachersPageProps) {
                                     <th>Phone</th>
                                     <th>Lessons</th>
                                     <th>Status</th>
-                                    <th>Actions</th>
+                                    {canManageTeachers && <th>Actions</th>}
                                 </tr>
                             </thead>
                             <tbody>
@@ -596,6 +629,7 @@ export default function TeachersPage({ teachers }: TeachersPageProps) {
                                                     {t.status}
                                                 </Badge>
                                             </td>
+                                            {canManageTeachers && (
                                             <td>
                                                 <DropdownMenu>
                                                     <DropdownMenuTrigger
@@ -635,7 +669,7 @@ export default function TeachersPage({ teachers }: TeachersPageProps) {
                                                         align="end"
                                                         className="w-48"
                                                     >
-                                                        <DropdownMenuItem
+                                                        {canCreateLessonPlan && <DropdownMenuItem
                                                             asChild
                                                         >
                                                             <Link
@@ -652,8 +686,8 @@ export default function TeachersPage({ teachers }: TeachersPageProps) {
                                                                     'Plan',
                                                                 )}
                                                             </Link>
-                                                        </DropdownMenuItem>
-                                                        <DropdownMenuItem
+                                                        </DropdownMenuItem>}
+                                                        {canViewTeacherGrades && <DropdownMenuItem
                                                             asChild
                                                         >
                                                             <Link
@@ -670,8 +704,8 @@ export default function TeachersPage({ teachers }: TeachersPageProps) {
                                                                     'Score management',
                                                                 )}
                                                             </Link>
-                                                        </DropdownMenuItem>
-                                                        <DropdownMenuItem
+                                                        </DropdownMenuItem>}
+                                                        {canShow && <DropdownMenuItem
                                                             asChild
                                                         >
                                                             <Link
@@ -688,8 +722,8 @@ export default function TeachersPage({ teachers }: TeachersPageProps) {
                                                                     'View',
                                                                 )}
                                                             </Link>
-                                                        </DropdownMenuItem>
-                                                        <DropdownMenuItem
+                                                        </DropdownMenuItem>}
+                                                        {canUpdate && <DropdownMenuItem
                                                             onSelect={() =>
                                                                 handleEdit(t)
                                                             }
@@ -698,9 +732,9 @@ export default function TeachersPage({ teachers }: TeachersPageProps) {
                                                             {translateText(
                                                                 'Edit',
                                                             )}
-                                                        </DropdownMenuItem>
-                                                        <DropdownMenuSeparator />
-                                                        <DropdownMenuItem
+                                                        </DropdownMenuItem>}
+                                                        {canDelete && <DropdownMenuSeparator />}
+                                                        {canDelete && <DropdownMenuItem
                                                             onSelect={() =>
                                                                 handleDelete(t)
                                                             }
@@ -710,10 +744,11 @@ export default function TeachersPage({ teachers }: TeachersPageProps) {
                                                             {translateText(
                                                                 'Delete',
                                                             )}
-                                                        </DropdownMenuItem>
+                                                        </DropdownMenuItem>}
                                                     </DropdownMenuContent>
                                                 </DropdownMenu>
                                             </td>
+                                            )}
                                         </tr>
                                     ))
                                 )}
@@ -756,9 +791,9 @@ export default function TeachersPage({ teachers }: TeachersPageProps) {
                                             </Badge>
                                         }
                                         actionLabel={translateText('Actions')}
-                                        actions={
+                                        actions={canManageTeachers ? (
                                             <>
-                                                <DropdownMenuItem asChild>
+                                                {canCreateLessonPlan && <DropdownMenuItem asChild>
                                                     <Link
                                                         href={createTeacherLessonPlan.url(
                                                             (t.routeKey ??
@@ -769,8 +804,8 @@ export default function TeachersPage({ teachers }: TeachersPageProps) {
                                                         <School size={14} />{' '}
                                                         {translateText('Plan')}
                                                     </Link>
-                                                </DropdownMenuItem>
-                                                <DropdownMenuItem asChild>
+                                                </DropdownMenuItem>}
+                                                {canViewTeacherGrades && <DropdownMenuItem asChild>
                                                     <Link
                                                         href={teacherGrades.url(
                                                             (t.routeKey ??
@@ -783,8 +818,8 @@ export default function TeachersPage({ teachers }: TeachersPageProps) {
                                                             'Score management',
                                                         )}
                                                     </Link>
-                                                </DropdownMenuItem>
-                                                <DropdownMenuItem asChild>
+                                                </DropdownMenuItem>}
+                                                {canShow && <DropdownMenuItem asChild>
                                                     <Link
                                                         href={showTeacher.url(
                                                             (t.routeKey ??
@@ -795,17 +830,17 @@ export default function TeachersPage({ teachers }: TeachersPageProps) {
                                                         <Eye size={14} />{' '}
                                                         {translateText('View')}
                                                     </Link>
-                                                </DropdownMenuItem>
-                                                <DropdownMenuItem
+                                                </DropdownMenuItem>}
+                                                {canUpdate && <DropdownMenuItem
                                                     onSelect={() =>
                                                         handleEdit(t)
                                                     }
                                                 >
                                                     <Edit3 size={14} />{' '}
                                                     {translateText('Edit')}
-                                                </DropdownMenuItem>
-                                                <DropdownMenuSeparator />
-                                                <DropdownMenuItem
+                                                </DropdownMenuItem>}
+                                                {canDelete && <DropdownMenuSeparator />}
+                                                {canDelete && <DropdownMenuItem
                                                     onSelect={() =>
                                                         handleDelete(t)
                                                     }
@@ -813,9 +848,9 @@ export default function TeachersPage({ teachers }: TeachersPageProps) {
                                                 >
                                                     <Trash2 size={14} />{' '}
                                                     {translateText('Delete')}
-                                                </DropdownMenuItem>
+                                                </DropdownMenuItem>}
                                             </>
-                                        }
+                                        ) : null}
                                         meta={[
                                             {
                                                 label: translateText('Subject'),

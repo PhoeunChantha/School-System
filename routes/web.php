@@ -21,15 +21,32 @@ use App\Http\Controllers\Backends\StudentController;
 use App\Http\Controllers\Backends\TeacherController;
 use App\Http\Controllers\Backends\TeacherGradeController;
 use App\Http\Controllers\Backends\UserController;
+use App\Http\Controllers\Student\StudentPortalController;
+use App\Models\ActivityLog;
+use App\Models\AttendanceSession;
+use App\Models\Certificate;
+use App\Models\Exam;
+use App\Models\ExamResult;
+use App\Models\Expense;
+use App\Models\ExpenseCategory;
+use App\Models\FeeCharge;
+use App\Models\GradeRecord;
+use App\Models\HomeworkAssignment;
+use App\Models\HomeworkSubmission;
+use App\Models\LessonPlan;
+use App\Models\Level;
+use App\Models\Notification;
+use App\Models\SchoolClass;
+use App\Models\SchoolSetting;
+use App\Models\Student;
+use App\Models\Teacher;
+use App\Models\User;
 use Illuminate\Support\Facades\Route;
 use Inertia\Inertia;
 use Laravel\Fortify\Features;
+use Spatie\Permission\Models\Permission;
+use Spatie\Permission\Models\Role;
 
-// Route::get('/', function () {
-//     return Inertia::render('welcome', [
-//         'canRegister' => Features::enabled(Features::registration()),
-//     ]);
-// })->name('home');
 Route::get('/', function () {
     return Inertia::render('auth/login', [
         'canRegister' => Features::enabled(Features::registration()),
@@ -42,127 +59,225 @@ Route::middleware(['auth', 'verified'])->group(function () {
         ->name('dashboard');
 });
 
-// ── Admin School Management ──
+// Admin School Management
 Route::middleware(['auth', 'verified'])->prefix('admin')->name('admin.')->group(function () {
     Route::get('/', fn () => redirect()->route('dashboard'));
     Route::get('/dashboard', fn () => redirect()->route('dashboard'))->name('dashboard');
-    Route::get('/levels', [LevelController::class, 'index'])->middleware('can:view,App\Models\Level')->name('levels');
-    Route::post('/levels', [LevelController::class, 'store'])->middleware('can:create,App\Models\Level')->name('levels.store');
-    Route::put('/levels/{level}', [LevelController::class, 'update'])->middleware('can:update,level')->name('levels.update');
-    Route::delete('/levels/{level}', [LevelController::class, 'destroy'])->middleware('can:delete,level')->name('levels.destroy');
-    Route::get('/students', [StudentController::class, 'index'])->middleware('can:view,App\Models\Student')->name('students');
-    Route::get('/students/create', [StudentController::class, 'create'])->middleware('can:create,App\Models\Student')->name('students.create');
-    Route::get('/students/layout', [StudentController::class, 'downloadLayout'])->middleware('can:downloadLayout,App\Models\Student')->name('students.layout');
-    Route::post('/students/import', [StudentController::class, 'import'])->middleware('can:import,App\Models\Student')->name('students.import');
-    Route::get('/students/export', [StudentController::class, 'export'])->middleware('can:export,App\Models\Student')->name('students.export');
-    Route::post('/students', [StudentController::class, 'store'])->middleware('can:create,App\Models\Student')->name('students.store');
-    Route::get('/students/{student}', [StudentController::class, 'show'])->middleware('can:show,student')->name('students.show');
-    Route::get('/students/{student}/edit', [StudentController::class, 'edit'])->middleware('can:update,student')->name('students.edit');
-    Route::put('/students/{student}', [StudentController::class, 'update'])->middleware('can:update,student')->name('students.update');
-    Route::delete('/students/{student}', [StudentController::class, 'destroy'])->middleware('can:delete,student')->name('students.destroy');
-    Route::get('/teachers', [TeacherController::class, 'index'])->middleware('can:view,App\Models\Teacher')->name('teachers');
-    Route::get('/teachers/layout', [TeacherController::class, 'downloadLayout'])->middleware('can:downloadLayout,App\Models\Teacher')->name('teachers.layout');
-    Route::post('/teachers/import', [TeacherController::class, 'import'])->middleware('can:import,App\Models\Teacher')->name('teachers.import');
-    Route::get('/teachers/export', [TeacherController::class, 'export'])->middleware('can:export,App\Models\Teacher')->name('teachers.export');
-    Route::get('/teachers/{teacher}/lesson-plans/create', [TeacherController::class, 'createLessonPlan'])->middleware('can:createLessonPlan,teacher')->name('teachers.lesson-plans.create');
-    Route::post('/teachers/{teacher}/lesson-plans', [TeacherController::class, 'storeLessonPlan'])->middleware('can:createLessonPlan,teacher')->name('teachers.lesson-plans.store');
-    Route::get('/teachers/{teacher}/grades', [TeacherGradeController::class, 'index'])->middleware('can:viewGrades,teacher')->name('teachers.grades');
-    Route::post('/teachers/{teacher}/grades', [TeacherGradeController::class, 'store'])->middleware('can:updateGrades,teacher')->name('teachers.grades.store');
-    Route::get('/teachers/{teacher}', [TeacherController::class, 'show'])->middleware('can:show,teacher')->name('teachers.show');
-    Route::post('/teachers', [TeacherController::class, 'store'])->middleware('can:create,App\Models\Teacher')->name('teachers.store');
-    Route::put('/teachers/{teacher}', [TeacherController::class, 'update'])->middleware('can:update,teacher')->name('teachers.update');
-    Route::delete('/teachers/{teacher}', [TeacherController::class, 'destroy'])->middleware('can:delete,teacher')->name('teachers.destroy');
-    Route::get('/classes', [SchoolClassController::class, 'index'])->middleware('can:view,App\Models\SchoolClass')->name('classes');
-    Route::post('/classes', [SchoolClassController::class, 'store'])->middleware('can:create,App\Models\SchoolClass')->name('classes.store');
-    Route::put('/classes/{schoolClass}', [SchoolClassController::class, 'update'])->middleware('can:update,schoolClass')->name('classes.update');
-    Route::delete('/classes/{schoolClass}', [SchoolClassController::class, 'destroy'])->middleware('can:delete,schoolClass')->name('classes.destroy');
-    Route::get('/attendance/mark', [AttendanceSessionController::class, 'create'])->middleware('can:mark,App\Models\AttendanceSession')->name('attendance.mark');
-    Route::get('/attendance/layout', [AttendanceSessionController::class, 'downloadLayout'])->middleware('can:downloadLayout,App\Models\AttendanceSession')->name('attendance.layout');
-    Route::post('/attendance/import', [AttendanceSessionController::class, 'import'])->middleware('can:import,App\Models\AttendanceSession')->name('attendance.import');
-    Route::get('/attendance/export', [AttendanceSessionController::class, 'export'])->middleware('can:export,App\Models\AttendanceSession')->name('attendance.export');
-    Route::get('/attendance/{attendanceSession}/edit', [AttendanceSessionController::class, 'edit'])->middleware('can:update,attendanceSession')->name('attendance.edit');
-    Route::get('/attendance', [AttendanceSessionController::class, 'index'])->middleware('can:view,App\Models\AttendanceSession')->name('attendance');
-    Route::post('/attendance', [AttendanceSessionController::class, 'store'])->middleware('can:create,App\Models\AttendanceSession')->name('attendance.store');
-    Route::put('/attendance/{attendanceSession}', [AttendanceSessionController::class, 'update'])->middleware('can:update,attendanceSession')->name('attendance.update');
-    Route::delete('/attendance/{attendanceSession}', [AttendanceSessionController::class, 'destroy'])->middleware('can:delete,attendanceSession')->name('attendance.destroy');
-    Route::get('/grades', [GradeRecordController::class, 'index'])->middleware('can:view,App\Models\GradeRecord')->name('grades');
-    Route::get('/grades/layout', [GradeRecordController::class, 'downloadLayout'])->middleware('can:downloadLayout,App\Models\GradeRecord')->name('grades.layout');
-    Route::post('/grades/import', [GradeRecordController::class, 'import'])->middleware('can:import,App\Models\GradeRecord')->name('grades.import');
-    Route::get('/grades/export', [GradeRecordController::class, 'export'])->middleware('can:export,App\Models\GradeRecord')->name('grades.export');
-    Route::post('/grades', [GradeRecordController::class, 'store'])->middleware('can:create,App\Models\GradeRecord')->name('grades.store');
-    Route::put('/grades/{gradeRecord}', [GradeRecordController::class, 'update'])->middleware('can:update,gradeRecord')->name('grades.update');
-    Route::delete('/grades/{gradeRecord}', [GradeRecordController::class, 'destroy'])->middleware('can:delete,gradeRecord')->name('grades.destroy');
-    Route::get('/homework', [HomeworkAssignmentController::class, 'index'])->middleware('can:view,App\Models\HomeworkAssignment')->name('homework');
-    Route::get('/homework/create', [HomeworkAssignmentController::class, 'create'])->middleware('can:create,App\Models\HomeworkAssignment')->name('homework.create');
-    Route::post('/homework', [HomeworkAssignmentController::class, 'store'])->middleware('can:create,App\Models\HomeworkAssignment')->name('homework.store');
-    Route::get('/homework/{homeworkAssignment}/edit', [HomeworkAssignmentController::class, 'edit'])->middleware('can:update,homeworkAssignment')->name('homework.edit');
-    Route::put('/homework/{homeworkAssignment}', [HomeworkAssignmentController::class, 'update'])->middleware('can:update,homeworkAssignment')->name('homework.update');
-    Route::delete('/homework/{homeworkAssignment}', [HomeworkAssignmentController::class, 'destroy'])->middleware('can:delete,homeworkAssignment')->name('homework.destroy');
-    Route::get('/lesson-plans/create', [LessonPlanController::class, 'create'])->middleware('can:create,App\Models\LessonPlan')->name('lesson-plans.create');
-    Route::get('/lesson-plans/{lessonPlan}/edit', [LessonPlanController::class, 'edit'])->middleware('can:update,lessonPlan')->name('lesson-plans.edit');
-    Route::get('/lesson-plans', [LessonPlanController::class, 'index'])->middleware('can:view,App\Models\LessonPlan')->name('lesson-plans');
-    Route::post('/lesson-plans', [LessonPlanController::class, 'store'])->middleware('can:create,App\Models\LessonPlan')->name('lesson-plans.store');
-    Route::put('/lesson-plans/{lessonPlan}', [LessonPlanController::class, 'update'])->middleware('can:update,lessonPlan')->name('lesson-plans.update');
-    Route::delete('/lesson-plans/{lessonPlan}', [LessonPlanController::class, 'destroy'])->middleware('can:delete,lessonPlan')->name('lesson-plans.destroy');
-    Route::get('/homework-submissions', [HomeworkSubmissionController::class, 'index'])->middleware('can:view,App\Models\HomeworkSubmission')->name('homework-submissions');
-    Route::get('/homework-submissions/create', [HomeworkSubmissionController::class, 'create'])->middleware('can:create,App\Models\HomeworkSubmission')->name('homework-submissions.create');
-    Route::post('/homework-submissions', [HomeworkSubmissionController::class, 'store'])->middleware('can:create,App\Models\HomeworkSubmission')->name('homework-submissions.store');
-    Route::put('/homework-submissions/{homeworkSubmission}', [HomeworkSubmissionController::class, 'update'])->middleware('can:update,homeworkSubmission')->name('homework-submissions.update');
-    Route::delete('/homework-submissions/{homeworkSubmission}', [HomeworkSubmissionController::class, 'destroy'])->middleware('can:delete,homeworkSubmission')->name('homework-submissions.destroy');
-    Route::get('/fee', [FeeChargeController::class, 'index'])->middleware('can:view,App\Models\FeeCharge')->name('fee');
-    Route::get('/fee/create', [FeeChargeController::class, 'create'])->middleware('can:create,App\Models\FeeCharge')->name('fee.create');
-    Route::post('/fee', [FeeChargeController::class, 'store'])->middleware('can:create,App\Models\FeeCharge')->name('fee.store');
-    Route::get('/fee/{feeCharge}/edit', [FeeChargeController::class, 'edit'])->middleware('can:update,feeCharge')->name('fee.edit');
-    Route::put('/fee/{feeCharge}', [FeeChargeController::class, 'update'])->middleware('can:update,feeCharge')->name('fee.update');
-    Route::delete('/fee/{feeCharge}', [FeeChargeController::class, 'destroy'])->middleware('can:delete,feeCharge')->name('fee.destroy');
-    Route::post('/fee/{feeCharge}/payments', [FeeChargeController::class, 'payment'])->middleware('can:payment,feeCharge')->name('fee.payments.store');
-    Route::get('/expenses', [ExpenseController::class, 'index'])->middleware('can:viewAny,App\Models\Expense')->name('expenses');
-    Route::post('/expenses', [ExpenseController::class, 'store'])->middleware('can:create,App\Models\Expense')->name('expenses.store');
-    Route::put('/expenses/{expense}', [ExpenseController::class, 'update'])->middleware('can:update,expense')->name('expenses.update');
-    Route::delete('/expenses/{expense}', [ExpenseController::class, 'destroy'])->middleware('can:delete,expense')->name('expenses.destroy');
-    Route::post('/expense-categories', [ExpenseController::class, 'storeCategory'])->middleware('can:create,App\Models\ExpenseCategory')->name('expense-categories.store');
-    Route::put('/expense-categories/{expenseCategory}', [ExpenseController::class, 'updateCategory'])->middleware('can:update,expenseCategory')->name('expense-categories.update');
-    Route::delete('/expense-categories/{expenseCategory}', [ExpenseController::class, 'destroyCategory'])->middleware('can:delete,expenseCategory')->name('expense-categories.destroy');
-    Route::get('/exam', [ExamController::class, 'index'])->middleware('can:view,App\Models\Exam')->name('exam');
-    Route::post('/exam', [ExamController::class, 'store'])->middleware('can:create,App\Models\Exam')->name('exam.store');
-    Route::put('/exam/{exam}', [ExamController::class, 'update'])->middleware('can:update,exam')->name('exam.update');
-    Route::delete('/exam/{exam}', [ExamController::class, 'destroy'])->middleware('can:delete,exam')->name('exam.destroy');
-    Route::get('/exam-results', [ExamResultController::class, 'index'])->middleware('can:view,App\Models\ExamResult')->name('exam-results');
-    Route::post('/exam-results', [ExamResultController::class, 'store'])->middleware('can:create,App\Models\ExamResult')->name('exam-results.store');
-    Route::put('/exam-results/{examResult}', [ExamResultController::class, 'update'])->middleware('can:update,examResult')->name('exam-results.update');
-    Route::delete('/exam-results/{examResult}', [ExamResultController::class, 'destroy'])->middleware('can:delete,examResult')->name('exam-results.destroy');
+
+    // Levels
+    Route::prefix('levels')->group(function () {
+        Route::get('/', [LevelController::class, 'index'])->can('view', Level::class)->name('levels');
+        Route::post('/', [LevelController::class, 'store'])->can('create', Level::class)->name('levels.store');
+        Route::put('/{level}', [LevelController::class, 'update'])->can('update', 'level')->name('levels.update');
+        Route::delete('/{level}', [LevelController::class, 'destroy'])->can('delete', 'level')->name('levels.destroy');
+    });
+
+    // Students
+    Route::prefix('students')->group(function () {
+        Route::get('/layout', [StudentController::class, 'downloadLayout'])->can('downloadLayout', Student::class)->name('students.layout');
+        Route::post('/import', [StudentController::class, 'import'])->can('import', Student::class)->name('students.import');
+        Route::get('/export', [StudentController::class, 'export'])->can('export', Student::class)->name('students.export');
+        Route::get('/create', [StudentController::class, 'create'])->can('create', Student::class)->name('students.create');
+        Route::get('/', [StudentController::class, 'index'])->can('view', Student::class)->name('students');
+        Route::post('/', [StudentController::class, 'store'])->can('create', Student::class)->name('students.store');
+        Route::get('/{student}/edit', [StudentController::class, 'edit'])->can('update', 'student')->name('students.edit');
+        Route::get('/{student}', [StudentController::class, 'show'])->can('show', 'student')->name('students.show');
+        Route::put('/{student}', [StudentController::class, 'update'])->can('update', 'student')->name('students.update');
+        Route::delete('/{student}', [StudentController::class, 'destroy'])->can('delete', 'student')->name('students.destroy');
+    });
+
+    // Teachers
+    Route::prefix('teachers')->group(function () {
+        Route::get('/layout', [TeacherController::class, 'downloadLayout'])->can('downloadLayout', Teacher::class)->name('teachers.layout');
+        Route::post('/import', [TeacherController::class, 'import'])->can('import', Teacher::class)->name('teachers.import');
+        Route::get('/export', [TeacherController::class, 'export'])->can('export', Teacher::class)->name('teachers.export');
+        Route::get('/{teacher}/lesson-plans/create', [TeacherController::class, 'createLessonPlan'])->can('createLessonPlan', 'teacher')->name('teachers.lesson-plans.create');
+        Route::post('/{teacher}/lesson-plans', [TeacherController::class, 'storeLessonPlan'])->can('createLessonPlan', 'teacher')->name('teachers.lesson-plans.store');
+        Route::get('/{teacher}/grades', [TeacherGradeController::class, 'index'])->can('viewGrades', 'teacher')->name('teachers.grades');
+        Route::post('/{teacher}/grades', [TeacherGradeController::class, 'store'])->can('updateGrades', 'teacher')->name('teachers.grades.store');
+        Route::get('/', [TeacherController::class, 'index'])->can('view', Teacher::class)->name('teachers');
+        Route::post('/', [TeacherController::class, 'store'])->can('create', Teacher::class)->name('teachers.store');
+        Route::get('/{teacher}', [TeacherController::class, 'show'])->can('show', 'teacher')->name('teachers.show');
+        Route::put('/{teacher}', [TeacherController::class, 'update'])->can('update', 'teacher')->name('teachers.update');
+        Route::delete('/{teacher}', [TeacherController::class, 'destroy'])->can('delete', 'teacher')->name('teachers.destroy');
+    });
+
+    // Classes
+    Route::prefix('classes')->group(function () {
+        Route::get('/', [SchoolClassController::class, 'index'])->can('view', SchoolClass::class)->name('classes');
+        Route::post('/', [SchoolClassController::class, 'store'])->can('create', SchoolClass::class)->name('classes.store');
+        Route::put('/{schoolClass}', [SchoolClassController::class, 'update'])->can('update', 'schoolClass')->name('classes.update');
+        Route::delete('/{schoolClass}', [SchoolClassController::class, 'destroy'])->can('delete', 'schoolClass')->name('classes.destroy');
+    });
+
+    // Attendance
+    Route::prefix('attendance')->group(function () {
+        Route::get('/layout', [AttendanceSessionController::class, 'downloadLayout'])->can('downloadLayout', AttendanceSession::class)->name('attendance.layout');
+        Route::post('/import', [AttendanceSessionController::class, 'import'])->can('import', AttendanceSession::class)->name('attendance.import');
+        Route::get('/export', [AttendanceSessionController::class, 'export'])->can('export', AttendanceSession::class)->name('attendance.export');
+        Route::get('/mark', [AttendanceSessionController::class, 'create'])->can('mark', AttendanceSession::class)->name('attendance.mark');
+        Route::get('/{attendanceSession}/edit', [AttendanceSessionController::class, 'edit'])->can('update', 'attendanceSession')->name('attendance.edit');
+        Route::get('/', [AttendanceSessionController::class, 'index'])->can('view', AttendanceSession::class)->name('attendance');
+        Route::post('/', [AttendanceSessionController::class, 'store'])->can('create', AttendanceSession::class)->name('attendance.store');
+        Route::put('/{attendanceSession}', [AttendanceSessionController::class, 'update'])->can('update', 'attendanceSession')->name('attendance.update');
+        Route::delete('/{attendanceSession}', [AttendanceSessionController::class, 'destroy'])->can('delete', 'attendanceSession')->name('attendance.destroy');
+    });
+
+    // Grades
+    Route::prefix('grades')->group(function () {
+        Route::get('/layout', [GradeRecordController::class, 'downloadLayout'])->can('downloadLayout', GradeRecord::class)->name('grades.layout');
+        Route::post('/import', [GradeRecordController::class, 'import'])->can('import', GradeRecord::class)->name('grades.import');
+        Route::get('/export', [GradeRecordController::class, 'export'])->can('export', GradeRecord::class)->name('grades.export');
+        Route::get('/', [GradeRecordController::class, 'index'])->can('view', GradeRecord::class)->name('grades');
+        Route::post('/', [GradeRecordController::class, 'store'])->can('create', GradeRecord::class)->name('grades.store');
+        Route::put('/{gradeRecord}', [GradeRecordController::class, 'update'])->can('update', 'gradeRecord')->name('grades.update');
+        Route::delete('/{gradeRecord}', [GradeRecordController::class, 'destroy'])->can('delete', 'gradeRecord')->name('grades.destroy');
+    });
+
+    // Homework Assignments
+    Route::prefix('homework')->group(function () {
+        Route::get('/create', [HomeworkAssignmentController::class, 'create'])->can('create', HomeworkAssignment::class)->name('homework.create');
+        Route::get('/{homeworkAssignment}/edit', [HomeworkAssignmentController::class, 'edit'])->can('update', 'homeworkAssignment')->name('homework.edit');
+        Route::get('/', [HomeworkAssignmentController::class, 'index'])->can('view', HomeworkAssignment::class)->name('homework');
+        Route::post('/', [HomeworkAssignmentController::class, 'store'])->can('create', HomeworkAssignment::class)->name('homework.store');
+        Route::put('/{homeworkAssignment}', [HomeworkAssignmentController::class, 'update'])->can('update', 'homeworkAssignment')->name('homework.update');
+        Route::delete('/{homeworkAssignment}', [HomeworkAssignmentController::class, 'destroy'])->can('delete', 'homeworkAssignment')->name('homework.destroy');
+    });
+
+    // Lesson Plans
+    Route::prefix('lesson-plans')->group(function () {
+        Route::get('/create', [LessonPlanController::class, 'create'])->can('create', LessonPlan::class)->name('lesson-plans.create');
+        Route::get('/{lessonPlan}/edit', [LessonPlanController::class, 'edit'])->can('update', 'lessonPlan')->name('lesson-plans.edit');
+        Route::get('/', [LessonPlanController::class, 'index'])->can('view', LessonPlan::class)->name('lesson-plans');
+        Route::post('/', [LessonPlanController::class, 'store'])->can('create', LessonPlan::class)->name('lesson-plans.store');
+        Route::put('/{lessonPlan}', [LessonPlanController::class, 'update'])->can('update', 'lessonPlan')->name('lesson-plans.update');
+        Route::delete('/{lessonPlan}', [LessonPlanController::class, 'destroy'])->can('delete', 'lessonPlan')->name('lesson-plans.destroy');
+    });
+
+    // Homework Submissions
+    Route::prefix('homework-submissions')->group(function () {
+        Route::get('/create', [HomeworkSubmissionController::class, 'create'])->can('create', HomeworkSubmission::class)->name('homework-submissions.create');
+        Route::get('/', [HomeworkSubmissionController::class, 'index'])->can('view', HomeworkSubmission::class)->name('homework-submissions');
+        Route::post('/', [HomeworkSubmissionController::class, 'store'])->can('create', HomeworkSubmission::class)->name('homework-submissions.store');
+        Route::put('/{homeworkSubmission}', [HomeworkSubmissionController::class, 'update'])->can('update', 'homeworkSubmission')->name('homework-submissions.update');
+        Route::delete('/{homeworkSubmission}', [HomeworkSubmissionController::class, 'destroy'])->can('delete', 'homeworkSubmission')->name('homework-submissions.destroy');
+    });
+
+    // Fee Charges
+    Route::prefix('fee')->group(function () {
+        Route::get('/create', [FeeChargeController::class, 'create'])->can('create', FeeCharge::class)->name('fee.create');
+        Route::get('/{feeCharge}/edit', [FeeChargeController::class, 'edit'])->can('update', 'feeCharge')->name('fee.edit');
+        Route::get('/', [FeeChargeController::class, 'index'])->can('view', FeeCharge::class)->name('fee');
+        Route::post('/', [FeeChargeController::class, 'store'])->can('create', FeeCharge::class)->name('fee.store');
+        Route::put('/{feeCharge}', [FeeChargeController::class, 'update'])->can('update', 'feeCharge')->name('fee.update');
+        Route::delete('/{feeCharge}', [FeeChargeController::class, 'destroy'])->can('delete', 'feeCharge')->name('fee.destroy');
+        Route::post('/{feeCharge}/payments', [FeeChargeController::class, 'payment'])->can('payment', 'feeCharge')->name('fee.payments.store');
+    });
+
+    // Expenses
+    Route::prefix('expenses')->group(function () {
+        Route::get('/', [ExpenseController::class, 'index'])->can('viewAny', Expense::class)->name('expenses');
+        Route::post('/', [ExpenseController::class, 'store'])->can('create', Expense::class)->name('expenses.store');
+        Route::put('/{expense}', [ExpenseController::class, 'update'])->can('update', 'expense')->name('expenses.update');
+        Route::delete('/{expense}', [ExpenseController::class, 'destroy'])->can('delete', 'expense')->name('expenses.destroy');
+    });
+
+    // Expense Categories
+    Route::prefix('expense-categories')->group(function () {
+        Route::post('/', [ExpenseController::class, 'storeCategory'])->can('create', ExpenseCategory::class)->name('expense-categories.store');
+        Route::put('/{expenseCategory}', [ExpenseController::class, 'updateCategory'])->can('update', 'expenseCategory')->name('expense-categories.update');
+        Route::delete('/{expenseCategory}', [ExpenseController::class, 'destroyCategory'])->can('delete', 'expenseCategory')->name('expense-categories.destroy');
+    });
+
+    // Exams
+    Route::prefix('exam')->group(function () {
+        Route::get('/', [ExamController::class, 'index'])->can('view', Exam::class)->name('exam');
+        Route::post('/', [ExamController::class, 'store'])->can('create', Exam::class)->name('exam.store');
+        Route::put('/{exam}', [ExamController::class, 'update'])->can('update', 'exam')->name('exam.update');
+        Route::delete('/{exam}', [ExamController::class, 'destroy'])->can('delete', 'exam')->name('exam.destroy');
+    });
+
+    // Exam Results
+    Route::prefix('exam-results')->group(function () {
+        Route::get('/', [ExamResultController::class, 'index'])->can('view', ExamResult::class)->name('exam-results');
+        Route::post('/', [ExamResultController::class, 'store'])->can('create', ExamResult::class)->name('exam-results.store');
+        Route::put('/{examResult}', [ExamResultController::class, 'update'])->can('update', 'examResult')->name('exam-results.update');
+        Route::delete('/{examResult}', [ExamResultController::class, 'destroy'])->can('delete', 'examResult')->name('exam-results.destroy');
+    });
+
+    // Reports / Honor Roll
     Route::get('/reports', fn () => Inertia::render('admin/reports/index'))->middleware('can:viewReports')->name('reports');
-    Route::get('/certs', [CertificateController::class, 'index'])->middleware('can:view,App\Models\Certificate')->name('certs');
-    Route::post('/certs', [CertificateController::class, 'store'])->middleware('can:create,App\Models\Certificate')->name('certs.store');
-    Route::put('/certs/{certificate}', [CertificateController::class, 'update'])->middleware('can:update,certificate')->name('certs.update');
-    Route::delete('/certs/{certificate}', [CertificateController::class, 'destroy'])->middleware('can:delete,certificate')->name('certs.destroy');
     Route::get('/honor-roll', fn () => Inertia::render('admin/honor-roll/index'))->middleware('can:viewHonorRoll')->name('honor-roll');
-    Route::get('/notifications', [NotificationController::class, 'index'])->middleware('can:view,App\Models\Notification')->name('notifications');
-    Route::post('/notifications', [NotificationController::class, 'store'])->middleware('can:create,App\Models\Notification')->name('notifications.store');
-    Route::put('/notifications/{notification}', [NotificationController::class, 'update'])->middleware('can:update,notification')->name('notifications.update');
-    Route::put('/notifications/{notification}/read', [NotificationController::class, 'markRead'])->middleware('can:markRead,notification')->name('notifications.read');
-    Route::put('/notifications-read', [NotificationController::class, 'markAllRead'])->middleware('can:markAllRead,App\Models\Notification')->name('notifications.read-all');
-    Route::delete('/notifications/{notification}', [NotificationController::class, 'destroy'])->middleware('can:delete,notification')->name('notifications.destroy');
-    Route::get('/activity-logs', [ActivityLogController::class, 'index'])->middleware('can:view,App\Models\ActivityLog')->name('activity-logs');
-    Route::post('/activity-logs', [ActivityLogController::class, 'store'])->middleware('can:create,App\Models\ActivityLog')->name('activity-logs.store');
-    Route::put('/activity-logs/{activityLog}', [ActivityLogController::class, 'update'])->middleware('can:update,activityLog')->name('activity-logs.update');
-    Route::delete('/activity-logs/{activityLog}', [ActivityLogController::class, 'destroy'])->middleware('can:delete,activityLog')->name('activity-logs.destroy');
-    Route::get('/users', [UserController::class, 'index'])->middleware('can:view,App\Models\User')->name('users');
-    Route::post('/users', [UserController::class, 'store'])->middleware('can:create,App\Models\User')->name('users.store');
-    Route::put('/users/{user}', [UserController::class, 'update'])->middleware('can:update,user')->name('users.update');
-    Route::delete('/users/{user}', [UserController::class, 'destroy'])->middleware('can:delete,user')->name('users.destroy');
+
+    // Certificates
+    Route::prefix('certs')->group(function () {
+        Route::get('/', [CertificateController::class, 'index'])->can('view', Certificate::class)->name('certs');
+        Route::post('/', [CertificateController::class, 'store'])->can('create', Certificate::class)->name('certs.store');
+        Route::put('/{certificate}', [CertificateController::class, 'update'])->can('update', 'certificate')->name('certs.update');
+        Route::delete('/{certificate}', [CertificateController::class, 'destroy'])->can('delete', 'certificate')->name('certs.destroy');
+    });
+
+    // Notifications
+    Route::prefix('notifications')->group(function () {
+        Route::put('/read', [NotificationController::class, 'markAllRead'])->can('markAllRead', Notification::class)->name('notifications.read-all');
+        Route::get('/', [NotificationController::class, 'index'])->can('view', Notification::class)->name('notifications');
+        Route::post('/', [NotificationController::class, 'store'])->can('create', Notification::class)->name('notifications.store');
+        Route::put('/{notification}', [NotificationController::class, 'update'])->can('update', 'notification')->name('notifications.update');
+        Route::put('/{notification}/read', [NotificationController::class, 'markRead'])->can('markRead', 'notification')->name('notifications.read');
+        Route::delete('/{notification}', [NotificationController::class, 'destroy'])->can('delete', 'notification')->name('notifications.destroy');
+    });
+
+    // Activity Logs
+    Route::prefix('activity-logs')->group(function () {
+        Route::get('/', [ActivityLogController::class, 'index'])->can('view', ActivityLog::class)->name('activity-logs');
+        Route::post('/', [ActivityLogController::class, 'store'])->can('create', ActivityLog::class)->name('activity-logs.store');
+        Route::put('/{activityLog}', [ActivityLogController::class, 'update'])->can('update', 'activityLog')->name('activity-logs.update');
+        Route::delete('/{activityLog}', [ActivityLogController::class, 'destroy'])->can('delete', 'activityLog')->name('activity-logs.destroy');
+    });
+
+    // Users
+    Route::prefix('users')->group(function () {
+        Route::get('/', [UserController::class, 'index'])->can('view', User::class)->name('users');
+        Route::post('/', [UserController::class, 'store'])->can('create', User::class)->name('users.store');
+        Route::put('/{user}', [UserController::class, 'update'])->can('update', 'user')->name('users.update');
+        Route::delete('/{user}', [UserController::class, 'destroy'])->can('delete', 'user')->name('users.destroy');
+    });
+
+    // Roles & Permissions
     Route::get('/roles-permissions', [RolePermissionController::class, 'index'])
         ->middleware('can:viewRolesPermissions')
         ->name('roles-permissions');
-    Route::post('/roles', [RolePermissionController::class, 'storeRole'])->middleware('can:create,Spatie\Permission\Models\Role')->name('roles.store');
-    Route::put('/roles/{role}', [RolePermissionController::class, 'updateRole'])->middleware('can:update,role')->name('roles.update');
-    Route::delete('/roles/{role}', [RolePermissionController::class, 'destroyRole'])->middleware('can:delete,role')->name('roles.destroy');
-    Route::post('/permissions', [RolePermissionController::class, 'storePermission'])->middleware('can:create,Spatie\Permission\Models\Permission')->name('permissions.store');
-    Route::put('/permissions/{permission}', [RolePermissionController::class, 'updatePermission'])->middleware('can:update,permission')->name('permissions.update');
-    Route::delete('/permissions/{permission}', [RolePermissionController::class, 'destroyPermission'])->middleware('can:delete,permission')->name('permissions.destroy');
-    Route::get('/settings', [SchoolSettingController::class, 'index'])->middleware('can:view,App\Models\SchoolSetting')->name('settings');
-    Route::put('/settings/{group}', [SchoolSettingController::class, 'update'])->middleware('can:update,App\Models\SchoolSetting')->name('settings.update');
-    Route::post('/settings/upload-image', [SchoolSettingController::class, 'uploadImage'])->middleware('can:update,App\Models\SchoolSetting')->name('settings.upload-image');
+
+    Route::prefix('roles')->group(function () {
+        Route::post('/', [RolePermissionController::class, 'storeRole'])->can('create', Role::class)->name('roles.store');
+        Route::put('/{role}', [RolePermissionController::class, 'updateRole'])->can('update', 'role')->name('roles.update');
+        Route::delete('/{role}', [RolePermissionController::class, 'destroyRole'])->can('delete', 'role')->name('roles.destroy');
+    });
+
+    Route::prefix('permissions')->group(function () {
+        Route::post('/', [RolePermissionController::class, 'storePermission'])->can('create', Permission::class)->name('permissions.store');
+        Route::put('/{permission}', [RolePermissionController::class, 'updatePermission'])->can('update', 'permission')->name('permissions.update');
+        Route::delete('/{permission}', [RolePermissionController::class, 'destroyPermission'])->can('delete', 'permission')->name('permissions.destroy');
+    });
+
+    // Settings
+    Route::prefix('settings')->group(function () {
+        Route::get('/', [SchoolSettingController::class, 'index'])->can('view', SchoolSetting::class)->name('settings');
+        Route::put('/{group}', [SchoolSettingController::class, 'update'])->can('update', SchoolSetting::class)->name('settings.update');
+        Route::post('/upload-image', [SchoolSettingController::class, 'uploadImage'])->can('update', SchoolSetting::class)->name('settings.upload-image');
+    });
+});
+
+// Student Portal
+Route::middleware(['auth', 'verified'])->prefix('student')->name('student.')->group(function () {
+    Route::get('/dashboard', [StudentPortalController::class, 'dashboard'])->name('dashboard');
+    Route::get('/attendance', [StudentPortalController::class, 'attendance'])->name('attendance');
+    Route::get('/grades', [StudentPortalController::class, 'grades'])->name('grades');
+    Route::get('/homework', [StudentPortalController::class, 'homework'])->name('homework');
+    Route::get('/fees', [StudentPortalController::class, 'fees'])->name('fees');
+    Route::get('/exams', [StudentPortalController::class, 'exams'])->name('exams');
+    Route::get('/notifications', [StudentPortalController::class, 'notifications'])->name('notifications');
+    Route::get('/profile', [StudentPortalController::class, 'profile'])->name('profile');
 });
 
 require __DIR__.'/settings.php';

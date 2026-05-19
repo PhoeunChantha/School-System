@@ -2,6 +2,7 @@
 import { destroy, store, update } from '@/actions/App/Http/Controllers/Backends/LevelController';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { useAdminPermissions } from '@/hooks/use-admin-permissions';
 import AdminShell from '@/pages/admin/shell';
 import { Pagination } from '@/pages/admin/ui';
 import { router, useForm } from '@inertiajs/react';
@@ -58,6 +59,11 @@ function sortLevels(list: Level[], order: OrderKey): Level[] {
 }
 
 export default function LevelsPage({ levels }: LevelsPageProps) {
+    const { can, canAny } = useAdminPermissions();
+    const canCreate = can('levels.create');
+    const canUpdate = can('levels.update');
+    const canDelete = can('levels.delete');
+    const canManageLevels = canAny(['levels.update', 'levels.delete']);
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [editing, setEditing] = useState<Level | null>(null);
     const [deleteTarget, setDeleteTarget] = useState<Level | null>(null);
@@ -74,6 +80,10 @@ export default function LevelsPage({ levels }: LevelsPageProps) {
     });
 
     const openAdd = () => {
+        if (!canCreate) {
+            return;
+        }
+
         reset();
         setData({ name: '', monthly_fee: '', sort_order: 0, is_active: true });
         setEditing(null);
@@ -81,6 +91,10 @@ export default function LevelsPage({ levels }: LevelsPageProps) {
     };
 
     const openEdit = (level: Level) => {
+        if (!canUpdate) {
+            return;
+        }
+
         setData({
             name: level.name,
             monthly_fee: level.monthlyFee,
@@ -121,6 +135,11 @@ export default function LevelsPage({ levels }: LevelsPageProps) {
 
     const confirmDelete = () => {
         if (!deleteTarget) return;
+        if (!canDelete) {
+            setDeleteTarget(null);
+            return;
+        }
+
         router.delete(destroy.url((deleteTarget.routeKey ?? deleteTarget.id) as never), {
             preserveScroll: true,
             onSuccess: () => {
@@ -164,7 +183,7 @@ export default function LevelsPage({ levels }: LevelsPageProps) {
                         <div style={{ fontWeight: 800, fontSize: 18, color: '#1e293b' }}>Levels</div>
                         <div style={{ fontSize: 12, color: '#94a3b8' }}>{levels.length} level{levels.length !== 1 ? 's' : ''} total</div>
                     </div>
-                    <button onClick={openAdd} style={{ background: '#2563eb', color: 'white', border: 'none', borderRadius: 10, padding: '10px 20px', fontWeight: 700, fontSize: 13, cursor: 'pointer', display: 'inline-flex', alignItems: 'center', gap: 6 }}><Plus size={15} /> Add Level</button>
+                    {canCreate && <button onClick={openAdd} style={{ background: '#2563eb', color: 'white', border: 'none', borderRadius: 10, padding: '10px 20px', fontWeight: 700, fontSize: 13, cursor: 'pointer', display: 'inline-flex', alignItems: 'center', gap: 6 }}><Plus size={15} /> Add Level</button>}
                 </div>
 
                 {/* Modal Dialog */}
@@ -257,7 +276,7 @@ export default function LevelsPage({ levels }: LevelsPageProps) {
                         <table className="data-table">
                             <thead>
                                 <tr style={{ borderBottom: '1px solid #f1f5f9' }}>
-                                    {['#', 'Name', 'Students', 'Status', ''].map((h, i) => (
+                                    {['#', 'Name', 'Students', 'Status', ...(canManageLevels ? [''] : [])].map((h, i) => (
                                         <th key={i} style={{ padding: '10px 16px', textAlign: 'left', fontSize: 11, fontWeight: 700, color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '0.05em' }}>{h}</th>
                                     ))}
                                 </tr>
@@ -265,7 +284,7 @@ export default function LevelsPage({ levels }: LevelsPageProps) {
                             <tbody>
                                 {paginated.length === 0 && (
                                     <tr>
-                                        <td colSpan={5} style={{ padding: '40px 16px', textAlign: 'center', color: '#94a3b8', fontSize: 13 }}>
+                                        <td colSpan={canManageLevels ? 5 : 4} style={{ padding: '40px 16px', textAlign: 'center', color: '#94a3b8', fontSize: 13 }}>
                                             {search ? 'No levels match your search.' : 'No levels yet. Click "+ Add Level" to create one.'}
                                         </td>
                                     </tr>
@@ -282,10 +301,12 @@ export default function LevelsPage({ levels }: LevelsPageProps) {
                                                 {level.isActive ? 'Active' : 'Inactive'}
                                             </span>
                                         </td>
-                                        <td style={{ padding: '12px 16px', textAlign: 'right' }}>
-                                            <button onClick={() => openEdit(level)} style={{ background: '#eff6ff', color: '#2563eb', border: 'none', borderRadius: 8, padding: '6px 14px', fontWeight: 700, fontSize: 12, cursor: 'pointer', marginRight: 6, display: 'inline-flex', alignItems: 'center', gap: 5 }}><Edit3 size={13} /> Edit</button>
-                                            <button onClick={() => setDeleteTarget(level)} style={{ background: '#fef2f2', color: '#dc2626', border: 'none', borderRadius: 8, padding: '6px 14px', fontWeight: 700, fontSize: 12, cursor: 'pointer', display: 'inline-flex', alignItems: 'center', gap: 5 }}><Trash2 size={13} /> Delete</button>
-                                        </td>
+                                        {canManageLevels && (
+                                            <td style={{ padding: '12px 16px', textAlign: 'right' }}>
+                                                {canUpdate && <button onClick={() => openEdit(level)} style={{ background: '#eff6ff', color: '#2563eb', border: 'none', borderRadius: 8, padding: '6px 14px', fontWeight: 700, fontSize: 12, cursor: 'pointer', marginRight: 6, display: 'inline-flex', alignItems: 'center', gap: 5 }}><Edit3 size={13} /> Edit</button>}
+                                                {canDelete && <button onClick={() => setDeleteTarget(level)} style={{ background: '#fef2f2', color: '#dc2626', border: 'none', borderRadius: 8, padding: '6px 14px', fontWeight: 700, fontSize: 12, cursor: 'pointer', display: 'inline-flex', alignItems: 'center', gap: 5 }}><Trash2 size={13} /> Delete</button>}
+                                            </td>
+                                        )}
                                     </tr>
                                 ))}
                             </tbody>
@@ -326,6 +347,4 @@ export default function LevelsPage({ levels }: LevelsPageProps) {
         </AdminShell>
     );
 }
-
-
 

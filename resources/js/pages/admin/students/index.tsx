@@ -1,5 +1,6 @@
 ﻿import { useEffect, useMemo, useRef, useState } from 'react';
 import { create as createStudent, destroy, downloadLayout as downloadStudentLayout, edit as editStudent, exportMethod as exportStudents, importMethod as importStudents, show as showStudent } from '@/actions/App/Http/Controllers/Backends/StudentController';
+import { useAdminPermissions } from '@/hooks/use-admin-permissions';
 import AdminShell from '@/pages/admin/shell';
 import { AdminSelect, Avatar, Badge, FeeTag, KH, Pagination, PBar, ScoreChip } from '@/pages/admin/ui';
 import { Link, router } from '@inertiajs/react';
@@ -155,9 +156,12 @@ function useInjectCSS(css: string) {
 }
 
 /* â”€â”€â”€ Mobile card for one student â”€â”€â”€ */
-function StudentCard({ student, onSelect, selected, onEdit, onDelete }: {
+function StudentCard({ student, onSelect, selected, canShow, canUpdate, canDelete, onEdit, onDelete }: {
     student: Student;
     selected: boolean;
+    canShow: boolean;
+    canUpdate: boolean;
+    canDelete: boolean;
     onSelect: () => void;
     onEdit: () => void;
     onDelete: () => void;
@@ -210,24 +214,30 @@ function StudentCard({ student, onSelect, selected, onEdit, onDelete }: {
 
             {/* Actions */}
             <div style={{ display: 'flex', gap: 8 }} onClick={e => e.stopPropagation()}>
-                <Link
-                    href={showStudent.url((student.routeKey ?? student.id) as never)}
-                    style={{ flex: 1, textAlign: 'center', background: '#f0fdf4', color: '#16a34a', border: '1px solid #bbf7d0', borderRadius: 8, padding: '7px', fontSize: 12, fontWeight: 700, textDecoration: 'none', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: 5 }}
-                >
-                    <Eye size={13} /> View
-                </Link>
-                <Link
-                    href={editStudent.url((student.routeKey ?? student.id) as never)}
-                    style={{ flex: 1, textAlign: 'center', background: '#eff6ff', color: '#2563eb', border: '1px solid #bfdbfe', borderRadius: 8, padding: '7px', fontSize: 12, fontWeight: 700, textDecoration: 'none', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: 5 }}
-                >
-                    <Edit3 size={13} /> Edit
-                </Link>
-                <button
-                    onClick={onDelete}
-                    style={{ flex: 1, background: '#fff1f2', color: '#ef4444', border: '1px solid #fecaca', borderRadius: 8, padding: '7px', fontSize: 12, fontWeight: 700, cursor: 'pointer', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: 5 }}
-                >
-                    <Trash2 size={13} /> Delete
-                </button>
+                {canShow && (
+                    <Link
+                        href={showStudent.url((student.routeKey ?? student.id) as never)}
+                        style={{ flex: 1, textAlign: 'center', background: '#f0fdf4', color: '#16a34a', border: '1px solid #bbf7d0', borderRadius: 8, padding: '7px', fontSize: 12, fontWeight: 700, textDecoration: 'none', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: 5 }}
+                    >
+                        <Eye size={13} /> View
+                    </Link>
+                )}
+                {canUpdate && (
+                    <Link
+                        href={editStudent.url((student.routeKey ?? student.id) as never)}
+                        style={{ flex: 1, textAlign: 'center', background: '#eff6ff', color: '#2563eb', border: '1px solid #bfdbfe', borderRadius: 8, padding: '7px', fontSize: 12, fontWeight: 700, textDecoration: 'none', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: 5 }}
+                    >
+                        <Edit3 size={13} /> Edit
+                    </Link>
+                )}
+                {canDelete && (
+                    <button
+                        onClick={onDelete}
+                        style={{ flex: 1, background: '#fff1f2', color: '#ef4444', border: '1px solid #fecaca', borderRadius: 8, padding: '7px', fontSize: 12, fontWeight: 700, cursor: 'pointer', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: 5 }}
+                    >
+                        <Trash2 size={13} /> Delete
+                    </button>
+                )}
             </div>
         </div>
     );
@@ -235,6 +245,15 @@ function StudentCard({ student, onSelect, selected, onEdit, onDelete }: {
 
 export default function StudentsPage({ students }: StudentsPageProps) {
     useInjectCSS(RESPONSIVE_CSS);
+    const { can, canAny } = useAdminPermissions();
+    const canShow = can('students.show');
+    const canCreate = can('students.create');
+    const canUpdate = can('students.update');
+    const canDelete = can('students.delete');
+    const canImport = can('students.import');
+    const canExport = can('students.export');
+    const canDownloadLayout = can('students.download-layout');
+    const canManageStudents = canAny(['students.show', 'students.update', 'students.delete']);
 
     const [search, setSearch] = useState('');
     const [filter, setFilter] = useState('all');
@@ -269,6 +288,11 @@ export default function StudentsPage({ students }: StudentsPageProps) {
 
     const confirmDelete = () => {
         if (!deleteTarget) return;
+        if (!canDelete) {
+            setDeleteTarget(null);
+            return;
+        }
+
         router.delete(destroy.url((deleteTarget.routeKey ?? deleteTarget.id) as never), {
             preserveScroll: true,
             onSuccess: () => {
@@ -283,6 +307,7 @@ export default function StudentsPage({ students }: StudentsPageProps) {
 
     const importFile = (file: File | null) => {
         if (!file) return;
+        if (!canImport) return;
 
         router.post(importStudents.url(), { import_file: file }, {
             forceFormData: true,
@@ -326,22 +351,30 @@ export default function StudentsPage({ students }: StudentsPageProps) {
                         ))}
                     </div>
                     <div className="students-top-actions" style={{ marginLeft: 'auto', display: 'flex', gap: 8, flexWrap: 'wrap', alignItems: 'center' }}>
-                        <a href={downloadStudentLayout.url()} style={{ background: '#f8fafc', color: '#475569', border: '1px solid #dbe3ef', borderRadius: 10, padding: '10px 12px', fontWeight: 800, fontSize: 12, cursor: 'pointer', textDecoration: 'none', whiteSpace: 'nowrap', display: 'inline-flex', alignItems: 'center', gap: 6 }}>
-                            <Download size={14} /> Layout
-                        </a>
-                        <button type="button" onClick={() => importInputRef.current?.click()} style={{ background: '#fff7ed', color: '#ea580c', border: '1px solid #fed7aa', borderRadius: 10, padding: '10px 12px', fontWeight: 800, fontSize: 12, cursor: 'pointer', whiteSpace: 'nowrap', display: 'inline-flex', alignItems: 'center', gap: 6 }}>
-                            <Upload size={14} /> Import
-                        </button>
-                        <a href={exportStudents.url()} style={{ background: '#f0fdf4', color: '#16a34a', border: '1px solid #bbf7d0', borderRadius: 10, padding: '10px 12px', fontWeight: 800, fontSize: 12, cursor: 'pointer', textDecoration: 'none', whiteSpace: 'nowrap', display: 'inline-flex', alignItems: 'center', gap: 6 }}>
-                            <FileDown size={14} /> Export
-                        </a>
-                        <Link
-                            href={createStudent.url()}
-                            className="students-add-btn"
-                            style={{ background: '#2563eb', color: 'white', border: 'none', borderRadius: 10, padding: '10px 18px', fontWeight: 700, fontSize: 13, cursor: 'pointer', textDecoration: 'none', whiteSpace: 'nowrap', display: 'inline-flex', alignItems: 'center', gap: 6 }}
-                        >
-                            <Plus size={14} /> Add Student
-                        </Link>
+                        {canDownloadLayout && (
+                            <a href={downloadStudentLayout.url()} style={{ background: '#f8fafc', color: '#475569', border: '1px solid #dbe3ef', borderRadius: 10, padding: '10px 12px', fontWeight: 800, fontSize: 12, cursor: 'pointer', textDecoration: 'none', whiteSpace: 'nowrap', display: 'inline-flex', alignItems: 'center', gap: 6 }}>
+                                <Download size={14} /> Layout
+                            </a>
+                        )}
+                        {canImport && (
+                            <button type="button" onClick={() => importInputRef.current?.click()} style={{ background: '#fff7ed', color: '#ea580c', border: '1px solid #fed7aa', borderRadius: 10, padding: '10px 12px', fontWeight: 800, fontSize: 12, cursor: 'pointer', whiteSpace: 'nowrap', display: 'inline-flex', alignItems: 'center', gap: 6 }}>
+                                <Upload size={14} /> Import
+                            </button>
+                        )}
+                        {canExport && (
+                            <a href={exportStudents.url()} style={{ background: '#f0fdf4', color: '#16a34a', border: '1px solid #bbf7d0', borderRadius: 10, padding: '10px 12px', fontWeight: 800, fontSize: 12, cursor: 'pointer', textDecoration: 'none', whiteSpace: 'nowrap', display: 'inline-flex', alignItems: 'center', gap: 6 }}>
+                                <FileDown size={14} /> Export
+                            </a>
+                        )}
+                        {canCreate && (
+                            <Link
+                                href={createStudent.url()}
+                                className="students-add-btn"
+                                style={{ background: '#2563eb', color: 'white', border: 'none', borderRadius: 10, padding: '10px 18px', fontWeight: 700, fontSize: 13, cursor: 'pointer', textDecoration: 'none', whiteSpace: 'nowrap', display: 'inline-flex', alignItems: 'center', gap: 6 }}
+                            >
+                                <Plus size={14} /> Add Student
+                            </Link>
+                        )}
                         <input
                             ref={importInputRef}
                             type="file"
@@ -409,13 +442,13 @@ export default function StudentsPage({ students }: StudentsPageProps) {
                                 <tr>
                                     <th>Student</th><th>Level</th><th>Class</th><th>Attendance</th>
                                     <th>Speaking</th><th>Listening</th><th>Reading</th><th>Writing</th>
-                                    <th>Fee</th><th>Province</th><th>Actions</th>
+                                    <th>Fee</th><th>Province</th>{canManageStudents && <th>Actions</th>}
                                 </tr>
                             </thead>
                             <tbody>
                                 {paginated.length === 0 ? (
                                     <tr>
-                                        <td colSpan={11} style={{ padding: '34px 24px', textAlign: 'center', color: '#64748b', fontSize: 14, fontWeight: 700 }}>
+                                        <td colSpan={canManageStudents ? 11 : 10} style={{ padding: '34px 24px', textAlign: 'center', color: '#64748b', fontSize: 14, fontWeight: 700 }}>
                                             Data not found
                                         </td>
                                     </tr>
@@ -444,13 +477,15 @@ export default function StudentsPage({ students }: StudentsPageProps) {
                                         <td><ScoreChip score={student.grade.writing} /></td>
                                         <td><FeeTag status={student.fees} /></td>
                                         <td style={{ fontSize: 12, color: '#64748b' }}>{student.province}</td>
-                                        <td onClick={e => e.stopPropagation()}>
-                                            <div style={{ display: 'flex', gap: 6 }}>
-                                                <Link href={showStudent.url((student.routeKey ?? student.id) as never)} style={{ background: '#f0fdf4', color: '#16a34a', border: '1px solid #bbf7d0', borderRadius: 7, padding: '5px 10px', cursor: 'pointer', fontSize: 11, fontWeight: 700, textDecoration: 'none', whiteSpace: 'nowrap', display: 'inline-flex', alignItems: 'center', gap: 5 }}><Eye size={13} /> View</Link>
-                                                <Link href={editStudent.url((student.routeKey ?? student.id) as never)} style={{ background: '#eff6ff', color: '#2563eb', border: '1px solid #bfdbfe', borderRadius: 7, padding: '5px 10px', cursor: 'pointer', fontSize: 11, fontWeight: 700, textDecoration: 'none', whiteSpace: 'nowrap', display: 'inline-flex', alignItems: 'center', gap: 5 }}><Edit3 size={13} /> Edit</Link>
-                                                <button onClick={() => setDeleteTarget(student)} style={{ background: '#fff1f2', color: '#ef4444', border: '1px solid #fecaca', borderRadius: 7, padding: '5px 10px', cursor: 'pointer', fontSize: 11, fontWeight: 700, whiteSpace: 'nowrap', display: 'inline-flex', alignItems: 'center', gap: 5 }}><Trash2 size={13} /> Delete</button>
-                                            </div>
-                                        </td>
+                                        {canManageStudents && (
+                                            <td onClick={e => e.stopPropagation()}>
+                                                <div style={{ display: 'flex', gap: 6 }}>
+                                                    {canShow && <Link href={showStudent.url((student.routeKey ?? student.id) as never)} style={{ background: '#f0fdf4', color: '#16a34a', border: '1px solid #bbf7d0', borderRadius: 7, padding: '5px 10px', cursor: 'pointer', fontSize: 11, fontWeight: 700, textDecoration: 'none', whiteSpace: 'nowrap', display: 'inline-flex', alignItems: 'center', gap: 5 }}><Eye size={13} /> View</Link>}
+                                                    {canUpdate && <Link href={editStudent.url((student.routeKey ?? student.id) as never)} style={{ background: '#eff6ff', color: '#2563eb', border: '1px solid #bfdbfe', borderRadius: 7, padding: '5px 10px', cursor: 'pointer', fontSize: 11, fontWeight: 700, textDecoration: 'none', whiteSpace: 'nowrap', display: 'inline-flex', alignItems: 'center', gap: 5 }}><Edit3 size={13} /> Edit</Link>}
+                                                    {canDelete && <button onClick={() => setDeleteTarget(student)} style={{ background: '#fff1f2', color: '#ef4444', border: '1px solid #fecaca', borderRadius: 7, padding: '5px 10px', cursor: 'pointer', fontSize: 11, fontWeight: 700, whiteSpace: 'nowrap', display: 'inline-flex', alignItems: 'center', gap: 5 }}><Trash2 size={13} /> Delete</button>}
+                                                </div>
+                                            </td>
+                                        )}
                                     </tr>
                                 ))}
                             </tbody>
@@ -471,6 +506,9 @@ export default function StudentsPage({ students }: StudentsPageProps) {
                                 key={student.id}
                                 student={student}
                                 selected={selected?.id === student.id}
+                                canShow={canShow}
+                                canUpdate={canUpdate}
+                                canDelete={canDelete}
                                 onSelect={() => setSelected(student.id === selected?.id ? null : student)}
                                 onEdit={() => {}}
                                 onDelete={() => setDeleteTarget(student)}
@@ -513,8 +551,8 @@ export default function StudentsPage({ students }: StudentsPageProps) {
                                 className="student-detail-actions"
                                 style={{ display: 'flex', gap: 8, flexShrink: 0 }}
                             >
-                                <Link href={editStudent.url((selected.routeKey ?? selected.id) as never)} style={{ background: '#eff6ff', color: '#2563eb', border: '1px solid #bfdbfe', borderRadius: 9, padding: '8px 16px', cursor: 'pointer', fontSize: 13, fontWeight: 700, textDecoration: 'none', textAlign: 'center', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: 6 }}><Edit3 size={14} /> Edit</Link>
-                                <button onClick={() => setDeleteTarget(selected)} style={{ background: '#fff1f2', color: '#ef4444', border: '1px solid #fecaca', borderRadius: 9, padding: '8px 16px', cursor: 'pointer', fontSize: 13, fontWeight: 700, display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: 6 }}><Trash2 size={14} /> Delete</button>
+                                {canUpdate && <Link href={editStudent.url((selected.routeKey ?? selected.id) as never)} style={{ background: '#eff6ff', color: '#2563eb', border: '1px solid #bfdbfe', borderRadius: 9, padding: '8px 16px', cursor: 'pointer', fontSize: 13, fontWeight: 700, textDecoration: 'none', textAlign: 'center', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: 6 }}><Edit3 size={14} /> Edit</Link>}
+                                {canDelete && <button onClick={() => setDeleteTarget(selected)} style={{ background: '#fff1f2', color: '#ef4444', border: '1px solid #fecaca', borderRadius: 9, padding: '8px 16px', cursor: 'pointer', fontSize: 13, fontWeight: 700, display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: 6 }}><Trash2 size={14} /> Delete</button>}
                             </div>
                         </div>
 

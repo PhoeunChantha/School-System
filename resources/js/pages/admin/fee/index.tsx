@@ -1,5 +1,6 @@
 import { create as createFee, destroy, edit as editFee, payment as recordPayment } from '@/actions/App/Http/Controllers/Backends/FeeChargeController';
 import { DatePicker } from '@/components/ui/date-picker';
+import { useAdminPermissions } from '@/hooks/use-admin-permissions';
 import AdminShell from '@/pages/admin/shell';
 import { AdminSelect, Avatar, Badge, KH, Pagination } from '@/pages/admin/ui';
 import { Link, router, useForm } from '@inertiajs/react';
@@ -105,6 +106,12 @@ function FeeStatusBadge({ status }: { status: FeeChargeItem['status'] }) {
 }
 
 export default function FeePage({ charges, payments, summary }: FeePageProps) {
+    const { can, canAny } = useAdminPermissions();
+    const canCreate = can('fee.create');
+    const canUpdate = can('fee.update');
+    const canDelete = can('fee.delete');
+    const canRecordPayment = can('fee-payments.create');
+    const canManageFee = canAny(['fee.update', 'fee.delete', 'fee-payments.create']);
     const [filter, setFilter] = useState<FeeFilter>('all');
     const [chargeSearch, setChargeSearch] = useState('');
     const [chargeOrderBy, setChargeOrderBy] = useState<ChargeOrderKey>('name-asc');
@@ -173,6 +180,10 @@ export default function FeePage({ charges, payments, summary }: FeePageProps) {
     );
 
     const openPayment = (charge: FeeChargeItem) => {
+        if (!canRecordPayment) {
+            return;
+        }
+
         const balance = Math.max(0, charge.amount - charge.discountAmount - charge.paidAmount);
         setPayTarget(charge);
         paymentForm.setData({
@@ -189,6 +200,10 @@ export default function FeePage({ charges, payments, summary }: FeePageProps) {
     const submitPayment = (event: FormEvent<HTMLFormElement>) => {
         event.preventDefault();
         if (!payTarget) return;
+        if (!canRecordPayment) {
+            setPayTarget(null);
+            return;
+        }
 
         paymentForm.post(recordPayment.url((payTarget.routeKey ?? payTarget.id) as never), {
             preserveScroll: true,
@@ -202,6 +217,10 @@ export default function FeePage({ charges, payments, summary }: FeePageProps) {
 
     const confirmDelete = () => {
         if (!deleteTarget) return;
+        if (!canDelete) {
+            setDeleteTarget(null);
+            return;
+        }
 
         router.delete(destroy.url((deleteTarget.routeKey ?? deleteTarget.id) as never), {
             preserveScroll: true,
@@ -220,9 +239,9 @@ export default function FeePage({ charges, payments, summary }: FeePageProps) {
                         <div style={{ fontWeight: 800, fontSize: 18, color: '#1e293b' }}>Fee Management</div>
                         <div style={{ fontSize: 12, color: '#94a3b8', marginTop: 2 }}>Track monthly fee charges and payments</div>
                     </div>
-                    <Link href={createFee.url()} style={{ background: '#2563eb', color: 'white', border: 'none', borderRadius: 10, padding: '9px 18px', fontWeight: 700, fontSize: 13, cursor: 'pointer', textDecoration: 'none' }}>
+                    {canCreate && <Link href={createFee.url()} style={{ background: '#2563eb', color: 'white', border: 'none', borderRadius: 10, padding: '9px 18px', fontWeight: 700, fontSize: 13, cursor: 'pointer', textDecoration: 'none' }}>
                         + New Fee Charge
-                    </Link>
+                    </Link>}
                 </div>
 
                 <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill,minmax(160px,1fr))', gap: 12 }}>
@@ -281,13 +300,13 @@ export default function FeePage({ charges, payments, summary }: FeePageProps) {
                                     <th>Amount</th>
                                     <th>Paid</th>
                                     <th>Status</th>
-                                    <th>Action</th>
+                                    {canManageFee && <th>Action</th>}
                                 </tr>
                             </thead>
                             <tbody>
                                 {paginatedCharges.length === 0 ? (
                                     <tr>
-                                        <td colSpan={7} style={{ padding: '34px 24px', textAlign: 'center', color: '#64748b', fontSize: 14, fontWeight: 700 }}>
+                                        <td colSpan={canManageFee ? 7 : 6} style={{ padding: '34px 24px', textAlign: 'center', color: '#64748b', fontSize: 14, fontWeight: 700 }}>
                                             {chargeSearch ? <>No fee charges found for <strong>"{chargeSearch}"</strong></> : 'Data not found'}
                                         </td>
                                     </tr>
@@ -307,15 +326,17 @@ export default function FeePage({ charges, payments, summary }: FeePageProps) {
                                         <td style={{ fontWeight: 700 }}>${charge.amount.toFixed(2)}</td>
                                         <td style={{ fontWeight: 700 }}>${charge.paidAmount.toFixed(2)}</td>
                                         <td><FeeStatusBadge status={charge.status} /></td>
+                                        {canManageFee && (
                                         <td>
                                             <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
-                                                {charge.status !== 'paid' && (
+                                                {canRecordPayment && charge.status !== 'paid' && (
                                                     <button onClick={() => openPayment(charge)} style={{ background: '#f0fdf4', color: '#16a34a', border: '1px solid #bbf7d0', borderRadius: 7, padding: '5px 10px', cursor: 'pointer', fontSize: 11, fontWeight: 700, display: 'inline-flex', alignItems: 'center', gap: 5 }}><Wallet size={13} /> Pay</button>
                                                 )}
-                                                <Link href={editFee.url((charge.routeKey ?? charge.id) as never)} style={{ background: '#eff6ff', color: '#2563eb', border: '1px solid #bfdbfe', borderRadius: 7, padding: '5px 10px', cursor: 'pointer', fontSize: 11, fontWeight: 700, textDecoration: 'none', display: 'inline-flex', alignItems: 'center', gap: 5 }}><Edit3 size={13} /> Edit</Link>
-                                                <button onClick={() => setDeleteTarget(charge)} style={{ background: '#fff1f2', color: '#ef4444', border: '1px solid #fecaca', borderRadius: 7, padding: '5px 10px', cursor: 'pointer', fontSize: 11, fontWeight: 700, display: 'inline-flex', alignItems: 'center', gap: 5 }}><Trash2 size={13} /> Delete</button>
+                                                {canUpdate && <Link href={editFee.url((charge.routeKey ?? charge.id) as never)} style={{ background: '#eff6ff', color: '#2563eb', border: '1px solid #bfdbfe', borderRadius: 7, padding: '5px 10px', cursor: 'pointer', fontSize: 11, fontWeight: 700, textDecoration: 'none', display: 'inline-flex', alignItems: 'center', gap: 5 }}><Edit3 size={13} /> Edit</Link>}
+                                                {canDelete && <button onClick={() => setDeleteTarget(charge)} style={{ background: '#fff1f2', color: '#ef4444', border: '1px solid #fecaca', borderRadius: 7, padding: '5px 10px', cursor: 'pointer', fontSize: 11, fontWeight: 700, display: 'inline-flex', alignItems: 'center', gap: 5 }}><Trash2 size={13} /> Delete</button>}
                                             </div>
                                         </td>
+                                        )}
                                     </tr>
                                 ))}
                             </tbody>
