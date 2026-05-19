@@ -6,6 +6,7 @@ import {
     SheetHeader,
     SheetTitle,
 } from '@/components/ui/sheet';
+import { useAdminPermissions } from '@/hooks/use-admin-permissions';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import AdminShell from '@/pages/admin/shell';
@@ -144,6 +145,14 @@ const drawerLabelStyle = {
 };
 
 export default function GradesPage({ records, periods, students, classes, summary }: GradesPageProps) {
+    const { can, canAny } = useAdminPermissions();
+    const canCreate = can('grades.create');
+    const canUpdate = can('grades.update');
+    const canDelete = can('grades.delete');
+    const canImport = can('grades.import');
+    const canExport = can('grades.export');
+    const canDownloadLayout = can('grades.download-layout');
+    const canManageRecords = canAny(['grades.update', 'grades.delete']);
     const [selectedPeriod, setSelectedPeriod] = useState<number | 'all'>(summary.currentPeriodId ?? 'all');
     const [selectedClass, setSelectedClass] = useState<number | 'all'>('all');
     const [performanceFilter, setPerformanceFilter] = useState<PerfFilter>('all');
@@ -226,6 +235,10 @@ export default function GradesPage({ records, periods, students, classes, summar
     }, [studentSearch, students]);
 
     const openCreateDrawer = () => {
+        if (!canCreate) {
+            return;
+        }
+
         const student = students[0];
         reset();
         setData({
@@ -244,6 +257,10 @@ export default function GradesPage({ records, periods, students, classes, summar
     };
 
     const openEditDrawer = (record: GradeRecordItem) => {
+        if (!canUpdate) {
+            return;
+        }
+
         setData({
             grade_period_id: record.gradePeriodId,
             student_id: record.studentId,
@@ -280,6 +297,16 @@ export default function GradesPage({ records, periods, students, classes, summar
     const submitGrade = (event: FormEvent<HTMLFormElement>) => {
         event.preventDefault();
 
+        if (drawerMode === 'edit' && !canUpdate) {
+            closeDrawer();
+            return;
+        }
+
+        if (drawerMode === 'create' && !canCreate) {
+            closeDrawer();
+            return;
+        }
+
         const options = {
             preserveScroll: true,
             onSuccess: () => {
@@ -298,6 +325,10 @@ export default function GradesPage({ records, periods, students, classes, summar
 
     const confirmDelete = () => {
         if (!deleteTarget) return;
+        if (!canDelete) {
+            setDeleteTarget(null);
+            return;
+        }
 
         router.delete(destroy.url((deleteTarget.routeKey ?? deleteTarget.id) as never), {
             preserveScroll: true,
@@ -310,6 +341,7 @@ export default function GradesPage({ records, periods, students, classes, summar
 
     const importFile = (file: File | null) => {
         if (!file) return;
+        if (!canImport) return;
 
         router.post(importMethod.url(), { import_file: file }, {
             forceFormData: true,
@@ -333,18 +365,26 @@ export default function GradesPage({ records, periods, students, classes, summar
                         <div style={{ fontSize: 12, color: '#94a3b8', marginTop: 2 }}>Manage speaking, listening, reading, and writing scores</div>
                     </div>
                     <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', alignItems: 'center' }}>
-                        <a href={downloadLayout.url()} style={{ background: '#f8fafc', color: '#475569', border: '1px solid #dbe3ef', borderRadius: 10, padding: '9px 12px', fontWeight: 800, fontSize: 12, cursor: 'pointer', textDecoration: 'none', whiteSpace: 'nowrap', display: 'inline-flex', alignItems: 'center', gap: 6 }}>
-                            <Download size={14} /> Layout
-                        </a>
-                        <button type="button" onClick={() => importInputRef.current?.click()} style={{ background: '#fff7ed', color: '#ea580c', border: '1px solid #fed7aa', borderRadius: 10, padding: '9px 12px', fontWeight: 800, fontSize: 12, cursor: 'pointer', whiteSpace: 'nowrap', display: 'inline-flex', alignItems: 'center', gap: 6 }}>
-                            <Upload size={14} /> Import
-                        </button>
-                        <a href={exportMethod.url()} style={{ background: '#f0fdf4', color: '#16a34a', border: '1px solid #bbf7d0', borderRadius: 10, padding: '9px 12px', fontWeight: 800, fontSize: 12, cursor: 'pointer', textDecoration: 'none', whiteSpace: 'nowrap', display: 'inline-flex', alignItems: 'center', gap: 6 }}>
-                            <FileDown size={14} /> Export
-                        </a>
-                        <button onClick={openCreateDrawer} style={{ background: '#2563eb', color: 'white', border: 'none', borderRadius: 10, padding: '9px 18px', fontWeight: 700, fontSize: 13, cursor: 'pointer' }}>
-                            + Add Grade
-                        </button>
+                        {canDownloadLayout && (
+                            <a href={downloadLayout.url()} style={{ background: '#f8fafc', color: '#475569', border: '1px solid #dbe3ef', borderRadius: 10, padding: '9px 12px', fontWeight: 800, fontSize: 12, cursor: 'pointer', textDecoration: 'none', whiteSpace: 'nowrap', display: 'inline-flex', alignItems: 'center', gap: 6 }}>
+                                <Download size={14} /> Layout
+                            </a>
+                        )}
+                        {canImport && (
+                            <button type="button" onClick={() => importInputRef.current?.click()} style={{ background: '#fff7ed', color: '#ea580c', border: '1px solid #fed7aa', borderRadius: 10, padding: '9px 12px', fontWeight: 800, fontSize: 12, cursor: 'pointer', whiteSpace: 'nowrap', display: 'inline-flex', alignItems: 'center', gap: 6 }}>
+                                <Upload size={14} /> Import
+                            </button>
+                        )}
+                        {canExport && (
+                            <a href={exportMethod.url()} style={{ background: '#f0fdf4', color: '#16a34a', border: '1px solid #bbf7d0', borderRadius: 10, padding: '9px 12px', fontWeight: 800, fontSize: 12, cursor: 'pointer', textDecoration: 'none', whiteSpace: 'nowrap', display: 'inline-flex', alignItems: 'center', gap: 6 }}>
+                                <FileDown size={14} /> Export
+                            </a>
+                        )}
+                        {canCreate && (
+                            <button onClick={openCreateDrawer} style={{ background: '#2563eb', color: 'white', border: 'none', borderRadius: 10, padding: '9px 18px', fontWeight: 700, fontSize: 13, cursor: 'pointer' }}>
+                                + Add Grade
+                            </button>
+                        )}
                         <input
                             ref={importInputRef}
                             type="file"
@@ -433,13 +473,13 @@ export default function GradesPage({ records, periods, students, classes, summar
                                 <th>Writing</th>
                                 <th>Average</th>
                                 <th>Performance</th>
-                                <th>Actions</th>
+                                {canManageRecords && <th>Actions</th>}
                             </tr>
                         </thead>
                         <tbody>
                             {paginated.length === 0 ? (
                                 <tr>
-                                    <td colSpan={9} style={{ padding: '34px 24px', textAlign: 'center', color: '#64748b', fontSize: 14, fontWeight: 700 }}>
+                                    <td colSpan={canManageRecords ? 9 : 8} style={{ padding: '34px 24px', textAlign: 'center', color: '#64748b', fontSize: 14, fontWeight: 700 }}>
                                         {search ? <>No grades found for <strong>"{search}"</strong></> : 'Data not found'}
                                     </td>
                                 </tr>
@@ -468,12 +508,18 @@ export default function GradesPage({ records, periods, students, classes, summar
                                             </div>
                                         </td>
                                         <td><Badge type={perf.type}>{perf.label}</Badge></td>
-                                        <td>
-                                            <div style={{ display: 'flex', gap: 6 }}>
-                                                <button onClick={() => openEditDrawer(record)} style={{ background: '#eff6ff', color: '#2563eb', border: '1px solid #bfdbfe', borderRadius: 7, padding: '5px 10px', cursor: 'pointer', fontSize: 11, fontWeight: 700, display: 'inline-flex', alignItems: 'center', gap: 5 }}><Edit3 size={13} /> Edit</button>
-                                                <button onClick={() => setDeleteTarget(record)} style={{ background: '#fff1f2', color: '#ef4444', border: '1px solid #fecaca', borderRadius: 7, padding: '5px 10px', cursor: 'pointer', fontSize: 11, fontWeight: 700, display: 'inline-flex', alignItems: 'center', gap: 5 }}><Trash2 size={13} /> Delete</button>
-                                            </div>
-                                        </td>
+                                        {canManageRecords && (
+                                            <td>
+                                                <div style={{ display: 'flex', gap: 6 }}>
+                                                    {canUpdate && (
+                                                        <button onClick={() => openEditDrawer(record)} style={{ background: '#eff6ff', color: '#2563eb', border: '1px solid #bfdbfe', borderRadius: 7, padding: '5px 10px', cursor: 'pointer', fontSize: 11, fontWeight: 700, display: 'inline-flex', alignItems: 'center', gap: 5 }}><Edit3 size={13} /> Edit</button>
+                                                    )}
+                                                    {canDelete && (
+                                                        <button onClick={() => setDeleteTarget(record)} style={{ background: '#fff1f2', color: '#ef4444', border: '1px solid #fecaca', borderRadius: 7, padding: '5px 10px', cursor: 'pointer', fontSize: 11, fontWeight: 700, display: 'inline-flex', alignItems: 'center', gap: 5 }}><Trash2 size={13} /> Delete</button>
+                                                    )}
+                                                </div>
+                                            </td>
+                                        )}
                                     </tr>
                                 );
                             })}

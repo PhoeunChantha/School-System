@@ -18,7 +18,7 @@ class UploadSchoolImageRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'type'  => ['required', 'in:logo,favicon,loginBg'],
+            'type' => ['required', 'in:logo,favicon,loginBg,seoImage'],
             'image' => ['required', 'image', 'mimes:jpg,jpeg,png,gif,webp,svg', 'max:2048'],
         ];
     }

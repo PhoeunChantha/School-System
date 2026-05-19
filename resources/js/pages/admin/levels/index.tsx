@@ -257,7 +257,7 @@ export default function LevelsPage({ levels }: LevelsPageProps) {
                         <table className="data-table">
                             <thead>
                                 <tr style={{ borderBottom: '1px solid #f1f5f9' }}>
-                                    {['#', 'Name', 'Monthly Fee', 'Students', 'Status', ''].map((h, i) => (
+                                    {['#', 'Name', 'Students', 'Status', ''].map((h, i) => (
                                         <th key={i} style={{ padding: '10px 16px', textAlign: 'left', fontSize: 11, fontWeight: 700, color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '0.05em' }}>{h}</th>
                                     ))}
                                 </tr>
@@ -265,7 +265,7 @@ export default function LevelsPage({ levels }: LevelsPageProps) {
                             <tbody>
                                 {paginated.length === 0 && (
                                     <tr>
-                                        <td colSpan={6} style={{ padding: '40px 16px', textAlign: 'center', color: '#94a3b8', fontSize: 13 }}>
+                                        <td colSpan={5} style={{ padding: '40px 16px', textAlign: 'center', color: '#94a3b8', fontSize: 13 }}>
                                             {search ? 'No levels match your search.' : 'No levels yet. Click "+ Add Level" to create one.'}
                                         </td>
                                     </tr>
@@ -276,7 +276,6 @@ export default function LevelsPage({ levels }: LevelsPageProps) {
                                         onMouseLeave={e => (e.currentTarget.style.background = '')}>
                                         <td style={{ padding: '12px 16px', color: '#94a3b8', fontSize: 12 }}>{level.sortOrder}</td>
                                         <td style={{ padding: '12px 16px', fontWeight: 700, color: '#1e293b', fontSize: 14 }}>{level.name}</td>
-                                        <td style={{ padding: '12px 16px', color: '#059669', fontWeight: 700, fontSize: 13 }}>${level.monthlyFee.toFixed(2)}</td>
                                         <td style={{ padding: '12px 16px', color: '#64748b', fontSize: 13 }}>{level.studentCount} student{level.studentCount !== 1 ? 's' : ''}</td>
                                         <td style={{ padding: '12px 16px' }}>
                                             <span style={{ display: 'inline-flex', alignItems: 'center', gap: 4, padding: '3px 10px', borderRadius: 20, fontSize: 11, fontWeight: 700, background: level.isActive ? '#f0fdf4' : '#fef2f2', color: level.isActive ? '#16a34a' : '#dc2626' }}>

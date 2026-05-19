@@ -30,10 +30,40 @@
             }
         </style>
 
-        <title inertia>{{ config('app.name', 'Laravel') }}</title>
+        <title inertia>{{ $seoTitle ?? config('app.name', 'Laravel') }}</title>
+        <meta name="description" content="{{ $seoDescription ?? ($schoolName ?? config('app.name')).' - School Management System' }}">
+        @if(!empty($seoKeywords))
+        <meta name="keywords" content="{{ $seoKeywords }}">
+        @endif
+        <meta name="robots" content="{{ $seoRobots ?? 'index,follow' }}">
+        @if(!empty($seoCanonicalUrl))
+        <link rel="canonical" href="{{ $seoCanonicalUrl }}">
+        @endif
+
+        {{-- Open Graph meta tags for link sharing --}}
+        <meta property="og:type" content="website">
+        <meta property="og:url" content="{{ $seoCanonicalUrl ?: url()->current() }}">
+        <meta property="og:title" content="{{ $seoTitle ?? $schoolName ?? config('app.name') }}">
+        <meta property="og:description" content="{{ $seoDescription ?? ($schoolName ?? config('app.name')).' - School Management System' }}">
+        @if(!empty($seoImage))
+        <meta property="og:image" content="{{ $seoImage }}">
+        @elseif(!empty($schoolLogo))
+        <meta property="og:image" content="{{ $schoolLogo }}">
+        @elseif(!empty($schoolFavicon))
+        <meta property="og:image" content="{{ $schoolFavicon }}">
+        @endif
+        <meta property="og:site_name" content="{{ $schoolName ?? config('app.name') }}">
+        <meta name="twitter:card" content="summary_large_image">
+        <meta name="twitter:title" content="{{ $seoTitle ?? $schoolName ?? config('app.name') }}">
+        <meta name="twitter:description" content="{{ $seoDescription ?? ($schoolName ?? config('app.name')).' - School Management System' }}">
+        @if(!empty($seoImage))
+        <meta name="twitter:image" content="{{ $seoImage }}">
+        @elseif(!empty($schoolLogo))
+        <meta name="twitter:image" content="{{ $schoolLogo }}">
+        @endif
 
         <link rel="icon" href="{{ $schoolFavicon ?? '/favicon.ico' }}" sizes="any">
-        <link rel="apple-touch-icon" href="/apple-touch-icon.png">
+        <link rel="apple-touch-icon" href="{{ $schoolLogo ?? '/apple-touch-icon.png' }}">
 
         <link rel="preconnect" href="https://fonts.bunny.net">
         <link href="https://fonts.bunny.net/css?family=instrument-sans:400,500,600" rel="stylesheet" />

@@ -7,8 +7,11 @@ use App\Models\GradeRecord;
 use App\Models\SchoolClass;
 use App\Models\Student;
 use App\Models\User;
+use Database\Seeders\PermissionSeeder;
+use Database\Seeders\RoleSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Http\UploadedFile;
+use Spatie\Permission\Models\Role;
 use Tests\TestCase;
 
 class AdminGradeRecordCrudTest extends TestCase
@@ -181,6 +184,36 @@ class AdminGradeRecordCrudTest extends TestCase
             'graded_by' => $user->id,
             'updated_by' => $user->id,
         ]);
+    }
+
+    public function test_student_role_can_view_grades_but_cannot_modify_them(): void
+    {
+        $this->seed(PermissionSeeder::class);
+        $this->seed(RoleSeeder::class);
+
+        $studentUser = User::factory()->create();
+        $studentRole = Role::query()->where('name', 'student')->firstOrFail();
+        $studentUser->assignRole($studentRole);
+
+        $gradeRecord = GradeRecord::factory()->create();
+
+        $this->be($studentUser);
+
+        $this->get(route('admin.grades'))
+            ->assertOk()
+            ->assertInertia(fn ($page) => $page
+                ->component('admin/grades/index')
+                ->where('auth.permissions', fn ($permissions): bool => collect($permissions)->contains('grades.view')
+                    && ! collect($permissions)->contains('grades.update')
+                    && ! collect($permissions)->contains('grades.delete')));
+
+        $payload = $this->validPayload($gradeRecord->grade_period_id, $gradeRecord->student_id, $gradeRecord->school_class_id);
+
+        $this->put(route('admin.grades.update', $gradeRecord), $payload)
+            ->assertForbidden();
+
+        $this->delete(route('admin.grades.destroy', $gradeRecord))
+            ->assertForbidden();
     }
 
     /**

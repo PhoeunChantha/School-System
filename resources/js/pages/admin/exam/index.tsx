@@ -1,6 +1,7 @@
 ﻿import { destroy, store, update } from '@/actions/App/Http/Controllers/Backends/ExamController';
 import { DatePicker } from '@/components/ui/date-picker';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { useAdminPermissions } from '@/hooks/use-admin-permissions';
 import AdminShell from '@/pages/admin/shell';
 import { Badge, Pagination } from '@/pages/admin/ui';
 import { router, useForm } from '@inertiajs/react';
@@ -214,6 +215,11 @@ function sortExams(exams: ExamItem[], orderBy: OrderKey): ExamItem[] {
 }
 
 export default function ExamPage({ exams, classes, summary }: ExamPageProps) {
+    const { can, canAny } = useAdminPermissions();
+    const canCreate = can('exam.create');
+    const canUpdate = can('exam.update');
+    const canDelete = can('exam.delete');
+    const canManageExams = canAny(['exam.update', 'exam.delete']);
     const [view, setView] = useState<View>('list');
     const [editingExam, setEditingExam] = useState<ExamItem | null>(null);
     const [printingExam, setPrintingExam] = useState<ExamItem | null>(null);
@@ -249,6 +255,10 @@ export default function ExamPage({ exams, classes, summary }: ExamPageProps) {
     );
 
     const openCreate = () => {
+        if (!canCreate) {
+            return;
+        }
+
         reset();
         setData(emptyForm(classes));
         setEditingExam(null);
@@ -256,6 +266,10 @@ export default function ExamPage({ exams, classes, summary }: ExamPageProps) {
     };
 
     const openEdit = (exam: ExamItem) => {
+        if (!canUpdate) {
+            return;
+        }
+
         setData({
             school_class_id: exam.schoolClassId,
             title: exam.title,
@@ -272,6 +286,16 @@ export default function ExamPage({ exams, classes, summary }: ExamPageProps) {
     };
 
     const submitExam = (payload: ExamFormData) => {
+        if (editingExam && !canUpdate) {
+            setView('list');
+            return;
+        }
+
+        if (!editingExam && !canCreate) {
+            setView('list');
+            return;
+        }
+
         setData(payload);
 
         const options = {
@@ -296,6 +320,11 @@ export default function ExamPage({ exams, classes, summary }: ExamPageProps) {
 
     const confirmDelete = () => {
         if (!deleteTarget) {
+            return;
+        }
+
+        if (!canDelete) {
+            setDeleteTarget(null);
             return;
         }
 
@@ -348,10 +377,12 @@ export default function ExamPage({ exams, classes, summary }: ExamPageProps) {
                         <div style={{ fontWeight: 800, fontSize: 18, color: '#1e293b' }}>Exam Management</div>
                         <div style={{ fontSize: 12, color: '#94a3b8' }}>Create, save, edit, print, and archive exam papers</div>
                     </div>
-                    <button onClick={openCreate} style={{ background: '#2563eb', color: 'white', border: 'none', borderRadius: 10, padding: '9px 18px', fontWeight: 700, fontSize: 13, cursor: 'pointer', display: 'inline-flex', alignItems: 'center', gap: 8 }}>
-                        <Plus size={16} />
-                        Create Exam
-                    </button>
+                    {canCreate && (
+                        <button onClick={openCreate} style={{ background: '#2563eb', color: 'white', border: 'none', borderRadius: 10, padding: '9px 18px', fontWeight: 700, fontSize: 13, cursor: 'pointer', display: 'inline-flex', alignItems: 'center', gap: 8 }}>
+                            <Plus size={16} />
+                            Create Exam
+                        </button>
+                    )}
                 </div>
 
                 <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill,minmax(150px,1fr))', gap: 12 }}>
@@ -462,12 +493,16 @@ export default function ExamPage({ exams, classes, summary }: ExamPageProps) {
                                                 <Printer size={14} />
                                                 <span>Print</span>
                                             </button>
-                                            <button onClick={() => openEdit(exam)} style={actionButton('#eff6ff', '#2563eb', '#bfdbfe')} title="Edit">
-                                                <Edit3 size={14} />
-                                            </button>
-                                            <button onClick={() => setDeleteTarget(exam)} style={actionButton('#fff1f2', '#ef4444', '#fecaca')} title="Delete">
-                                                <Trash2 size={14} />
-                                            </button>
+                                            {canUpdate && (
+                                                <button onClick={() => openEdit(exam)} style={actionButton('#eff6ff', '#2563eb', '#bfdbfe')} title="Edit">
+                                                    <Edit3 size={14} />
+                                                </button>
+                                            )}
+                                            {canDelete && (
+                                                <button onClick={() => setDeleteTarget(exam)} style={actionButton('#fff1f2', '#ef4444', '#fecaca')} title="Delete">
+                                                    <Trash2 size={14} />
+                                                </button>
+                                            )}
                                         </div>
                                     </td>
                                 </tr>

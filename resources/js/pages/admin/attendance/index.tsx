@@ -1,4 +1,5 @@
 ﻿import { create, destroy, downloadLayout, edit, exportMethod, importMethod } from '@/actions/App/Http/Controllers/Backends/AttendanceSessionController';
+import { useAdminPermissions } from '@/hooks/use-admin-permissions';
 import AdminShell from '@/pages/admin/shell';
 import { AdminSelect, Badge, KH, Pagination } from '@/pages/admin/ui';
 import { router } from '@inertiajs/react';
@@ -87,6 +88,14 @@ function sortSessions(list: AttendanceSessionItem[], order: OrderKey): Attendanc
 }
 
 export default function AttendancePage({ sessions, classes, summary }: AttendancePageProps) {
+    const { can, canAny } = useAdminPermissions();
+    const canCreate = can('attendance.create') || can('attendance.mark');
+    const canUpdate = can('attendance.update');
+    const canDelete = can('attendance.delete');
+    const canImport = can('attendance.import');
+    const canExport = can('attendance.export');
+    const canDownloadLayout = can('attendance.download-layout');
+    const canManageAttendance = canAny(['attendance.update', 'attendance.delete']);
     const [selectedClass, setSelectedClass] = useState<number | 'all'>('all');
     const [search, setSearch] = useState('');
     const [orderBy, setOrderBy] = useState<OrderKey>('date-desc');
@@ -97,6 +106,7 @@ export default function AttendancePage({ sessions, classes, summary }: Attendanc
 
     const importFile = (file: File | null) => {
         if (!file) return;
+        if (!canImport) return;
 
         router.post(importMethod.url(), { import_file: file }, {
             forceFormData: true,
@@ -131,6 +141,10 @@ export default function AttendancePage({ sessions, classes, summary }: Attendanc
 
     const confirmDelete = () => {
         if (!deleteTarget) return;
+        if (!canDelete) {
+            setDeleteTarget(null);
+            return;
+        }
 
         router.delete(destroy.url((deleteTarget.routeKey ?? deleteTarget.id) as never), {
             preserveScroll: true,
@@ -155,18 +169,26 @@ export default function AttendancePage({ sessions, classes, summary }: Attendanc
                         <div style={{ fontSize: 12, color: '#94a3b8', marginTop: 2 }}>Track daily class attendance</div>
                     </div>
                     <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', alignItems: 'center' }}>
-                        <a href={downloadLayout.url()} style={{ background: '#f8fafc', color: '#475569', border: '1px solid #dbe3ef', borderRadius: 10, padding: '9px 12px', fontWeight: 800, fontSize: 12, cursor: 'pointer', textDecoration: 'none', whiteSpace: 'nowrap', display: 'inline-flex', alignItems: 'center', gap: 6 }}>
-                            <Download size={14} /> Layout
-                        </a>
-                        <button type="button" onClick={() => importInputRef.current?.click()} style={{ background: '#fff7ed', color: '#ea580c', border: '1px solid #fed7aa', borderRadius: 10, padding: '9px 12px', fontWeight: 800, fontSize: 12, cursor: 'pointer', whiteSpace: 'nowrap', display: 'inline-flex', alignItems: 'center', gap: 6 }}>
-                            <Upload size={14} /> Import
-                        </button>
-                        <a href={exportMethod.url()} style={{ background: '#f0fdf4', color: '#16a34a', border: '1px solid #bbf7d0', borderRadius: 10, padding: '9px 12px', fontWeight: 800, fontSize: 12, cursor: 'pointer', textDecoration: 'none', whiteSpace: 'nowrap', display: 'inline-flex', alignItems: 'center', gap: 6 }}>
-                            <FileDown size={14} /> Export
-                        </a>
-                        <button onClick={() => router.visit(create.url())} style={{ background: '#2563eb', color: 'white', border: 'none', borderRadius: 10, padding: '9px 18px', fontWeight: 700, fontSize: 13, cursor: 'pointer' }}>
-                            + Mark Attendance
-                        </button>
+                        {canDownloadLayout && (
+                            <a href={downloadLayout.url()} style={{ background: '#f8fafc', color: '#475569', border: '1px solid #dbe3ef', borderRadius: 10, padding: '9px 12px', fontWeight: 800, fontSize: 12, cursor: 'pointer', textDecoration: 'none', whiteSpace: 'nowrap', display: 'inline-flex', alignItems: 'center', gap: 6 }}>
+                                <Download size={14} /> Layout
+                            </a>
+                        )}
+                        {canImport && (
+                            <button type="button" onClick={() => importInputRef.current?.click()} style={{ background: '#fff7ed', color: '#ea580c', border: '1px solid #fed7aa', borderRadius: 10, padding: '9px 12px', fontWeight: 800, fontSize: 12, cursor: 'pointer', whiteSpace: 'nowrap', display: 'inline-flex', alignItems: 'center', gap: 6 }}>
+                                <Upload size={14} /> Import
+                            </button>
+                        )}
+                        {canExport && (
+                            <a href={exportMethod.url()} style={{ background: '#f0fdf4', color: '#16a34a', border: '1px solid #bbf7d0', borderRadius: 10, padding: '9px 12px', fontWeight: 800, fontSize: 12, cursor: 'pointer', textDecoration: 'none', whiteSpace: 'nowrap', display: 'inline-flex', alignItems: 'center', gap: 6 }}>
+                                <FileDown size={14} /> Export
+                            </a>
+                        )}
+                        {canCreate && (
+                            <button onClick={() => router.visit(create.url())} style={{ background: '#2563eb', color: 'white', border: 'none', borderRadius: 10, padding: '9px 18px', fontWeight: 700, fontSize: 13, cursor: 'pointer' }}>
+                                + Mark Attendance
+                            </button>
+                        )}
                         <input
                             ref={importInputRef}
                             type="file"
@@ -230,13 +252,13 @@ export default function AttendancePage({ sessions, classes, summary }: Attendanc
                                 <th>Absent</th>
                                 <th>Late</th>
                                 <th>Excused</th>
-                                <th>Actions</th>
+                                {canManageAttendance && <th>Actions</th>}
                             </tr>
                         </thead>
                         <tbody>
                             {paginated.length === 0 ? (
                                 <tr>
-                                    <td colSpan={8} style={{ padding: '34px 24px', textAlign: 'center', color: '#64748b', fontSize: 14, fontWeight: 700 }}>
+                                    <td colSpan={canManageAttendance ? 8 : 7} style={{ padding: '34px 24px', textAlign: 'center', color: '#64748b', fontSize: 14, fontWeight: 700 }}>
                                         {search ? <>No attendance found for <strong>"{search}"</strong></> : 'Data not found'}
                                     </td>
                                 </tr>
@@ -252,12 +274,18 @@ export default function AttendancePage({ sessions, classes, summary }: Attendanc
                                     <td style={{ color: '#dc2626', fontWeight: 900 }}>{session.absentCount}</td>
                                     <td style={{ color: '#d97706', fontWeight: 900 }}>{session.lateCount}</td>
                                     <td style={{ color: '#2563eb', fontWeight: 900 }}>{session.excusedCount}</td>
-                                    <td>
-                                        <div style={{ display: 'flex', gap: 6 }}>
-                                            <button onClick={() => router.visit(edit.url((session.routeKey ?? session.id) as never))} style={{ background: '#eff6ff', color: '#2563eb', border: '1px solid #bfdbfe', borderRadius: 7, padding: '5px 10px', cursor: 'pointer', fontSize: 11, fontWeight: 700, display: 'inline-flex', alignItems: 'center', gap: 5 }}><Edit3 size={13} /> Edit</button>
-                                            <button onClick={() => setDeleteTarget(session)} style={{ background: '#fff1f2', color: '#ef4444', border: '1px solid #fecaca', borderRadius: 7, padding: '5px 10px', cursor: 'pointer', fontSize: 11, fontWeight: 700, display: 'inline-flex', alignItems: 'center', gap: 5 }}><Trash2 size={13} /> Delete</button>
-                                        </div>
-                                    </td>
+                                    {canManageAttendance && (
+                                        <td>
+                                            <div style={{ display: 'flex', gap: 6 }}>
+                                                {canUpdate && (
+                                                    <button onClick={() => router.visit(edit.url((session.routeKey ?? session.id) as never))} style={{ background: '#eff6ff', color: '#2563eb', border: '1px solid #bfdbfe', borderRadius: 7, padding: '5px 10px', cursor: 'pointer', fontSize: 11, fontWeight: 700, display: 'inline-flex', alignItems: 'center', gap: 5 }}><Edit3 size={13} /> Edit</button>
+                                                )}
+                                                {canDelete && (
+                                                    <button onClick={() => setDeleteTarget(session)} style={{ background: '#fff1f2', color: '#ef4444', border: '1px solid #fecaca', borderRadius: 7, padding: '5px 10px', cursor: 'pointer', fontSize: 11, fontWeight: 700, display: 'inline-flex', alignItems: 'center', gap: 5 }}><Trash2 size={13} /> Delete</button>
+                                                )}
+                                            </div>
+                                        </td>
+                                    )}
                                 </tr>
                             ))}
                         </tbody>

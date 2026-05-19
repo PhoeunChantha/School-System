@@ -5,6 +5,7 @@ namespace App\Services\Backends;
 use App\Models\Level;
 use App\Models\SchoolClass;
 use App\Models\SchoolSetting;
+use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\DB;
 use InvalidArgumentException;
 
@@ -12,6 +13,7 @@ class SchoolSettingService
 {
     public const GROUP_KEYS = [
         'school' => 'profile',
+        'seo' => 'meta',
         'fees' => 'policy',
         'classes' => 'schedule',
         'notifications' => 'preferences',
@@ -25,6 +27,7 @@ class SchoolSettingService
         return [
             'settings' => [
                 'school' => $this->settingValue('school'),
+                'seo' => $this->settingValue('seo'),
                 'fees' => $this->settingValue('fees'),
                 'classes' => $this->settingValue('classes'),
                 'notifications' => $this->settingValue('notifications'),
@@ -101,7 +104,7 @@ class SchoolSettingService
      * Move an uploaded image to public/uploads/school/, delete the old file, and
      * merge the new path into the saved school settings.
      */
-    public function uploadImage(string $type, \Illuminate\Http\UploadedFile $file, ?int $userId): string
+    public function uploadImage(string $type, UploadedFile $file, ?int $userId): string
     {
         $destination = public_path('uploads/school');
 
@@ -109,7 +112,8 @@ class SchoolSettingService
             mkdir($destination, 0755, true);
         }
 
-        $current = $this->settingValue('school');
+        $group = $type === 'seoImage' ? 'seo' : 'school';
+        $current = $this->settingValue($group);
 
         // Remove old file if it exists
         if (! empty($current[$type])) {
@@ -127,7 +131,7 @@ class SchoolSettingService
         $path = 'uploads/school/'.$filename;
         $current[$type] = $path;
 
-        $this->update('school', $current, $userId);
+        $this->update($group, $current, $userId);
 
         return $path;
     }
@@ -150,6 +154,14 @@ class SchoolSettingService
                 'logo' => null,
                 'favicon' => null,
                 'loginBg' => null,
+            ],
+            'seo' => [
+                'title' => 'Frania English School',
+                'description' => 'Frania English School - Cambodia school management system.',
+                'keywords' => 'Frania English School, Cambodia school, English school',
+                'canonicalUrl' => '',
+                'robots' => 'index,follow',
+                'seoImage' => null,
             ],
             'fees' => [
                 'levelFees' => Level::query()

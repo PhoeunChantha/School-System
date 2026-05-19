@@ -1,6 +1,7 @@
 ﻿import { create as createSubmission, destroy, store, update } from '@/routes/admin/homework-submissions';
 import { DatePicker } from '@/components/ui/date-picker';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { useAdminPermissions } from '@/hooks/use-admin-permissions';
 import {
     Sheet,
     SheetContent,
@@ -158,6 +159,11 @@ function emptyForm(assignments: HomeworkAssignmentOption[], students: StudentOpt
 }
 
 export default function HomeworkSubmissionsPage({ submissions, assignments, students, summary }: HomeworkSubmissionsPageProps) {
+    const { can, canAny } = useAdminPermissions();
+    const canCreate = can('homework-submissions.create');
+    const canUpdate = can('homework-submissions.update');
+    const canDelete = can('homework-submissions.delete');
+    const canManageSubmissions = canAny(['homework-submissions.update', 'homework-submissions.delete']);
     const [selectedAssignment, setSelectedAssignment] = useState<AssignmentFilter>('all');
     const [search, setSearch] = useState('');
     const [submittedDate, setSubmittedDate] = useState('');
@@ -242,6 +248,10 @@ export default function HomeworkSubmissionsPage({ submissions, assignments, stud
     }, [selectedAssignment, submittedDate, search, orderBy, perPage]);
 
     const openCreateDrawer = () => {
+        if (!canCreate) {
+            return;
+        }
+
         const selectedTitle = assignmentFilterTitle(selectedAssignment);
         const selectedAssignmentId = selectedTitle
             ? assignments.find(assignment => assignmentLabel(assignment) === selectedTitle)?.id
@@ -259,6 +269,10 @@ export default function HomeworkSubmissionsPage({ submissions, assignments, stud
     };
 
     const openEditDrawer = (submission: SubmissionItem) => {
+        if (!canUpdate) {
+            return;
+        }
+
         setData({
             homework_assignment_id: submission.homeworkAssignmentId,
             student_id: submission.studentId,
@@ -295,6 +309,16 @@ export default function HomeworkSubmissionsPage({ submissions, assignments, stud
     const submitSubmission = (event: FormEvent<HTMLFormElement>) => {
         event.preventDefault();
 
+        if (drawerMode === 'edit' && !canUpdate) {
+            closeDrawer();
+            return;
+        }
+
+        if (drawerMode === 'create' && !canCreate) {
+            closeDrawer();
+            return;
+        }
+
         const options = {
             preserveScroll: true,
             onSuccess: () => {
@@ -316,6 +340,11 @@ export default function HomeworkSubmissionsPage({ submissions, assignments, stud
             return;
         }
 
+        if (!canDelete) {
+            setDeleteTarget(null);
+            return;
+        }
+
         router.delete(destroy.url((deleteTarget.routeKey ?? deleteTarget.id) as never), {
             preserveScroll: true,
             onSuccess: () => {
@@ -333,14 +362,18 @@ export default function HomeworkSubmissionsPage({ submissions, assignments, stud
                         <div style={{ fontWeight: 800, fontSize: 18, color: '#1e293b' }}>Homework Submissions</div>
                         <KH style={{ fontSize: 12, color: '#94a3b8', display: 'block' }}>Track submitted work, grades, and feedback</KH>
                     </div>
-                    <button onClick={openCreateDrawer} style={primaryButton}>
-                        <Plus size={16} />
-                        Add Submission
-                    </button>
-                    <button onClick={() => router.visit(createSubmission.url())} style={{ ...primaryButton, background: '#16a34a' }}>
-                        <Upload size={16} />
-                        Student Submit
-                    </button>
+                    {canCreate && (
+                        <button onClick={openCreateDrawer} style={primaryButton}>
+                            <Plus size={16} />
+                            Add Submission
+                        </button>
+                    )}
+                    {canCreate && (
+                        <button onClick={() => router.visit(createSubmission.url())} style={{ ...primaryButton, background: '#16a34a' }}>
+                            <Upload size={16} />
+                            Student Submit
+                        </button>
+                    )}
                 </div>
 
                 <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill,minmax(150px,1fr))', gap: 12 }}>
@@ -431,13 +464,13 @@ export default function HomeworkSubmissionsPage({ submissions, assignments, stud
                                 <th>File</th>
                                 <th>Score</th>
                                 <th>Status</th>
-                                <th>Actions</th>
+                                {canManageSubmissions && <th>Actions</th>}
                             </tr>
                         </thead>
                         <tbody>
                             {paginated.length === 0 ? (
                                 <tr>
-                                    <td colSpan={7} style={{ padding: '38px 24px', textAlign: 'center', color: '#64748b', fontSize: 14, fontWeight: 700 }}>
+                                    <td colSpan={canManageSubmissions ? 7 : 6} style={{ padding: '38px 24px', textAlign: 'center', color: '#64748b', fontSize: 14, fontWeight: 700 }}>
                                         {search ? <>No homework submissions found for <strong>"{search}"</strong></> : 'No homework submissions found'}
                                     </td>
                                 </tr>
@@ -476,12 +509,18 @@ export default function HomeworkSubmissionsPage({ submissions, assignments, stud
                                             </div>
                                         </td>
                                         <td><Badge type={statusType[submission.status]}>{submission.status}</Badge></td>
-                                        <td>
-                                            <div style={{ display: 'flex', gap: 6 }}>
-                                                <button onClick={() => openEditDrawer(submission)} style={iconButton('#eff6ff', '#2563eb', '#bfdbfe')} title="Edit"><Edit3 size={14} /></button>
-                                                <button onClick={() => setDeleteTarget(submission)} style={iconButton('#fff1f2', '#ef4444', '#fecaca')} title="Delete"><Trash2 size={14} /></button>
-                                            </div>
-                                        </td>
+                                        {canManageSubmissions && (
+                                            <td>
+                                                <div style={{ display: 'flex', gap: 6 }}>
+                                                    {canUpdate && (
+                                                        <button onClick={() => openEditDrawer(submission)} style={iconButton('#eff6ff', '#2563eb', '#bfdbfe')} title="Edit"><Edit3 size={14} /></button>
+                                                    )}
+                                                    {canDelete && (
+                                                        <button onClick={() => setDeleteTarget(submission)} style={iconButton('#fff1f2', '#ef4444', '#fecaca')} title="Delete"><Trash2 size={14} /></button>
+                                                    )}
+                                                </div>
+                                            </td>
+                                        )}
                                     </tr>
                                 );
                             })}

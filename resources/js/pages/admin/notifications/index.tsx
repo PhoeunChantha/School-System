@@ -6,6 +6,7 @@ import {
     SheetHeader,
     SheetTitle,
 } from '@/components/ui/sheet';
+import { useAdminPermissions } from '@/hooks/use-admin-permissions';
 import AdminShell from '@/pages/admin/shell';
 import { AdminSelect, Badge, KH } from '@/pages/admin/ui';
 import { router, useForm } from '@inertiajs/react';
@@ -98,6 +99,12 @@ const emptyForm: NotificationFormData = {
 };
 
 export default function NotificationsPage({ notifications, students, users, summary }: NotificationsPageProps) {
+    const { can } = useAdminPermissions();
+    const canCreate = can('notifications.create');
+    const canUpdate = can('notifications.update');
+    const canDelete = can('notifications.delete');
+    const canMarkRead = can('notifications.mark-read');
+    const canMarkAllRead = can('notifications.mark-all-read');
     const [category, setCategory] = useState<CategoryFilter>('all');
     const [drawerMode, setDrawerMode] = useState<DrawerMode | null>(null);
     const [editingNotification, setEditingNotification] = useState<NotificationItem | null>(null);
@@ -119,6 +126,10 @@ export default function NotificationsPage({ notifications, students, users, summ
     ];
 
     const openCreateDrawer = () => {
+        if (!canCreate) {
+            return;
+        }
+
         reset();
         setData(emptyForm);
         setEditingNotification(null);
@@ -126,6 +137,10 @@ export default function NotificationsPage({ notifications, students, users, summ
     };
 
     const openEditDrawer = (notification: NotificationItem) => {
+        if (!canUpdate) {
+            return;
+        }
+
         setData({
             category: notification.category,
             title_kh: notification.titleKh,
@@ -148,6 +163,16 @@ export default function NotificationsPage({ notifications, students, users, summ
     const submitNotification = (event: FormEvent<HTMLFormElement>) => {
         event.preventDefault();
 
+        if (drawerMode === 'edit' && !canUpdate) {
+            closeDrawer();
+            return;
+        }
+
+        if (drawerMode === 'create' && !canCreate) {
+            closeDrawer();
+            return;
+        }
+
         const options = {
             preserveScroll: true,
             onSuccess: () => {
@@ -165,6 +190,10 @@ export default function NotificationsPage({ notifications, students, users, summ
     };
 
     const markNotificationRead = (notification: NotificationItem) => {
+        if (!canMarkRead) {
+            return;
+        }
+
         if (notification.read) {
             return;
         }
@@ -176,6 +205,10 @@ export default function NotificationsPage({ notifications, students, users, summ
     };
 
     const markEveryNotificationRead = () => {
+        if (!canMarkAllRead) {
+            return;
+        }
+
         router.put(markAllRead.url(), {}, {
             preserveScroll: true,
             onSuccess: () => toast.success('All notifications marked as read.'),
@@ -184,6 +217,11 @@ export default function NotificationsPage({ notifications, students, users, summ
 
     const confirmDelete = () => {
         if (!deleteTarget) {
+            return;
+        }
+
+        if (!canDelete) {
+            setDeleteTarget(null);
             return;
         }
 
@@ -212,16 +250,18 @@ export default function NotificationsPage({ notifications, students, users, summ
                         <KH style={{ fontSize: 12, color: '#94a3b8', display: 'block' }}>ការជូនដំណឹង - School notifications</KH>
                     </div>
                     <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
-                        {summary.unreadCount > 0 && (
+                        {canMarkAllRead && summary.unreadCount > 0 && (
                             <button onClick={markEveryNotificationRead} style={buttonStyle('#f0fdf4', '#16a34a', '#bbf7d0')}>
                                 <Check size={15} />
                                 Mark All Read
                             </button>
                         )}
-                        <button onClick={openCreateDrawer} style={buttonStyle('#2563eb', 'white', '#2563eb')}>
-                            <Plus size={15} />
-                            Add Notification
-                        </button>
+                        {canCreate && (
+                            <button onClick={openCreateDrawer} style={buttonStyle('#2563eb', 'white', '#2563eb')}>
+                                <Plus size={15} />
+                                Add Notification
+                            </button>
+                        )}
                     </div>
                 </div>
 
@@ -284,14 +324,20 @@ export default function NotificationsPage({ notifications, students, users, summ
                                     </div>
                                 </div>
 
-                                <div style={{ display: 'flex', gap: 6, flexShrink: 0 }}>
-                                    <button onClick={() => openEditDrawer(notification)} style={iconButton('#eff6ff', '#2563eb', '#bfdbfe')} title="Edit">
-                                        <Edit3 size={14} />
-                                    </button>
-                                    <button onClick={() => setDeleteTarget(notification)} style={iconButton('#fff1f2', '#ef4444', '#fecaca')} title="Delete">
-                                        <Trash2 size={14} />
-                                    </button>
-                                </div>
+                                {(canUpdate || canDelete) && (
+                                    <div style={{ display: 'flex', gap: 6, flexShrink: 0 }}>
+                                        {canUpdate && (
+                                            <button onClick={() => openEditDrawer(notification)} style={iconButton('#eff6ff', '#2563eb', '#bfdbfe')} title="Edit">
+                                                <Edit3 size={14} />
+                                            </button>
+                                        )}
+                                        {canDelete && (
+                                            <button onClick={() => setDeleteTarget(notification)} style={iconButton('#fff1f2', '#ef4444', '#fecaca')} title="Delete">
+                                                <Trash2 size={14} />
+                                            </button>
+                                        )}
+                                    </div>
+                                )}
                             </div>
                         );
                     })}

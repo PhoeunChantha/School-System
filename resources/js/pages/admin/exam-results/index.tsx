@@ -6,6 +6,7 @@ import {
     SheetHeader,
     SheetTitle,
 } from '@/components/ui/sheet';
+import { useAdminPermissions } from '@/hooks/use-admin-permissions';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import AdminShell from '@/pages/admin/shell';
 import { Avatar, Badge, KH, Pagination, PBar } from '@/pages/admin/ui';
@@ -131,6 +132,11 @@ function emptyForm(exams: ExamOption[], students: StudentOption[]): ExamResultFo
 }
 
 export default function ExamResultsPage({ results, exams, students, summary }: ExamResultsPageProps) {
+    const { can, canAny } = useAdminPermissions();
+    const canCreate = can('exam-results.create');
+    const canUpdate = can('exam-results.update');
+    const canDelete = can('exam-results.delete');
+    const canManageResults = canAny(['exam-results.update', 'exam-results.delete']);
     const [selectedExam, setSelectedExam] = useState<number | 'all'>('all');
     const [search, setSearch] = useState('');
     const [orderBy, setOrderBy] = useState<OrderKey>('student-asc');
@@ -168,6 +174,10 @@ export default function ExamResultsPage({ results, exams, students, summary }: E
     );
 
     const openCreateDrawer = () => {
+        if (!canCreate) {
+            return;
+        }
+
         reset();
         setData({
             ...emptyForm(exams, students),
@@ -178,6 +188,10 @@ export default function ExamResultsPage({ results, exams, students, summary }: E
     };
 
     const openEditDrawer = (result: ExamResultItem) => {
+        if (!canUpdate) {
+            return;
+        }
+
         setData({
             exam_id: result.examId,
             student_id: result.studentId,
@@ -197,6 +211,16 @@ export default function ExamResultsPage({ results, exams, students, summary }: E
 
     const submitResult = (event: FormEvent<HTMLFormElement>) => {
         event.preventDefault();
+
+        if (drawerMode === 'edit' && !canUpdate) {
+            closeDrawer();
+            return;
+        }
+
+        if (drawerMode === 'create' && !canCreate) {
+            closeDrawer();
+            return;
+        }
 
         const options = {
             preserveScroll: true,
@@ -219,6 +243,11 @@ export default function ExamResultsPage({ results, exams, students, summary }: E
             return;
         }
 
+        if (!canDelete) {
+            setDeleteTarget(null);
+            return;
+        }
+
         router.delete(destroy.url((deleteTarget.routeKey ?? deleteTarget.id) as never), {
             preserveScroll: true,
             onSuccess: () => {
@@ -236,10 +265,12 @@ export default function ExamResultsPage({ results, exams, students, summary }: E
                         <div style={{ fontWeight: 800, fontSize: 18, color: '#1e293b' }}>Exam Results</div>
                         <KH style={{ fontSize: 12, color: '#94a3b8', display: 'block' }}>លទ្ធផលប្រឡង - Record student exam scores</KH>
                     </div>
-                    <button onClick={openCreateDrawer} style={primaryButton}>
-                        <Plus size={16} />
-                        Add Result
-                    </button>
+                    {canCreate && (
+                        <button onClick={openCreateDrawer} style={primaryButton}>
+                            <Plus size={16} />
+                            Add Result
+                        </button>
+                    )}
                 </div>
 
                 <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill,minmax(150px,1fr))', gap: 12 }}>
@@ -311,13 +342,13 @@ export default function ExamResultsPage({ results, exams, students, summary }: E
                                 <th>Score</th>
                                 <th>Percent</th>
                                 <th>Status</th>
-                                <th>Actions</th>
+                                {canManageResults && <th>Actions</th>}
                             </tr>
                         </thead>
                         <tbody>
                             {paginated.length === 0 ? (
                                 <tr>
-                                    <td colSpan={6} style={{ padding: '38px 24px', textAlign: 'center', color: '#64748b', fontSize: 14, fontWeight: 700 }}>
+                                    <td colSpan={canManageResults ? 6 : 5} style={{ padding: '38px 24px', textAlign: 'center', color: '#64748b', fontSize: 14, fontWeight: 700 }}>
                                         {search ? <>No exam results found for <strong>"{search}"</strong></> : 'No exam results found'}
                                     </td>
                                 </tr>
@@ -344,12 +375,18 @@ export default function ExamResultsPage({ results, exams, students, summary }: E
                                         </div>
                                     </td>
                                     <td><Badge type={statusType[result.status]}>{result.status}</Badge></td>
-                                    <td>
-                                        <div style={{ display: 'flex', gap: 6 }}>
-                                            <button onClick={() => openEditDrawer(result)} style={iconButton('#eff6ff', '#2563eb', '#bfdbfe')} title="Edit"><Edit3 size={14} /></button>
-                                            <button onClick={() => setDeleteTarget(result)} style={iconButton('#fff1f2', '#ef4444', '#fecaca')} title="Delete"><Trash2 size={14} /></button>
-                                        </div>
-                                    </td>
+                                    {canManageResults && (
+                                        <td>
+                                            <div style={{ display: 'flex', gap: 6 }}>
+                                                {canUpdate && (
+                                                    <button onClick={() => openEditDrawer(result)} style={iconButton('#eff6ff', '#2563eb', '#bfdbfe')} title="Edit"><Edit3 size={14} /></button>
+                                                )}
+                                                {canDelete && (
+                                                    <button onClick={() => setDeleteTarget(result)} style={iconButton('#fff1f2', '#ef4444', '#fecaca')} title="Delete"><Trash2 size={14} /></button>
+                                                )}
+                                            </div>
+                                        </td>
+                                    )}
                                 </tr>
                             ))}
                         </tbody>

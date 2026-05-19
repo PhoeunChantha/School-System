@@ -53,6 +53,7 @@ import {
     useCallback,
     useEffect,
     useMemo,
+    useRef,
     useState,
     type ReactNode,
 } from 'react';
@@ -262,6 +263,18 @@ const PAGE_TITLE_KEYS: Record<string, string> = {
     settings: 'settings',
 };
 
+function normalizeAdminPath(path: string): string {
+    const cleanPath = path.split(/[?#]/)[0]?.replace(/\/+$/, '');
+
+    return cleanPath || '/';
+}
+
+function isNavItemActive(currentPath: string, item: NavItem): boolean {
+    const itemPath = normalizeAdminPath(item.href);
+
+    return currentPath === itemPath || currentPath.startsWith(`${itemPath}/`);
+}
+
 interface AdminShellProps {
     breadcrumbs?: BreadcrumbItem[];
     children: ReactNode;
@@ -353,6 +366,12 @@ export default function AdminShell({ children }: AdminShellProps) {
         { entries: [], pendingGroup: null },
     ).entries;
     const visibleMobileNav = visibleNav.filter(isItem);
+    const currentPath = normalizeAdminPath(url);
+    const activeItem =
+        visibleMobileNav.find((item) => isNavItemActive(currentPath, item)) ??
+        visibleMobileNav.find((item) => item.id === 'dashboard');
+    const active = activeItem?.id ?? 'dashboard';
+    const activeMobileNavRef = useRef<HTMLAnchorElement | null>(null);
     const [collapsed, setCollapsed] = useState(false);
     const [mobileOpen, setMobileOpen] = useState(false);
     const [dark, setDark] = useState(() => {
@@ -374,8 +393,26 @@ export default function AdminShell({ children }: AdminShellProps) {
         document.documentElement.classList.toggle('dark', dark);
         window.localStorage.setItem('admin-theme', dark ? 'dark' : 'light');
     }, [dark]);
-    const segments = url.split('/').filter(Boolean);
-    const active = segments[1] ?? 'dashboard';
+
+    useEffect(() => {
+        const activeMobileNav = activeMobileNavRef.current;
+
+        if (!activeMobileNav || typeof window === 'undefined') {
+            return;
+        }
+
+        if (!window.matchMedia('(max-width: 768px)').matches) {
+            return;
+        }
+
+        window.requestAnimationFrame(() => {
+            activeMobileNav.scrollIntoView({
+                block: 'nearest',
+                inline: 'center',
+            });
+        });
+    }, [active, visibleMobileNav.length]);
+
     const titleKey = PAGE_TITLE_KEYS[active] ?? PAGE_TITLE_KEYS.dashboard;
 
     return (
@@ -899,6 +936,11 @@ export default function AdminShell({ children }: AdminShellProps) {
                         <Link
                             key={item.id}
                             href={item.href}
+                            ref={
+                                active === item.id
+                                    ? activeMobileNavRef
+                                    : undefined
+                            }
                             className={cn(
                                 'mob-nav-btn',
                                 active === item.id && 'active',

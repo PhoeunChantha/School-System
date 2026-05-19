@@ -166,9 +166,8 @@ export default function ClassesPage({
             {/* List view */}
             {view === 'list' && (
                 <div
-                    className="fade-in"
+                    className="admin-classes-page fade-in"
                     style={{
-                        padding: 24,
                         display: 'flex',
                         flexDirection: 'column',
                         gap: 16,
@@ -203,9 +202,10 @@ export default function ClassesPage({
                     </div>
 
                     {/* Table */}
-                    <div className="card" style={{ overflowX: 'auto' }}>
+                    <div className="card admin-classes-card">
                         {/* Sort + per-page controls */}
                         <div
+                            className="admin-classes-controls"
                             style={{
                                 display: 'flex',
                                 alignItems: 'center',
@@ -310,6 +310,7 @@ export default function ClassesPage({
                                 value={search}
                                 onChange={(e) => setSearch(e.target.value)}
                                 className="f-input"
+                                data-role="classes-search"
                                 style={{
                                     width: 260,
                                     maxWidth: '100%',
@@ -319,7 +320,7 @@ export default function ClassesPage({
                             />
                         </div>
 
-                        <table className="data-table">
+                        <table className="data-table admin-classes-table">
                             <thead>
                                 <tr>
                                     <th>{translateText('Class')}</th>
@@ -524,6 +525,91 @@ export default function ClassesPage({
                                 )}
                             </tbody>
                         </table>
+
+                        <div className="admin-classes-mobile-list">
+                            {paginated.length === 0 ? (
+                                <div className="admin-classes-empty">
+                                    {translateText('No classes found')}{' '}
+                                    <strong>"{search}"</strong>
+                                </div>
+                            ) : (
+                                paginated.map((cls) => (
+                                    <div
+                                        key={cls.id}
+                                        className="admin-class-mobile-card"
+                                    >
+                                        <div className="admin-class-mobile-head">
+                                            <div>
+                                                <div className="admin-class-mobile-title">
+                                                    {cls.name}
+                                                </div>
+                                                <div className="admin-class-mobile-teacher">
+                                                    {cls.teacher}
+                                                </div>
+                                            </div>
+                                            <Badge type="blue">
+                                                {cls.room}
+                                            </Badge>
+                                        </div>
+                                        <div className="admin-class-mobile-meta">
+                                            <div>
+                                                <span>
+                                                    {translateText('Schedule')}
+                                                </span>
+                                                <strong>
+                                                    <Clock size={13} />
+                                                    {cls.time}
+                                                </strong>
+                                            </div>
+                                            <div>
+                                                <span>
+                                                    {translateText('Days')}
+                                                </span>
+                                                <strong>
+                                                    {cls.days || '-'}
+                                                </strong>
+                                            </div>
+                                            <div>
+                                                <span>
+                                                    {translateText('Students')}
+                                                </span>
+                                                <strong>
+                                                    {cls.count}{' '}
+                                                    {translateText('students')}
+                                                </strong>
+                                            </div>
+                                        </div>
+                                        <div className="admin-class-mobile-actions">
+                                            <Link
+                                                href="/admin/attendance"
+                                                className="admin-class-action attendance"
+                                            >
+                                                <ClipboardCheck size={14} />
+                                                {translateText('Attendance')}
+                                            </Link>
+                                            <button
+                                                type="button"
+                                                onClick={() => handleEdit(cls)}
+                                                className="admin-class-action edit"
+                                            >
+                                                <Edit3 size={14} />
+                                                {translateText('Edit')}
+                                            </button>
+                                            <button
+                                                type="button"
+                                                onClick={() =>
+                                                    handleDelete(cls)
+                                                }
+                                                className="admin-class-action delete"
+                                            >
+                                                <Trash2 size={14} />
+                                                {translateText('Delete')}
+                                            </button>
+                                        </div>
+                                    </div>
+                                ))
+                            )}
+                        </div>
 
                         {filtered.length > 0 && (
                             <Pagination

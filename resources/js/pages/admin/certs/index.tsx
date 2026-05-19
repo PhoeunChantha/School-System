@@ -8,6 +8,7 @@ import {
     SheetHeader,
     SheetTitle,
 } from '@/components/ui/sheet';
+import { useAdminPermissions } from '@/hooks/use-admin-permissions';
 import AdminShell from '@/pages/admin/shell';
 import { Avatar, Badge, KH, Pagination } from '@/pages/admin/ui';
 import { router, useForm } from '@inertiajs/react';
@@ -151,6 +152,10 @@ function sortCertificates(list: CertificateItem[], order: OrderKey): Certificate
 }
 
 export default function CertificatesPage({ certificates, students, levels, summary }: CertificatesPageProps) {
+    const { can } = useAdminPermissions();
+    const canCreate = can('certificates.create');
+    const canUpdate = can('certificates.update');
+    const canDelete = can('certificates.delete');
     const [filter, setFilter] = useState<CertificateType | 'all'>('all');
     const [search, setSearch] = useState('');
     const [orderBy, setOrderBy] = useState<OrderKey>('issued-desc');
@@ -211,6 +216,10 @@ export default function CertificatesPage({ certificates, students, levels, summa
     }, [students, studentSearch]);
 
     const openCreateDrawer = () => {
+        if (!canCreate) {
+            return;
+        }
+
         reset();
         setData(emptyForm(students));
         setStudentSearch('');
@@ -220,6 +229,10 @@ export default function CertificatesPage({ certificates, students, levels, summa
     };
 
     const openEditDrawer = (certificate: CertificateItem) => {
+        if (!canUpdate) {
+            return;
+        }
+
         setData({
             student_id: certificate.studentId,
             level_id: certificate.levelId,
@@ -265,6 +278,16 @@ export default function CertificatesPage({ certificates, students, levels, summa
     const submitCertificate = (event: FormEvent<HTMLFormElement>) => {
         event.preventDefault();
 
+        if (drawerMode === 'edit' && !canUpdate) {
+            closeDrawer();
+            return;
+        }
+
+        if (drawerMode === 'create' && !canCreate) {
+            closeDrawer();
+            return;
+        }
+
         const options = {
             preserveScroll: true,
             onSuccess: () => {
@@ -286,6 +309,11 @@ export default function CertificatesPage({ certificates, students, levels, summa
             return;
         }
 
+        if (!canDelete) {
+            setDeleteTarget(null);
+            return;
+        }
+
         router.delete(destroy.url((deleteTarget.routeKey ?? deleteTarget.id) as never), {
             preserveScroll: true,
             onSuccess: () => {
@@ -303,10 +331,12 @@ export default function CertificatesPage({ certificates, students, levels, summa
                         <div style={{ fontWeight: 800, fontSize: 18, color: '#1e293b' }}>Certificates</div>
                         <KH style={{ fontSize: 12, color: '#94a3b8', display: 'block' }}>វិញ្ញាបនបត្រ - Manage issued certificates</KH>
                     </div>
-                    <button onClick={openCreateDrawer} style={{ background: '#2563eb', color: 'white', border: 'none', borderRadius: 10, padding: '9px 18px', fontWeight: 800, fontSize: 13, cursor: 'pointer', display: 'inline-flex', alignItems: 'center', gap: 8 }}>
-                        <Plus size={16} />
-                        Add Certificate
-                    </button>
+                    {canCreate && (
+                        <button onClick={openCreateDrawer} style={{ background: '#2563eb', color: 'white', border: 'none', borderRadius: 10, padding: '9px 18px', fontWeight: 800, fontSize: 13, cursor: 'pointer', display: 'inline-flex', alignItems: 'center', gap: 8 }}>
+                            <Plus size={16} />
+                            Add Certificate
+                        </button>
+                    )}
                 </div>
 
                 <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill,minmax(150px,1fr))', gap: 12 }}>
@@ -405,8 +435,12 @@ export default function CertificatesPage({ certificates, students, levels, summa
                                             <div style={{ display: 'flex', gap: 6 }}>
                                                 <button onClick={() => setPreview(certificate)} style={actionButton('#f8fafc', '#64748b', '#e2e8f0')} title="Preview"><Eye size={14} /></button>
                                                 <button onClick={() => window.print()} style={actionButton('#f0fdf4', '#16a34a', '#bbf7d0')} title="Print"><Printer size={14} /></button>
-                                                <button onClick={() => openEditDrawer(certificate)} style={actionButton('#eff6ff', '#2563eb', '#bfdbfe')} title="Edit"><Edit3 size={14} /></button>
-                                                <button onClick={() => setDeleteTarget(certificate)} style={actionButton('#fff1f2', '#ef4444', '#fecaca')} title="Delete"><Trash2 size={14} /></button>
+                                                {canUpdate && (
+                                                    <button onClick={() => openEditDrawer(certificate)} style={actionButton('#eff6ff', '#2563eb', '#bfdbfe')} title="Edit"><Edit3 size={14} /></button>
+                                                )}
+                                                {canDelete && (
+                                                    <button onClick={() => setDeleteTarget(certificate)} style={actionButton('#fff1f2', '#ef4444', '#fecaca')} title="Delete"><Trash2 size={14} /></button>
+                                                )}
                                             </div>
                                         </td>
                                     </tr>

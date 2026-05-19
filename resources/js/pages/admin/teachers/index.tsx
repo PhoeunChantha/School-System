@@ -25,6 +25,7 @@ import {
 import { useAdminTranslation } from '@/hooks/use-admin-translation';
 import AdminShell from '@/pages/admin/shell';
 import { Avatar, Badge, KH, Pagination } from '@/pages/admin/ui';
+import { AdminMobileCard } from '@/pages/admin/ui/mobile-card';
 import { lessonPlans as lessonPlanIndex } from '@/routes/admin';
 import { create as createTeacherLessonPlan } from '@/routes/admin/teachers/lesson-plans';
 import { Link, router, useForm } from '@inertiajs/react';
@@ -217,9 +218,8 @@ export default function TeachersPage({ teachers }: TeachersPageProps) {
             {/* List view */}
             {view === 'list' && (
                 <div
-                    className="fade-in"
+                    className="admin-teachers-page fade-in"
                     style={{
-                        padding: 24,
                         display: 'flex',
                         flexDirection: 'column',
                         gap: 16,
@@ -329,8 +329,9 @@ export default function TeachersPage({ teachers }: TeachersPageProps) {
                         </div>
                     </div>
 
-                    <div className="card" style={{ overflowX: 'auto' }}>
+                    <div className="card admin-teachers-card">
                         <div
+                            className="admin-teachers-controls"
                             style={{
                                 display: 'flex',
                                 alignItems: 'center',
@@ -422,6 +423,7 @@ export default function TeachersPage({ teachers }: TeachersPageProps) {
                                     setSearch(event.target.value)
                                 }
                                 className="f-input"
+                                data-role="teachers-search"
                                 style={{
                                     width: 260,
                                     maxWidth: '100%',
@@ -431,7 +433,7 @@ export default function TeachersPage({ teachers }: TeachersPageProps) {
                             />
                         </div>
 
-                        <table className="data-table">
+                        <table className="data-table admin-teachers-table">
                             <thead>
                                 <tr>
                                     <th>Teacher</th>
@@ -717,6 +719,141 @@ export default function TeachersPage({ teachers }: TeachersPageProps) {
                                 )}
                             </tbody>
                         </table>
+                        <div className="admin-teachers-mobile-list">
+                            {paginated.length === 0 ? (
+                                <div className="admin-teachers-empty">
+                                    {search ? (
+                                        <>
+                                            No teachers found for{' '}
+                                            <strong>"{search}"</strong>
+                                        </>
+                                    ) : (
+                                        'No teachers found'
+                                    )}
+                                </div>
+                            ) : (
+                                paginated.map((t) => (
+                                    <AdminMobileCard
+                                        key={t.id}
+                                        leading={
+                                            <Avatar
+                                                name={t.nameEn}
+                                                src={t.photo}
+                                                size={38}
+                                            />
+                                        }
+                                        title={<KH>{t.nameKh}</KH>}
+                                        subtitle={t.nameEn}
+                                        badge={
+                                            <Badge
+                                                type={
+                                                    t.status === 'active'
+                                                        ? 'green'
+                                                        : 'gray'
+                                                }
+                                            >
+                                                {t.status}
+                                            </Badge>
+                                        }
+                                        actionLabel={translateText('Actions')}
+                                        actions={
+                                            <>
+                                                <DropdownMenuItem asChild>
+                                                    <Link
+                                                        href={createTeacherLessonPlan.url(
+                                                            (t.routeKey ??
+                                                                t.id) as never,
+                                                        )}
+                                                        className="flex items-center gap-2"
+                                                    >
+                                                        <School size={14} />{' '}
+                                                        {translateText('Plan')}
+                                                    </Link>
+                                                </DropdownMenuItem>
+                                                <DropdownMenuItem asChild>
+                                                    <Link
+                                                        href={teacherGrades.url(
+                                                            (t.routeKey ??
+                                                                t.id) as never,
+                                                        )}
+                                                        className="flex items-center gap-2"
+                                                    >
+                                                        <Save size={14} />{' '}
+                                                        {translateText(
+                                                            'Score management',
+                                                        )}
+                                                    </Link>
+                                                </DropdownMenuItem>
+                                                <DropdownMenuItem asChild>
+                                                    <Link
+                                                        href={showTeacher.url(
+                                                            (t.routeKey ??
+                                                                t.id) as never,
+                                                        )}
+                                                        className="flex items-center gap-2"
+                                                    >
+                                                        <Eye size={14} />{' '}
+                                                        {translateText('View')}
+                                                    </Link>
+                                                </DropdownMenuItem>
+                                                <DropdownMenuItem
+                                                    onSelect={() =>
+                                                        handleEdit(t)
+                                                    }
+                                                >
+                                                    <Edit3 size={14} />{' '}
+                                                    {translateText('Edit')}
+                                                </DropdownMenuItem>
+                                                <DropdownMenuSeparator />
+                                                <DropdownMenuItem
+                                                    onSelect={() =>
+                                                        handleDelete(t)
+                                                    }
+                                                    className="text-red-600 focus:text-red-600"
+                                                >
+                                                    <Trash2 size={14} />{' '}
+                                                    {translateText('Delete')}
+                                                </DropdownMenuItem>
+                                            </>
+                                        }
+                                        meta={[
+                                            {
+                                                label: translateText('Subject'),
+                                                value: t.subject || '-',
+                                            },
+                                            {
+                                                label: translateText('Classes'),
+                                                value: t.classes,
+                                            },
+                                            {
+                                                label: translateText(
+                                                    'Students',
+                                                ),
+                                                value: t.students,
+                                            },
+                                            {
+                                                label: translateText('Phone'),
+                                                value: t.phone || '-',
+                                            },
+                                        ]}
+                                        footer={
+                                            t.lessons.length > 0 ? (
+                                                <Link
+                                                    href={lessonPlanIndex.url()}
+                                                    className="admin-teacher-mobile-lesson"
+                                                >
+                                                    {t.lessons[0].title}
+                                                </Link>
+                                            ) : (
+                                                <span className="admin-teacher-mobile-muted">
+                                                    No lessons
+                                                </span>
+                                            )
+                                        }
+                                    />
+                                ))
+                            )}
+                        </div>
                         {filtered.length > 0 && (
                             <Pagination
                                 total={filtered.length}

@@ -30,6 +30,7 @@ class AdminSchoolSettingCrudTest extends TestCase
             ->assertInertia(fn ($page) => $page
                 ->component('admin/settings/index')
                 ->where('settings.school.nameEn', 'Testing School')
+                ->where('settings.seo.title', 'Frania English School')
                 ->where('settings.school.nameKh', 'សាលា សាកល្បង'));
     }
 
@@ -90,6 +91,33 @@ class AdminSchoolSettingCrudTest extends TestCase
 
         $this->assertSame('7', $setting->value['dueDay']);
         $this->assertSame(25, $setting->value['levelFees'][0]['fee']);
+    }
+
+    public function test_admin_can_update_seo_settings(): void
+    {
+        $this->actingAs(User::factory()->create());
+
+        $payload = [
+            'value' => [
+                'title' => 'Frania School Cambodia',
+                'description' => 'English school in Cambodia.',
+                'keywords' => 'Frania, English school, Cambodia',
+                'canonicalUrl' => 'https://frania.example.test',
+                'robots' => 'index,follow',
+                'seoImage' => 'uploads/school/seo.jpg',
+            ],
+        ];
+
+        $this->put(route('admin.settings.update', 'seo'), $payload)
+            ->assertRedirect(route('admin.settings'));
+
+        $setting = SchoolSetting::query()
+            ->where('group', 'seo')
+            ->where('key', 'meta')
+            ->firstOrFail();
+
+        $this->assertSame('Frania School Cambodia', $setting->value['title']);
+        $this->assertSame('index,follow', $setting->value['robots']);
     }
 
     public function test_admin_can_update_notification_settings(): void

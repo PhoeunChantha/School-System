@@ -1,4 +1,5 @@
 import { create as createHomework, destroy, edit as editHomework } from '@/actions/App/Http/Controllers/Backends/HomeworkAssignmentController';
+import { useAdminPermissions } from '@/hooks/use-admin-permissions';
 import { create as createHomeworkSubmission } from '@/routes/admin/homework-submissions';
 import AdminShell from '@/pages/admin/shell';
 import { Badge, KH, Pagination, PBar } from '@/pages/admin/ui';
@@ -58,6 +59,12 @@ function sortHomework(list: HomeworkItem[], order: OrderKey): HomeworkItem[] {
 }
 
 export default function HomeworkPage({ homework }: HomeworkPageProps) {
+    const { can, canAny } = useAdminPermissions();
+    const canCreate = can('homework.create');
+    const canUpdate = can('homework.update');
+    const canDelete = can('homework.delete');
+    const canSubmitHomework = can('homework-submissions.create');
+    const canManageHomework = canAny(['homework.update', 'homework.delete']);
     const [search, setSearch] = useState('');
     const [status, setStatus] = useState('all');
     const [orderBy, setOrderBy] = useState<OrderKey>('due-desc');
@@ -92,6 +99,10 @@ export default function HomeworkPage({ homework }: HomeworkPageProps) {
 
     const confirmDelete = () => {
         if (!deleteTarget) return;
+        if (!canDelete) {
+            setDeleteTarget(null);
+            return;
+        }
 
         router.delete(destroy.url((deleteTarget.routeKey ?? deleteTarget.id) as never), {
             preserveScroll: true,
@@ -116,12 +127,16 @@ export default function HomeworkPage({ homework }: HomeworkPageProps) {
                     </div>
 
                     <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
-                        <Link href={createHomeworkSubmission.url()} style={{ background: '#16a34a', color: 'white', border: 'none', borderRadius: 10, padding: '9px 16px', fontWeight: 800, fontSize: 13, cursor: 'pointer', textDecoration: 'none', display: 'inline-flex', alignItems: 'center', gap: 6 }}>
-                            <Upload size={15} /> Student Submit
-                        </Link>
-                        <Link href={createHomework.url()} style={{ background: '#2563eb', color: 'white', border: 'none', borderRadius: 10, padding: '9px 18px', fontWeight: 700, fontSize: 13, cursor: 'pointer', textDecoration: 'none', display: 'inline-flex', alignItems: 'center', gap: 6 }}>
-                            <Plus size={15} /> Assign New
-                        </Link>
+                        {canSubmitHomework && (
+                            <Link href={createHomeworkSubmission.url()} style={{ background: '#16a34a', color: 'white', border: 'none', borderRadius: 10, padding: '9px 16px', fontWeight: 800, fontSize: 13, cursor: 'pointer', textDecoration: 'none', display: 'inline-flex', alignItems: 'center', gap: 6 }}>
+                                <Upload size={15} /> Student Submit
+                            </Link>
+                        )}
+                        {canCreate && (
+                            <Link href={createHomework.url()} style={{ background: '#2563eb', color: 'white', border: 'none', borderRadius: 10, padding: '9px 18px', fontWeight: 700, fontSize: 13, cursor: 'pointer', textDecoration: 'none', display: 'inline-flex', alignItems: 'center', gap: 6 }}>
+                                <Plus size={15} /> Assign New
+                            </Link>
+                        )}
                     </div>
                 </div>
 
@@ -169,13 +184,13 @@ export default function HomeworkPage({ homework }: HomeworkPageProps) {
                                 <th>Points</th>
                                 <th>Progress</th>
                                 <th>Status</th>
-                                <th>Actions</th>
+                                {canManageHomework && <th>Actions</th>}
                             </tr>
                         </thead>
                         <tbody>
                             {paginated.length === 0 ? (
                                 <tr>
-                                    <td colSpan={7} style={{ padding: '34px 24px', textAlign: 'center', color: '#64748b', fontSize: 14, fontWeight: 700 }}>
+                                    <td colSpan={canManageHomework ? 7 : 6} style={{ padding: '34px 24px', textAlign: 'center', color: '#64748b', fontSize: 14, fontWeight: 700 }}>
                                         Data not found
                                     </td>
                                 </tr>
@@ -203,12 +218,18 @@ export default function HomeworkPage({ homework }: HomeworkPageProps) {
                                             </div>
                                         </td>
                                         <td>{statusBadge(item.status)}</td>
-                                        <td>
-                                            <div style={{ display: 'flex', gap: 6 }}>
-                                                <Link href={editHomework.url((item.routeKey ?? item.id) as never)} style={{ background: '#eff6ff', color: '#2563eb', border: '1px solid #bfdbfe', borderRadius: 7, padding: '5px 10px', cursor: 'pointer', fontSize: 11, fontWeight: 700, textDecoration: 'none', whiteSpace: 'nowrap', display: 'inline-flex', alignItems: 'center', gap: 5 }}><Edit3 size={13} /> Edit</Link>
-                                                <button onClick={() => setDeleteTarget(item)} style={{ background: '#fff1f2', color: '#ef4444', border: '1px solid #fecaca', borderRadius: 7, padding: '5px 10px', cursor: 'pointer', fontSize: 11, fontWeight: 700, whiteSpace: 'nowrap', display: 'inline-flex', alignItems: 'center', gap: 5 }}><Trash2 size={13} /> Delete</button>
-                                            </div>
-                                        </td>
+                                        {canManageHomework && (
+                                            <td>
+                                                <div style={{ display: 'flex', gap: 6 }}>
+                                                    {canUpdate && (
+                                                        <Link href={editHomework.url((item.routeKey ?? item.id) as never)} style={{ background: '#eff6ff', color: '#2563eb', border: '1px solid #bfdbfe', borderRadius: 7, padding: '5px 10px', cursor: 'pointer', fontSize: 11, fontWeight: 700, textDecoration: 'none', whiteSpace: 'nowrap', display: 'inline-flex', alignItems: 'center', gap: 5 }}><Edit3 size={13} /> Edit</Link>
+                                                    )}
+                                                    {canDelete && (
+                                                        <button onClick={() => setDeleteTarget(item)} style={{ background: '#fff1f2', color: '#ef4444', border: '1px solid #fecaca', borderRadius: 7, padding: '5px 10px', cursor: 'pointer', fontSize: 11, fontWeight: 700, whiteSpace: 'nowrap', display: 'inline-flex', alignItems: 'center', gap: 5 }}><Trash2 size={13} /> Delete</button>
+                                                    )}
+                                                </div>
+                                            </td>
+                                        )}
                                     </tr>
                                 );
                             })}

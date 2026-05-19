@@ -133,7 +133,7 @@ export default function ShowStudentPage({ student, grades, attendance, fees, hom
         { id: 'overview',   label: 'Overview' },
         { id: 'grades',     label: 'Grades',     count: grades.length },
         { id: 'attendance', label: 'Attendance', count: attendance.length },
-        { id: 'fees',       label: 'Fees',       count: fees.length },
+        // { id: 'fees',       label: 'Fees',       count: fees.length },
         { id: 'homework',   label: 'Homework',   count: homework.length },
     ];
 

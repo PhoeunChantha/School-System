@@ -25,6 +25,7 @@ import {
     Bell,
     CalendarDays,
     CreditCard,
+    Globe2,
     KeyRound,
     Palette,
     PanelLeft,
@@ -42,6 +43,7 @@ import { toast } from 'sonner';
 
 type SettingsTab =
     | 'school'
+    | 'seo'
     | 'fees'
     | 'classes'
     | 'notifications'
@@ -63,6 +65,15 @@ interface SchoolSettings {
     logo: string | null;
     favicon: string | null;
     loginBg: string | null;
+}
+
+interface SeoSettings {
+    title: string;
+    description: string;
+    keywords: string;
+    canonicalUrl: string;
+    robots: string;
+    seoImage: string | null;
 }
 
 interface LevelFeeSetting {
@@ -99,6 +110,7 @@ interface NotificationSettings {
 interface SettingsPageProps {
     settings: {
         school: SchoolSettings;
+        seo: SeoSettings;
         fees: FeeSettings;
         classes: ClassSettings;
         notifications: NotificationSettings;
@@ -111,6 +123,7 @@ interface SettingsPageProps {
 
 const tabs: { id: SettingsTab; label: string; icon: ElementType }[] = [
     { id: 'school', label: 'School Info', icon: School },
+    { id: 'seo', label: 'SEO', icon: Globe2 },
     { id: 'fees', label: 'Fee Settings', icon: CreditCard },
     { id: 'classes', label: 'Class Schedule', icon: CalendarDays },
     { id: 'notifications', label: 'Notifications', icon: Bell },
@@ -224,6 +237,7 @@ export default function SettingsPage({
     );
     const [tab, setTab] = useState<SettingsTab>('school');
     const [school, setSchool] = useState<SchoolSettings>(settings.school);
+    const [seo, setSeo] = useState<SeoSettings>(settings.seo);
     const [fees, setFees] = useState<FeeSettings>(settings.fees);
     const [classes, setClasses] = useState<ClassSettings>(settings.classes);
     const [notifications, setNotifications] = useState<NotificationSettings>(
@@ -274,12 +288,16 @@ export default function SettingsPage({
     const [loginBgPreview, setLoginBgPreview] = useState<string | null>(
         toUrl(settings.school.loginBg),
     );
+    const [seoImagePreview, setSeoImagePreview] = useState<string | null>(
+        toUrl(settings.seo.seoImage),
+    );
     const [uploadingType, setUploadingType] = useState<
-        'logo' | 'favicon' | 'loginBg' | null
+        'logo' | 'favicon' | 'loginBg' | 'seoImage' | null
     >(null);
     const logoInputRef = useRef<HTMLInputElement>(null);
     const faviconInputRef = useRef<HTMLInputElement>(null);
     const loginBgInputRef = useRef<HTMLInputElement>(null);
+    const seoImageInputRef = useRef<HTMLInputElement>(null);
 
     const saveGroup = (group: SettingsTab, value: object) => {
         setSavingGroup(group);
@@ -295,13 +313,14 @@ export default function SettingsPage({
     };
 
     const handleImageUpload = (
-        type: 'logo' | 'favicon' | 'loginBg',
+        type: 'logo' | 'favicon' | 'loginBg' | 'seoImage',
         file: File,
     ) => {
         const previewUrl = URL.createObjectURL(file);
         if (type === 'logo') setLogoPreview(previewUrl);
         else if (type === 'favicon') setFaviconPreview(previewUrl);
-        else setLoginBgPreview(previewUrl);
+        else if (type === 'loginBg') setLoginBgPreview(previewUrl);
+        else setSeoImagePreview(previewUrl);
 
         setUploadingType(type);
         router.post(
@@ -312,14 +331,16 @@ export default function SettingsPage({
                 preserveScroll: true,
                 onSuccess: () =>
                     toast.success(
-                        `${type === 'logo' ? 'Logo' : type === 'favicon' ? 'Favicon' : 'Login background'} uploaded successfully.`,
+                        `${type === 'logo' ? 'Logo' : type === 'favicon' ? 'Favicon' : type === 'loginBg' ? 'Login background' : 'SEO image'} uploaded successfully.`,
                     ),
                 onError: () => {
                     if (type === 'logo')
                         setLogoPreview(toUrl(settings.school.logo));
                     else if (type === 'favicon')
                         setFaviconPreview(toUrl(settings.school.favicon));
-                    else setLoginBgPreview(toUrl(settings.school.loginBg));
+                    else if (type === 'loginBg')
+                        setLoginBgPreview(toUrl(settings.school.loginBg));
+                    else setSeoImagePreview(toUrl(settings.seo.seoImage));
                     toast.error('Upload failed. Please try again.');
                 },
                 onFinish: () => setUploadingType(null),
@@ -330,9 +351,8 @@ export default function SettingsPage({
     return (
         <AdminShell>
             <div
-                className="fade-in"
+                className="fade-in admin-settings-page"
                 style={{
-                    padding: 24,
                     display: 'flex',
                     flexDirection: 'column',
                     gap: 20,
@@ -360,15 +380,15 @@ export default function SettingsPage({
                 </div>
 
                 <div
+                    className="admin-settings-layout"
                     style={{
                         display: 'flex',
                         gap: 20,
-                        flexWrap: 'wrap',
                         alignItems: 'flex-start',
                     }}
                 >
-                    <div style={{ width: 210, flexShrink: 0 }}>
-                        <div className="card" style={{ padding: 8 }}>
+                    <div className="admin-settings-tabs">
+                        <div className="card admin-settings-tabs-card">
                             {visibleTabs.map((item) => {
                                 const Icon = item.icon;
                                 return (
@@ -385,7 +405,7 @@ export default function SettingsPage({
                         </div>
                     </div>
 
-                    <div style={{ flex: 1, minWidth: 0 }}>
+                    <div className="admin-settings-content">
                         {tab === 'school' && (
                             <SettingsPanel
                                 title="School Information"
@@ -868,6 +888,196 @@ export default function SettingsPage({
                                                 </div>
                                             </div>
                                         )}
+                                    </div>
+                                </div>
+                            </SettingsPanel>
+                        )}
+
+                        {tab === 'seo' && (
+                            <SettingsPanel
+                                title="SEO Settings"
+                                onSave={() => saveGroup('seo', seo)}
+                                saving={savingGroup === 'seo'}
+                            >
+                                <div style={formGrid}>
+                                    <Field label="Meta Title" wide>
+                                        <input
+                                            style={inputStyle}
+                                            value={seo.title}
+                                            onChange={(event) =>
+                                                setSeo((current) => ({
+                                                    ...current,
+                                                    title: event.target.value,
+                                                }))
+                                            }
+                                            maxLength={70}
+                                        />
+                                    </Field>
+                                    <Field label="Meta Description" wide>
+                                        <textarea
+                                            style={{
+                                                ...inputStyle,
+                                                minHeight: 96,
+                                                resize: 'vertical',
+                                            }}
+                                            value={seo.description}
+                                            onChange={(event) =>
+                                                setSeo((current) => ({
+                                                    ...current,
+                                                    description:
+                                                        event.target.value,
+                                                }))
+                                            }
+                                            maxLength={180}
+                                        />
+                                    </Field>
+                                    <Field label="Keywords" wide>
+                                        <input
+                                            style={inputStyle}
+                                            value={seo.keywords}
+                                            onChange={(event) =>
+                                                setSeo((current) => ({
+                                                    ...current,
+                                                    keywords:
+                                                        event.target.value,
+                                                }))
+                                            }
+                                            placeholder="school, English, Cambodia"
+                                        />
+                                    </Field>
+                                    <Field label="Canonical URL">
+                                        <input
+                                            style={inputStyle}
+                                            type="url"
+                                            value={seo.canonicalUrl}
+                                            onChange={(event) =>
+                                                setSeo((current) => ({
+                                                    ...current,
+                                                    canonicalUrl:
+                                                        event.target.value,
+                                                }))
+                                            }
+                                            placeholder="https://example.com"
+                                        />
+                                    </Field>
+                                    <Field label="Robots">
+                                        <select
+                                            style={inputStyle}
+                                            value={seo.robots}
+                                            onChange={(event) =>
+                                                setSeo((current) => ({
+                                                    ...current,
+                                                    robots: event.target.value,
+                                                }))
+                                            }
+                                        >
+                                            <option value="index,follow">
+                                                index,follow
+                                            </option>
+                                            <option value="noindex,nofollow">
+                                                noindex,nofollow
+                                            </option>
+                                            <option value="index,nofollow">
+                                                index,nofollow
+                                            </option>
+                                            <option value="noindex,follow">
+                                                noindex,follow
+                                            </option>
+                                        </select>
+                                    </Field>
+                                </div>
+
+                                <div style={{ marginTop: 22 }}>
+                                    <label
+                                        style={{
+                                            display: 'block',
+                                            fontSize: 12,
+                                            fontWeight: 800,
+                                            color: '#64748b',
+                                            marginBottom: 8,
+                                        }}
+                                    >
+                                        Social Share Image
+                                    </label>
+                                    <input
+                                        ref={seoImageInputRef}
+                                        type="file"
+                                        accept="image/*"
+                                        style={{ display: 'none' }}
+                                        onChange={(event) => {
+                                            const file =
+                                                event.target.files?.[0];
+                                            if (file)
+                                                handleImageUpload(
+                                                    'seoImage',
+                                                    file,
+                                                );
+                                            event.target.value = '';
+                                        }}
+                                    />
+                                    <div
+                                        onClick={() =>
+                                            seoImageInputRef.current?.click()
+                                        }
+                                        style={{
+                                            position: 'relative',
+                                            width: '100%',
+                                            minHeight: 160,
+                                            background: '#f8fafc',
+                                            border: '2px dashed #e2e8f0',
+                                            borderRadius: 12,
+                                            display: 'flex',
+                                            alignItems: 'center',
+                                            justifyContent: 'center',
+                                            cursor: 'pointer',
+                                            overflow: 'hidden',
+                                        }}
+                                    >
+                                        {seoImagePreview ? (
+                                            <img
+                                                src={seoImagePreview}
+                                                alt="SEO social preview"
+                                                style={{
+                                                    width: '100%',
+                                                    height: 180,
+                                                    objectFit: 'cover',
+                                                }}
+                                            />
+                                        ) : (
+                                            <div
+                                                style={{
+                                                    textAlign: 'center',
+                                                    color: '#94a3b8',
+                                                }}
+                                            >
+                                                <Upload
+                                                    size={22}
+                                                    style={{
+                                                        margin: '0 auto 6px',
+                                                    }}
+                                                />
+                                                <div
+                                                    style={{
+                                                        fontSize: 12,
+                                                        fontWeight: 800,
+                                                    }}
+                                                >
+                                                    {uploadingType ===
+                                                    'seoImage'
+                                                        ? 'Uploading...'
+                                                        : 'Click to upload social image'}
+                                                </div>
+                                            </div>
+                                        )}
+                                    </div>
+                                    <div
+                                        style={{
+                                            fontSize: 11,
+                                            color: '#94a3b8',
+                                            marginTop: 6,
+                                        }}
+                                    >
+                                        Recommended: 1200x630 px JPG/PNG/WebP
                                     </div>
                                 </div>
                             </SettingsPanel>
@@ -1881,6 +2091,7 @@ function tabButton(active: boolean): CSSProperties {
         alignItems: 'center',
         gap: 10,
         width: '100%',
+        minWidth: 0,
         padding: '10px 14px',
         borderRadius: 10,
         border: 'none',
@@ -1888,6 +2099,7 @@ function tabButton(active: boolean): CSSProperties {
         fontWeight: 800,
         fontSize: 13,
         textAlign: 'left',
+        whiteSpace: 'nowrap',
         background: active ? '#eff6ff' : 'transparent',
         color: active ? '#2563eb' : '#64748b',
         marginBottom: 2,

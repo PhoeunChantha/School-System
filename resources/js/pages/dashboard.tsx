@@ -354,7 +354,7 @@ export default function Dashboard({
                     </div>
 
                     {/* ── At-risk + Recent payments ── */}
-                    <div className="grid-2-col" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16 }}>
+                    {/* <div className="grid-2-col" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16 }}>
                         <div className="card dashboard-list-card" style={{ padding: 20 }}>
                             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 16 }}>
                                 <div>
@@ -428,7 +428,7 @@ export default function Dashboard({
                                 )
                             }
                         </div>
-                    </div>
+                    </div> */}
 
                     {/* ── Recent students overview ── */}
                     <div className="card">

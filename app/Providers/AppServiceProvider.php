@@ -45,14 +45,26 @@ class AppServiceProvider extends ServiceProvider
      */
     public function boot(): void
     {
-        // Share school favicon with the root blade so browsers pick it up immediately
+        // Share school data with the root blade for favicon and OG meta tags
         View::composer('app', function (\Illuminate\View\View $view): void {
             $value = SchoolSetting::query()
                 ->where('group', 'school')
                 ->where('key', 'profile')
-                ->value('value') ?? [];
+                ->first()?->value ?? [];
+            $seo = SchoolSetting::query()
+                ->where('group', 'seo')
+                ->where('key', 'meta')
+                ->first()?->value ?? [];
 
             $view->with('schoolFavicon', ! empty($value['favicon']) ? asset($value['favicon']) : null);
+            $view->with('schoolLogo', ! empty($value['logo']) ? asset($value['logo']) : null);
+            $view->with('schoolName', $value['nameEn'] ?? config('app.name', 'School System'));
+            $view->with('seoTitle', $seo['title'] ?? $value['nameEn'] ?? config('app.name', 'School System'));
+            $view->with('seoDescription', $seo['description'] ?? ($value['nameEn'] ?? config('app.name', 'School System')).' - School Management System');
+            $view->with('seoKeywords', $seo['keywords'] ?? null);
+            $view->with('seoCanonicalUrl', $seo['canonicalUrl'] ?? null);
+            $view->with('seoRobots', $seo['robots'] ?? 'index,follow');
+            $view->with('seoImage', ! empty($seo['seoImage']) ? asset($seo['seoImage']) : null);
         });
 
         $policyModels = [
