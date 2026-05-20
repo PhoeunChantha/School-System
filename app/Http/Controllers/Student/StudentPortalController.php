@@ -3,7 +3,9 @@
 namespace App\Http\Controllers\Student;
 
 use App\Http\Controllers\Controller;
+use App\Models\HomeworkAssignment;
 use App\Services\Student\StudentPortalService;
+use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
 use Inertia\Response;
@@ -30,6 +32,18 @@ class StudentPortalController extends Controller
     public function homework(Request $request): Response
     {
         return Inertia::render('student/homework/index', $this->service->homeworkData($request->user()));
+    }
+
+    public function submitHomework(Request $request, HomeworkAssignment $homeworkAssignment): RedirectResponse
+    {
+        $validated = $request->validate([
+            'note' => ['nullable', 'string', 'max:5000'],
+            'attachment' => ['nullable', 'file', 'mimes:pdf,doc,docx,jpg,jpeg,png', 'max:10240'],
+        ]);
+
+        $this->service->submitHomework($request->user(), $homeworkAssignment, $validated);
+
+        return back()->with('success', 'Homework submitted.');
     }
 
     public function fees(Request $request): Response

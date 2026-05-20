@@ -124,6 +124,7 @@
 }
 .admin-wrap .data-table tr:last-child td { border-bottom: none; }
 .admin-wrap .data-table tbody tr:hover { background: #fafbff; }
+.admin-wrap .data-table.users-table td:first-child { max-width: 340px; }
 
 /* ── Progress bar ── */
 .admin-wrap .pbar { height: 6px; background: #f1f5f9; border-radius: 99px; overflow: hidden; }

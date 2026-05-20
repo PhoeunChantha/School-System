@@ -12,6 +12,9 @@ use App\Models\HomeworkSubmission;
 use App\Models\Notification;
 use App\Models\Student;
 use App\Models\User;
+use Illuminate\Http\UploadedFile;
+use Illuminate\Support\Str;
+use Illuminate\Validation\ValidationException;
 
 class StudentPortalService
 {
@@ -113,6 +116,82 @@ class StudentPortalService
             'profile' => $this->profile($user, $student),
             'student' => $this->fullProfile($student),
         ];
+    }
+
+    /**
+     * @param  array{note?: string|null, attachment?: \Illuminate\Http\UploadedFile|null}  $data
+     */
+    public function submitHomework(User $user, HomeworkAssignment $homework, array $data): HomeworkSubmission
+    {
+        $student = $this->findStudent($user);
+
+        if (! $student) {
+            throw ValidationException::withMessages(['attachment' => 'No student profile linked to your account.']);
+        }
+
+        if ($homework->school_class_id !== $student->school_class_id) {
+            throw ValidationException::withMessages(['attachment' => 'This homework is not assigned to your class.']);
+        }
+
+        $submission = HomeworkSubmission::query()
+            ->where('homework_assignment_id', $homework->id)
+            ->where('student_id', $student->id)
+            ->first();
+
+        if ($submission && $submission->status === 'graded') {
+            throw ValidationException::withMessages(['attachment' => 'This homework has been graded and can no longer be changed.']);
+        }
+
+        $attachmentPath = $submission?->attachment_path;
+        $attachmentName = $submission?->attachment_name;
+
+        if (($data['attachment'] ?? null) instanceof UploadedFile) {
+            $this->deleteSubmissionAttachment($attachmentPath);
+            [$attachmentPath, $attachmentName] = $this->storeSubmissionAttachment($data['attachment']);
+        }
+
+        $isLate = $homework->due_on !== null && now()->gt($homework->due_on->endOfDay());
+
+        return HomeworkSubmission::query()->updateOrCreate(
+            [
+                'homework_assignment_id' => $homework->id,
+                'student_id' => $student->id,
+            ],
+            [
+                'submitted_at' => now(),
+                'attachment_path' => $attachmentPath,
+                'attachment_name' => $attachmentName,
+                'note' => $data['note'] ?? null,
+                'status' => $isLate ? 'late' : 'submitted',
+                'created_by' => $submission?->created_by ?? $user->id,
+                'updated_by' => $user->id,
+            ],
+        );
+    }
+
+    /**
+     * @return array{0: string, 1: string}
+     */
+    private function storeSubmissionAttachment(UploadedFile $file): array
+    {
+        $destination = public_path('uploads/homework-submissions');
+
+        if (! is_dir($destination)) {
+            mkdir($destination, 0755, true);
+        }
+
+        $filename = Str::uuid().'.'.$file->getClientOriginalExtension();
+        $originalName = $file->getClientOriginalName();
+        $file->move($destination, $filename);
+
+        return ['uploads/homework-submissions/'.$filename, $originalName];
+    }
+
+    private function deleteSubmissionAttachment(?string $path): void
+    {
+        if ($path && file_exists(public_path($path))) {
+            unlink(public_path($path));
+        }
     }
 
     // ── Private helpers ──────────────────────────────────────────────────────
@@ -322,7 +401,7 @@ class StudentPortalService
 
         $submissions = HomeworkSubmission::query()
             ->where('student_id', $student->id)
-            ->get(['homework_assignment_id', 'submitted_at', 'score', 'status'])
+            ->get(['homework_assignment_id', 'submitted_at', 'score', 'status', 'note', 'attachment_path', 'attachment_name'])
             ->keyBy('homework_assignment_id');
 
         return HomeworkAssignment::query()
@@ -331,6 +410,7 @@ class StudentPortalService
             ->get(['id', 'title_en', 'title_kh', 'instructions', 'points', 'due_on', 'status'])
             ->map(fn (HomeworkAssignment $hw) => [
                 'id' => $hw->id,
+                'routeKey' => $hw->routeKey(),
                 'title' => $hw->title_en,
                 'titleKh' => $hw->title_kh,
                 'instructions' => $hw->instructions ?? '',
@@ -341,6 +421,9 @@ class StudentPortalService
                     'submitted' => $submissions[$hw->id]->submitted_at?->format('Y-m-d') ?? '',
                     'score' => $submissions[$hw->id]->score,
                     'status' => $submissions[$hw->id]->status,
+                    'note' => $submissions[$hw->id]->note ?? '',
+                    'attachmentName' => $submissions[$hw->id]->attachment_name ?? '',
+                    'attachmentUrl' => $submissions[$hw->id]->attachment_path ? asset($submissions[$hw->id]->attachment_path) : '',
                 ] : null,
             ])
             ->all();

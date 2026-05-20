@@ -21,6 +21,7 @@ class HomeworkSubmission extends Model
         'score',
         'attachment_path',
         'attachment_name',
+        'note',
         'status',
         'feedback',
         'created_by',

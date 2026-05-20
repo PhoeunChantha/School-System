@@ -338,17 +338,8 @@ export default function ExamPage({ exams, classes, summary }: ExamPageProps) {
     };
 
     const printExam = (exam: ExamItem) => {
-        if (exam.attachmentUrl && isPdfFile(exam.attachmentName)) {
-            printPdfFile(exam.attachmentUrl);
-            return;
-        }
-
-        if (exam.content) {
-            printHtmlContent(exam.title, exam.content);
-            return;
-        }
-
-        toast.error('Direct print is available for PDF files or saved exam content.');
+        setPrintingExam(exam);
+        setView('print');
     };
 
     if (view === 'build') {
@@ -952,10 +943,9 @@ function PrintView({ exam, onBack }: { exam: ExamItem; onBack: () => void }) {
                 <div style={{ flex: 1, color: 'white', fontWeight: 800, fontSize: 15 }}>{exam.title}</div>
                 <button onClick={() => window.print()} style={topButton('#2563eb')}><Printer size={15} />Print</button>
             </div>
-            <div className="no-print" style={{ paddingTop: 68, background: '#cbd5e1', minHeight: '100vh', paddingBottom: 60 }}>
+            <div style={{ paddingTop: 68, background: '#cbd5e1', minHeight: '100vh', paddingBottom: 60 }}>
                 <div id="print-root" style={{ maxWidth: 794, margin: '0 auto', background: 'white', padding: '52px 64px', boxShadow: '0 8px 40px rgba(0,0,0,0.18)', fontFamily: "Georgia,'Times New Roman',serif" }} dangerouslySetInnerHTML={{ __html: exam.content || DEFAULT_CONTENT }} />
             </div>
-            <div id="print-root" style={{ display: 'none', fontFamily: "Georgia,'Times New Roman',serif" }} dangerouslySetInnerHTML={{ __html: exam.content || DEFAULT_CONTENT }} />
         </>
     );
 }

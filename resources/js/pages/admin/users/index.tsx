@@ -306,11 +306,11 @@ export default function UsersPage({ users, roles, summary }: UsersPageProps) {
                                 ) : filteredUsers.map(user => (
                                     <tr key={user.id}>
                                         <td>
-                                            <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                                            <div style={{ display: 'flex', alignItems: 'center', gap: 10, minWidth: 0 }}>
                                                 <Avatar name={user.name} src={user.avatar} size={36} />
-                                                <div>
-                                                    <div style={{ fontWeight: 900, color: '#1e293b', fontSize: 13 }}>{user.name}</div>
-                                                    <div style={{ fontSize: 11, color: '#94a3b8' }}>{user.email}</div>
+                                                <div style={{ minWidth: 0, overflow: 'hidden' }}>
+                                                    <div style={{ fontWeight: 900, color: '#1e293b', fontSize: 13, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{user.name}</div>
+                                                    <div style={{ fontSize: 11, color: '#94a3b8', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }} title={user.email}>{user.email}</div>
                                                 </div>
                                             </div>
                                         </td>

@@ -615,13 +615,20 @@ class StudentService
             ->lower()
             ->replaceMatches('/[^a-z0-9]+/', '.')
             ->trim('.')
-            ->append('@student.frania.local')
+            ->append('@student.com')
             ->toString();
     }
 
     private function studentCode(Student $student): string
     {
-        $next = $student->id;
+        $max = Student::query()
+            ->withTrashed()
+            ->whereKeyNot($student->id)
+            ->where('code', 'like', 'STU-%')
+            ->selectRaw('MAX(CAST(SUBSTRING(code, 5) AS UNSIGNED)) as max_num')
+            ->value('max_num') ?? 0;
+
+        $next = (int) $max + 1;
 
         do {
             $code = 'STU-'.str_pad((string) $next, 4, '0', STR_PAD_LEFT);
