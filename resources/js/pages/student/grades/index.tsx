@@ -34,20 +34,28 @@ function gradeLetter(avg: number) {
 
 function formatDate(d: string) {
     if (!d) return '';
-    return new Date(d).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+    return new Date(d).toLocaleDateString('en-US', {
+        month: 'short',
+        day: 'numeric',
+        year: 'numeric',
+    });
 }
 
 const SKILL_COLORS = ['#2563eb', '#059669', '#d97706', '#7c3aed'];
 
 export default function StudentGrades({ profile, grades }: Props) {
-    const bestAvg = grades.length > 0 ? Math.max(...grades.map((g) => g.average)) : 0;
+    const bestAvg =
+        grades.length > 0 ? Math.max(...grades.map((g) => g.average)) : 0;
     const latestAvg = grades[0]?.average ?? 0;
 
     return (
         <StudentShell profile={profile} activePage="grades" title="Grades">
             {/* ── Page header ── */}
             <div className="s-page-header s-fade-up">
-                <div className="s-page-accent" style={{ background: '#dbeafe' }}>
+                <div
+                    className="s-page-accent"
+                    style={{ background: '#dbeafe' }}
+                >
                     <BarChart2 size={18} color="#2563eb" />
                 </div>
                 <div className="s-page-title">My Grades</div>
@@ -90,7 +98,14 @@ export default function StudentGrades({ profile, grades }: Props) {
                         >
                             {latestAvg}
                         </div>
-                        <div style={{ fontSize: 13, color: '#6b7280', fontWeight: 600, marginTop: 4 }}>
+                        <div
+                            style={{
+                                fontSize: 13,
+                                color: '#6b7280',
+                                fontWeight: 600,
+                                marginTop: 4,
+                            }}
+                        >
                             {gradeLetter(latestAvg)}
                         </div>
                     </div>
@@ -120,7 +135,14 @@ export default function StudentGrades({ profile, grades }: Props) {
                         >
                             {bestAvg}
                         </div>
-                        <div style={{ fontSize: 13, color: '#6b7280', fontWeight: 600, marginTop: 4 }}>
+                        <div
+                            style={{
+                                fontSize: 13,
+                                color: '#6b7280',
+                                fontWeight: 600,
+                                marginTop: 4,
+                            }}
+                        >
                             {gradeLetter(bestAvg)}
                         </div>
                     </div>
@@ -132,17 +154,19 @@ export default function StudentGrades({ profile, grades }: Props) {
                 <div className="s-card s-fade-up s-delay-2">
                     <div className="s-empty">
                         <span className="s-empty-icon">⭐</span>
-                        <div className="s-empty-text">No grades recorded yet</div>
+                        <div className="s-empty-text">
+                            No grades recorded yet
+                        </div>
                     </div>
                 </div>
             ) : (
                 grades.map((grade, i) => {
                     const color = gradeColor(grade.average);
                     const skills = [
-                        { label: 'Speaking',  val: grade.speaking },
+                        { label: 'Speaking', val: grade.speaking },
                         { label: 'Listening', val: grade.listening },
-                        { label: 'Reading',   val: grade.reading },
-                        { label: 'Writing',   val: grade.writing },
+                        { label: 'Reading', val: grade.reading },
+                        { label: 'Writing', val: grade.writing },
                     ];
 
                     return (
@@ -160,7 +184,13 @@ export default function StudentGrades({ profile, grades }: Props) {
                                     marginBottom: 16,
                                 }}
                             >
-                                <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                                <div
+                                    style={{
+                                        display: 'flex',
+                                        alignItems: 'center',
+                                        gap: 10,
+                                    }}
+                                >
                                     <div
                                         style={{
                                             width: 40,
@@ -175,10 +205,22 @@ export default function StudentGrades({ profile, grades }: Props) {
                                         <TrendingUp size={18} color={color} />
                                     </div>
                                     <div>
-                                        <div style={{ fontSize: 14, fontWeight: 700, color: '#1a1a2e' }}>
+                                        <div
+                                            style={{
+                                                fontSize: 14,
+                                                fontWeight: 700,
+                                                color: '#1a1a2e',
+                                            }}
+                                        >
                                             {grade.period}
                                         </div>
-                                        <div style={{ fontSize: 11, color: '#9ca3af', marginTop: 1 }}>
+                                        <div
+                                            style={{
+                                                fontSize: 11,
+                                                color: '#9ca3af',
+                                                marginTop: 1,
+                                            }}
+                                        >
                                             {formatDate(grade.date)}
                                         </div>
                                     </div>
@@ -186,7 +228,8 @@ export default function StudentGrades({ profile, grades }: Props) {
                                 <div style={{ textAlign: 'right' }}>
                                     <div
                                         style={{
-                                            fontFamily: 'DM Serif Display, serif',
+                                            fontFamily:
+                                                'DM Serif Display, serif',
                                             fontSize: 28,
                                             color,
                                             lineHeight: 1,
@@ -210,17 +253,24 @@ export default function StudentGrades({ profile, grades }: Props) {
                             {/* Skill bars */}
                             {skills.map((skill, si) => (
                                 <div key={skill.label} className="s-skill-row">
-                                    <div className="s-skill-label">{skill.label}</div>
+                                    <div className="s-skill-label">
+                                        {skill.label}
+                                    </div>
                                     <div className="s-skill-track">
                                         <div
                                             className="s-skill-fill"
                                             style={{
                                                 width: `${Math.min(skill.val, 100)}%`,
-                                                background: SKILL_COLORS[si % SKILL_COLORS.length],
+                                                background:
+                                                    SKILL_COLORS[
+                                                        si % SKILL_COLORS.length
+                                                    ],
                                             }}
                                         />
                                     </div>
-                                    <div className="s-skill-score">{skill.val}</div>
+                                    <div className="s-skill-score">
+                                        {skill.val}
+                                    </div>
                                 </div>
                             ))}
                         </div>

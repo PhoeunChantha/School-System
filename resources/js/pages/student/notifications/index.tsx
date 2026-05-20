@@ -1,5 +1,5 @@
 import StudentShell, { type StudentProfile } from '@/pages/student/shell';
-import { Bell, Info, AlertTriangle, CheckCircle, Star } from 'lucide-react';
+import { AlertTriangle, Bell, CheckCircle, Info } from 'lucide-react';
 import { useState } from 'react';
 
 interface Notification {
@@ -40,28 +40,38 @@ function formatTime(d: string) {
     const dt = new Date(d);
     const now = Date.now();
     const diff = now - dt.getTime();
-    const mins  = Math.floor(diff / 60000);
+    const mins = Math.floor(diff / 60000);
     const hours = Math.floor(diff / 3600000);
-    const days  = Math.floor(diff / 86400000);
+    const days = Math.floor(diff / 86400000);
 
-    if (mins < 1)   return 'Just now';
-    if (mins < 60)  return `${mins}m ago`;
+    if (mins < 1) return 'Just now';
+    if (mins < 60) return `${mins}m ago`;
     if (hours < 24) return `${hours}h ago`;
-    if (days < 7)   return `${days}d ago`;
+    if (days < 7) return `${days}d ago`;
     return dt.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
 }
 
-export default function StudentNotifications({ profile, notifications }: Props) {
+export default function StudentNotifications({
+    profile,
+    notifications,
+}: Props) {
     const [tab, setTab] = useState<TabKey>('all');
 
     const unread = notifications.filter((n) => !n.read);
-    const shown  = tab === 'unread' ? unread : notifications;
+    const shown = tab === 'unread' ? unread : notifications;
 
     return (
-        <StudentShell profile={profile} activePage="notifications" title="Notifications">
+        <StudentShell
+            profile={profile}
+            activePage="notifications"
+            title="Notifications"
+        >
             {/* ── Page header ── */}
             <div className="s-page-header s-fade-up">
-                <div className="s-page-accent" style={{ background: '#ffedd5' }}>
+                <div
+                    className="s-page-accent"
+                    style={{ background: '#ffedd5' }}
+                >
                     <Bell size={18} color="#ea580c" />
                 </div>
                 <div className="s-page-title">Notifications</div>
@@ -70,13 +80,15 @@ export default function StudentNotifications({ profile, notifications }: Props) 
             {/* ── Tabs ── */}
             <div className="s-tabs s-fade-up s-delay-1">
                 <button
-                    className={`s-tab${tab === 'all' ? ' active' : ''}`}
+                    className={`s-tab${tab === 'all' ? 'active' : ''}`}
+                    aria-selected={tab === 'all'}
                     onClick={() => setTab('all')}
                 >
                     All ({notifications.length})
                 </button>
                 <button
-                    className={`s-tab${tab === 'unread' ? ' active' : ''}`}
+                    className={`s-tab${tab === 'unread' ? 'active' : ''}`}
+                    aria-selected={tab === 'unread'}
                     onClick={() => setTab('unread')}
                 >
                     Unread ({unread.length})
@@ -89,7 +101,9 @@ export default function StudentNotifications({ profile, notifications }: Props) 
                     <div className="s-empty">
                         <span className="s-empty-icon">🔔</span>
                         <div className="s-empty-text">
-                            {tab === 'unread' ? 'All caught up!' : 'No notifications yet'}
+                            {tab === 'unread'
+                                ? 'All caught up!'
+                                : 'No notifications yet'}
                         </div>
                     </div>
                 </div>
@@ -103,7 +117,11 @@ export default function StudentNotifications({ profile, notifications }: Props) 
                             <div
                                 key={notif.id}
                                 className="s-list-item"
-                                style={!notif.read ? { background: '#fafbff' } : undefined}
+                                style={
+                                    !notif.read
+                                        ? { background: '#fafbff' }
+                                        : undefined
+                                }
                             >
                                 <div
                                     style={{
@@ -162,11 +180,19 @@ export default function StudentNotifications({ profile, notifications }: Props) 
                                             {notif.body}
                                         </div>
                                     )}
-                                    <div style={{ fontSize: 10, color: '#d1d5db', fontWeight: 600, marginTop: 4 }}>
+                                    <div
+                                        style={{
+                                            fontSize: 10,
+                                            color: '#d1d5db',
+                                            fontWeight: 600,
+                                            marginTop: 4,
+                                        }}
+                                    >
                                         {formatTime(notif.createdAt)}
-                                        {notif.category && notif.category !== 'general' && (
-                                            <span> · {notif.category}</span>
-                                        )}
+                                        {notif.category &&
+                                            notif.category !== 'general' && (
+                                                <span> · {notif.category}</span>
+                                            )}
                                     </div>
                                 </div>
                             </div>

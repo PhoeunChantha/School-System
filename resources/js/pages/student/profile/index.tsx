@@ -1,15 +1,11 @@
-import StudentShell, { type StudentProfile, SAvatar } from '@/pages/student/shell';
+import StudentShell, {
+    type StudentProfile,
+    SAvatar,
+} from '@/pages/student/shell';
+import { logout } from '@/routes';
+import { fees, notifications } from '@/routes/student';
 import { Link, router } from '@inertiajs/react';
-import {
-    User,
-    MapPin,
-    Phone,
-    Calendar,
-    GraduationCap,
-    BadgeCheck,
-    LogOut,
-    ChevronRight,
-} from 'lucide-react';
+import { BadgeCheck, ChevronRight, LogOut } from 'lucide-react';
 
 interface StudentDetail {
     nameEn: string;
@@ -40,16 +36,30 @@ interface Props {
 
 function formatDate(d: string) {
     if (!d) return '—';
-    return new Date(d).toLocaleDateString('en-US', { day: 'numeric', month: 'long', year: 'numeric' });
+    return new Date(d).toLocaleDateString('en-US', {
+        day: 'numeric',
+        month: 'long',
+        year: 'numeric',
+    });
 }
 
 function feeStatusBadge(s: string) {
-    if (s === 'paid')    return 's-badge-green';
+    if (s === 'paid') return 's-badge-green';
     if (s === 'partial') return 's-badge-amber';
     return 's-badge-red';
 }
 
-function InfoSection({ title, items }: { title: string; items: { label: string; value: string; icon?: React.ComponentType<{ size?: number; color?: string }> }[] }) {
+function InfoSection({
+    title,
+    items,
+}: {
+    title: string;
+    items: {
+        label: string;
+        value: string;
+        icon?: React.ComponentType<{ size?: number; color?: string }>;
+    }[];
+}) {
     return (
         <div className="s-card" style={{ marginBottom: 12 }}>
             <div
@@ -77,7 +87,7 @@ function InfoSection({ title, items }: { title: string; items: { label: string; 
 
 export default function StudentProfile({ profile, student }: Props) {
     function handleLogout() {
-        router.post('/logout');
+        router.post(logout());
     }
 
     const hasStudent = !!student.nameEn;
@@ -110,7 +120,11 @@ export default function StudentProfile({ profile, student }: Props) {
                             }}
                         />
                     ) : (
-                        <SAvatar photo={profile.photo} name={profile.name} size={88} />
+                        <SAvatar
+                            photo={profile.photo}
+                            name={profile.name}
+                            size={88}
+                        />
                     )}
                     {student.status === 'active' && (
                         <div
@@ -139,19 +153,41 @@ export default function StudentProfile({ profile, student }: Props) {
                     {profile.name}
                 </div>
                 {profile.nameKh && (
-                    <div style={{ fontSize: 14, color: '#6b7280', fontFamily: 'Noto Sans Khmer, sans-serif', marginBottom: 6 }}>
+                    <div
+                        style={{
+                            fontSize: 14,
+                            color: '#6b7280',
+                            fontFamily: 'Noto Sans Khmer, sans-serif',
+                            marginBottom: 6,
+                        }}
+                    >
                         {profile.nameKh}
                     </div>
                 )}
-                <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', justifyContent: 'center' }}>
+                <div
+                    style={{
+                        display: 'flex',
+                        gap: 8,
+                        flexWrap: 'wrap',
+                        justifyContent: 'center',
+                    }}
+                >
                     {profile.code && (
                         <span className="s-badge s-badge-blue">
                             <BadgeCheck size={10} style={{ marginRight: 3 }} />
                             {profile.code}
                         </span>
                     )}
-                    {profile.level && <span className="s-badge s-badge-violet">{profile.level}</span>}
-                    {profile.className && <span className="s-badge s-badge-gray">{profile.className}</span>}
+                    {profile.level && (
+                        <span className="s-badge s-badge-violet">
+                            {profile.level}
+                        </span>
+                    )}
+                    {profile.className && (
+                        <span className="s-badge s-badge-gray">
+                            {profile.className}
+                        </span>
+                    )}
                 </div>
             </div>
 
@@ -161,32 +197,61 @@ export default function StudentProfile({ profile, student }: Props) {
                     <InfoSection
                         title="Personal Information"
                         items={[
-                            { label: 'Gender',       value: student.gender ? student.gender.charAt(0).toUpperCase() + student.gender.slice(1) : '' },
-                            { label: 'Date of Birth', value: formatDate(student.dateOfBirth) },
-                            { label: 'Province',     value: student.province },
-                            { label: 'District',     value: student.district },
+                            {
+                                label: 'Gender',
+                                value: student.gender
+                                    ? student.gender.charAt(0).toUpperCase() +
+                                      student.gender.slice(1)
+                                    : '',
+                            },
+                            {
+                                label: 'Date of Birth',
+                                value: formatDate(student.dateOfBirth),
+                            },
+                            { label: 'Province', value: student.province },
+                            { label: 'District', value: student.district },
                         ]}
                     />
 
                     <InfoSection
                         title="Contact"
                         items={[
-                            { label: 'Parent Phone',    value: student.parentPhone },
-                            { label: 'Telegram',        value: student.telegramUsername ? '@' + student.telegramUsername : '' },
+                            {
+                                label: 'Parent Phone',
+                                value: student.parentPhone,
+                            },
+                            {
+                                label: 'Telegram',
+                                value: student.telegramUsername
+                                    ? '@' + student.telegramUsername
+                                    : '',
+                            },
                         ]}
                     />
 
                     <InfoSection
                         title="Academic"
                         items={[
-                            { label: 'Level',          value: student.level },
-                            { label: 'Class',          value: student.className },
-                            { label: 'Enrolled On',    value: formatDate(student.enrolledOn) },
-                            { label: 'Status',         value: student.status ? student.status.charAt(0).toUpperCase() + student.status.slice(1) : '' },
+                            { label: 'Level', value: student.level },
+                            { label: 'Class', value: student.className },
+                            {
+                                label: 'Enrolled On',
+                                value: formatDate(student.enrolledOn),
+                            },
+                            {
+                                label: 'Status',
+                                value: student.status
+                                    ? student.status.charAt(0).toUpperCase() +
+                                      student.status.slice(1)
+                                    : '',
+                            },
                         ]}
                     />
 
-                    <div className="s-card s-fade-up s-delay-2" style={{ marginBottom: 12 }}>
+                    <div
+                        className="s-card s-fade-up s-delay-2"
+                        style={{ marginBottom: 12 }}
+                    >
                         <div
                             style={{
                                 padding: '14px 20px 10px',
@@ -202,12 +267,17 @@ export default function StudentProfile({ profile, student }: Props) {
                         </div>
                         <div className="s-info-row">
                             <div className="s-info-label">Monthly Fee</div>
-                            <div className="s-info-value">${student.monthlyFee.toFixed(2)}</div>
+                            <div className="s-info-value">
+                                ${student.monthlyFee.toFixed(2)}
+                            </div>
                         </div>
                         {student.scholarshipAmount > 0 && (
                             <div className="s-info-row">
                                 <div className="s-info-label">Scholarship</div>
-                                <div className="s-info-value" style={{ color: '#059669' }}>
+                                <div
+                                    className="s-info-value"
+                                    style={{ color: '#059669' }}
+                                >
                                     -${student.scholarshipAmount.toFixed(2)}
                                 </div>
                             </div>
@@ -215,8 +285,15 @@ export default function StudentProfile({ profile, student }: Props) {
                         <div className="s-info-row">
                             <div className="s-info-label">Fee Status</div>
                             <div className="s-info-value">
-                                <span className={`s-badge ${feeStatusBadge(student.feeStatus)}`}>
-                                    {student.feeStatus ? student.feeStatus.charAt(0).toUpperCase() + student.feeStatus.slice(1) : '—'}
+                                <span
+                                    className={`s-badge ${feeStatusBadge(student.feeStatus)}`}
+                                >
+                                    {student.feeStatus
+                                        ? student.feeStatus
+                                              .charAt(0)
+                                              .toUpperCase() +
+                                          student.feeStatus.slice(1)
+                                        : '—'}
                                 </span>
                             </div>
                         </div>
@@ -225,18 +302,26 @@ export default function StudentProfile({ profile, student }: Props) {
             )}
 
             {!hasStudent && (
-                <div className="s-card s-fade-up s-delay-1" style={{ marginBottom: 12 }}>
+                <div
+                    className="s-card s-fade-up s-delay-1"
+                    style={{ marginBottom: 12 }}
+                >
                     <div className="s-empty">
                         <span className="s-empty-icon">👤</span>
-                        <div className="s-empty-text">No student profile linked to this account</div>
+                        <div className="s-empty-text">
+                            No student profile linked to this account
+                        </div>
                     </div>
                 </div>
             )}
 
             {/* ── Quick links ── */}
-            <div className="s-card s-fade-up s-delay-3" style={{ marginBottom: 16 }}>
+            <div
+                className="s-card s-fade-up s-delay-3"
+                style={{ marginBottom: 16 }}
+            >
                 <Link
-                    href="/student/fees"
+                    href={fees()}
                     style={{
                         display: 'flex',
                         alignItems: 'center',
@@ -245,11 +330,20 @@ export default function StudentProfile({ profile, student }: Props) {
                         borderBottom: '1px solid rgba(26,26,46,0.06)',
                     }}
                 >
-                    <span style={{ flex: 1, fontSize: 14, fontWeight: 600, color: '#1a1a2e' }}>Fee History</span>
+                    <span
+                        style={{
+                            flex: 1,
+                            fontSize: 14,
+                            fontWeight: 600,
+                            color: '#1a1a2e',
+                        }}
+                    >
+                        Fee History
+                    </span>
                     <ChevronRight size={16} color="#d1d5db" />
                 </Link>
                 <Link
-                    href="/student/notifications"
+                    href={notifications()}
                     style={{
                         display: 'flex',
                         alignItems: 'center',
@@ -257,7 +351,16 @@ export default function StudentProfile({ profile, student }: Props) {
                         textDecoration: 'none',
                     }}
                 >
-                    <span style={{ flex: 1, fontSize: 14, fontWeight: 600, color: '#1a1a2e' }}>Notifications</span>
+                    <span
+                        style={{
+                            flex: 1,
+                            fontSize: 14,
+                            fontWeight: 600,
+                            color: '#1a1a2e',
+                        }}
+                    >
+                        Notifications
+                    </span>
                     <ChevronRight size={16} color="#d1d5db" />
                 </Link>
             </div>
@@ -280,7 +383,11 @@ export default function StudentProfile({ profile, student }: Props) {
                 }}
             >
                 <LogOut size={16} color="#e11d48" />
-                <span style={{ fontSize: 14, fontWeight: 700, color: '#e11d48' }}>Sign Out</span>
+                <span
+                    style={{ fontSize: 14, fontWeight: 700, color: '#e11d48' }}
+                >
+                    Sign Out
+                </span>
             </button>
         </StudentShell>
     );

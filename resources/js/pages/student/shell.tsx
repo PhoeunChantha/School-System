@@ -1,7 +1,25 @@
-import { Head, Link } from '@inertiajs/react';
-import { BarChart2, Bell, BookOpen, CreditCard, Home, CalendarCheck } from 'lucide-react';
-import { type ReactNode } from 'react';
 import '@/pages/student/student.css';
+import {
+    attendance,
+    dashboard,
+    fees,
+    grades,
+    homework,
+    notifications,
+    profile as studentProfile,
+} from '@/routes/student';
+import { Head, Link } from '@inertiajs/react';
+import {
+    BarChart2,
+    Bell,
+    BookOpen,
+    CalendarCheck,
+    ChevronDown,
+    CreditCard,
+    GraduationCap,
+    Home,
+} from 'lucide-react';
+import { type ReactNode } from 'react';
 
 export interface StudentProfile {
     name: string;
@@ -31,14 +49,47 @@ interface Props {
 }
 
 const NAV_ITEMS = [
-    { id: 'dashboard',  label: 'Home',    icon: Home,         href: '/student/dashboard',  color: '#4f46e5' },
-    { id: 'attendance', label: 'Attend.',  icon: CalendarCheck,href: '/student/attendance', color: '#059669' },
-    { id: 'grades',     label: 'Grades',  icon: BarChart2,    href: '/student/grades',     color: '#2563eb' },
-    { id: 'homework',   label: 'Homework',icon: BookOpen,     href: '/student/homework',   color: '#d97706' },
-    { id: 'fees',       label: 'Fees',    icon: CreditCard,   href: '/student/fees',       color: '#e11d48' },
+    {
+        id: 'dashboard',
+        label: 'Home',
+        icon: Home,
+        href: dashboard(),
+    },
+    {
+        id: 'attendance',
+        label: 'Attend.',
+        icon: CalendarCheck,
+        href: attendance(),
+    },
+    {
+        id: 'grades',
+        label: 'Grades',
+        icon: BarChart2,
+        href: grades(),
+    },
+    {
+        id: 'homework',
+        label: 'Homework',
+        icon: BookOpen,
+        href: homework(),
+    },
+    {
+        id: 'fees',
+        label: 'Fees',
+        icon: CreditCard,
+        href: fees(),
+    },
 ] as const;
 
-function SAvatar({ photo, name, size }: { photo: string | null; name: string; size: number }) {
+function SAvatar({
+    photo,
+    name,
+    size,
+}: {
+    photo: string | null;
+    name: string;
+    size: number;
+}) {
     const initials = name
         .split(' ')
         .map((w) => w[0])
@@ -75,7 +126,12 @@ function SAvatar({ photo, name, size }: { photo: string | null; name: string; si
 
 export { SAvatar };
 
-export default function StudentShell({ profile, activePage, title, children }: Props) {
+export default function StudentShell({
+    profile,
+    activePage,
+    title,
+    children,
+}: Props) {
     return (
         <div className="student-wrap">
             <Head title={title} />
@@ -83,41 +139,43 @@ export default function StudentShell({ profile, activePage, title, children }: P
             {/* ── Header ── */}
             <header className="student-header">
                 <Link
-                    href="/student/dashboard"
-                    style={{ display: 'flex', alignItems: 'center', gap: 10, textDecoration: 'none' }}
+                    href={studentProfile()}
+                    className="student-header-profile"
+                    aria-label="Open profile"
                 >
-                    <SAvatar photo={profile.photo} name={profile.name} size={36} />
+                    <SAvatar
+                        photo={profile.photo}
+                        name={profile.name}
+                        size={42}
+                    />
                     <div>
-                        <div className="student-header-name">{profile.name || 'Student'}</div>
-                        <div className="student-header-class">
-                            {profile.className || profile.level || 'Student Portal'}
+                        <div className="student-header-eyebrow">
+                            Welcome back
+                        </div>
+                        <div className="student-header-name">
+                            {profile.name || 'Student'}
                         </div>
                     </div>
                 </Link>
 
                 <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                    {(profile.className || profile.level) && (
+                        <Link
+                            href={dashboard()}
+                            className="student-context-pill"
+                            aria-label="Current class"
+                        >
+                            <GraduationCap size={13} />
+                            <span>{profile.className || profile.level}</span>
+                            <ChevronDown size={13} />
+                        </Link>
+                    )}
                     <Link
-                        href="/student/notifications"
-                        style={{
-                            width: 36,
-                            height: 36,
-                            borderRadius: '50%',
-                            display: 'flex',
-                            alignItems: 'center',
-                            justifyContent: 'center',
-                            background:
-                                activePage === 'notifications'
-                                    ? '#ea580c'
-                                    : 'rgba(26,26,46,0.08)',
-                            color: activePage === 'notifications' ? 'white' : '#6b7280',
-                            textDecoration: 'none',
-                            transition: 'background 0.18s',
-                        }}
+                        href={notifications()}
+                        aria-label="Open notifications"
+                        className={`student-icon-btn${activePage === 'notifications' ? 'active' : ''}`}
                     >
                         <Bell size={16} />
-                    </Link>
-                    <Link href="/student/profile" style={{ textDecoration: 'none' }}>
-                        <SAvatar photo={profile.photo} name={profile.name} size={36} />
                     </Link>
                 </div>
             </header>
@@ -135,19 +193,17 @@ export default function StudentShell({ profile, activePage, title, children }: P
                         <Link
                             key={item.id}
                             href={item.href}
-                            className={`student-nav-btn${active ? ' active' : ''}`}
+                            aria-current={active ? 'page' : undefined}
+                            className={
+                                active
+                                    ? 'student-nav-btn active'
+                                    : 'student-nav-btn'
+                            }
                         >
-                            <div
-                                className="snb-icon"
-                                style={
-                                    active
-                                        ? { background: item.color + '26' }
-                                        : undefined
-                                }
-                            >
+                            <div className="snb-icon">
                                 <Icon
                                     size={18}
-                                    color={active ? item.color : 'rgba(255,255,255,0.3)'}
+                                    color={active ? '#ffffff' : '#71809a'}
                                     strokeWidth={active ? 2.5 : 2}
                                 />
                             </div>

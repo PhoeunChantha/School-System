@@ -1,7 +1,16 @@
 import StudentShell, { type StudentProfile } from '@/pages/student/shell';
+import { submit } from '@/routes/student/homework';
 import { useForm } from '@inertiajs/react';
-import { BookOpen, CheckCircle, Clock, AlertTriangle, Paperclip, Upload, X } from 'lucide-react';
-import { useRef, useState } from 'react';
+import {
+    AlertTriangle,
+    BookOpen,
+    CheckCircle,
+    Clock,
+    Paperclip,
+    Upload,
+    X,
+} from 'lucide-react';
+import { useEffect, useRef, useState } from 'react';
 import { toast } from 'sonner';
 
 interface Submission {
@@ -34,7 +43,11 @@ type TabKey = 'all' | 'pending' | 'submitted';
 
 function formatDate(d: string) {
     if (!d) return '';
-    return new Date(d).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+    return new Date(d).toLocaleDateString('en-US', {
+        month: 'short',
+        day: 'numeric',
+        year: 'numeric',
+    });
 }
 
 function isPastDue(d: string) {
@@ -49,7 +62,7 @@ function submissionBadge(hw: Homework) {
     }
     const s = hw.submission.status;
     if (s === 'graded') return { label: 'Graded', cls: 's-badge-green' };
-    if (s === 'late')   return { label: 'Late',   cls: 's-badge-orange' };
+    if (s === 'late') return { label: 'Late', cls: 's-badge-orange' };
     return { label: 'Submitted', cls: 's-badge-blue' };
 }
 
@@ -58,7 +71,10 @@ export default function StudentHomework({ profile, homework }: Props) {
     const [activeHw, setActiveHw] = useState<Homework | null>(null);
     const fileInputRef = useRef<HTMLInputElement>(null);
 
-    const { data, setData, post, processing, errors, reset } = useForm<{ note: string; attachment: File | null }>({
+    const { data, setData, post, processing, errors, reset } = useForm<{
+        note: string;
+        attachment: File | null;
+    }>({
         note: '',
         attachment: null,
     });
@@ -77,31 +93,49 @@ export default function StudentHomework({ profile, homework }: Props) {
     const submitHomework = () => {
         if (!activeHw) return;
 
-        post(`/student/homework/${activeHw.routeKey}/submit`, {
+        post(submit.url(activeHw.routeKey as unknown as number), {
             forceFormData: true,
             preserveScroll: true,
             onSuccess: () => {
                 toast.success('Homework submitted.');
                 closeSubmit();
             },
-            onError: () => toast.error('Submission failed. Check the file and try again.'),
+            onError: () =>
+                toast.error('Submission failed. Check the file and try again.'),
         });
     };
 
     const filtered = homework.filter((hw) => {
-        if (tab === 'pending')   return !hw.submission;
+        if (tab === 'pending') return !hw.submission;
         if (tab === 'submitted') return !!hw.submission;
         return true;
     });
 
-    const pendingCount   = homework.filter((h) => !h.submission).length;
+    const pendingCount = homework.filter((h) => !h.submission).length;
     const submittedCount = homework.filter((h) => !!h.submission).length;
+
+    useEffect(() => {
+        if (!activeHw) return;
+
+        const closeOnEscape = (event: KeyboardEvent) => {
+            if (event.key === 'Escape') {
+                closeSubmit();
+            }
+        };
+
+        window.addEventListener('keydown', closeOnEscape);
+
+        return () => window.removeEventListener('keydown', closeOnEscape);
+    }, [activeHw]);
 
     return (
         <StudentShell profile={profile} activePage="homework" title="Homework">
             {/* ── Page header ── */}
             <div className="s-page-header s-fade-up">
-                <div className="s-page-accent" style={{ background: '#fef3c7' }}>
+                <div
+                    className="s-page-accent"
+                    style={{ background: '#fef3c7' }}
+                >
                     <BookOpen size={18} color="#d97706" />
                 </div>
                 <div className="s-page-title">Homework</div>
@@ -110,14 +144,27 @@ export default function StudentHomework({ profile, homework }: Props) {
             {/* ── Summary row ── */}
             <div
                 className="s-fade-up s-delay-1"
-                style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 10, marginBottom: 14 }}
+                style={{
+                    display: 'grid',
+                    gridTemplateColumns: 'repeat(3, 1fr)',
+                    gap: 10,
+                    marginBottom: 14,
+                }}
             >
                 {[
-                    { label: 'Total',     val: homework.length, color: '#1a1a2e' },
-                    { label: 'Pending',   val: pendingCount,   color: '#d97706' },
-                    { label: 'Submitted', val: submittedCount, color: '#059669' },
+                    { label: 'Total', val: homework.length, color: '#1a1a2e' },
+                    { label: 'Pending', val: pendingCount, color: '#d97706' },
+                    {
+                        label: 'Submitted',
+                        val: submittedCount,
+                        color: '#059669',
+                    },
                 ].map((s) => (
-                    <div key={s.label} className="s-card s-card-pad" style={{ textAlign: 'center', padding: '14px 10px' }}>
+                    <div
+                        key={s.label}
+                        className="s-card s-card-pad"
+                        style={{ textAlign: 'center', padding: '14px 10px' }}
+                    >
                         <div
                             style={{
                                 fontFamily: 'DM Serif Display, serif',
@@ -128,7 +175,14 @@ export default function StudentHomework({ profile, homework }: Props) {
                         >
                             {s.val}
                         </div>
-                        <div style={{ fontSize: 11, color: '#9ca3af', fontWeight: 600, marginTop: 4 }}>
+                        <div
+                            style={{
+                                fontSize: 11,
+                                color: '#9ca3af',
+                                fontWeight: 600,
+                                marginTop: 4,
+                            }}
+                        >
                             {s.label}
                         </div>
                     </div>
@@ -138,13 +192,20 @@ export default function StudentHomework({ profile, homework }: Props) {
             {/* ── Tabs ── */}
             <div className="s-tabs s-fade-up s-delay-2">
                 {[
-                    { key: 'all' as TabKey,       label: `All (${homework.length})` },
-                    { key: 'pending' as TabKey,   label: `Pending (${pendingCount})` },
-                    { key: 'submitted' as TabKey, label: `Submitted (${submittedCount})` },
+                    { key: 'all' as TabKey, label: `All (${homework.length})` },
+                    {
+                        key: 'pending' as TabKey,
+                        label: `Pending (${pendingCount})`,
+                    },
+                    {
+                        key: 'submitted' as TabKey,
+                        label: `Submitted (${submittedCount})`,
+                    },
                 ].map((t) => (
                     <button
                         key={t.key}
-                        className={`s-tab${tab === t.key ? ' active' : ''}`}
+                        className={`s-tab${tab === t.key ? 'active' : ''}`}
+                        aria-selected={tab === t.key}
                         onClick={() => setTab(t.key)}
                     >
                         {t.label}
@@ -157,27 +218,51 @@ export default function StudentHomework({ profile, homework }: Props) {
                 <div className="s-card s-fade-up s-delay-3">
                     <div className="s-empty">
                         <span className="s-empty-icon">📝</span>
-                        <div className="s-empty-text">No homework in this category</div>
+                        <div className="s-empty-text">
+                            No homework in this category
+                        </div>
                     </div>
                 </div>
             ) : (
                 <div className="s-card s-fade-up s-delay-3">
                     {filtered.map((hw, i) => {
-                        const badge   = submissionBadge(hw);
+                        const badge = submissionBadge(hw);
                         const overdue = !hw.submission && isPastDue(hw.due);
-                        const iconBg  = hw.submission
-                            ? hw.submission.status === 'graded' ? '#dcfce7' : '#dbeafe'
-                            : overdue ? '#fee2e2' : '#fef3c7';
+                        const iconBg = hw.submission
+                            ? hw.submission.status === 'graded'
+                                ? '#dcfce7'
+                                : '#dbeafe'
+                            : overdue
+                              ? '#fee2e2'
+                              : '#fef3c7';
                         const iconColor = hw.submission
-                            ? hw.submission.status === 'graded' ? '#059669' : '#2563eb'
-                            : overdue ? '#e11d48' : '#d97706';
+                            ? hw.submission.status === 'graded'
+                                ? '#059669'
+                                : '#2563eb'
+                            : overdue
+                              ? '#e11d48'
+                              : '#d97706';
 
                         const isGraded = hw.submission?.status === 'graded';
                         const canSubmit = !isGraded;
 
                         return (
-                            <div key={hw.id} className="s-list-item" style={{ flexDirection: 'column', alignItems: 'stretch', gap: 10 }}>
-                                <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+                            <div
+                                key={hw.id}
+                                className="s-list-item"
+                                style={{
+                                    flexDirection: 'column',
+                                    alignItems: 'stretch',
+                                    gap: 10,
+                                }}
+                            >
+                                <div
+                                    style={{
+                                        display: 'flex',
+                                        alignItems: 'center',
+                                        gap: 12,
+                                    }}
+                                >
                                     <div
                                         style={{
                                             width: 42,
@@ -190,10 +275,32 @@ export default function StudentHomework({ profile, homework }: Props) {
                                             flexShrink: 0,
                                         }}
                                     >
-                                        {hw.submission?.status === 'graded' && <CheckCircle size={17} color={iconColor} />}
-                                        {hw.submission && hw.submission.status !== 'graded' && <Clock size={17} color={iconColor} />}
-                                        {!hw.submission && overdue && <AlertTriangle size={17} color={iconColor} />}
-                                        {!hw.submission && !overdue && <BookOpen size={17} color={iconColor} />}
+                                        {hw.submission?.status === 'graded' && (
+                                            <CheckCircle
+                                                size={17}
+                                                color={iconColor}
+                                            />
+                                        )}
+                                        {hw.submission &&
+                                            hw.submission.status !==
+                                                'graded' && (
+                                                <Clock
+                                                    size={17}
+                                                    color={iconColor}
+                                                />
+                                            )}
+                                        {!hw.submission && overdue && (
+                                            <AlertTriangle
+                                                size={17}
+                                                color={iconColor}
+                                            />
+                                        )}
+                                        {!hw.submission && !overdue && (
+                                            <BookOpen
+                                                size={17}
+                                                color={iconColor}
+                                            />
+                                        )}
                                     </div>
 
                                     <div style={{ flex: 1, minWidth: 0 }}>
@@ -213,22 +320,47 @@ export default function StudentHomework({ profile, homework }: Props) {
                                         <div
                                             style={{
                                                 fontSize: 11,
-                                                color: overdue && !hw.submission ? '#e11d48' : '#9ca3af',
+                                                color:
+                                                    overdue && !hw.submission
+                                                        ? '#e11d48'
+                                                        : '#9ca3af',
                                                 fontWeight: 500,
                                             }}
                                         >
                                             Due {formatDate(hw.due)}
-                                            {hw.points > 0 && ` · ${hw.points}pts`}
+                                            {hw.points > 0 &&
+                                                ` · ${hw.points}pts`}
                                         </div>
-                                        {hw.submission?.status === 'graded' && hw.submission.score !== null && (
-                                            <div style={{ fontSize: 12, fontWeight: 700, color: '#059669', marginTop: 3 }}>
-                                                Score: {hw.submission.score}/{hw.points}
-                                            </div>
-                                        )}
+                                        {hw.submission?.status === 'graded' &&
+                                            hw.submission.score !== null && (
+                                                <div
+                                                    style={{
+                                                        fontSize: 12,
+                                                        fontWeight: 700,
+                                                        color: '#059669',
+                                                        marginTop: 3,
+                                                    }}
+                                                >
+                                                    Score: {hw.submission.score}
+                                                    /{hw.points}
+                                                </div>
+                                            )}
                                     </div>
 
-                                    <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: 8, flexShrink: 0 }}>
-                                        <span className={`s-badge ${badge.cls}`}>{badge.label}</span>
+                                    <div
+                                        style={{
+                                            display: 'flex',
+                                            flexDirection: 'column',
+                                            alignItems: 'flex-end',
+                                            gap: 8,
+                                            flexShrink: 0,
+                                        }}
+                                    >
+                                        <span
+                                            className={`s-badge ${badge.cls}`}
+                                        >
+                                            {badge.label}
+                                        </span>
                                         {canSubmit && (
                                             <button
                                                 type="button"
@@ -237,8 +369,12 @@ export default function StudentHomework({ profile, homework }: Props) {
                                                     display: 'inline-flex',
                                                     alignItems: 'center',
                                                     gap: 5,
-                                                    background: hw.submission ? '#eef2ff' : '#4f46e5',
-                                                    color: hw.submission ? '#4f46e5' : '#fff',
+                                                    background: hw.submission
+                                                        ? '#eef2ff'
+                                                        : '#4f46e5',
+                                                    color: hw.submission
+                                                        ? '#4f46e5'
+                                                        : '#fff',
                                                     border: 'none',
                                                     borderRadius: 8,
                                                     padding: '6px 12px',
@@ -249,13 +385,16 @@ export default function StudentHomework({ profile, homework }: Props) {
                                                 }}
                                             >
                                                 <Upload size={12} />
-                                                {hw.submission ? 'Resubmit' : 'Submit'}
+                                                {hw.submission
+                                                    ? 'Resubmit'
+                                                    : 'Submit'}
                                             </button>
                                         )}
                                     </div>
                                 </div>
 
-                                {(hw.submission?.attachmentUrl || hw.submission?.note) && (
+                                {(hw.submission?.attachmentUrl ||
+                                    hw.submission?.note) && (
                                     <div
                                         style={{
                                             display: 'flex',
@@ -270,17 +409,42 @@ export default function StudentHomework({ profile, homework }: Props) {
                                     >
                                         {hw.submission?.attachmentUrl && (
                                             <a
-                                                href={hw.submission.attachmentUrl}
+                                                href={
+                                                    hw.submission.attachmentUrl
+                                                }
                                                 target="_blank"
                                                 rel="noreferrer"
-                                                style={{ display: 'inline-flex', alignItems: 'center', gap: 5, fontSize: 11, fontWeight: 700, color: '#2563eb', textDecoration: 'none', maxWidth: '100%', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}
+                                                style={{
+                                                    display: 'inline-flex',
+                                                    alignItems: 'center',
+                                                    gap: 5,
+                                                    fontSize: 11,
+                                                    fontWeight: 700,
+                                                    color: '#2563eb',
+                                                    textDecoration: 'none',
+                                                    maxWidth: '100%',
+                                                    overflow: 'hidden',
+                                                    textOverflow: 'ellipsis',
+                                                    whiteSpace: 'nowrap',
+                                                }}
                                             >
                                                 <Paperclip size={12} />
-                                                {hw.submission.attachmentName || 'View file'}
+                                                {hw.submission.attachmentName ||
+                                                    'View file'}
                                             </a>
                                         )}
                                         {hw.submission?.note && (
-                                            <span style={{ fontSize: 11, color: '#6b7280', flex: 1, minWidth: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                                            <span
+                                                style={{
+                                                    fontSize: 11,
+                                                    color: '#6b7280',
+                                                    flex: 1,
+                                                    minWidth: 0,
+                                                    overflow: 'hidden',
+                                                    textOverflow: 'ellipsis',
+                                                    whiteSpace: 'nowrap',
+                                                }}
+                                            >
                                                 “{hw.submission.note}”
                                             </span>
                                         )}
@@ -305,22 +469,77 @@ export default function StudentHomework({ profile, homework }: Props) {
                         padding: 16,
                     }}
                     onClick={closeSubmit}
+                    role="dialog"
+                    aria-modal="true"
+                    aria-labelledby="student-homework-submit-title"
                 >
                     <div
-                        style={{ background: '#fff', borderRadius: 18, padding: 22, width: '100%', maxWidth: 440, boxShadow: '0 24px 60px rgba(0,0,0,0.2)' }}
+                        style={{
+                            background: '#fff',
+                            borderRadius: 18,
+                            padding: 22,
+                            width: '100%',
+                            maxWidth: 440,
+                            boxShadow: '0 24px 60px rgba(0,0,0,0.2)',
+                        }}
                         onClick={(e) => e.stopPropagation()}
                     >
-                        <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: 12, marginBottom: 4 }}>
-                            <div style={{ fontSize: 16, fontWeight: 800, color: '#1a1a2e' }}>Submit Homework</div>
-                            <button type="button" onClick={closeSubmit} style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#9ca3af', padding: 2 }}>
+                        <div
+                            style={{
+                                display: 'flex',
+                                alignItems: 'flex-start',
+                                justifyContent: 'space-between',
+                                gap: 12,
+                                marginBottom: 4,
+                            }}
+                        >
+                            <div
+                                id="student-homework-submit-title"
+                                style={{
+                                    fontSize: 16,
+                                    fontWeight: 800,
+                                    color: '#1a1a2e',
+                                }}
+                            >
+                                Submit Homework
+                            </div>
+                            <button
+                                type="button"
+                                aria-label="Close submit homework dialog"
+                                onClick={closeSubmit}
+                                style={{
+                                    background: 'none',
+                                    border: 'none',
+                                    cursor: 'pointer',
+                                    color: '#9ca3af',
+                                    padding: 2,
+                                }}
+                            >
                                 <X size={18} />
                             </button>
                         </div>
-                        <div style={{ fontSize: 12, color: '#6b7280', marginBottom: 16 }}>
-                            {activeHw.title || activeHw.titleKh} · Due {formatDate(activeHw.due)}
+                        <div
+                            style={{
+                                fontSize: 12,
+                                color: '#6b7280',
+                                marginBottom: 16,
+                            }}
+                        >
+                            {activeHw.title || activeHw.titleKh} · Due{' '}
+                            {formatDate(activeHw.due)}
                         </div>
 
-                        <label style={{ fontSize: 12, fontWeight: 700, color: '#374151', display: 'block', marginBottom: 6 }}>Note (optional)</label>
+                        <label
+                            style={{
+                                fontSize: 12,
+                                fontWeight: 700,
+                                color: '#374151',
+                                display: 'block',
+                                marginBottom: 6,
+                            }}
+                        >
+                            Note (optional)
+                        </label>
                         <textarea
                             value={data.note}
                             onChange={(e) => setData('note', e.target.value)}
@@ -337,16 +556,39 @@ export default function StudentHomework({ profile, homework }: Props) {
                                 boxSizing: 'border-box',
                             }}
                         />
-                        {errors.note && <div style={{ fontSize: 11, color: '#e11d48', marginBottom: 12 }}>{errors.note}</div>}
+                        {errors.note && (
+                            <div
+                                style={{
+                                    fontSize: 11,
+                                    color: '#e11d48',
+                                    marginBottom: 12,
+                                }}
+                            >
+                                {errors.note}
+                            </div>
+                        )}
 
-                        <label style={{ fontSize: 12, fontWeight: 700, color: '#374151', display: 'block', marginBottom: 6 }}>
+                        <label
+                            style={{
+                                fontSize: 12,
+                                fontWeight: 700,
+                                color: '#374151',
+                                display: 'block',
+                                marginBottom: 6,
+                            }}
+                        >
                             Attachment (pdf, doc, docx, jpg, png · max 10MB)
                         </label>
                         <input
                             ref={fileInputRef}
                             type="file"
                             accept=".pdf,.doc,.docx,.jpg,.jpeg,.png"
-                            onChange={(e) => setData('attachment', e.target.files?.[0] ?? null)}
+                            onChange={(e) =>
+                                setData(
+                                    'attachment',
+                                    e.target.files?.[0] ?? null,
+                                )
+                            }
                             style={{ display: 'none' }}
                         />
                         <button
@@ -372,16 +614,36 @@ export default function StudentHomework({ profile, homework }: Props) {
                             {data.attachment
                                 ? data.attachment.name
                                 : activeHw.submission?.attachmentName
-                                    ? `Current: ${activeHw.submission.attachmentName} (choose to replace)`
-                                    : 'Choose file'}
+                                  ? `Current: ${activeHw.submission.attachmentName} (choose to replace)`
+                                  : 'Choose file'}
                         </button>
-                        {errors.attachment && <div style={{ fontSize: 11, color: '#e11d48', marginBottom: 14 }}>{errors.attachment}</div>}
+                        {errors.attachment && (
+                            <div
+                                style={{
+                                    fontSize: 11,
+                                    color: '#e11d48',
+                                    marginBottom: 14,
+                                }}
+                            >
+                                {errors.attachment}
+                            </div>
+                        )}
 
                         <div style={{ display: 'flex', gap: 10 }}>
                             <button
                                 type="button"
                                 onClick={closeSubmit}
-                                style={{ flex: 1, background: '#f1f5f9', color: '#475569', border: 'none', borderRadius: 10, padding: '11px', fontWeight: 700, fontSize: 13, cursor: 'pointer' }}
+                                style={{
+                                    flex: 1,
+                                    background: '#f1f5f9',
+                                    color: '#475569',
+                                    border: 'none',
+                                    borderRadius: 10,
+                                    padding: '11px',
+                                    fontWeight: 700,
+                                    fontSize: 13,
+                                    cursor: 'pointer',
+                                }}
                             >
                                 Cancel
                             </button>
@@ -389,7 +651,20 @@ export default function StudentHomework({ profile, homework }: Props) {
                                 type="button"
                                 onClick={submitHomework}
                                 disabled={processing}
-                                style={{ flex: 1, background: '#4f46e5', color: '#fff', border: 'none', borderRadius: 10, padding: '11px', fontWeight: 700, fontSize: 13, cursor: processing ? 'not-allowed' : 'pointer', opacity: processing ? 0.6 : 1 }}
+                                style={{
+                                    flex: 1,
+                                    background: '#4f46e5',
+                                    color: '#fff',
+                                    border: 'none',
+                                    borderRadius: 10,
+                                    padding: '11px',
+                                    fontWeight: 700,
+                                    fontSize: 13,
+                                    cursor: processing
+                                        ? 'not-allowed'
+                                        : 'pointer',
+                                    opacity: processing ? 0.6 : 1,
+                                }}
                             >
                                 {processing ? 'Submitting...' : 'Submit'}
                             </button>

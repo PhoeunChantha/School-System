@@ -1,5 +1,5 @@
 import StudentShell, { type StudentProfile } from '@/pages/student/shell';
-import { CreditCard, CheckCircle, AlertTriangle, Clock } from 'lucide-react';
+import { AlertTriangle, CheckCircle, Clock, CreditCard } from 'lucide-react';
 
 interface FeesSummary {
     total: number;
@@ -31,35 +31,83 @@ function formatCurrency(n: number) {
 
 function formatDate(d: string) {
     if (!d) return '';
-    return new Date(d).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+    return new Date(d).toLocaleDateString('en-US', {
+        month: 'short',
+        day: 'numeric',
+        year: 'numeric',
+    });
 }
 
 function statusConfig(status: string) {
-    if (status === 'paid')    return { label: 'Paid',    cls: 's-badge-green',  iconColor: '#059669', bg: '#dcfce7' };
-    if (status === 'partial') return { label: 'Partial', cls: 's-badge-amber',  iconColor: '#d97706', bg: '#fef3c7' };
-    return                           { label: 'Unpaid',  cls: 's-badge-red',    iconColor: '#e11d48', bg: '#fee2e2' };
+    if (status === 'paid')
+        return {
+            label: 'Paid',
+            cls: 's-badge-green',
+            iconColor: '#059669',
+            bg: '#dcfce7',
+        };
+    if (status === 'partial')
+        return {
+            label: 'Partial',
+            cls: 's-badge-amber',
+            iconColor: '#d97706',
+            bg: '#fef3c7',
+        };
+    return {
+        label: 'Unpaid',
+        cls: 's-badge-red',
+        iconColor: '#e11d48',
+        bg: '#fee2e2',
+    };
 }
 
 export default function StudentFees({ profile, summary, fees }: Props) {
-    const paidPct = summary.total > 0 ? (summary.paid / summary.total) * 100 : 0;
+    const paidPct =
+        summary.total > 0 ? (summary.paid / summary.total) * 100 : 0;
 
     return (
         <StudentShell profile={profile} activePage="fees" title="Fees">
             {/* ── Page header ── */}
             <div className="s-page-header s-fade-up">
-                <div className="s-page-accent" style={{ background: '#fee2e2' }}>
+                <div
+                    className="s-page-accent"
+                    style={{ background: '#fee2e2' }}
+                >
                     <CreditCard size={18} color="#e11d48" />
                 </div>
                 <div className="s-page-title">Fees</div>
             </div>
 
             {/* ── Summary card ── */}
-            <div className="s-card s-card-pad s-fade-up s-delay-1" style={{ marginBottom: 14 }}>
+            <div
+                className="s-card s-card-pad s-fade-up s-delay-1"
+                style={{ marginBottom: 14 }}
+            >
                 {/* Progress bar */}
                 <div style={{ marginBottom: 16 }}>
-                    <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 8 }}>
-                        <span style={{ fontSize: 12, fontWeight: 600, color: '#9ca3af' }}>Payment progress</span>
-                        <span style={{ fontSize: 12, fontWeight: 700, color: '#059669' }}>
+                    <div
+                        style={{
+                            display: 'flex',
+                            justifyContent: 'space-between',
+                            marginBottom: 8,
+                        }}
+                    >
+                        <span
+                            style={{
+                                fontSize: 12,
+                                fontWeight: 600,
+                                color: '#9ca3af',
+                            }}
+                        >
+                            Payment progress
+                        </span>
+                        <span
+                            style={{
+                                fontSize: 12,
+                                fontWeight: 700,
+                                color: '#059669',
+                            }}
+                        >
                             {Math.round(paidPct)}%
                         </span>
                     </div>
@@ -75,7 +123,12 @@ export default function StudentFees({ profile, summary, fees }: Props) {
                             style={{
                                 height: '100%',
                                 width: `${paidPct}%`,
-                                background: paidPct >= 100 ? '#059669' : paidPct >= 50 ? '#2563eb' : '#e11d48',
+                                background:
+                                    paidPct >= 100
+                                        ? '#059669'
+                                        : paidPct >= 50
+                                          ? '#2563eb'
+                                          : '#e11d48',
                                 borderRadius: 99,
                                 transition: 'width 0.5s ease',
                             }}
@@ -84,11 +137,29 @@ export default function StudentFees({ profile, summary, fees }: Props) {
                 </div>
 
                 {/* 3 stats */}
-                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 12 }}>
+                <div
+                    style={{
+                        display: 'grid',
+                        gridTemplateColumns: 'repeat(3, 1fr)',
+                        gap: 12,
+                    }}
+                >
                     {[
-                        { label: 'Total',   val: formatCurrency(summary.total),   color: '#1a1a2e' },
-                        { label: 'Paid',    val: formatCurrency(summary.paid),    color: '#059669' },
-                        { label: 'Balance', val: formatCurrency(summary.pending), color: summary.pending > 0 ? '#e11d48' : '#9ca3af' },
+                        {
+                            label: 'Total',
+                            val: formatCurrency(summary.total),
+                            color: '#1a1a2e',
+                        },
+                        {
+                            label: 'Paid',
+                            val: formatCurrency(summary.paid),
+                            color: '#059669',
+                        },
+                        {
+                            label: 'Balance',
+                            val: formatCurrency(summary.pending),
+                            color: summary.pending > 0 ? '#e11d48' : '#9ca3af',
+                        },
                     ].map((s) => (
                         <div key={s.label} style={{ textAlign: 'center' }}>
                             <div
@@ -102,7 +173,15 @@ export default function StudentFees({ profile, summary, fees }: Props) {
                             >
                                 {s.val}
                             </div>
-                            <div style={{ fontSize: 10, color: '#9ca3af', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+                            <div
+                                style={{
+                                    fontSize: 10,
+                                    color: '#9ca3af',
+                                    fontWeight: 600,
+                                    textTransform: 'uppercase',
+                                    letterSpacing: '0.05em',
+                                }}
+                            >
                                 {s.label}
                             </div>
                         </div>
@@ -122,8 +201,16 @@ export default function StudentFees({ profile, summary, fees }: Props) {
                         }}
                     >
                         <AlertTriangle size={15} color="#e11d48" />
-                        <span style={{ fontSize: 12, fontWeight: 600, color: '#b91c1c' }}>
-                            {summary.unpaidCount} unpaid {summary.unpaidCount === 1 ? 'month' : 'months'} — please contact the office
+                        <span
+                            style={{
+                                fontSize: 12,
+                                fontWeight: 600,
+                                color: '#b91c1c',
+                            }}
+                        >
+                            {summary.unpaidCount} unpaid{' '}
+                            {summary.unpaidCount === 1 ? 'month' : 'months'} —
+                            please contact the office
                         </span>
                     </div>
                 )}
@@ -155,35 +242,94 @@ export default function StudentFees({ profile, summary, fees }: Props) {
                                         flexShrink: 0,
                                     }}
                                 >
-                                    {fee.status === 'paid'    && <CheckCircle    size={18} color={cfg.iconColor} />}
-                                    {fee.status === 'partial' && <Clock          size={18} color={cfg.iconColor} />}
-                                    {fee.status === 'unpaid'  && <AlertTriangle  size={18} color={cfg.iconColor} />}
+                                    {fee.status === 'paid' && (
+                                        <CheckCircle
+                                            size={18}
+                                            color={cfg.iconColor}
+                                        />
+                                    )}
+                                    {fee.status === 'partial' && (
+                                        <Clock
+                                            size={18}
+                                            color={cfg.iconColor}
+                                        />
+                                    )}
+                                    {fee.status === 'unpaid' && (
+                                        <AlertTriangle
+                                            size={18}
+                                            color={cfg.iconColor}
+                                        />
+                                    )}
                                 </div>
 
                                 <div style={{ flex: 1, minWidth: 0 }}>
-                                    <div style={{ fontSize: 14, fontWeight: 700, color: '#1a1a2e', marginBottom: 3 }}>
+                                    <div
+                                        style={{
+                                            fontSize: 14,
+                                            fontWeight: 700,
+                                            color: '#1a1a2e',
+                                            marginBottom: 3,
+                                        }}
+                                    >
                                         {fee.billingMonth}
                                     </div>
-                                    <div style={{ fontSize: 11, color: '#9ca3af', fontWeight: 500 }}>
+                                    <div
+                                        style={{
+                                            fontSize: 11,
+                                            color: '#9ca3af',
+                                            fontWeight: 500,
+                                        }}
+                                    >
                                         Due {formatDate(fee.due)}
                                     </div>
                                     {fee.discount > 0 && (
-                                        <div style={{ fontSize: 11, color: '#059669', fontWeight: 600, marginTop: 2 }}>
-                                            Discount: {formatCurrency(fee.discount)}
+                                        <div
+                                            style={{
+                                                fontSize: 11,
+                                                color: '#059669',
+                                                fontWeight: 600,
+                                                marginTop: 2,
+                                            }}
+                                        >
+                                            Discount:{' '}
+                                            {formatCurrency(fee.discount)}
                                         </div>
                                     )}
                                 </div>
 
-                                <div style={{ textAlign: 'right', flexShrink: 0 }}>
-                                    <div style={{ fontSize: 15, fontWeight: 700, color: '#1a1a2e', marginBottom: 4 }}>
+                                <div
+                                    style={{
+                                        textAlign: 'right',
+                                        flexShrink: 0,
+                                    }}
+                                >
+                                    <div
+                                        style={{
+                                            fontSize: 15,
+                                            fontWeight: 700,
+                                            color: '#1a1a2e',
+                                            marginBottom: 4,
+                                        }}
+                                    >
                                         {formatCurrency(fee.amount)}
                                     </div>
-                                    <span className={`s-badge ${cfg.cls}`}>{cfg.label}</span>
-                                    {fee.balance > 0 && fee.status !== 'paid' && (
-                                        <div style={{ fontSize: 11, color: '#e11d48', fontWeight: 600, marginTop: 3 }}>
-                                            Owed: {formatCurrency(fee.balance)}
-                                        </div>
-                                    )}
+                                    <span className={`s-badge ${cfg.cls}`}>
+                                        {cfg.label}
+                                    </span>
+                                    {fee.balance > 0 &&
+                                        fee.status !== 'paid' && (
+                                            <div
+                                                style={{
+                                                    fontSize: 11,
+                                                    color: '#e11d48',
+                                                    fontWeight: 600,
+                                                    marginTop: 3,
+                                                }}
+                                            >
+                                                Owed:{' '}
+                                                {formatCurrency(fee.balance)}
+                                            </div>
+                                        )}
                                 </div>
                             </div>
                         );
