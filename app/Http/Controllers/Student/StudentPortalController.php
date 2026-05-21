@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Student;
 
 use App\Http\Controllers\Controller;
 use App\Models\HomeworkAssignment;
+use App\Models\Notification;
 use App\Services\Student\StudentPortalService;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -59,6 +60,18 @@ class StudentPortalController extends Controller
     public function notifications(Request $request): Response
     {
         return Inertia::render('student/notifications/index', $this->service->notificationsData($request->user()));
+    }
+
+    public function notificationShow(Request $request, Notification $notification): Response
+    {
+        return Inertia::render('student/notifications/show', $this->service->notificationDetailData($request->user(), $notification));
+    }
+
+    public function markNotificationsRead(Request $request): RedirectResponse
+    {
+        $this->service->markNotificationsRead($request->user());
+
+        return back();
     }
 
     public function profile(Request $request): Response

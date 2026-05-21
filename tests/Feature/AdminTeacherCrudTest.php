@@ -3,7 +3,9 @@
 namespace Tests\Feature;
 
 use App\Models\LessonPlan;
+use App\Models\Notification;
 use App\Models\SchoolClass;
+use App\Models\Student;
 use App\Models\Teacher;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -177,6 +179,8 @@ class AdminTeacherCrudTest extends TestCase
         $user = User::factory()->create();
         $teacher = Teacher::factory()->create();
         $schoolClass = SchoolClass::factory()->for($teacher)->create();
+        $studentUser = User::factory()->create();
+        $student = Student::factory()->for($schoolClass)->create(['user_id' => $studentUser->id]);
 
         $this->actingAs($user)
             ->post(route('admin.teachers.lesson-plans.store', $teacher), [
@@ -200,6 +204,22 @@ class AdminTeacherCrudTest extends TestCase
             'created_by' => $user->id,
             'updated_by' => $user->id,
         ]);
+
+        $lessonPlan = LessonPlan::query()->where('title', 'Present Simple Tense')->firstOrFail();
+
+        $this->assertDatabaseHas('notifications', [
+            'category' => 'message',
+            'title' => 'Class message',
+            'body' => 'Your teacher shared a new class update. Please check with your teacher in class.',
+            'student_id' => $student->id,
+            'user_id' => $studentUser->id,
+            'created_by' => $user->id,
+        ]);
+
+        $notification = Notification::query()->where('student_id', $student->id)->firstOrFail();
+        $this->assertSame('class_message', $notification->data['type']);
+        $this->assertSame($lessonPlan->id, $notification->data['lesson_plan_id']);
+        $this->assertStringNotContainsString($lessonPlan->title, $notification->body);
     }
 
     public function test_teacher_lesson_plan_requires_class_assigned_to_teacher(): void

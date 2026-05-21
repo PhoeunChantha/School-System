@@ -2,11 +2,15 @@
 
 namespace Tests\Feature;
 
+use App\Events\StudentNotificationCreated;
 use App\Models\HomeworkAssignment;
+use App\Models\Notification;
 use App\Models\SchoolClass;
+use App\Models\Student;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Http\UploadedFile;
+use Illuminate\Support\Facades\Event;
 use Tests\TestCase;
 
 class AdminHomeworkAssignmentCrudTest extends TestCase
@@ -46,6 +50,11 @@ class AdminHomeworkAssignmentCrudTest extends TestCase
     {
         $user = User::factory()->create();
         $schoolClass = SchoolClass::factory()->create();
+        $studentUser = User::factory()->create();
+        $student = Student::factory()->for($schoolClass)->create(['user_id' => $studentUser->id]);
+        $inactiveStudent = Student::factory()->for($schoolClass)->create(['status' => 'inactive']);
+
+        Event::fake([StudentNotificationCreated::class]);
 
         $this->actingAs($user)
             ->post(route('admin.homework.store'), $this->validPayload($schoolClass->id))
@@ -57,6 +66,33 @@ class AdminHomeworkAssignmentCrudTest extends TestCase
             'assigned_by' => $user->id,
             'updated_by' => $user->id,
         ]);
+
+        $homework = HomeworkAssignment::query()->where('title_en', 'Write about family')->firstOrFail();
+
+        $this->assertDatabaseHas('notifications', [
+            'category' => 'message',
+            'title' => 'Homework update',
+            'body' => 'Your teacher assigned new homework. Open the Homework tab to view and submit it.',
+            'student_id' => $student->id,
+            'user_id' => $studentUser->id,
+            'created_by' => $user->id,
+        ]);
+        $this->assertDatabaseMissing('notifications', [
+            'category' => 'message',
+            'student_id' => $inactiveStudent->id,
+        ]);
+
+        $notification = Notification::query()->where('student_id', $student->id)->firstOrFail();
+        $this->assertSame('homework_update', $notification->data['type']);
+        $this->assertSame($homework->id, $notification->data['homework_assignment_id']);
+        $this->assertStringNotContainsString($homework->title_en, $notification->body);
+        $this->assertStringNotContainsString($homework->due_on->format('M j, Y'), $notification->body);
+
+        Event::assertDispatched(
+            StudentNotificationCreated::class,
+            fn (StudentNotificationCreated $event): bool => $event->notification->is($notification)
+                && $event->unreadNotifications === 1,
+        );
     }
 
     public function test_admin_can_create_homework_with_file(): void

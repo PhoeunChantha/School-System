@@ -10,6 +10,10 @@ use Illuminate\Support\Str;
 
 class HomeworkAssignmentService
 {
+    public function __construct(
+        private readonly ClassStudentNotificationService $classStudentNotificationService,
+    ) {}
+
     /**
      * @return array{homework: mixed}
      */
@@ -69,12 +73,18 @@ class HomeworkAssignmentService
     {
         $attachment = $this->storeAttachment($data['attachment_file'] ?? null);
 
-        return DB::transaction(fn (): HomeworkAssignment => HomeworkAssignment::create([
-            ...$this->normalizedData($data),
-            ...$attachment,
-            'assigned_by' => $userId,
-            'updated_by' => $userId,
-        ]));
+        return DB::transaction(function () use ($data, $attachment, $userId): HomeworkAssignment {
+            $homeworkAssignment = HomeworkAssignment::create([
+                ...$this->normalizedData($data),
+                ...$attachment,
+                'assigned_by' => $userId,
+                'updated_by' => $userId,
+            ]);
+
+            $this->classStudentNotificationService->homeworkAssigned($homeworkAssignment, $userId);
+
+            return $homeworkAssignment;
+        });
     }
 
     /**

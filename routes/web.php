@@ -277,7 +277,9 @@ Route::middleware(['auth', 'verified'])->prefix('student')->name('student.')->gr
     Route::post('/homework/{homeworkAssignment}/submit', [StudentPortalController::class, 'submitHomework'])->name('homework.submit');
     Route::get('/fees', [StudentPortalController::class, 'fees'])->name('fees');
     Route::get('/exams', [StudentPortalController::class, 'exams'])->name('exams');
+    Route::put('/notifications/read', [StudentPortalController::class, 'markNotificationsRead'])->name('notifications.read');
     Route::get('/notifications', [StudentPortalController::class, 'notifications'])->name('notifications');
+    Route::get('/notifications/{notification}', [StudentPortalController::class, 'notificationShow'])->name('notifications.show');
     Route::get('/profile', [StudentPortalController::class, 'profile'])->name('profile');
 });
 

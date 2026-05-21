@@ -9,6 +9,10 @@ use Illuminate\Support\Facades\DB;
 
 class LessonPlanService
 {
+    public function __construct(
+        private readonly ClassStudentNotificationService $classStudentNotificationService,
+    ) {}
+
     /**
      * @return array{lessonPlans: mixed, teachers: mixed, classes: mixed, today: string, tomorrow: string, summary: array<string, int>}
      */
@@ -67,11 +71,17 @@ class LessonPlanService
      */
     public function create(array $data, ?int $userId): LessonPlan
     {
-        return DB::transaction(fn (): LessonPlan => LessonPlan::create([
-            ...$this->normalizedData($data),
-            'created_by' => $userId,
-            'updated_by' => $userId,
-        ]));
+        return DB::transaction(function () use ($data, $userId): LessonPlan {
+            $lessonPlan = LessonPlan::create([
+                ...$this->normalizedData($data),
+                'created_by' => $userId,
+                'updated_by' => $userId,
+            ]);
+
+            $this->classStudentNotificationService->lessonPlanCreated($lessonPlan, $userId);
+
+            return $lessonPlan;
+        });
     }
 
     /**

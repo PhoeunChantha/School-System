@@ -8,20 +8,20 @@ import {
     notifications,
     profile as studentProfile,
 } from '@/routes/student';
-import { Head, Link } from '@inertiajs/react';
+import { Head, Link, router } from '@inertiajs/react';
+import { useEcho } from '@laravel/echo-react';
 import {
     BarChart2,
     Bell,
     BookOpen,
     CalendarCheck,
-    ChevronDown,
     CreditCard,
-    GraduationCap,
     Home,
 } from 'lucide-react';
-import { type ReactNode } from 'react';
+import { type ReactNode, useCallback, useEffect, useState } from 'react';
 
 export interface StudentProfile {
+    studentId?: number | null;
     name: string;
     nameKh: string;
     code: string;
@@ -29,6 +29,7 @@ export interface StudentProfile {
     className: string;
     level: string;
     gender: string;
+    unreadNotifications?: number;
 }
 
 export type ActivePage =
@@ -46,6 +47,10 @@ interface Props {
     activePage: ActivePage;
     title: string;
     children: ReactNode;
+}
+
+interface StudentNotificationEvent {
+    unreadNotifications: number;
 }
 
 const NAV_ITEMS = [
@@ -126,15 +131,62 @@ function SAvatar({
 
 export { SAvatar };
 
+function StudentRealtimeNotifications({
+    activePage,
+    onNotification,
+    studentId,
+}: {
+    activePage: ActivePage;
+    onNotification: (event: StudentNotificationEvent) => void;
+    studentId: number;
+}) {
+    useEcho<StudentNotificationEvent>(
+        `students.${studentId}`,
+        '.student.notification.created',
+        (event) => {
+            onNotification(event);
+
+            if (activePage === 'notifications') {
+                router.reload({ only: ['profile', 'notifications'] });
+            }
+        },
+        [activePage, onNotification],
+    );
+
+    return null;
+}
+
 export default function StudentShell({
     profile,
     activePage,
     title,
     children,
 }: Props) {
+    const [unreadNotifications, setUnreadNotifications] = useState(
+        profile.unreadNotifications ?? 0,
+    );
+
+    useEffect(() => {
+        setUnreadNotifications(profile.unreadNotifications ?? 0);
+    }, [profile.unreadNotifications]);
+
+    const handleRealtimeNotification = useCallback(
+        (event: StudentNotificationEvent) => {
+            setUnreadNotifications(event.unreadNotifications);
+        },
+        [],
+    );
+
     return (
         <div className="student-wrap">
             <Head title={title} />
+            {profile.studentId ? (
+                <StudentRealtimeNotifications
+                    activePage={activePage}
+                    onNotification={handleRealtimeNotification}
+                    studentId={profile.studentId}
+                />
+            ) : null}
 
             {/* ── Header ── */}
             <header className="student-header">
@@ -159,23 +211,17 @@ export default function StudentShell({
                 </Link>
 
                 <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                    {(profile.className || profile.level) && (
-                        <Link
-                            href={dashboard()}
-                            className="student-context-pill"
-                            aria-label="Current class"
-                        >
-                            <GraduationCap size={13} />
-                            <span>{profile.className || profile.level}</span>
-                            <ChevronDown size={13} />
-                        </Link>
-                    )}
                     <Link
                         href={notifications()}
                         aria-label="Open notifications"
                         className={`student-icon-btn${activePage === 'notifications' ? 'active' : ''}`}
                     >
                         <Bell size={16} />
+                        {unreadNotifications > 0 && (
+                            <span className="student-notification-dot">
+                                {Math.min(unreadNotifications, 9)}
+                            </span>
+                        )}
                     </Link>
                 </div>
             </header>

@@ -9,6 +9,7 @@ use App\Models\FeeCharge;
 use App\Models\GradeRecord;
 use App\Models\HomeworkAssignment;
 use App\Models\HomeworkSubmission;
+use App\Models\LessonPlan;
 use App\Models\Notification;
 use App\Models\Student;
 use App\Models\User;
@@ -108,6 +109,44 @@ class StudentPortalService
         ];
     }
 
+    public function notificationDetailData(User $user, Notification $notification): array
+    {
+        $student = $this->findStudent($user);
+
+        if (! $this->canViewNotification($notification, $student, $user)) {
+            abort(404);
+        }
+
+        if ($notification->read_at === null) {
+            $notification->update(['read_at' => now()]);
+            $notification->refresh();
+        }
+
+        return [
+            'profile' => $this->profile($user, $student),
+            'notification' => $this->formatNotification($notification),
+            'detail' => $this->notificationTargetDetail($notification, $student),
+        ];
+    }
+
+    public function markNotificationsRead(User $user): void
+    {
+        $student = $this->findStudent($user);
+
+        Notification::query()
+            ->whereNull('read_at')
+            ->where(function ($q) use ($student, $user): void {
+                if ($student) {
+                    $q->where('student_id', $student->id)
+                        ->orWhere('user_id', $user->id)
+                        ->orWhereNull('student_id');
+                } else {
+                    $q->where('user_id', $user->id)->orWhereNull('student_id');
+                }
+            })
+            ->update(['read_at' => now()]);
+    }
+
     public function profileData(User $user): array
     {
         $student = $this->findStudent($user);
@@ -119,7 +158,7 @@ class StudentPortalService
     }
 
     /**
-     * @param  array{note?: string|null, attachment?: \Illuminate\Http\UploadedFile|null}  $data
+     * @param  array{note?: string|null, attachment?: UploadedFile|null}  $data
      */
     public function submitHomework(User $user, HomeworkAssignment $homework, array $data): HomeworkSubmission
     {
@@ -199,6 +238,7 @@ class StudentPortalService
     private function profile(User $user, ?Student $student): array
     {
         return [
+            'studentId' => $student?->id,
             'name' => $student?->name_en ?? $user->name,
             'nameKh' => $student?->name_kh ?? '',
             'code' => $student?->code ?? '',
@@ -207,7 +247,24 @@ class StudentPortalService
             'className' => $student?->schoolClass?->name ?? '',
             'level' => $student?->level?->name ?? '',
             'gender' => $student?->gender ?? '',
+            'unreadNotifications' => $this->unreadNotificationCount($student, $user),
         ];
+    }
+
+    private function unreadNotificationCount(?Student $student, User $user): int
+    {
+        return Notification::query()
+            ->whereNull('read_at')
+            ->where(function ($q) use ($student, $user) {
+                if ($student) {
+                    $q->where('student_id', $student->id)
+                        ->orWhere('user_id', $user->id)
+                        ->orWhereNull('student_id');
+                } else {
+                    $q->where('user_id', $user->id)->orWhereNull('student_id');
+                }
+            })
+            ->count();
     }
 
     private function stats(?Student $student): array
@@ -503,7 +560,7 @@ class StudentPortalService
     private function allNotifications(?Student $student, User $user): array
     {
         return Notification::query()
-            ->where(function ($q) use ($student, $user) {
+            ->where(function ($q) use ($student, $user): void {
                 if ($student) {
                     $q->where('student_id', $student->id)
                         ->orWhere('user_id', $user->id)
@@ -515,16 +572,121 @@ class StudentPortalService
             ->latest()
             ->take(50)
             ->get()
-            ->map(fn (Notification $n) => [
-                'id' => $n->id,
-                'category' => $n->category ?? 'general',
-                'title' => $n->title,
-                'body' => $n->body,
-                'severity' => $n->severity ?? 'info',
-                'read' => $n->read_at !== null,
-                'createdAt' => $n->created_at?->format('Y-m-d H:i') ?? '',
-            ])
+            ->map(fn (Notification $n): array => $this->formatNotification($n))
             ->all();
+    }
+
+    private function canViewNotification(Notification $notification, ?Student $student, User $user): bool
+    {
+        if ($notification->student_id === null && $notification->user_id === null) {
+            return true;
+        }
+
+        if ($notification->user_id === $user->id) {
+            return true;
+        }
+
+        return $student !== null && $notification->student_id === $student->id;
+    }
+
+    /**
+     * @return array<string, mixed>
+     */
+    private function formatNotification(Notification $notification): array
+    {
+        return [
+            'id' => $notification->id,
+            'routeKey' => $notification->routeKey(),
+            'category' => $notification->category ?? 'general',
+            'title' => $notification->title,
+            'body' => $notification->body,
+            'severity' => $notification->severity ?? 'info',
+            'read' => $notification->read_at !== null,
+            'createdAt' => $notification->created_at?->format('Y-m-d H:i') ?? '',
+        ];
+    }
+
+    /**
+     * @return array<string, mixed>|null
+     */
+    private function notificationTargetDetail(Notification $notification, ?Student $student): ?array
+    {
+        if (! $student || ! $student->school_class_id) {
+            return null;
+        }
+
+        $data = $notification->data ?? [];
+
+        if (($data['type'] ?? null) === 'homework_update' && isset($data['homework_assignment_id'])) {
+            $homework = HomeworkAssignment::query()
+                ->whereKey($data['homework_assignment_id'])
+                ->where('school_class_id', $student->school_class_id)
+                ->first();
+
+            return $homework ? $this->homeworkDetail($homework, $student) : null;
+        }
+
+        if (($data['type'] ?? null) === 'class_message' && isset($data['lesson_plan_id'])) {
+            $lessonPlan = LessonPlan::query()
+                ->with('teacher:id,name_en,name_kh')
+                ->whereKey($data['lesson_plan_id'])
+                ->where('school_class_id', $student->school_class_id)
+                ->first();
+
+            return $lessonPlan ? $this->lessonPlanDetail($lessonPlan) : null;
+        }
+
+        return null;
+    }
+
+    /**
+     * @return array<string, mixed>
+     */
+    private function homeworkDetail(HomeworkAssignment $homework, Student $student): array
+    {
+        $submission = HomeworkSubmission::query()
+            ->where('homework_assignment_id', $homework->id)
+            ->where('student_id', $student->id)
+            ->first(['submitted_at', 'score', 'status', 'note', 'attachment_path', 'attachment_name']);
+
+        return [
+            'type' => 'homework',
+            'routeKey' => $homework->routeKey(),
+            'title' => $homework->title_en ?: $homework->title_kh,
+            'titleKh' => $homework->title_kh ?? '',
+            'instructions' => $homework->instructions ?? '',
+            'points' => $homework->points ?? 0,
+            'due' => $homework->due_on?->format('Y-m-d') ?? '',
+            'status' => $homework->status,
+            'attachmentName' => $homework->attachment_name ?? '',
+            'attachmentUrl' => $homework->attachment_path ? asset($homework->attachment_path) : '',
+            'submission' => $submission ? [
+                'submitted' => $submission->submitted_at?->format('Y-m-d') ?? '',
+                'score' => $submission->score,
+                'status' => $submission->status,
+                'note' => $submission->note ?? '',
+                'attachmentName' => $submission->attachment_name ?? '',
+                'attachmentUrl' => $submission->attachment_path ? asset($submission->attachment_path) : '',
+            ] : null,
+        ];
+    }
+
+    /**
+     * @return array<string, mixed>
+     */
+    private function lessonPlanDetail(LessonPlan $lessonPlan): array
+    {
+        return [
+            'type' => 'lesson_plan',
+            'title' => $lessonPlan->title,
+            'lessonDate' => $lessonPlan->lesson_date?->format('Y-m-d') ?? '',
+            'teacher' => $lessonPlan->teacher?->name_en ?? $lessonPlan->teacher?->name_kh ?? '',
+            'objective' => $lessonPlan->objective ?? '',
+            'content' => $lessonPlan->content ?? '',
+            'materials' => $lessonPlan->materials ?? '',
+            'homework' => $lessonPlan->homework ?? '',
+            'status' => $lessonPlan->status,
+        ];
     }
 
     private function fullProfile(?Student $student): array

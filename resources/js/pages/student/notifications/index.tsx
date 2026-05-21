@@ -1,9 +1,22 @@
 import StudentShell, { type StudentProfile } from '@/pages/student/shell';
-import { AlertTriangle, Bell, CheckCircle, Info } from 'lucide-react';
+import {
+    read as readStudentMessages,
+    show as showStudentMessage,
+} from '@/routes/student/notifications';
+import { Link, router } from '@inertiajs/react';
+import {
+    AlertTriangle,
+    Bell,
+    CheckCheck,
+    CheckCircle,
+    Info,
+    MessageCircle,
+} from 'lucide-react';
 import { useState } from 'react';
 
 interface Notification {
     id: number;
+    routeKey: string;
     category: string;
     title: string;
     body: string;
@@ -32,23 +45,38 @@ function severityConfig(severity: string) {
     if (severity === 'info') {
         return { bg: '#dbeafe', color: '#2563eb', icon: Info };
     }
+
     return { bg: '#ffedd5', color: '#ea580c', icon: Bell };
 }
 
-function formatTime(d: string) {
-    if (!d) return '';
-    const dt = new Date(d);
-    const now = Date.now();
-    const diff = now - dt.getTime();
+function formatTime(date: string) {
+    if (!date) {
+        return '';
+    }
+
+    const timestamp = new Date(date);
+    const diff = Date.now() - timestamp.getTime();
     const mins = Math.floor(diff / 60000);
     const hours = Math.floor(diff / 3600000);
     const days = Math.floor(diff / 86400000);
 
-    if (mins < 1) return 'Just now';
-    if (mins < 60) return `${mins}m ago`;
-    if (hours < 24) return `${hours}h ago`;
-    if (days < 7) return `${days}d ago`;
-    return dt.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+    if (mins < 1) {
+        return 'Just now';
+    }
+    if (mins < 60) {
+        return `${mins}m ago`;
+    }
+    if (hours < 24) {
+        return `${hours}h ago`;
+    }
+    if (days < 7) {
+        return `${days}d ago`;
+    }
+
+    return timestamp.toLocaleDateString('en-US', {
+        month: 'short',
+        day: 'numeric',
+    });
 }
 
 export default function StudentNotifications({
@@ -57,27 +85,44 @@ export default function StudentNotifications({
 }: Props) {
     const [tab, setTab] = useState<TabKey>('all');
 
-    const unread = notifications.filter((n) => !n.read);
+    const unread = notifications.filter((notification) => !notification.read);
     const shown = tab === 'unread' ? unread : notifications;
 
     return (
         <StudentShell
             profile={profile}
             activePage="notifications"
-            title="Notifications"
+            title="Messages"
         >
-            {/* ── Page header ── */}
             <div className="s-page-header s-fade-up">
                 <div
                     className="s-page-accent"
-                    style={{ background: '#ffedd5' }}
+                    style={{ background: '#dbeafe' }}
                 >
-                    <Bell size={18} color="#ea580c" />
+                    <MessageCircle size={18} color="#2563eb" />
                 </div>
-                <div className="s-page-title">Notifications</div>
+                <div className="s-page-title">Messages</div>
+                {unread.length > 0 && (
+                    <button
+                        type="button"
+                        className="student-message-read-btn"
+                        onClick={() => {
+                            router.put(
+                                readStudentMessages.url(),
+                                {},
+                                {
+                                    only: ['profile', 'notifications'],
+                                    preserveScroll: true,
+                                },
+                            );
+                        }}
+                    >
+                        <CheckCheck size={14} />
+                        Read all
+                    </button>
+                )}
             </div>
 
-            {/* ── Tabs ── */}
             <div className="s-tabs s-fade-up s-delay-1">
                 <button
                     className={`s-tab${tab === 'all' ? 'active' : ''}`}
@@ -95,32 +140,37 @@ export default function StudentNotifications({
                 </button>
             </div>
 
-            {/* ── List ── */}
             {shown.length === 0 ? (
                 <div className="s-card s-fade-up s-delay-2">
                     <div className="s-empty">
-                        <span className="s-empty-icon">🔔</span>
+                        <Bell className="s-empty-icon" size={42} />
                         <div className="s-empty-text">
                             {tab === 'unread'
-                                ? 'All caught up!'
-                                : 'No notifications yet'}
+                                ? 'All messages are read'
+                                : 'No messages yet'}
                         </div>
                     </div>
                 </div>
             ) : (
                 <div className="s-card s-fade-up s-delay-2">
-                    {shown.map((notif, i) => {
-                        const cfg = severityConfig(notif.severity);
+                    {shown.map((notification) => {
+                        const cfg = severityConfig(notification.severity);
                         const SevIcon = cfg.icon;
 
                         return (
-                            <div
-                                key={notif.id}
+                            <Link
+                                key={notification.id}
+                                href={showStudentMessage(
+                                    notification.routeKey as unknown as number,
+                                )}
                                 className="s-list-item"
                                 style={
-                                    !notif.read
-                                        ? { background: '#fafbff' }
-                                        : undefined
+                                    !notification.read
+                                        ? {
+                                              background: '#fafbff',
+                                              textDecoration: 'none',
+                                          }
+                                        : { textDecoration: 'none' }
                                 }
                             >
                                 <div
@@ -137,7 +187,7 @@ export default function StudentNotifications({
                                     }}
                                 >
                                     <SevIcon size={18} color={cfg.color} />
-                                    {!notif.read && (
+                                    {!notification.read && (
                                         <div
                                             style={{
                                                 position: 'absolute',
@@ -157,14 +207,16 @@ export default function StudentNotifications({
                                     <div
                                         style={{
                                             fontSize: 13,
-                                            fontWeight: notif.read ? 600 : 700,
+                                            fontWeight: notification.read
+                                                ? 600
+                                                : 700,
                                             color: '#1a1a2e',
                                             marginBottom: 3,
                                         }}
                                     >
-                                        {notif.title}
+                                        {notification.title}
                                     </div>
-                                    {notif.body && (
+                                    {notification.body && (
                                         <div
                                             style={{
                                                 fontSize: 12,
@@ -177,7 +229,7 @@ export default function StudentNotifications({
                                                 lineHeight: 1.5,
                                             }}
                                         >
-                                            {notif.body}
+                                            {notification.body}
                                         </div>
                                     )}
                                     <div
@@ -188,14 +240,10 @@ export default function StudentNotifications({
                                             marginTop: 4,
                                         }}
                                     >
-                                        {formatTime(notif.createdAt)}
-                                        {notif.category &&
-                                            notif.category !== 'general' && (
-                                                <span> · {notif.category}</span>
-                                            )}
+                                        {formatTime(notification.createdAt)}
                                     </div>
                                 </div>
-                            </div>
+                            </Link>
                         );
                     })}
                 </div>
