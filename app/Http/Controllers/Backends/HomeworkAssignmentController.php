@@ -36,6 +36,7 @@ class HomeworkAssignmentController extends Controller
 
     public function store(StoreHomeworkAssignmentRequest $request): RedirectResponse
     {
+        
         try {
             $this->homeworkAssignmentService->create($request->validated(), $request->user()?->id);
 
