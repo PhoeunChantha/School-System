@@ -5,7 +5,7 @@
 } from '@/actions/App/Http/Controllers/Backends/UserController';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import AdminShell from '@/pages/admin/shell';
-import { Avatar, Badge } from '@/pages/admin/ui';
+import { Avatar, Badge, RowActions } from '@/pages/admin/ui';
 import { type SharedData } from '@/types';
 import { router, useForm, usePage } from '@inertiajs/react';
 import { Camera, Edit3, Plus, ShieldCheck, Trash2, UserRound } from 'lucide-react';
@@ -290,51 +290,58 @@ export default function UsersPage({ users, roles, summary }: UsersPageProps) {
                             <div style={{ fontSize: 13, fontWeight: 900, color: '#1e293b' }}>User Accounts</div>
                             <input className="f-input" style={{ width: 280, maxWidth: '100%' }} placeholder="Search users..." value={search} onChange={event => setSearch(event.target.value)} />
                         </div>
-                        <table className="data-table users-table">
-                            <thead>
-                                <tr>
-                                    <th>User</th>
-                                    <th>Roles</th>
-                                    <th>Status</th>
-                                    <th>Created</th>
+                        <div className="users-table-scroll" role="region" aria-label="User accounts table">
+                            <table className={`data-table users-table${canUpdate || canDelete ? ' has-actions' : ''}`}>
+                                <thead>
+                                    <tr>
+                                        <th>User</th>
+                                        <th>Roles</th>
+                                        <th>Status</th>
+                                        <th>Created</th>
                                         {(canUpdate || canDelete) && <th>Actions</th>}
-                                </tr>
-                            </thead>
-                            <tbody>
-                                {filteredUsers.length === 0 ? (
-                                    <tr><td colSpan={canUpdate || canDelete ? 5 : 4} style={emptyCell}>No users found</td></tr>
-                                ) : filteredUsers.map(user => (
-                                    <tr key={user.id}>
-                                        <td>
-                                            <div style={{ display: 'flex', alignItems: 'center', gap: 10, minWidth: 0 }}>
-                                                <Avatar name={user.name} src={user.avatar} size={36} />
-                                                <div style={{ minWidth: 0, overflow: 'hidden' }}>
-                                                    <div style={{ fontWeight: 900, color: '#1e293b', fontSize: 13, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{user.name}</div>
-                                                    <div style={{ fontSize: 11, color: '#94a3b8', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }} title={user.email}>{user.email}</div>
-                                                </div>
-                                            </div>
-                                        </td>
-                                        <td>
-                                            <div style={{ display: 'flex', flexWrap: 'wrap', gap: 5 }}>
-                                                {user.roleNames.length === 0 ? (
-                                                    <span style={{ fontSize: 12, color: '#94a3b8' }}>No roles</span>
-                                                ) : user.roleNames.map(role => <Chip key={role}>{role}</Chip>)}
-                                            </div>
-                                        </td>
-                                        <td><Badge type={user.emailVerified ? 'green' : 'amber'}>{user.emailVerified ? 'verified' : 'unverified'}</Badge></td>
-                                        <td style={{ color: '#64748b', fontSize: 12, fontWeight: 700 }}>{user.createdAt}</td>
-                                        {(canUpdate || canDelete) && (
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {filteredUsers.length === 0 ? (
+                                        <tr><td colSpan={canUpdate || canDelete ? 5 : 4} style={emptyCell}>No users found</td></tr>
+                                    ) : filteredUsers.map(user => (
+                                        <tr key={user.id}>
                                             <td>
-                                                <div style={{ display: 'flex', gap: 6 }}>
-                                                    {canUpdate && <button onClick={() => editUser(user)} style={iconButton('#eff6ff', '#2563eb', '#bfdbfe')} title="Edit"><Edit3 size={14} /></button>}
-                                                    {canDelete && <button onClick={() => setDeleteTarget(user)} style={iconButton('#fff1f2', '#ef4444', '#fecaca')} title="Delete"><Trash2 size={14} /></button>}
+                                                <div style={{ display: 'flex', alignItems: 'center', gap: 10, minWidth: 0 }}>
+                                                    <Avatar name={user.name} src={user.avatar} size={36} />
+                                                    <div style={{ minWidth: 0, overflow: 'hidden' }}>
+                                                        <div style={{ fontWeight: 900, color: '#1e293b', fontSize: 13, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{user.name}</div>
+                                                        <div style={{ fontSize: 11, color: '#94a3b8', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }} title={user.email}>{user.email}</div>
+                                                    </div>
                                                 </div>
                                             </td>
-                                        )}
-                                    </tr>
-                                ))}
-                            </tbody>
-                        </table>
+                                            <td>
+                                                <div style={{ display: 'flex', flexWrap: 'wrap', gap: 5 }}>
+                                                    {user.roleNames.length === 0 ? (
+                                                        <span style={{ fontSize: 12, color: '#94a3b8' }}>No roles</span>
+                                                    ) : user.roleNames.map(role => <Chip key={role}>{role}</Chip>)}
+                                                </div>
+                                            </td>
+                                            <td><Badge type={user.emailVerified ? 'green' : 'amber'}>{user.emailVerified ? 'verified' : 'unverified'}</Badge></td>
+                                            <td style={{ color: '#64748b', fontSize: 12, fontWeight: 700 }}>{user.createdAt}</td>
+                                            {(canUpdate || canDelete) && (
+                                                <td>
+                                                    <div style={{ display: 'flex', justifyContent: 'flex-end' }}>
+                                                        <RowActions
+                                                            ariaLabel={`Actions for ${user.name}`}
+                                                            actions={[
+                                                                { key: 'edit', label: 'Edit', icon: Edit3, onSelect: () => editUser(user), hidden: !canUpdate },
+                                                                { key: 'delete', label: 'Delete', icon: Trash2, onSelect: () => setDeleteTarget(user), variant: 'destructive', separatorBefore: true, hidden: !canDelete },
+                                                            ]}
+                                                        />
+                                                    </div>
+                                                </td>
+                                            )}
+                                        </tr>
+                                    ))}
+                                </tbody>
+                            </table>
+                        </div>
                     </div>
                 </div>
             </div>
@@ -393,20 +400,6 @@ function Chip({ children }: { children: ReactNode }) {
     );
 }
 
-function iconButton(background: string, color: string, border: string): CSSProperties {
-    return {
-        background,
-        color,
-        border: `1px solid ${border}`,
-        borderRadius: 7,
-        padding: '6px 9px',
-        cursor: 'pointer',
-        display: 'inline-flex',
-        alignItems: 'center',
-        justifyContent: 'center',
-    };
-}
-
 const primaryButton: CSSProperties = {
     background: '#2563eb',
     color: 'white',
@@ -449,6 +442,5 @@ const emptyCell: CSSProperties = {
     color: '#94a3b8',
     fontSize: 13,
 };
-
 
 

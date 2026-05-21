@@ -2,7 +2,7 @@ import { create as createHomework, destroy, edit as editHomework } from '@/actio
 import { useAdminPermissions } from '@/hooks/use-admin-permissions';
 import { create as createHomeworkSubmission } from '@/routes/admin/homework-submissions';
 import AdminShell from '@/pages/admin/shell';
-import { Badge, KH, Pagination, PBar } from '@/pages/admin/ui';
+import { Badge, KH, Pagination, PBar, RowActions } from '@/pages/admin/ui';
 import { Link, router } from '@inertiajs/react';
 import { useEffect, useMemo, useState } from 'react';
 import { toast } from 'sonner';
@@ -128,12 +128,12 @@ export default function HomeworkPage({ homework }: HomeworkPageProps) {
 
                     <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
                         {canSubmitHomework && (
-                            <Link href={createHomeworkSubmission.url()} style={{ background: '#16a34a', color: 'white', border: 'none', borderRadius: 10, padding: '9px 16px', fontWeight: 800, fontSize: 13, cursor: 'pointer', textDecoration: 'none', display: 'inline-flex', alignItems: 'center', gap: 6 }}>
+                            <Link href={createHomeworkSubmission.url()} className="admin-btn admin-btn-ghost">
                                 <Upload size={15} /> Student Submit
                             </Link>
                         )}
                         {canCreate && (
-                            <Link href={createHomework.url()} style={{ background: '#2563eb', color: 'white', border: 'none', borderRadius: 10, padding: '9px 18px', fontWeight: 700, fontSize: 13, cursor: 'pointer', textDecoration: 'none', display: 'inline-flex', alignItems: 'center', gap: 6 }}>
+                            <Link href={createHomework.url()} className="admin-btn admin-btn-primary">
                                 <Plus size={15} /> Assign New
                             </Link>
                         )}
@@ -220,14 +220,13 @@ export default function HomeworkPage({ homework }: HomeworkPageProps) {
                                         <td>{statusBadge(item.status)}</td>
                                         {canManageHomework && (
                                             <td>
-                                                <div style={{ display: 'flex', gap: 6 }}>
-                                                    {canUpdate && (
-                                                        <Link href={editHomework.url((item.routeKey ?? item.id) as never)} style={{ background: '#eff6ff', color: '#2563eb', border: '1px solid #bfdbfe', borderRadius: 7, padding: '5px 10px', cursor: 'pointer', fontSize: 11, fontWeight: 700, textDecoration: 'none', whiteSpace: 'nowrap', display: 'inline-flex', alignItems: 'center', gap: 5 }}><Edit3 size={13} /> Edit</Link>
-                                                    )}
-                                                    {canDelete && (
-                                                        <button onClick={() => setDeleteTarget(item)} style={{ background: '#fff1f2', color: '#ef4444', border: '1px solid #fecaca', borderRadius: 7, padding: '5px 10px', cursor: 'pointer', fontSize: 11, fontWeight: 700, whiteSpace: 'nowrap', display: 'inline-flex', alignItems: 'center', gap: 5 }}><Trash2 size={13} /> Delete</button>
-                                                    )}
-                                                </div>
+                                                <RowActions
+                                                    ariaLabel={`Actions for ${item.titleEn || item.titleKh}`}
+                                                    actions={[
+                                                        { key: 'edit', label: 'Edit', icon: Edit3, href: editHomework.url((item.routeKey ?? item.id) as never), hidden: !canUpdate },
+                                                        { key: 'delete', label: 'Delete', icon: Trash2, onSelect: () => setDeleteTarget(item), variant: 'destructive', separatorBefore: true, hidden: !canDelete },
+                                                    ]}
+                                                />
                                             </td>
                                         )}
                                     </tr>

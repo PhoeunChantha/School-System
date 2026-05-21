@@ -118,7 +118,7 @@ export default function HomeworkFormPage({ mode, homework, classes }: HomeworkFo
                 <form onSubmit={submit} className="card" style={{ padding: 24, display: 'grid', gridTemplateColumns: 'repeat(2, minmax(0, 1fr))', gap: 16 }}>
                     <div style={{ gridColumn: '1 / -1' }}>
                         <label style={labelStyle}>Title (Khmer) *</label>
-                        <input style={fieldStyle} value={data.title_kh} onChange={event => setData('title_kh', event.target.value)} placeholder="ážŸážšážŸáŸážšáž…áŸ†ážŽáž„áž‡áž¾áž„áž€áž·áž…áŸ’áž…áž€áž¶ážš" />
+                        <input style={fieldStyle} value={data.title_kh} onChange={event => setData('title_kh', event.target.value)} placeholder="សរសេរចំណងជើងកិច្ចការ" />
                         {errors.title_kh && <div className="field-error">{errors.title_kh}</div>}
                     </div>
 

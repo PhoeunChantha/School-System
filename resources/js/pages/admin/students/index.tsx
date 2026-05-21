@@ -2,7 +2,7 @@
 import { create as createStudent, destroy, downloadLayout as downloadStudentLayout, edit as editStudent, exportMethod as exportStudents, importMethod as importStudents, show as showStudent } from '@/actions/App/Http/Controllers/Backends/StudentController';
 import { useAdminPermissions } from '@/hooks/use-admin-permissions';
 import AdminShell from '@/pages/admin/shell';
-import { AdminSelect, Avatar, Badge, FeeTag, KH, Pagination, PBar, ScoreChip } from '@/pages/admin/ui';
+import { AdminSelect, Avatar, Badge, FeeTag, KH, Pagination, PBar, RowActions, ScoreChip } from '@/pages/admin/ui';
 import { Link, router } from '@inertiajs/react';
 import { Download, Edit3, Eye, FileDown, Plus, Trash2, Upload, X } from 'lucide-react';
 import { toast } from 'sonner';
@@ -156,14 +156,13 @@ function useInjectCSS(css: string) {
 }
 
 /* â”€â”€â”€ Mobile card for one student â”€â”€â”€ */
-function StudentCard({ student, onSelect, selected, canShow, canUpdate, canDelete, onEdit, onDelete }: {
+function StudentCard({ student, onSelect, selected, canShow, canUpdate, canDelete, onDelete }: {
     student: Student;
     selected: boolean;
     canShow: boolean;
     canUpdate: boolean;
     canDelete: boolean;
     onSelect: () => void;
-    onEdit: () => void;
     onDelete: () => void;
 }) {
     return (
@@ -213,31 +212,15 @@ function StudentCard({ student, onSelect, selected, canShow, canUpdate, canDelet
             </div>
 
             {/* Actions */}
-            <div style={{ display: 'flex', gap: 8 }} onClick={e => e.stopPropagation()}>
-                {canShow && (
-                    <Link
-                        href={showStudent.url((student.routeKey ?? student.id) as never)}
-                        style={{ flex: 1, textAlign: 'center', background: '#f0fdf4', color: '#16a34a', border: '1px solid #bbf7d0', borderRadius: 8, padding: '7px', fontSize: 12, fontWeight: 700, textDecoration: 'none', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: 5 }}
-                    >
-                        <Eye size={13} /> View
-                    </Link>
-                )}
-                {canUpdate && (
-                    <Link
-                        href={editStudent.url((student.routeKey ?? student.id) as never)}
-                        style={{ flex: 1, textAlign: 'center', background: '#eff6ff', color: '#2563eb', border: '1px solid #bfdbfe', borderRadius: 8, padding: '7px', fontSize: 12, fontWeight: 700, textDecoration: 'none', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: 5 }}
-                    >
-                        <Edit3 size={13} /> Edit
-                    </Link>
-                )}
-                {canDelete && (
-                    <button
-                        onClick={onDelete}
-                        style={{ flex: 1, background: '#fff1f2', color: '#ef4444', border: '1px solid #fecaca', borderRadius: 8, padding: '7px', fontSize: 12, fontWeight: 700, cursor: 'pointer', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: 5 }}
-                    >
-                        <Trash2 size={13} /> Delete
-                    </button>
-                )}
+            <div style={{ display: 'flex', justifyContent: 'flex-end' }} onClick={e => e.stopPropagation()}>
+                <RowActions
+                    ariaLabel={`Actions for ${student.nameEn}`}
+                    actions={[
+                        { key: 'view', label: 'View', icon: Eye, href: showStudent.url((student.routeKey ?? student.id) as never), hidden: !canShow },
+                        { key: 'edit', label: 'Edit', icon: Edit3, href: editStudent.url((student.routeKey ?? student.id) as never), hidden: !canUpdate },
+                        { key: 'delete', label: 'Delete', icon: Trash2, onSelect: onDelete, variant: 'destructive', separatorBefore: true, hidden: !canDelete },
+                    ]}
+                />
             </div>
         </div>
     );
@@ -352,26 +335,22 @@ export default function StudentsPage({ students }: StudentsPageProps) {
                     </div>
                     <div className="students-top-actions" style={{ marginLeft: 'auto', display: 'flex', gap: 8, flexWrap: 'wrap', alignItems: 'center' }}>
                         {canDownloadLayout && (
-                            <a href={downloadStudentLayout.url()} style={{ background: '#f8fafc', color: '#475569', border: '1px solid #dbe3ef', borderRadius: 10, padding: '10px 12px', fontWeight: 800, fontSize: 12, cursor: 'pointer', textDecoration: 'none', whiteSpace: 'nowrap', display: 'inline-flex', alignItems: 'center', gap: 6 }}>
+                            <a href={downloadStudentLayout.url()} className="admin-btn admin-btn-ghost">
                                 <Download size={14} /> Layout
                             </a>
                         )}
                         {canImport && (
-                            <button type="button" onClick={() => importInputRef.current?.click()} style={{ background: '#fff7ed', color: '#ea580c', border: '1px solid #fed7aa', borderRadius: 10, padding: '10px 12px', fontWeight: 800, fontSize: 12, cursor: 'pointer', whiteSpace: 'nowrap', display: 'inline-flex', alignItems: 'center', gap: 6 }}>
+                            <button type="button" onClick={() => importInputRef.current?.click()} className="admin-btn admin-btn-ghost">
                                 <Upload size={14} /> Import
                             </button>
                         )}
                         {canExport && (
-                            <a href={exportStudents.url()} style={{ background: '#f0fdf4', color: '#16a34a', border: '1px solid #bbf7d0', borderRadius: 10, padding: '10px 12px', fontWeight: 800, fontSize: 12, cursor: 'pointer', textDecoration: 'none', whiteSpace: 'nowrap', display: 'inline-flex', alignItems: 'center', gap: 6 }}>
+                            <a href={exportStudents.url()} className="admin-btn admin-btn-ghost">
                                 <FileDown size={14} /> Export
                             </a>
                         )}
                         {canCreate && (
-                            <Link
-                                href={createStudent.url()}
-                                className="students-add-btn"
-                                style={{ background: '#2563eb', color: 'white', border: 'none', borderRadius: 10, padding: '10px 18px', fontWeight: 700, fontSize: 13, cursor: 'pointer', textDecoration: 'none', whiteSpace: 'nowrap', display: 'inline-flex', alignItems: 'center', gap: 6 }}
-                            >
+                            <Link href={createStudent.url()} className="admin-btn admin-btn-primary students-add-btn">
                                 <Plus size={14} /> Add Student
                             </Link>
                         )}
@@ -479,11 +458,14 @@ export default function StudentsPage({ students }: StudentsPageProps) {
                                         <td style={{ fontSize: 12, color: '#64748b' }}>{student.province}</td>
                                         {canManageStudents && (
                                             <td onClick={e => e.stopPropagation()}>
-                                                <div style={{ display: 'flex', gap: 6 }}>
-                                                    {canShow && <Link href={showStudent.url((student.routeKey ?? student.id) as never)} style={{ background: '#f0fdf4', color: '#16a34a', border: '1px solid #bbf7d0', borderRadius: 7, padding: '5px 10px', cursor: 'pointer', fontSize: 11, fontWeight: 700, textDecoration: 'none', whiteSpace: 'nowrap', display: 'inline-flex', alignItems: 'center', gap: 5 }}><Eye size={13} /> View</Link>}
-                                                    {canUpdate && <Link href={editStudent.url((student.routeKey ?? student.id) as never)} style={{ background: '#eff6ff', color: '#2563eb', border: '1px solid #bfdbfe', borderRadius: 7, padding: '5px 10px', cursor: 'pointer', fontSize: 11, fontWeight: 700, textDecoration: 'none', whiteSpace: 'nowrap', display: 'inline-flex', alignItems: 'center', gap: 5 }}><Edit3 size={13} /> Edit</Link>}
-                                                    {canDelete && <button onClick={() => setDeleteTarget(student)} style={{ background: '#fff1f2', color: '#ef4444', border: '1px solid #fecaca', borderRadius: 7, padding: '5px 10px', cursor: 'pointer', fontSize: 11, fontWeight: 700, whiteSpace: 'nowrap', display: 'inline-flex', alignItems: 'center', gap: 5 }}><Trash2 size={13} /> Delete</button>}
-                                                </div>
+                                                <RowActions
+                                                    ariaLabel={`Actions for ${student.nameEn}`}
+                                                    actions={[
+                                                        { key: 'view', label: 'View', icon: Eye, href: showStudent.url((student.routeKey ?? student.id) as never), hidden: !canShow },
+                                                        { key: 'edit', label: 'Edit', icon: Edit3, href: editStudent.url((student.routeKey ?? student.id) as never), hidden: !canUpdate },
+                                                        { key: 'delete', label: 'Delete', icon: Trash2, onSelect: () => setDeleteTarget(student), variant: 'destructive', separatorBefore: true, hidden: !canDelete },
+                                                    ]}
+                                                />
                                             </td>
                                         )}
                                     </tr>
@@ -510,7 +492,6 @@ export default function StudentsPage({ students }: StudentsPageProps) {
                                 canUpdate={canUpdate}
                                 canDelete={canDelete}
                                 onSelect={() => setSelected(student.id === selected?.id ? null : student)}
-                                onEdit={() => {}}
                                 onDelete={() => setDeleteTarget(student)}
                             />
                         ))}

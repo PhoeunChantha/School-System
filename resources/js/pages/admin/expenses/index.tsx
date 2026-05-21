@@ -7,7 +7,7 @@ import {
     updateCategory,
 } from '@/actions/App/Http/Controllers/Backends/ExpenseController';
 import AdminShell from '@/pages/admin/shell';
-import { AdminSelect, Badge, Pagination } from '@/pages/admin/ui';
+import { AdminSelect, Badge, Pagination, RowActions } from '@/pages/admin/ui';
 import { router, useForm } from '@inertiajs/react';
 import {
     Edit3,
@@ -200,7 +200,7 @@ export default function ExpensesPage({ expenses, categories, summary }: ExpenseP
                     </div>
                     <button
                         onClick={tab === 'expenses' ? openCreate : openCreateCat}
-                        style={{ background: '#2563eb', color: 'white', border: 'none', borderRadius: 10, padding: '9px 18px', fontWeight: 700, fontSize: 13, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 6 }}
+                        className="admin-btn admin-btn-primary"
                     >
                         <Plus size={15} /> {tab === 'expenses' ? 'Add Expense' : 'Add Category'}
                     </button>
@@ -306,14 +306,13 @@ export default function ExpensesPage({ expenses, categories, summary }: ExpenseP
                                             </td>
                                             <td><span style={{ fontWeight: 800, color: '#ef4444' }}>{fmt(e.amount)}</span></td>
                                             <td>
-                                                <div style={{ display: 'flex', gap: 6 }}>
-                                                    <button onClick={() => openEdit(e)} style={{ background: '#eff6ff', color: '#2563eb', border: '1px solid #bfdbfe', borderRadius: 7, padding: '5px 10px', cursor: 'pointer', fontSize: 11, fontWeight: 700, display: 'inline-flex', alignItems: 'center', gap: 5 }}>
-                                                        <Edit3 size={12} /> Edit
-                                                    </button>
-                                                    <button onClick={() => setDeleteTarget(e)} style={{ background: '#fff1f2', color: '#ef4444', border: '1px solid #fecaca', borderRadius: 7, padding: '5px 10px', cursor: 'pointer', fontSize: 11, fontWeight: 700, display: 'inline-flex', alignItems: 'center', gap: 5 }}>
-                                                        <Trash2 size={12} /> Delete
-                                                    </button>
-                                                </div>
+                                                <RowActions
+                                                    ariaLabel={`Actions for ${e.title}`}
+                                                    actions={[
+                                                        { key: 'edit', label: 'Edit', icon: Edit3, onSelect: () => openEdit(e) },
+                                                        { key: 'delete', label: 'Delete', icon: Trash2, onSelect: () => setDeleteTarget(e), variant: 'destructive', separatorBefore: true },
+                                                    ]}
+                                                />
                                             </td>
                                         </tr>
                                     ))}
@@ -353,21 +352,20 @@ export default function ExpensesPage({ expenses, categories, summary }: ExpenseP
                                                 <div style={{ fontWeight: 800, fontSize: 13, color: '#1e293b', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{cat.name}</div>
                                                 {cat.nameKh && <div style={{ fontSize: 11, color: '#94a3b8' }}>{cat.nameKh}</div>}
                                             </div>
+                                            <RowActions
+                                                ariaLabel={`Actions for ${cat.name}`}
+                                                actions={[
+                                                    { key: 'edit', label: 'Edit', icon: Edit3, onSelect: () => openEditCat(cat) },
+                                                    { key: 'delete', label: 'Delete', icon: Trash2, onSelect: () => setDeleteCatTarget(cat), variant: 'destructive', separatorBefore: true },
+                                                ]}
+                                            />
                                         </div>
                                         <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 12, marginBottom: 12 }}>
                                             <span style={{ color: '#64748b' }}>{cat.expensesCount} expense{cat.expensesCount !== 1 ? 's' : ''}</span>
                                             <span style={{ fontWeight: 800, color: '#ef4444' }}>{fmt(cat.totalAmount)}</span>
                                         </div>
-                                        <div style={{ width: '100%', height: 3, borderRadius: 4, background: '#f1f5f9', marginBottom: 12, overflow: 'hidden' }}>
+                                        <div style={{ width: '100%', height: 3, borderRadius: 4, background: '#f1f5f9', overflow: 'hidden' }}>
                                             <div style={{ height: '100%', background: cat.color, borderRadius: 4, width: summary.totalAmount > 0 ? `${Math.min(100, (cat.totalAmount / summary.totalAmount) * 100)}%` : '0%' }} />
-                                        </div>
-                                        <div style={{ display: 'flex', gap: 6 }}>
-                                            <button onClick={() => openEditCat(cat)} style={{ flex: 1, background: '#eff6ff', color: '#2563eb', border: '1px solid #bfdbfe', borderRadius: 7, padding: '6px 0', cursor: 'pointer', fontSize: 11, fontWeight: 700, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 5 }}>
-                                                <Edit3 size={12} /> Edit
-                                            </button>
-                                            <button onClick={() => setDeleteCatTarget(cat)} style={{ flex: 1, background: '#fff1f2', color: '#ef4444', border: '1px solid #fecaca', borderRadius: 7, padding: '6px 0', cursor: 'pointer', fontSize: 11, fontWeight: 700, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 5 }}>
-                                                <Trash2 size={12} /> Delete
-                                            </button>
                                         </div>
                                     </div>
                                 ))}

@@ -9,13 +9,6 @@ import {
 } from '@/actions/App/Http/Controllers/Backends/TeacherController';
 import { index as teacherGrades } from '@/actions/App/Http/Controllers/Backends/TeacherGradeController';
 import {
-    DropdownMenu,
-    DropdownMenuContent,
-    DropdownMenuItem,
-    DropdownMenuSeparator,
-    DropdownMenuTrigger,
-} from '@/components/ui/dropdown-menu';
-import {
     Select,
     SelectContent,
     SelectItem,
@@ -25,7 +18,7 @@ import {
 import { useAdminPermissions } from '@/hooks/use-admin-permissions';
 import { useAdminTranslation } from '@/hooks/use-admin-translation';
 import AdminShell from '@/pages/admin/shell';
-import { Avatar, Badge, KH, Pagination } from '@/pages/admin/ui';
+import { Avatar, Badge, KH, Pagination, RowActions, renderRowActionItems, type RowAction } from '@/pages/admin/ui';
 import { AdminMobileCard } from '@/pages/admin/ui/mobile-card';
 import { lessonPlans as lessonPlanIndex } from '@/routes/admin';
 import { create as createTeacherLessonPlan } from '@/routes/admin/teachers/lesson-plans';
@@ -34,7 +27,6 @@ import {
     ArrowLeft,
     Camera,
     Check,
-    ChevronDown,
     Download,
     Edit3,
     Eye,
@@ -246,6 +238,17 @@ export default function TeachersPage({ teachers }: TeachersPageProps) {
         [filtered, page, perPage],
     );
 
+    const teacherActions = (t: Teacher): RowAction[] => {
+        const key = (t.routeKey ?? t.id) as never;
+        return [
+            { key: 'plan', label: translateText('Plan'), icon: School, href: createTeacherLessonPlan.url(key), hidden: !canCreateLessonPlan },
+            { key: 'scores', label: translateText('Score management'), icon: Save, href: teacherGrades.url(key), hidden: !canViewTeacherGrades },
+            { key: 'view', label: translateText('View'), icon: Eye, href: showTeacher.url(key), hidden: !canShow },
+            { key: 'edit', label: translateText('Edit'), icon: Edit3, onSelect: () => handleEdit(t), hidden: !canUpdate },
+            { key: 'delete', label: translateText('Delete'), icon: Trash2, onSelect: () => handleDelete(t), variant: 'destructive', separatorBefore: true, hidden: !canDelete },
+        ];
+    };
+
     return (
         <AdminShell>
             {/* List view */}
@@ -277,78 +280,28 @@ export default function TeachersPage({ teachers }: TeachersPageProps) {
                         >
                             {canDownloadLayout && <a
                                 href={downloadTeacherLayout.url()}
-                                style={{
-                                    background: '#f8fafc',
-                                    color: '#475569',
-                                    border: '1px solid #dbe3ef',
-                                    borderRadius: 10,
-                                    padding: '9px 12px',
-                                    fontWeight: 800,
-                                    fontSize: 12,
-                                    cursor: 'pointer',
-                                    textDecoration: 'none',
-                                    whiteSpace: 'nowrap',
-                                    display: 'inline-flex',
-                                    alignItems: 'center',
-                                    gap: 6,
-                                }}
+                                className="admin-btn admin-btn-ghost"
                             >
                                 <Download size={14} /> Layout
                             </a>}
                             {canImport && <button
                                 type="button"
                                 onClick={() => importInputRef.current?.click()}
-                                style={{
-                                    background: '#fff7ed',
-                                    color: '#ea580c',
-                                    border: '1px solid #fed7aa',
-                                    borderRadius: 10,
-                                    padding: '9px 12px',
-                                    fontWeight: 800,
-                                    fontSize: 12,
-                                    cursor: 'pointer',
-                                    whiteSpace: 'nowrap',
-                                    display: 'inline-flex',
-                                    alignItems: 'center',
-                                    gap: 6,
-                                }}
+                                className="admin-btn admin-btn-ghost"
                             >
                                 <Upload size={14} /> Import
                             </button>}
                             {canExport && <a
                                 href={exportTeachers.url()}
-                                style={{
-                                    background: '#f0fdf4',
-                                    color: '#16a34a',
-                                    border: '1px solid #bbf7d0',
-                                    borderRadius: 10,
-                                    padding: '9px 12px',
-                                    fontWeight: 800,
-                                    fontSize: 12,
-                                    cursor: 'pointer',
-                                    textDecoration: 'none',
-                                    whiteSpace: 'nowrap',
-                                    display: 'inline-flex',
-                                    alignItems: 'center',
-                                    gap: 6,
-                                }}
+                                className="admin-btn admin-btn-ghost"
                             >
                                 <FileDown size={14} /> Export
                             </a>}
                             {canCreate && <button
                                 onClick={() => setView('add')}
-                                style={{
-                                    background: '#2563eb',
-                                    color: 'white',
-                                    border: 'none',
-                                    borderRadius: 10,
-                                    padding: '9px 18px',
-                                    fontWeight: 700,
-                                    fontSize: 13,
-                                    cursor: 'pointer',
-                                }}
+                                className="admin-btn admin-btn-primary"
                             >
-                                + Add Teacher
+                                <GraduationCap size={14} /> {translateText('Add Teacher')}
                             </button>}
                             <input
                                 ref={importInputRef}
@@ -561,7 +514,7 @@ export default function TeachersPage({ teachers }: TeachersPageProps) {
                                             <td
                                                 style={{
                                                     fontWeight: 900,
-                                                    color: '#7c3aed',
+                                                    color: '#334155',
                                                 }}
                                             >
                                                 {t.students}
@@ -631,122 +584,10 @@ export default function TeachersPage({ teachers }: TeachersPageProps) {
                                             </td>
                                             {canManageTeachers && (
                                             <td>
-                                                <DropdownMenu>
-                                                    <DropdownMenuTrigger
-                                                        asChild
-                                                    >
-                                                        <button
-                                                            type="button"
-                                                            style={{
-                                                                background:
-                                                                    '#f8fafc',
-                                                                color: '#334155',
-                                                                border: '1px solid #dbe3ef',
-                                                                borderRadius: 8,
-                                                                padding:
-                                                                    '7px 10px',
-                                                                cursor: 'pointer',
-                                                                fontWeight: 800,
-                                                                fontSize: 12,
-                                                                display:
-                                                                    'inline-flex',
-                                                                alignItems:
-                                                                    'center',
-                                                                gap: 6,
-                                                                whiteSpace:
-                                                                    'nowrap',
-                                                            }}
-                                                        >
-                                                            {translateText(
-                                                                'Actions',
-                                                            )}{' '}
-                                                            <ChevronDown
-                                                                size={14}
-                                                            />
-                                                        </button>
-                                                    </DropdownMenuTrigger>
-                                                    <DropdownMenuContent
-                                                        align="end"
-                                                        className="w-48"
-                                                    >
-                                                        {canCreateLessonPlan && <DropdownMenuItem
-                                                            asChild
-                                                        >
-                                                            <Link
-                                                                href={createTeacherLessonPlan.url(
-                                                                    (t.routeKey ??
-                                                                        t.id) as never,
-                                                                )}
-                                                                className="flex items-center gap-2"
-                                                            >
-                                                                <School
-                                                                    size={14}
-                                                                />{' '}
-                                                                {translateText(
-                                                                    'Plan',
-                                                                )}
-                                                            </Link>
-                                                        </DropdownMenuItem>}
-                                                        {canViewTeacherGrades && <DropdownMenuItem
-                                                            asChild
-                                                        >
-                                                            <Link
-                                                                href={teacherGrades.url(
-                                                                    (t.routeKey ??
-                                                                        t.id) as never,
-                                                                )}
-                                                                className="flex items-center gap-2"
-                                                            >
-                                                                <Save
-                                                                    size={14}
-                                                                />{' '}
-                                                                {translateText(
-                                                                    'Score management',
-                                                                )}
-                                                            </Link>
-                                                        </DropdownMenuItem>}
-                                                        {canShow && <DropdownMenuItem
-                                                            asChild
-                                                        >
-                                                            <Link
-                                                                href={showTeacher.url(
-                                                                    (t.routeKey ??
-                                                                        t.id) as never,
-                                                                )}
-                                                                className="flex items-center gap-2"
-                                                            >
-                                                                <Eye
-                                                                    size={14}
-                                                                />{' '}
-                                                                {translateText(
-                                                                    'View',
-                                                                )}
-                                                            </Link>
-                                                        </DropdownMenuItem>}
-                                                        {canUpdate && <DropdownMenuItem
-                                                            onSelect={() =>
-                                                                handleEdit(t)
-                                                            }
-                                                        >
-                                                            <Edit3 size={14} />{' '}
-                                                            {translateText(
-                                                                'Edit',
-                                                            )}
-                                                        </DropdownMenuItem>}
-                                                        {canDelete && <DropdownMenuSeparator />}
-                                                        {canDelete && <DropdownMenuItem
-                                                            onSelect={() =>
-                                                                handleDelete(t)
-                                                            }
-                                                            className="text-red-600 focus:text-red-600"
-                                                        >
-                                                            <Trash2 size={14} />{' '}
-                                                            {translateText(
-                                                                'Delete',
-                                                            )}
-                                                        </DropdownMenuItem>}
-                                                    </DropdownMenuContent>
-                                                </DropdownMenu>
+                                                <RowActions
+                                                    ariaLabel={`Actions for ${t.nameEn}`}
+                                                    actions={teacherActions(t)}
+                                                />
                                             </td>
                                             )}
                                         </tr>
@@ -791,66 +632,7 @@ export default function TeachersPage({ teachers }: TeachersPageProps) {
                                             </Badge>
                                         }
                                         actionLabel={translateText('Actions')}
-                                        actions={canManageTeachers ? (
-                                            <>
-                                                {canCreateLessonPlan && <DropdownMenuItem asChild>
-                                                    <Link
-                                                        href={createTeacherLessonPlan.url(
-                                                            (t.routeKey ??
-                                                                t.id) as never,
-                                                        )}
-                                                        className="flex items-center gap-2"
-                                                    >
-                                                        <School size={14} />{' '}
-                                                        {translateText('Plan')}
-                                                    </Link>
-                                                </DropdownMenuItem>}
-                                                {canViewTeacherGrades && <DropdownMenuItem asChild>
-                                                    <Link
-                                                        href={teacherGrades.url(
-                                                            (t.routeKey ??
-                                                                t.id) as never,
-                                                        )}
-                                                        className="flex items-center gap-2"
-                                                    >
-                                                        <Save size={14} />{' '}
-                                                        {translateText(
-                                                            'Score management',
-                                                        )}
-                                                    </Link>
-                                                </DropdownMenuItem>}
-                                                {canShow && <DropdownMenuItem asChild>
-                                                    <Link
-                                                        href={showTeacher.url(
-                                                            (t.routeKey ??
-                                                                t.id) as never,
-                                                        )}
-                                                        className="flex items-center gap-2"
-                                                    >
-                                                        <Eye size={14} />{' '}
-                                                        {translateText('View')}
-                                                    </Link>
-                                                </DropdownMenuItem>}
-                                                {canUpdate && <DropdownMenuItem
-                                                    onSelect={() =>
-                                                        handleEdit(t)
-                                                    }
-                                                >
-                                                    <Edit3 size={14} />{' '}
-                                                    {translateText('Edit')}
-                                                </DropdownMenuItem>}
-                                                {canDelete && <DropdownMenuSeparator />}
-                                                {canDelete && <DropdownMenuItem
-                                                    onSelect={() =>
-                                                        handleDelete(t)
-                                                    }
-                                                    className="text-red-600 focus:text-red-600"
-                                                >
-                                                    <Trash2 size={14} />{' '}
-                                                    {translateText('Delete')}
-                                                </DropdownMenuItem>}
-                                            </>
-                                        ) : null}
+                                        actions={canManageTeachers ? renderRowActionItems(teacherActions(t)) : null}
                                         meta={[
                                             {
                                                 label: translateText('Subject'),
@@ -1328,8 +1110,8 @@ function TeacherForm({ mode, teacher, onBack }: FormProps) {
                             width: 40,
                             height: 40,
                             borderRadius: 10,
-                            background: isEdit ? '#eff6ff' : '#f0fdf4',
-                            color: isEdit ? '#2563eb' : '#16a34a',
+                            background: '#eff6ff',
+                            color: '#2563eb',
                             display: 'flex',
                             alignItems: 'center',
                             justifyContent: 'center',
@@ -1591,7 +1373,7 @@ function TeacherForm({ mode, teacher, onBack }: FormProps) {
                         disabled={processing}
                         style={{
                             flex: 1,
-                            background: isEdit ? '#2563eb' : '#10b981',
+                            background: '#2563eb',
                             color: 'white',
                             border: 'none',
                             borderRadius: 10,

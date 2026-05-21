@@ -1850,25 +1850,25 @@ export default function SettingsPage({
                                         {
                                             key: 'attendanceAlert' as const,
                                             labelKh:
-                                                'áž€áž¶ážšáž‡áž¼áž“ážŠáŸ†ážŽáž¹áž„ážœážáŸ’ážáž˜áž¶áž“',
+                                                'ការជូនដំណឹងវត្តមាន',
                                             label: 'Low Attendance Alerts',
                                         },
                                         {
                                             key: 'feeReminder' as const,
                                             labelKh:
-                                                'ážšáŸ†áž›áž¹áž€áž€áž¶ážšáž‘áž¼áž‘áž¶ážáŸ‹',
+                                                'រំលឹកការទូទាត់',
                                             label: 'Fee Payment Reminders',
                                         },
                                         {
                                             key: 'homeworkDue' as const,
                                             labelKh:
-                                                'áž€áž¶ážšáž‡áž¼áž“ážŠáŸ†ážŽáž¹áž„áž€áž·áž…áŸ’áž…áž€áž¶ážš',
+                                                'ការជូនដំណឹងកិច្ចការ',
                                             label: 'Homework Due Alerts',
                                         },
                                         {
                                             key: 'systemUpdates' as const,
                                             labelKh:
-                                                'áž€áž¶ážšáž’áŸ’ážœáž¾áž”áž…áŸ’áž…áž»áž”áŸ’áž”áž“áŸ’áž“áž—áž¶áž–',
+                                                'ការធ្វើបច្ចុប្បន្នភាព',
                                             label: 'System Updates',
                                         },
                                     ].map((item) => (

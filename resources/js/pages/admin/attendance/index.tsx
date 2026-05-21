@@ -1,7 +1,7 @@
 ﻿import { create, destroy, downloadLayout, edit, exportMethod, importMethod } from '@/actions/App/Http/Controllers/Backends/AttendanceSessionController';
 import { useAdminPermissions } from '@/hooks/use-admin-permissions';
 import AdminShell from '@/pages/admin/shell';
-import { AdminSelect, Badge, KH, Pagination } from '@/pages/admin/ui';
+import { AdminSelect, Badge, KH, Pagination, RowActions } from '@/pages/admin/ui';
 import { router } from '@inertiajs/react';
 import { Download, Edit3, FileDown, Trash2, Upload, X } from 'lucide-react';
 import { useEffect, useMemo, useRef, useState } from 'react';
@@ -170,22 +170,22 @@ export default function AttendancePage({ sessions, classes, summary }: Attendanc
                     </div>
                     <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', alignItems: 'center' }}>
                         {canDownloadLayout && (
-                            <a href={downloadLayout.url()} style={{ background: '#f8fafc', color: '#475569', border: '1px solid #dbe3ef', borderRadius: 10, padding: '9px 12px', fontWeight: 800, fontSize: 12, cursor: 'pointer', textDecoration: 'none', whiteSpace: 'nowrap', display: 'inline-flex', alignItems: 'center', gap: 6 }}>
+                            <a href={downloadLayout.url()} className="admin-btn admin-btn-ghost">
                                 <Download size={14} /> Layout
                             </a>
                         )}
                         {canImport && (
-                            <button type="button" onClick={() => importInputRef.current?.click()} style={{ background: '#fff7ed', color: '#ea580c', border: '1px solid #fed7aa', borderRadius: 10, padding: '9px 12px', fontWeight: 800, fontSize: 12, cursor: 'pointer', whiteSpace: 'nowrap', display: 'inline-flex', alignItems: 'center', gap: 6 }}>
+                            <button type="button" onClick={() => importInputRef.current?.click()} className="admin-btn admin-btn-ghost">
                                 <Upload size={14} /> Import
                             </button>
                         )}
                         {canExport && (
-                            <a href={exportMethod.url()} style={{ background: '#f0fdf4', color: '#16a34a', border: '1px solid #bbf7d0', borderRadius: 10, padding: '9px 12px', fontWeight: 800, fontSize: 12, cursor: 'pointer', textDecoration: 'none', whiteSpace: 'nowrap', display: 'inline-flex', alignItems: 'center', gap: 6 }}>
+                            <a href={exportMethod.url()} className="admin-btn admin-btn-ghost">
                                 <FileDown size={14} /> Export
                             </a>
                         )}
                         {canCreate && (
-                            <button onClick={() => router.visit(create.url())} style={{ background: '#2563eb', color: 'white', border: 'none', borderRadius: 10, padding: '9px 18px', fontWeight: 700, fontSize: 13, cursor: 'pointer' }}>
+                            <button onClick={() => router.visit(create.url())} className="admin-btn admin-btn-primary">
                                 + Mark Attendance
                             </button>
                         )}
@@ -276,14 +276,13 @@ export default function AttendancePage({ sessions, classes, summary }: Attendanc
                                     <td style={{ color: '#2563eb', fontWeight: 900 }}>{session.excusedCount}</td>
                                     {canManageAttendance && (
                                         <td>
-                                            <div style={{ display: 'flex', gap: 6 }}>
-                                                {canUpdate && (
-                                                    <button onClick={() => router.visit(edit.url((session.routeKey ?? session.id) as never))} style={{ background: '#eff6ff', color: '#2563eb', border: '1px solid #bfdbfe', borderRadius: 7, padding: '5px 10px', cursor: 'pointer', fontSize: 11, fontWeight: 700, display: 'inline-flex', alignItems: 'center', gap: 5 }}><Edit3 size={13} /> Edit</button>
-                                                )}
-                                                {canDelete && (
-                                                    <button onClick={() => setDeleteTarget(session)} style={{ background: '#fff1f2', color: '#ef4444', border: '1px solid #fecaca', borderRadius: 7, padding: '5px 10px', cursor: 'pointer', fontSize: 11, fontWeight: 700, display: 'inline-flex', alignItems: 'center', gap: 5 }}><Trash2 size={13} /> Delete</button>
-                                                )}
-                                            </div>
+                                            <RowActions
+                                                ariaLabel={`Actions for ${session.className} ${session.attendanceDate}`}
+                                                actions={[
+                                                    { key: 'edit', label: 'Edit', icon: Edit3, onSelect: () => router.visit(edit.url((session.routeKey ?? session.id) as never)), hidden: !canUpdate },
+                                                    { key: 'delete', label: 'Delete', icon: Trash2, onSelect: () => setDeleteTarget(session), variant: 'destructive', separatorBefore: true, hidden: !canDelete },
+                                                ]}
+                                            />
                                         </td>
                                     )}
                                 </tr>

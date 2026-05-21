@@ -8,7 +8,7 @@ import {
 } from '@/components/ui/sheet';
 import { useAdminPermissions } from '@/hooks/use-admin-permissions';
 import AdminShell from '@/pages/admin/shell';
-import { AdminSelect, Badge, KH } from '@/pages/admin/ui';
+import { AdminSelect, Badge, KH, RowActions } from '@/pages/admin/ui';
 import { router, useForm } from '@inertiajs/react';
 import { Bell, Check, Edit3, Plus, Trash2 } from 'lucide-react';
 import { FormEvent, useMemo, useState } from 'react';
@@ -75,10 +75,10 @@ interface NotificationFormData {
 }
 
 const CATEGORY_LABELS: Record<NotificationCategory, { kh: string; label: string; color: string; bg: string }> = {
-    attendance: { kh: 'ážœážáŸ’ážáž˜áž¶áž“', label: 'Attendance', color: '#2563eb', bg: '#eff6ff' },
-    fees: { kh: 'ážáŸ’áž›áŸƒ', label: 'Fees', color: '#d97706', bg: '#fffbeb' },
-    homework: { kh: 'áž€áž¶ážšáž„áž¶ážš', label: 'Homework', color: '#7c3aed', bg: '#f5f3ff' },
-    system: { kh: 'áž”áŸ’ážšáž–áŸáž“áŸ’áž’', label: 'System', color: '#64748b', bg: '#f1f5f9' },
+    attendance: { kh: 'វត្តមាន', label: 'Attendance', color: '#2563eb', bg: '#eff6ff' },
+    fees: { kh: 'ថ្លៃ', label: 'Fees', color: '#d97706', bg: '#fffbeb' },
+    homework: { kh: 'ការងារ', label: 'Homework', color: '#7c3aed', bg: '#f5f3ff' },
+    system: { kh: 'ប្រព័ន្ធ', label: 'System', color: '#64748b', bg: '#f1f5f9' },
 };
 
 const severityType = {
@@ -251,13 +251,13 @@ export default function NotificationsPage({ notifications, students, users, summ
                     </div>
                     <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
                         {canMarkAllRead && summary.unreadCount > 0 && (
-                            <button onClick={markEveryNotificationRead} style={buttonStyle('#f0fdf4', '#16a34a', '#bbf7d0')}>
+                            <button onClick={markEveryNotificationRead} className="admin-btn admin-btn-ghost">
                                 <Check size={15} />
                                 Mark All Read
                             </button>
                         )}
                         {canCreate && (
-                            <button onClick={openCreateDrawer} style={buttonStyle('#2563eb', 'white', '#2563eb')}>
+                            <button onClick={openCreateDrawer} className="admin-btn admin-btn-primary">
                                 <Plus size={15} />
                                 Add Notification
                             </button>
@@ -325,17 +325,14 @@ export default function NotificationsPage({ notifications, students, users, summ
                                 </div>
 
                                 {(canUpdate || canDelete) && (
-                                    <div style={{ display: 'flex', gap: 6, flexShrink: 0 }}>
-                                        {canUpdate && (
-                                            <button onClick={() => openEditDrawer(notification)} style={iconButton('#eff6ff', '#2563eb', '#bfdbfe')} title="Edit">
-                                                <Edit3 size={14} />
-                                            </button>
-                                        )}
-                                        {canDelete && (
-                                            <button onClick={() => setDeleteTarget(notification)} style={iconButton('#fff1f2', '#ef4444', '#fecaca')} title="Delete">
-                                                <Trash2 size={14} />
-                                            </button>
-                                        )}
+                                    <div style={{ flexShrink: 0 }}>
+                                        <RowActions
+                                            ariaLabel={`Actions for ${notification.title}`}
+                                            actions={[
+                                                { key: 'edit', label: 'Edit', icon: Edit3, onSelect: () => openEditDrawer(notification), hidden: !canUpdate },
+                                                { key: 'delete', label: 'Delete', icon: Trash2, onSelect: () => setDeleteTarget(notification), variant: 'destructive', separatorBefore: true, hidden: !canDelete },
+                                            ]}
+                                        />
                                     </div>
                                 )}
                             </div>
@@ -442,36 +439,6 @@ function Field({ label, error, children, wide = false }: { label: string; error?
             {error && <div className="field-error">{error}</div>}
         </div>
     );
-}
-
-function buttonStyle(background: string, color: string, border: string): CSSProperties {
-    return {
-        background,
-        color,
-        border: `1px solid ${border}`,
-        borderRadius: 9,
-        padding: '8px 14px',
-        fontWeight: 800,
-        fontSize: 12,
-        cursor: 'pointer',
-        display: 'inline-flex',
-        alignItems: 'center',
-        gap: 7,
-    };
-}
-
-function iconButton(background: string, color: string, border: string): CSSProperties {
-    return {
-        background,
-        color,
-        border: `1px solid ${border}`,
-        borderRadius: 7,
-        padding: '6px 9px',
-        cursor: 'pointer',
-        display: 'inline-flex',
-        alignItems: 'center',
-        justifyContent: 'center',
-    };
 }
 
 const fieldStyle: CSSProperties = {

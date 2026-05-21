@@ -3,7 +3,7 @@ import { DatePicker } from '@/components/ui/date-picker';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { useAdminPermissions } from '@/hooks/use-admin-permissions';
 import AdminShell from '@/pages/admin/shell';
-import { Badge, Pagination } from '@/pages/admin/ui';
+import { Badge, Pagination, RowActions, type RowAction } from '@/pages/admin/ui';
 import { router, useForm } from '@inertiajs/react';
 import Color from '@tiptap/extension-color';
 import Highlight from '@tiptap/extension-highlight';
@@ -342,6 +342,12 @@ export default function ExamPage({ exams, classes, summary }: ExamPageProps) {
         setView('print');
     };
 
+    const examActions = (exam: ExamItem): RowAction[] => [
+        { key: 'print', label: 'Print', icon: Printer, onSelect: () => printExam(exam) },
+        { key: 'edit', label: 'Edit', icon: Edit3, onSelect: () => openEdit(exam), hidden: !canUpdate },
+        { key: 'delete', label: 'Delete', icon: Trash2, onSelect: () => setDeleteTarget(exam), variant: 'destructive', separatorBefore: true, hidden: !canDelete },
+    ];
+
     if (view === 'build') {
         return (
             <ExamBuilder
@@ -369,7 +375,7 @@ export default function ExamPage({ exams, classes, summary }: ExamPageProps) {
                         <div style={{ fontSize: 12, color: '#94a3b8' }}>Create, save, edit, print, and archive exam papers</div>
                     </div>
                     {canCreate && (
-                        <button onClick={openCreate} style={{ background: '#2563eb', color: 'white', border: 'none', borderRadius: 10, padding: '9px 18px', fontWeight: 700, fontSize: 13, cursor: 'pointer', display: 'inline-flex', alignItems: 'center', gap: 8 }}>
+                        <button onClick={openCreate} className="admin-btn admin-btn-primary">
                             <Plus size={16} />
                             Create Exam
                         </button>
@@ -479,22 +485,7 @@ export default function ExamPage({ exams, classes, summary }: ExamPageProps) {
                                     </td>
                                     <td><Badge type={statusType[exam.status]}>{exam.status}</Badge></td>
                                     <td>
-                                        <div style={{ display: 'flex', gap: 6 }}>
-                                            <button onClick={() => printExam(exam)} style={{ ...actionButton('#f0fdf4', '#16a34a', '#bbf7d0'), gap: 6, fontWeight: 800 }} title="Print">
-                                                <Printer size={14} />
-                                                <span>Print</span>
-                                            </button>
-                                            {canUpdate && (
-                                                <button onClick={() => openEdit(exam)} style={actionButton('#eff6ff', '#2563eb', '#bfdbfe')} title="Edit">
-                                                    <Edit3 size={14} />
-                                                </button>
-                                            )}
-                                            {canDelete && (
-                                                <button onClick={() => setDeleteTarget(exam)} style={actionButton('#fff1f2', '#ef4444', '#fecaca')} title="Delete">
-                                                    <Trash2 size={14} />
-                                                </button>
-                                            )}
-                                        </div>
+                                        <RowActions ariaLabel={`Actions for ${exam.title}`} actions={examActions(exam)} />
                                     </td>
                                 </tr>
                             ))}
@@ -958,20 +949,6 @@ function Field({ label, error, children }: { label: string; error?: string; chil
             {error && <span className="field-error">{error}</span>}
         </label>
     );
-}
-
-function actionButton(background: string, color: string, border: string): React.CSSProperties {
-    return {
-        background,
-        color,
-        border: `1px solid ${border}`,
-        borderRadius: 7,
-        padding: '6px 9px',
-        cursor: 'pointer',
-        display: 'inline-flex',
-        alignItems: 'center',
-        justifyContent: 'center',
-    };
 }
 
 function topButton(background: string): React.CSSProperties {

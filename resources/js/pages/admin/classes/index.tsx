@@ -12,8 +12,8 @@ import {
 } from '@/components/ui/select';
 import { useAdminTranslation } from '@/hooks/use-admin-translation';
 import AdminShell from '@/pages/admin/shell';
-import { Badge, Pagination } from '@/pages/admin/ui';
-import { Link, router, useForm } from '@inertiajs/react';
+import { Badge, Pagination, RowActions, type RowAction } from '@/pages/admin/ui';
+import { router, useForm } from '@inertiajs/react';
 import {
     ArrowLeft,
     Check,
@@ -122,6 +122,11 @@ export default function ClassesPage({
         setView('edit');
     };
     const handleDelete = (cls: SchoolClass) => setDeleteTarget(cls);
+    const classActions = (cls: SchoolClass): RowAction[] => [
+        { key: 'attendance', label: translateText('Attendance'), icon: ClipboardCheck, href: '/admin/attendance' },
+        { key: 'edit', label: translateText('Edit'), icon: Edit3, onSelect: () => handleEdit(cls) },
+        { key: 'delete', label: translateText('Delete'), icon: Trash2, onSelect: () => handleDelete(cls), variant: 'destructive', separatorBefore: true },
+    ];
     const confirmDelete = () => {
         if (!deleteTarget) return;
 
@@ -185,19 +190,10 @@ export default function ClassesPage({
                     >
                         <button
                             onClick={() => setView('add')}
-                            style={{
-                                marginLeft: 'auto',
-                                background: '#2563eb',
-                                color: 'white',
-                                border: 'none',
-                                borderRadius: 10,
-                                padding: '9px 18px',
-                                fontWeight: 700,
-                                fontSize: 13,
-                                cursor: 'pointer',
-                            }}
+                            className="admin-btn admin-btn-primary"
+                            style={{ marginLeft: 'auto' }}
                         >
-                            + {translateText('Add Class')}
+                            <School size={14} /> {translateText('Add Class')}
                         </button>
                     </div>
 
@@ -428,97 +424,10 @@ export default function ClassesPage({
                                                 </div>
                                             </td>
                                             <td>
-                                                <div
-                                                    style={{
-                                                        display: 'flex',
-                                                        gap: 6,
-                                                    }}
-                                                >
-                                                    <Link
-                                                        href="/admin/attendance"
-                                                        style={{
-                                                            background:
-                                                                '#f0fdf4',
-                                                            color: '#16a34a',
-                                                            border: '1px solid #bbf7d0',
-                                                            borderRadius: 6,
-                                                            padding: '5px 10px',
-                                                            cursor: 'pointer',
-                                                            fontSize: 11,
-                                                            fontWeight: 700,
-                                                            textDecoration:
-                                                                'none',
-                                                            whiteSpace:
-                                                                'nowrap',
-                                                            display:
-                                                                'inline-flex',
-                                                            alignItems:
-                                                                'center',
-                                                            gap: 4,
-                                                        }}
-                                                    >
-                                                        <ClipboardCheck
-                                                            size={13}
-                                                        />{' '}
-                                                        {translateText(
-                                                            'Attendance',
-                                                        )}
-                                                    </Link>
-                                                    <button
-                                                        onClick={() =>
-                                                            handleEdit(cls)
-                                                        }
-                                                        style={{
-                                                            background:
-                                                                '#eff6ff',
-                                                            color: '#2563eb',
-                                                            border: '1px solid #bfdbfe',
-                                                            borderRadius: 6,
-                                                            padding: '5px 10px',
-                                                            cursor: 'pointer',
-                                                            fontSize: 11,
-                                                            fontWeight: 700,
-                                                            whiteSpace:
-                                                                'nowrap',
-                                                            display:
-                                                                'inline-flex',
-                                                            alignItems:
-                                                                'center',
-                                                            gap: 4,
-                                                        }}
-                                                    >
-                                                        <Edit3 size={13} />{' '}
-                                                        {translateText('Edit')}
-                                                    </button>
-                                                    <button
-                                                        onClick={() =>
-                                                            handleDelete(cls)
-                                                        }
-                                                        style={{
-                                                            background:
-                                                                '#fff1f2',
-                                                            color: '#ef4444',
-                                                            border: '1px solid #fecaca',
-                                                            borderRadius: 6,
-                                                            padding: '5px 10px',
-                                                            cursor: 'pointer',
-                                                            fontSize: 11,
-                                                            fontWeight: 700,
-                                                            whiteSpace:
-                                                                'nowrap',
-                                                            display:
-                                                                'inline-flex',
-                                                            alignItems:
-                                                                'center',
-                                                            gap: 4,
-                                                        }}
-                                                    >
-                                                        <Trash2 size={13} />{' '}
-                                                        {translateText(
-                                                            'Delete',
-                                                        )}
-                                                    </button>
-                                                </div>
+                                                <RowActions
+                                                    ariaLabel={`Actions for ${cls.name}`}
+                                                    actions={classActions(cls)}
+                                                />
                                             </td>
                                         </tr>
                                     ))
@@ -579,32 +488,11 @@ export default function ClassesPage({
                                                 </strong>
                                             </div>
                                         </div>
-                                        <div className="admin-class-mobile-actions">
-                                            <Link
-                                                href="/admin/attendance"
-                                                className="admin-class-action attendance"
-                                            >
-                                                <ClipboardCheck size={14} />
-                                                {translateText('Attendance')}
-                                            </Link>
-                                            <button
-                                                type="button"
-                                                onClick={() => handleEdit(cls)}
-                                                className="admin-class-action edit"
-                                            >
-                                                <Edit3 size={14} />
-                                                {translateText('Edit')}
-                                            </button>
-                                            <button
-                                                type="button"
-                                                onClick={() =>
-                                                    handleDelete(cls)
-                                                }
-                                                className="admin-class-action delete"
-                                            >
-                                                <Trash2 size={14} />
-                                                {translateText('Delete')}
-                                            </button>
+                                        <div className="admin-class-mobile-actions" style={{ justifyContent: 'flex-end' }}>
+                                            <RowActions
+                                                ariaLabel={`Actions for ${cls.name}`}
+                                                actions={classActions(cls)}
+                                            />
                                         </div>
                                     </div>
                                 ))
@@ -850,8 +738,8 @@ function ClassForm({ mode, cls, levels, teachers, onBack }: FormProps) {
                             width: 40,
                             height: 40,
                             borderRadius: 10,
-                            background: isEdit ? '#eff6ff' : '#f0fdf4',
-                            color: isEdit ? '#2563eb' : '#16a34a',
+                            background: '#eff6ff',
+                            color: '#2563eb',
                             display: 'flex',
                             alignItems: 'center',
                             justifyContent: 'center',
@@ -1165,7 +1053,7 @@ function ClassForm({ mode, cls, levels, teachers, onBack }: FormProps) {
                         disabled={processing}
                         style={{
                             flex: 1,
-                            background: isEdit ? '#2563eb' : '#10b981',
+                            background: '#2563eb',
                             color: 'white',
                             border: 'none',
                             borderRadius: 10,

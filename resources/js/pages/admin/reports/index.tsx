@@ -45,10 +45,10 @@ export default function ReportsPage() {
                         <KH style={{ fontSize: 12, color: '#94a3b8', display: 'block' }}>របាយការណ៍សាលា - May 2026</KH>
                     </div>
                     <div style={{ display: 'flex', gap: 8 }}>
-                        <button onClick={() => handleExport(tab)} style={{ background: '#f0fdf4', color: '#16a34a', border: '1px solid #bbf7d0', borderRadius: 8, padding: '8px 16px', fontWeight: 700, fontSize: 12, cursor: 'pointer', display: 'inline-flex', alignItems: 'center', gap: 6 }}>
+                        <button onClick={() => handleExport(tab)} className="admin-btn admin-btn-ghost">
                             <Download size={14} /> Export CSV
                         </button>
-                        <button onClick={handlePrint} style={{ background: '#eff6ff', color: '#2563eb', border: '1px solid #bfdbfe', borderRadius: 8, padding: '8px 16px', fontWeight: 700, fontSize: 12, cursor: 'pointer', display: 'inline-flex', alignItems: 'center', gap: 6 }}>
+                        <button onClick={handlePrint} className="admin-btn admin-btn-primary">
                             <Printer size={14} /> Print
                         </button>
                     </div>
@@ -57,10 +57,10 @@ export default function ReportsPage() {
                 {/* Summary stats */}
                 <div className="stat-grid-4" style={{ display: 'grid', gridTemplateColumns: 'repeat(4,1fr)', gap: 14 }}>
                     {[
-                        { icon: GraduationCap, lk: 'ážŸáž·ážŸáŸ’ážŸáž‘áž¶áŸ†áž„áž¢ážŸáŸ‹', l: 'Total Students',    v: STUDENTS.length,    bg: '#eff6ff', c: '#2563eb' },
-                        { icon: ClipboardCheck, lk: 'ážœážáŸ’ážáž˜áž¶áž“áž˜áž’áŸ’áž™áž˜',  l: 'Avg Attendance',   v: `${avgAttendance}%`, bg: '#f0fdf4', c: '#16a34a' },
-                        { icon: Star, lk: 'áž–áž·áž“áŸ’áž‘áž»áž˜áž’áŸ’áž™áž˜',   l: 'Avg Grade',        v: avgGrade,            bg: '#fffbeb', c: '#d97706' },
-                        { icon: DollarSign, lk: 'áž…áŸ†ážŽáž¼áž›ážáŸ‚áž“áŸáŸ‡',   l: 'Fees Collected',   v: `$${totalRevenue}`,  bg: '#f5f3ff', c: '#7c3aed' },
+                        { icon: GraduationCap, lk: 'សិស្សទាំងអស់', l: 'Total Students',    v: STUDENTS.length,    bg: '#eff6ff', c: '#2563eb' },
+                        { icon: ClipboardCheck, lk: 'វត្តមានមធ្យម',  l: 'Avg Attendance',   v: `${avgAttendance}%`, bg: '#f0fdf4', c: '#16a34a' },
+                        { icon: Star, lk: 'ពិន្ទុមធ្យម',   l: 'Avg Grade',        v: avgGrade,            bg: '#fffbeb', c: '#d97706' },
+                        { icon: DollarSign, lk: 'ចំណូលខែនេះ',   l: 'Fees Collected',   v: `$${totalRevenue}`,  bg: '#f5f3ff', c: '#7c3aed' },
                     ].map((s, i) => (
                         <div key={i} className="stat-card">
                             <div style={{ width: 40, height: 40, borderRadius: 10, background: s.bg, color: s.c, display: 'flex', alignItems: 'center', justifyContent: 'center', marginBottom: 10 }}>
@@ -92,7 +92,7 @@ export default function ReportsPage() {
                     <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
                         {/* Class attendance summary */}
                         <div className="card" style={{ padding: 20 }}>
-                            <KH style={{ fontWeight: 800, fontSize: 15, display: 'block', marginBottom: 14 }}>ážœážáŸ’ážáž˜áž¶áž“ážáž¶áž˜ážáŸ’áž“áž¶áž€áŸ‹</KH>
+                            <KH style={{ fontWeight: 800, fontSize: 15, display: 'block', marginBottom: 14 }}>វត្តមានតាមថ្នាក់</KH>
                             <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
                                 {CLASSES.map(cls => {
                                     const clsStudents = STUDENTS.filter(s => s.cls === cls.name);
@@ -156,10 +156,10 @@ export default function ReportsPage() {
                     <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
                         {/* Skill averages */}
                         <div className="card" style={{ padding: 20 }}>
-                            <KH style={{ fontWeight: 800, fontSize: 15, display: 'block', marginBottom: 16 }}>áž–áž·áž“áŸ’áž‘áž»áž‡áŸ†áž“áž¶áž‰áž˜áž’áŸ’áž™áž˜</KH>
+                            <KH style={{ fontWeight: 800, fontSize: 15, display: 'block', marginBottom: 16 }}>ពិន្ទុជំនាញមធ្យម</KH>
                             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill,minmax(180px,1fr))', gap: 14 }}>
                                 {(['speaking', 'listening', 'reading', 'writing'] as const).map(sk => {
-                                    const skKh = { speaking: 'áž“áž·áž™áž¶áž™', listening: 'ážŸáŸ’ážŠáž¶áž”áŸ‹', reading: 'áž¢áž¶áž“', writing: 'ážŸážšážŸáŸážš' }[sk];
+                                    const skKh = { speaking: 'និយាយ', listening: 'ស្ដាប់', reading: 'អាន', writing: 'សរសេរ' }[sk];
                                     const skAvg = Math.round(STUDENTS.reduce((a, s) => a + s.grade[sk], 0) / STUDENTS.length);
                                     return (
                                         <div key={sk} style={{ background: '#f8fafc', borderRadius: 12, padding: 16 }}>
@@ -178,12 +178,12 @@ export default function ReportsPage() {
                         {/* Full grades table */}
                         <div className="card" style={{ overflowX: 'auto' }}>
                             <div style={{ padding: '16px 20px 0', marginBottom: 4 }}>
-                                <KH style={{ fontWeight: 800, fontSize: 15, display: 'block' }}>áž–áž·áž“áŸ’áž‘áž»ážŸáž·ážŸáŸ’ážŸáž‘áž¶áŸ†áž„áž¢ážŸáŸ‹</KH>
+                                <KH style={{ fontWeight: 800, fontSize: 15, display: 'block' }}>ពិន្ទុសិស្សទាំងអស់</KH>
                             </div>
                             <table className="data-table">
                                 <thead><tr>
                                     <th>Student</th><th>Level</th>
-                                    <th><KH>áž“áž·áž™áž¶áž™</KH></th><th><KH>ážŸáŸ’ážŠáž¶áž”áŸ‹</KH></th><th><KH>áž¢áž¶áž“</KH></th><th><KH>ážŸážšážŸáŸážš</KH></th>
+                                    <th><KH>និយាយ</KH></th><th><KH>ស្ដាប់</KH></th><th><KH>អាន</KH></th><th><KH>សរសេរ</KH></th>
                                     <th>Average</th>
                                 </tr></thead>
                                 <tbody>
@@ -213,10 +213,10 @@ export default function ReportsPage() {
                         {/* Collection summary */}
                         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill,minmax(160px,1fr))', gap: 12 }}>
                             {[
-                                { lk: 'áž”áŸ’ážšáž˜áž¼áž›áž”áž¶áž“', l: 'Collected',   v: `$${totalRevenue}`, c: '#10b981', bg: '#f0fdf4' },
-                                { lk: 'áž“áŸ…ážáŸ’ážœáŸ‡',    l: 'Outstanding', v: `$${unpaidCount * 25}`, c: '#ef4444', bg: '#fff1f2' },
-                                { lk: 'áž€áŸ’áž”áž¶áž›áž‚áŸ’ážšáž”',  l: 'Paid',        v: paidCount,          c: '#2563eb', bg: '#eff6ff' },
-                                { lk: 'áž˜áž·áž“áž‘áž¶áž“áŸ‹',   l: 'Unpaid',      v: unpaidCount,         c: '#f59e0b', bg: '#fffbeb' },
+                                { lk: 'ប្រមូលបាន', l: 'Collected',   v: `$${totalRevenue}`, c: '#10b981', bg: '#f0fdf4' },
+                                { lk: 'នៅខ្វះ',    l: 'Outstanding', v: `$${unpaidCount * 25}`, c: '#ef4444', bg: '#fff1f2' },
+                                { lk: 'ក្បាលគ្រប',  l: 'Paid',        v: paidCount,          c: '#2563eb', bg: '#eff6ff' },
+                                { lk: 'មិនទាន់',   l: 'Unpaid',      v: unpaidCount,         c: '#f59e0b', bg: '#fffbeb' },
                             ].map((s, i) => (
                                 <div key={i} style={{ background: s.bg, borderRadius: 14, padding: 16, border: `1px solid ${s.c}30` }}>
                                     <div style={{ fontSize: 24, fontWeight: 800, color: s.c, marginBottom: 2 }}>{s.v}</div>
@@ -253,7 +253,7 @@ export default function ReportsPage() {
                         {/* Per-student fee status */}
                         <div className="card" style={{ overflowX: 'auto' }}>
                             <div style={{ padding: '16px 20px 0', marginBottom: 4 }}>
-                                <KH style={{ fontWeight: 800, fontSize: 15, display: 'block' }}>ážŸáŸ’ážáž¶áž“áž—áž¶áž–ážáŸ’áž›áŸƒážáž¶áž˜ážŸáž·ážŸáŸ’ážŸ</KH>
+                                <KH style={{ fontWeight: 800, fontSize: 15, display: 'block' }}>ស្ថានភាពថ្លៃតាមសិស្ស</KH>
                             </div>
                             <table className="data-table">
                                 <thead><tr><th>Student</th><th>Level</th><th>Amount</th><th>Status</th></tr></thead>

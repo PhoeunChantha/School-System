@@ -10,7 +10,7 @@ import { useAdminPermissions } from '@/hooks/use-admin-permissions';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import AdminShell from '@/pages/admin/shell';
-import { AdminSelect, Avatar, Badge, KH, Pagination, PBar, ScoreChip } from '@/pages/admin/ui';
+import { AdminSelect, Avatar, Badge, KH, Pagination, PBar, RowActions, ScoreChip } from '@/pages/admin/ui';
 import { router, useForm } from '@inertiajs/react';
 import { Check, ChevronsUpDown, Download, Edit3, FileDown, Save, Search, Trash2, Upload, X } from 'lucide-react';
 import { FormEvent, useEffect, useMemo, useRef, useState } from 'react';
@@ -366,22 +366,22 @@ export default function GradesPage({ records, periods, students, classes, summar
                     </div>
                     <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', alignItems: 'center' }}>
                         {canDownloadLayout && (
-                            <a href={downloadLayout.url()} style={{ background: '#f8fafc', color: '#475569', border: '1px solid #dbe3ef', borderRadius: 10, padding: '9px 12px', fontWeight: 800, fontSize: 12, cursor: 'pointer', textDecoration: 'none', whiteSpace: 'nowrap', display: 'inline-flex', alignItems: 'center', gap: 6 }}>
+                            <a href={downloadLayout.url()} className="admin-btn admin-btn-ghost">
                                 <Download size={14} /> Layout
                             </a>
                         )}
                         {canImport && (
-                            <button type="button" onClick={() => importInputRef.current?.click()} style={{ background: '#fff7ed', color: '#ea580c', border: '1px solid #fed7aa', borderRadius: 10, padding: '9px 12px', fontWeight: 800, fontSize: 12, cursor: 'pointer', whiteSpace: 'nowrap', display: 'inline-flex', alignItems: 'center', gap: 6 }}>
+                            <button type="button" onClick={() => importInputRef.current?.click()} className="admin-btn admin-btn-ghost">
                                 <Upload size={14} /> Import
                             </button>
                         )}
                         {canExport && (
-                            <a href={exportMethod.url()} style={{ background: '#f0fdf4', color: '#16a34a', border: '1px solid #bbf7d0', borderRadius: 10, padding: '9px 12px', fontWeight: 800, fontSize: 12, cursor: 'pointer', textDecoration: 'none', whiteSpace: 'nowrap', display: 'inline-flex', alignItems: 'center', gap: 6 }}>
+                            <a href={exportMethod.url()} className="admin-btn admin-btn-ghost">
                                 <FileDown size={14} /> Export
                             </a>
                         )}
                         {canCreate && (
-                            <button onClick={openCreateDrawer} style={{ background: '#2563eb', color: 'white', border: 'none', borderRadius: 10, padding: '9px 18px', fontWeight: 700, fontSize: 13, cursor: 'pointer' }}>
+                            <button onClick={openCreateDrawer} className="admin-btn admin-btn-primary">
                                 + Add Grade
                             </button>
                         )}
@@ -510,14 +510,13 @@ export default function GradesPage({ records, periods, students, classes, summar
                                         <td><Badge type={perf.type}>{perf.label}</Badge></td>
                                         {canManageRecords && (
                                             <td>
-                                                <div style={{ display: 'flex', gap: 6 }}>
-                                                    {canUpdate && (
-                                                        <button onClick={() => openEditDrawer(record)} style={{ background: '#eff6ff', color: '#2563eb', border: '1px solid #bfdbfe', borderRadius: 7, padding: '5px 10px', cursor: 'pointer', fontSize: 11, fontWeight: 700, display: 'inline-flex', alignItems: 'center', gap: 5 }}><Edit3 size={13} /> Edit</button>
-                                                    )}
-                                                    {canDelete && (
-                                                        <button onClick={() => setDeleteTarget(record)} style={{ background: '#fff1f2', color: '#ef4444', border: '1px solid #fecaca', borderRadius: 7, padding: '5px 10px', cursor: 'pointer', fontSize: 11, fontWeight: 700, display: 'inline-flex', alignItems: 'center', gap: 5 }}><Trash2 size={13} /> Delete</button>
-                                                    )}
-                                                </div>
+                                                <RowActions
+                                                    ariaLabel={`Actions for ${record.studentNameEn}`}
+                                                    actions={[
+                                                        { key: 'edit', label: 'Edit', icon: Edit3, onSelect: () => openEditDrawer(record), hidden: !canUpdate },
+                                                        { key: 'delete', label: 'Delete', icon: Trash2, onSelect: () => setDeleteTarget(record), variant: 'destructive', separatorBefore: true, hidden: !canDelete },
+                                                    ]}
+                                                />
                                             </td>
                                         )}
                                     </tr>

@@ -1,9 +1,9 @@
 import { FormEvent, useEffect, useMemo, useState } from 'react';
 import { destroy, edit, store, update } from '@/routes/admin/lesson-plans';
 import AdminShell from '@/pages/admin/shell';
-import { Avatar, Badge, Pagination } from '@/pages/admin/ui';
+import { Avatar, Badge, Pagination, RowActions } from '@/pages/admin/ui';
 import { Link, router, useForm } from '@inertiajs/react';
-import { CalendarDays, Check, Edit3, Plus, Trash2 } from 'lucide-react';
+import { Check, Edit3, Plus, Trash2 } from 'lucide-react';
 import { toast } from 'sonner';
 import { Select, SelectTrigger, SelectContent, SelectItem, SelectValue } from '@/components/ui/select';
 import { DatePicker } from '@/components/ui/date-picker';
@@ -167,7 +167,7 @@ export default function LessonPlansPage({ lessonPlans, teachers, classes, today,
                     </div>
 
                     <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'flex-end', gap: 12, flexWrap: 'wrap' }}>
-                        <Link href="/admin/lesson-plans/create" style={{ marginLeft: 'auto', background: '#2563eb', color: 'white', border: 'none', borderRadius: 10, padding: '9px 18px', fontWeight: 800, fontSize: 13, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 8, textDecoration: 'none' }}>
+                        <Link href="/admin/lesson-plans/create" className="admin-btn admin-btn-primary" style={{ marginLeft: 'auto' }}>
                             <Plus size={15} /> Add Lesson
                         </Link>
                     </div>
@@ -246,15 +246,13 @@ export default function LessonPlansPage({ lessonPlans, teachers, classes, today,
                                         </td>
                                         <td><Badge type={statusBadge[lessonPlan.status]}>{lessonPlan.status}</Badge></td>
                                         <td>
-                                            <div style={{ display: 'flex', gap: 6 }}>
-                                                <Link href={edit.url((lessonPlan.routeKey ?? lessonPlan.id) as never)} style={{ background: '#eff6ff', color: '#2563eb', border: '1px solid #bfdbfe', borderRadius: 7, padding: '5px 10px', cursor: 'pointer', fontWeight: 800, fontSize: 11, display: 'inline-flex', alignItems: 'center', gap: 5, textDecoration: 'none' }}>
-                                                    <Edit3 size={13} /> Edit
-                                                </Link>
-                                                <button onClick={() => setDeleteTarget(lessonPlan)}
-                                                    style={{ background: '#fff1f2', color: '#ef4444', border: '1px solid #fecaca', borderRadius: 7, padding: '5px 10px', cursor: 'pointer', fontWeight: 800, fontSize: 11, display: 'inline-flex', alignItems: 'center', gap: 5 }}>
-                                                    <Trash2 size={13} /> Delete
-                                                </button>
-                                            </div>
+                                            <RowActions
+                                                ariaLabel={`Actions for ${lessonPlan.title}`}
+                                                actions={[
+                                                    { key: 'edit', label: 'Edit', icon: Edit3, href: edit.url((lessonPlan.routeKey ?? lessonPlan.id) as never) },
+                                                    { key: 'delete', label: 'Delete', icon: Trash2, onSelect: () => setDeleteTarget(lessonPlan), variant: 'destructive', separatorBefore: true },
+                                                ]}
+                                            />
                                         </td>
                                     </tr>
                                 ))}
@@ -383,7 +381,7 @@ function LessonPlanForm({ mode, lessonPlan, teachers, classes, today, onBack }: 
         <div className="fade-in" style={{ padding: 24 }}>
             <form className="card" onSubmit={submit} style={{ padding: 28, maxWidth: 760, margin: '0 auto' }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 24 }}>
-                    <div style={{ width: 42, height: 42, borderRadius: 10, background: isEdit ? '#eff6ff' : '#ecfdf5', color: isEdit ? '#2563eb' : '#16a34a', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                    <div style={{ width: 42, height: 42, borderRadius: 10, background: '#eff6ff', color: '#2563eb', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
                         {isEdit ? <Edit3 size={20} /> : <Check size={20} />}
                     </div>
                     <div>
@@ -469,7 +467,7 @@ function LessonPlanForm({ mode, lessonPlan, teachers, classes, today, onBack }: 
 
                 <div style={{ display: 'flex', gap: 12, marginTop: 12 }}>
                     <button type="button" onClick={onBack} style={{ background: '#f1f5f9', color: '#64748b', border: 'none', borderRadius: 10, padding: '12px 20px', fontWeight: 800, cursor: 'pointer' }}>Cancel</button>
-                    <button type="submit" disabled={processing} style={{ flex: 1, background: isEdit ? '#2563eb' : '#10b981', color: 'white', border: 'none', borderRadius: 10, padding: '12px', fontWeight: 900, fontSize: 14, cursor: 'pointer' }}>
+                    <button type="submit" disabled={processing} style={{ flex: 1, background: '#2563eb', color: 'white', border: 'none', borderRadius: 10, padding: '12px', fontWeight: 900, fontSize: 14, cursor: 'pointer' }}>
                         {processing ? 'Saving...' : isEdit ? 'Update Lesson Plan' : 'Save Lesson Plan'}
                     </button>
                 </div>

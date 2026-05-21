@@ -9,7 +9,7 @@ import {
 import { useAdminPermissions } from '@/hooks/use-admin-permissions';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import AdminShell from '@/pages/admin/shell';
-import { Avatar, Badge, KH, Pagination, PBar } from '@/pages/admin/ui';
+import { Avatar, Badge, KH, Pagination, PBar, RowActions } from '@/pages/admin/ui';
 import { router, useForm } from '@inertiajs/react';
 import { Edit3, Plus, Trash2 } from 'lucide-react';
 import { FormEvent, useEffect, useMemo, useState } from 'react';
@@ -377,14 +377,13 @@ export default function ExamResultsPage({ results, exams, students, summary }: E
                                     <td><Badge type={statusType[result.status]}>{result.status}</Badge></td>
                                     {canManageResults && (
                                         <td>
-                                            <div style={{ display: 'flex', gap: 6 }}>
-                                                {canUpdate && (
-                                                    <button onClick={() => openEditDrawer(result)} style={iconButton('#eff6ff', '#2563eb', '#bfdbfe')} title="Edit"><Edit3 size={14} /></button>
-                                                )}
-                                                {canDelete && (
-                                                    <button onClick={() => setDeleteTarget(result)} style={iconButton('#fff1f2', '#ef4444', '#fecaca')} title="Delete"><Trash2 size={14} /></button>
-                                                )}
-                                            </div>
+                                            <RowActions
+                                                ariaLabel={`Actions for ${result.studentNameEn}`}
+                                                actions={[
+                                                    { key: 'edit', label: 'Edit', icon: Edit3, onSelect: () => openEditDrawer(result), hidden: !canUpdate },
+                                                    { key: 'delete', label: 'Delete', icon: Trash2, onSelect: () => setDeleteTarget(result), variant: 'destructive', separatorBefore: true, hidden: !canDelete },
+                                                ]}
+                                            />
                                         </td>
                                     )}
                                 </tr>
@@ -500,20 +499,6 @@ function Field({ label, error, children, wide = false }: { label: string; error?
             {error && <div className="field-error">{error}</div>}
         </div>
     );
-}
-
-function iconButton(background: string, color: string, border: string): CSSProperties {
-    return {
-        background,
-        color,
-        border: `1px solid ${border}`,
-        borderRadius: 7,
-        padding: '6px 9px',
-        cursor: 'pointer',
-        display: 'inline-flex',
-        alignItems: 'center',
-        justifyContent: 'center',
-    };
 }
 
 const primaryButton: CSSProperties = {

@@ -10,7 +10,7 @@ import {
 } from '@/components/ui/sheet';
 import { useAdminPermissions } from '@/hooks/use-admin-permissions';
 import AdminShell from '@/pages/admin/shell';
-import { Avatar, Badge, KH, Pagination } from '@/pages/admin/ui';
+import { Avatar, Badge, KH, Pagination, RowActions } from '@/pages/admin/ui';
 import { router, useForm } from '@inertiajs/react';
 import { Award, Check, ChevronsUpDown, Edit3, Eye, Plus, Printer, Search, Trash2 } from 'lucide-react';
 import { FormEvent, useEffect, useMemo, useState } from 'react';
@@ -87,10 +87,10 @@ const ORDER_OPTIONS: { value: OrderKey; label: string }[] = [
 ];
 
 const CERT_TYPES: Record<CertificateType, { label: string; labelKh: string; color: string; bg: string }> = {
-    excellence: { label: 'Academic Excellence', labelKh: 'áž€áž·ážáŸ’ážáž·áž™ážŸ', color: '#d97706', bg: '#fffbeb' },
-    merit: { label: 'Merit Award', labelKh: 'áž›áŸ’áž¢áž”áŸ’ážšážŸáž¾ážš', color: '#2563eb', bg: '#eff6ff' },
-    completion: { label: 'Course Completion', labelKh: 'áž”áž‰áŸ’áž…áž”áŸ‹ážáŸ’áž“áž¶áž€áŸ‹', color: '#7c3aed', bg: '#f5f3ff' },
-    participation: { label: 'Participation', labelKh: 'áž€áž¶ážšáž…áž¼áž›ážšáž½áž˜', color: '#059669', bg: '#ecfdf5' },
+    excellence: { label: 'Academic Excellence', labelKh: 'កិត្តិយស', color: '#d97706', bg: '#fffbeb' },
+    merit: { label: 'Merit Award', labelKh: 'ល្អប្រសើរ', color: '#2563eb', bg: '#eff6ff' },
+    completion: { label: 'Course Completion', labelKh: 'បញ្ចប់ថ្នាក់', color: '#7c3aed', bg: '#f5f3ff' },
+    participation: { label: 'Participation', labelKh: 'ការចូលរួម', color: '#059669', bg: '#ecfdf5' },
 };
 
 const statusType = {
@@ -332,7 +332,7 @@ export default function CertificatesPage({ certificates, students, levels, summa
                         <KH style={{ fontSize: 12, color: '#94a3b8', display: 'block' }}>វិញ្ញាបនបត្រ - Manage issued certificates</KH>
                     </div>
                     {canCreate && (
-                        <button onClick={openCreateDrawer} style={{ background: '#2563eb', color: 'white', border: 'none', borderRadius: 10, padding: '9px 18px', fontWeight: 800, fontSize: 13, cursor: 'pointer', display: 'inline-flex', alignItems: 'center', gap: 8 }}>
+                        <button onClick={openCreateDrawer} className="admin-btn admin-btn-primary">
                             <Plus size={16} />
                             Add Certificate
                         </button>
@@ -432,16 +432,15 @@ export default function CertificatesPage({ certificates, students, levels, summa
                                         <td style={{ fontSize: 12, color: '#64748b', fontWeight: 800 }}>{certificate.certificateNumber}</td>
                                         <td><Badge type={statusType[certificate.status]}>{certificate.status}</Badge></td>
                                         <td>
-                                            <div style={{ display: 'flex', gap: 6 }}>
-                                                <button onClick={() => setPreview(certificate)} style={actionButton('#f8fafc', '#64748b', '#e2e8f0')} title="Preview"><Eye size={14} /></button>
-                                                <button onClick={() => window.print()} style={actionButton('#f0fdf4', '#16a34a', '#bbf7d0')} title="Print"><Printer size={14} /></button>
-                                                {canUpdate && (
-                                                    <button onClick={() => openEditDrawer(certificate)} style={actionButton('#eff6ff', '#2563eb', '#bfdbfe')} title="Edit"><Edit3 size={14} /></button>
-                                                )}
-                                                {canDelete && (
-                                                    <button onClick={() => setDeleteTarget(certificate)} style={actionButton('#fff1f2', '#ef4444', '#fecaca')} title="Delete"><Trash2 size={14} /></button>
-                                                )}
-                                            </div>
+                                            <RowActions
+                                                ariaLabel={`Actions for ${certificate.certificateNumber}`}
+                                                actions={[
+                                                    { key: 'preview', label: 'Preview', icon: Eye, onSelect: () => setPreview(certificate) },
+                                                    { key: 'print', label: 'Print', icon: Printer, onSelect: () => window.print() },
+                                                    { key: 'edit', label: 'Edit', icon: Edit3, onSelect: () => openEditDrawer(certificate), hidden: !canUpdate },
+                                                    { key: 'delete', label: 'Delete', icon: Trash2, onSelect: () => setDeleteTarget(certificate), variant: 'destructive', separatorBefore: true, hidden: !canDelete },
+                                                ]}
+                                            />
                                         </td>
                                     </tr>
                                 );
@@ -699,20 +698,5 @@ function CertificatePreview({ certificate, onClose }: { certificate: Certificate
         </div>
     );
 }
-
-function actionButton(background: string, color: string, border: string): React.CSSProperties {
-    return {
-        background,
-        color,
-        border: `1px solid ${border}`,
-        borderRadius: 7,
-        padding: '6px 9px',
-        cursor: 'pointer',
-        display: 'inline-flex',
-        alignItems: 'center',
-        justifyContent: 'center',
-    };
-}
-
 
 

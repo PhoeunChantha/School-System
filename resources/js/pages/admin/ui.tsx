@@ -1,8 +1,16 @@
-﻿import { useEffect, useState } from 'react';
+﻿import { Fragment, useEffect, useState } from 'react';
 import type { CSSProperties, ReactNode } from 'react';
+import {
+    DropdownMenu,
+    DropdownMenuContent,
+    DropdownMenuItem,
+    DropdownMenuSeparator,
+    DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { useAdminTranslation } from '@/hooks/use-admin-translation';
-import { ArrowLeft, ArrowRight, Check, X } from 'lucide-react';
+import { Link } from '@inertiajs/react';
+import { ArrowLeft, ArrowRight, Check, MoreVertical, X, type LucideIcon } from 'lucide-react';
 import type { Student } from './data';
 
 interface KHProps { children: ReactNode; className?: string; style?: CSSProperties; }
@@ -213,6 +221,87 @@ export function Pagination({
                 />
             )}
         </div>
+    );
+}
+
+// ── Row Actions: shared kebab (⋮) dropdown for table rows & mobile cards ──
+export interface RowAction {
+    key: string;
+    label: ReactNode;
+    icon?: LucideIcon;
+    /** Inertia navigation target. */
+    href?: string;
+    /** Render as a plain <a> (full reload / external) instead of Inertia <Link>. */
+    external?: boolean;
+    onSelect?: () => void;
+    variant?: 'default' | 'destructive';
+    /** Draw a separator above this item (e.g. before Delete). */
+    separatorBefore?: boolean;
+    /** Skip rendering (used for permission gating). */
+    hidden?: boolean;
+}
+
+function ActionInner({ icon: Icon, label }: { icon?: LucideIcon; label: ReactNode }) {
+    return (
+        <span className="flex items-center gap-2">
+            {Icon && <Icon size={14} />}
+            {label}
+        </span>
+    );
+}
+
+/** Render the dropdown items only — reused by both desktop RowActions and AdminMobileCard. */
+export function renderRowActionItems(actions: RowAction[]): ReactNode {
+    return actions
+        .filter(action => !action.hidden)
+        .map(action => {
+            const inner = <ActionInner icon={action.icon} label={action.label} />;
+            const destructive = action.variant === 'destructive';
+            return (
+                <Fragment key={action.key}>
+                    {action.separatorBefore && <DropdownMenuSeparator />}
+                    <DropdownMenuItem
+                        asChild={!!action.href}
+                        variant={action.variant}
+                        onSelect={action.onSelect}
+                        className={destructive ? 'text-red-600 focus:text-red-600' : undefined}
+                    >
+                        {action.href ? (
+                            action.external ? (
+                                <a href={action.href} className="flex items-center gap-2">{inner}</a>
+                            ) : (
+                                <Link href={action.href} className="flex items-center gap-2">{inner}</Link>
+                            )
+                        ) : (
+                            inner
+                        )}
+                    </DropdownMenuItem>
+                </Fragment>
+            );
+        });
+}
+
+interface RowActionsProps {
+    actions: RowAction[];
+    ariaLabel?: string;
+    align?: 'start' | 'center' | 'end';
+}
+
+export function RowActions({ actions, ariaLabel = 'Row actions', align = 'end' }: RowActionsProps) {
+    const visible = actions.filter(action => !action.hidden);
+    if (visible.length === 0) return null;
+
+    return (
+        <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+                <button type="button" className="admin-row-actions-trigger" aria-label={ariaLabel}>
+                    <MoreVertical size={16} />
+                </button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align={align} className="w-44">
+                {renderRowActionItems(visible)}
+            </DropdownMenuContent>
+        </DropdownMenu>
     );
 }
 

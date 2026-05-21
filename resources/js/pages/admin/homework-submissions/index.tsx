@@ -11,7 +11,7 @@ import {
 } from '@/components/ui/sheet';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import AdminShell from '@/pages/admin/shell';
-import { Avatar, Badge, KH, Pagination, PBar } from '@/pages/admin/ui';
+import { Avatar, Badge, KH, Pagination, PBar, RowActions } from '@/pages/admin/ui';
 import { router, useForm } from '@inertiajs/react';
 import { Check, ChevronsUpDown, Edit3, FileText, Plus, Save, Search, Trash2, Upload, X } from 'lucide-react';
 import { FormEvent, useEffect, useMemo, useState } from 'react';
@@ -369,7 +369,7 @@ export default function HomeworkSubmissionsPage({ submissions, assignments, stud
                         </button>
                     )}
                     {canCreate && (
-                        <button onClick={() => router.visit(createSubmission.url())} style={{ ...primaryButton, background: '#16a34a' }}>
+                        <button onClick={() => router.visit(createSubmission.url())} className="admin-btn admin-btn-ghost">
                             <Upload size={16} />
                             Student Submit
                         </button>
@@ -511,14 +511,13 @@ export default function HomeworkSubmissionsPage({ submissions, assignments, stud
                                         <td><Badge type={statusType[submission.status]}>{submission.status}</Badge></td>
                                         {canManageSubmissions && (
                                             <td>
-                                                <div style={{ display: 'flex', gap: 6 }}>
-                                                    {canUpdate && (
-                                                        <button onClick={() => openEditDrawer(submission)} style={iconButton('#eff6ff', '#2563eb', '#bfdbfe')} title="Edit"><Edit3 size={14} /></button>
-                                                    )}
-                                                    {canDelete && (
-                                                        <button onClick={() => setDeleteTarget(submission)} style={iconButton('#fff1f2', '#ef4444', '#fecaca')} title="Delete"><Trash2 size={14} /></button>
-                                                    )}
-                                                </div>
+                                                <RowActions
+                                                    ariaLabel={`Actions for ${submission.studentNameEn}`}
+                                                    actions={[
+                                                        { key: 'edit', label: 'Edit', icon: Edit3, onSelect: () => openEditDrawer(submission), hidden: !canUpdate },
+                                                        { key: 'delete', label: 'Delete', icon: Trash2, onSelect: () => setDeleteTarget(submission), variant: 'destructive', separatorBefore: true, hidden: !canDelete },
+                                                    ]}
+                                                />
                                             </td>
                                         )}
                                     </tr>
@@ -746,20 +745,6 @@ function PickerOption({ selected, onClick, children }: { selected: boolean; onCl
             <span style={{ minWidth: 0, flex: 1 }}>{children}</span>
         </button>
     );
-}
-
-function iconButton(background: string, color: string, border: string): CSSProperties {
-    return {
-        background,
-        color,
-        border: `1px solid ${border}`,
-        borderRadius: 7,
-        padding: '6px 9px',
-        cursor: 'pointer',
-        display: 'inline-flex',
-        alignItems: 'center',
-        justifyContent: 'center',
-    };
 }
 
 const primaryButton: CSSProperties = {

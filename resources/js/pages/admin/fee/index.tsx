@@ -2,7 +2,7 @@ import { create as createFee, destroy, edit as editFee, payment as recordPayment
 import { DatePicker } from '@/components/ui/date-picker';
 import { useAdminPermissions } from '@/hooks/use-admin-permissions';
 import AdminShell from '@/pages/admin/shell';
-import { AdminSelect, Avatar, Badge, KH, Pagination } from '@/pages/admin/ui';
+import { AdminSelect, Avatar, Badge, KH, Pagination, RowActions } from '@/pages/admin/ui';
 import { Link, router, useForm } from '@inertiajs/react';
 import { CheckCircle2, Edit3, Trash2, Wallet, X } from 'lucide-react';
 import { FormEvent, useEffect, useMemo, useState } from 'react';
@@ -239,7 +239,7 @@ export default function FeePage({ charges, payments, summary }: FeePageProps) {
                         <div style={{ fontWeight: 800, fontSize: 18, color: '#1e293b' }}>Fee Management</div>
                         <div style={{ fontSize: 12, color: '#94a3b8', marginTop: 2 }}>Track monthly fee charges and payments</div>
                     </div>
-                    {canCreate && <Link href={createFee.url()} style={{ background: '#2563eb', color: 'white', border: 'none', borderRadius: 10, padding: '9px 18px', fontWeight: 700, fontSize: 13, cursor: 'pointer', textDecoration: 'none' }}>
+                    {canCreate && <Link href={createFee.url()} className="admin-btn admin-btn-primary">
                         + New Fee Charge
                     </Link>}
                 </div>
@@ -300,7 +300,7 @@ export default function FeePage({ charges, payments, summary }: FeePageProps) {
                                     <th>Amount</th>
                                     <th>Paid</th>
                                     <th>Status</th>
-                                    {canManageFee && <th>Action</th>}
+                                    {canManageFee && <th>Actions</th>}
                                 </tr>
                             </thead>
                             <tbody>
@@ -328,13 +328,14 @@ export default function FeePage({ charges, payments, summary }: FeePageProps) {
                                         <td><FeeStatusBadge status={charge.status} /></td>
                                         {canManageFee && (
                                         <td>
-                                            <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
-                                                {canRecordPayment && charge.status !== 'paid' && (
-                                                    <button onClick={() => openPayment(charge)} style={{ background: '#f0fdf4', color: '#16a34a', border: '1px solid #bbf7d0', borderRadius: 7, padding: '5px 10px', cursor: 'pointer', fontSize: 11, fontWeight: 700, display: 'inline-flex', alignItems: 'center', gap: 5 }}><Wallet size={13} /> Pay</button>
-                                                )}
-                                                {canUpdate && <Link href={editFee.url((charge.routeKey ?? charge.id) as never)} style={{ background: '#eff6ff', color: '#2563eb', border: '1px solid #bfdbfe', borderRadius: 7, padding: '5px 10px', cursor: 'pointer', fontSize: 11, fontWeight: 700, textDecoration: 'none', display: 'inline-flex', alignItems: 'center', gap: 5 }}><Edit3 size={13} /> Edit</Link>}
-                                                {canDelete && <button onClick={() => setDeleteTarget(charge)} style={{ background: '#fff1f2', color: '#ef4444', border: '1px solid #fecaca', borderRadius: 7, padding: '5px 10px', cursor: 'pointer', fontSize: 11, fontWeight: 700, display: 'inline-flex', alignItems: 'center', gap: 5 }}><Trash2 size={13} /> Delete</button>}
-                                            </div>
+                                            <RowActions
+                                                ariaLabel={`Actions for ${charge.studentNameEn}`}
+                                                actions={[
+                                                    { key: 'pay', label: 'Pay', icon: Wallet, onSelect: () => openPayment(charge), hidden: !(canRecordPayment && charge.status !== 'paid') },
+                                                    { key: 'edit', label: 'Edit', icon: Edit3, href: editFee.url((charge.routeKey ?? charge.id) as never), hidden: !canUpdate },
+                                                    { key: 'delete', label: 'Delete', icon: Trash2, onSelect: () => setDeleteTarget(charge), variant: 'destructive', separatorBefore: true, hidden: !canDelete },
+                                                ]}
+                                            />
                                         </td>
                                         )}
                                     </tr>

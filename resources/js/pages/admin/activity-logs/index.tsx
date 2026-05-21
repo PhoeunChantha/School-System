@@ -7,7 +7,7 @@ import {
     SheetTitle,
 } from '@/components/ui/sheet';
 import AdminShell from '@/pages/admin/shell';
-import { AdminSelect, Avatar, Badge, KH, Pagination } from '@/pages/admin/ui';
+import { AdminSelect, Avatar, Badge, KH, Pagination, RowActions } from '@/pages/admin/ui';
 import { router, useForm } from '@inertiajs/react';
 import { Edit3, Plus, Trash2 } from 'lucide-react';
 import { FormEvent, useEffect, useMemo, useState } from 'react';
@@ -279,10 +279,13 @@ export default function ActivityLogsPage({ logs, users, events, summary }: Activ
                                         <div style={{ fontSize: 11, color: '#94a3b8' }}>{log.createdAt}</div>
                                     </td>
                                     <td>
-                                        <div style={{ display: 'flex', gap: 6 }}>
-                                            <button onClick={() => openEditDrawer(log)} style={iconButton('#eff6ff', '#2563eb', '#bfdbfe')} title="Edit"><Edit3 size={14} /></button>
-                                            <button onClick={() => setDeleteTarget(log)} style={iconButton('#fff1f2', '#ef4444', '#fecaca')} title="Delete"><Trash2 size={14} /></button>
-                                        </div>
+                                        <RowActions
+                                            ariaLabel={`Actions for ${log.event} log`}
+                                            actions={[
+                                                { key: 'edit', label: 'Edit', icon: Edit3, onSelect: () => openEditDrawer(log) },
+                                                { key: 'delete', label: 'Delete', icon: Trash2, onSelect: () => setDeleteTarget(log), variant: 'destructive', separatorBefore: true },
+                                            ]}
+                                        />
                                     </td>
                                 </tr>
                             ))}
@@ -376,20 +379,6 @@ function Field({ label, error, children, wide = false }: { label: string; error?
             {error && <div className="field-error">{error}</div>}
         </div>
     );
-}
-
-function iconButton(background: string, color: string, border: string): CSSProperties {
-    return {
-        background,
-        color,
-        border: `1px solid ${border}`,
-        borderRadius: 7,
-        padding: '6px 9px',
-        cursor: 'pointer',
-        display: 'inline-flex',
-        alignItems: 'center',
-        justifyContent: 'center',
-    };
 }
 
 const primaryButton: CSSProperties = {

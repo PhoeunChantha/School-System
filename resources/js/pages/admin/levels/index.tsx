@@ -4,7 +4,7 @@ import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } f
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { useAdminPermissions } from '@/hooks/use-admin-permissions';
 import AdminShell from '@/pages/admin/shell';
-import { Pagination } from '@/pages/admin/ui';
+import { Pagination, RowActions, type RowAction } from '@/pages/admin/ui';
 import { router, useForm } from '@inertiajs/react';
 import { Edit3, Plus, Save, Trash2, X } from 'lucide-react';
 import { toast } from 'sonner';
@@ -152,6 +152,11 @@ export default function LevelsPage({ levels }: LevelsPageProps) {
     const inputError = (message?: string) =>
         message ? <div style={{ color: '#ef4444', fontSize: 11, marginTop: 4 }}>{message}</div> : null;
 
+    const levelActions = (level: Level): RowAction[] => [
+        { key: 'edit', label: 'Edit', icon: Edit3, onSelect: () => openEdit(level), hidden: !canUpdate },
+        { key: 'delete', label: 'Delete', icon: Trash2, onSelect: () => setDeleteTarget(level), variant: 'destructive', separatorBefore: true, hidden: !canDelete },
+    ];
+
     useEffect(() => { setPage(1); }, [search, orderBy, perPage]);
 
     const filtered = useMemo(() => {
@@ -183,7 +188,7 @@ export default function LevelsPage({ levels }: LevelsPageProps) {
                         <div style={{ fontWeight: 800, fontSize: 18, color: '#1e293b' }}>Levels</div>
                         <div style={{ fontSize: 12, color: '#94a3b8' }}>{levels.length} level{levels.length !== 1 ? 's' : ''} total</div>
                     </div>
-                    {canCreate && <button onClick={openAdd} style={{ background: '#2563eb', color: 'white', border: 'none', borderRadius: 10, padding: '10px 20px', fontWeight: 700, fontSize: 13, cursor: 'pointer', display: 'inline-flex', alignItems: 'center', gap: 6 }}><Plus size={15} /> Add Level</button>}
+                    {canCreate && <button onClick={openAdd} className="admin-btn admin-btn-primary"><Plus size={15} /> Add Level</button>}
                 </div>
 
                 {/* Modal Dialog */}
@@ -276,8 +281,8 @@ export default function LevelsPage({ levels }: LevelsPageProps) {
                         <table className="data-table">
                             <thead>
                                 <tr style={{ borderBottom: '1px solid #f1f5f9' }}>
-                                    {['#', 'Name', 'Students', 'Status', ...(canManageLevels ? [''] : [])].map((h, i) => (
-                                        <th key={i} style={{ padding: '10px 16px', textAlign: 'left', fontSize: 11, fontWeight: 700, color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '0.05em' }}>{h}</th>
+                                    {['#', 'Name', 'Students', 'Status', ...(canManageLevels ? ['Actions'] : [])].map((h, i, arr) => (
+                                        <th key={i} style={{ padding: '10px 16px', textAlign: canManageLevels && i === arr.length - 1 ? 'center' : 'left', fontSize: 11, fontWeight: 700, color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '0.05em' }}>{h}</th>
                                     ))}
                                 </tr>
                             </thead>
@@ -302,9 +307,10 @@ export default function LevelsPage({ levels }: LevelsPageProps) {
                                             </span>
                                         </td>
                                         {canManageLevels && (
-                                            <td style={{ padding: '12px 16px', textAlign: 'right' }}>
-                                                {canUpdate && <button onClick={() => openEdit(level)} style={{ background: '#eff6ff', color: '#2563eb', border: 'none', borderRadius: 8, padding: '6px 14px', fontWeight: 700, fontSize: 12, cursor: 'pointer', marginRight: 6, display: 'inline-flex', alignItems: 'center', gap: 5 }}><Edit3 size={13} /> Edit</button>}
-                                                {canDelete && <button onClick={() => setDeleteTarget(level)} style={{ background: '#fef2f2', color: '#dc2626', border: 'none', borderRadius: 8, padding: '6px 14px', fontWeight: 700, fontSize: 12, cursor: 'pointer', display: 'inline-flex', alignItems: 'center', gap: 5 }}><Trash2 size={13} /> Delete</button>}
+                                            <td style={{ padding: '12px 16px', textAlign: 'center' }}>
+                                                <div style={{ display: 'flex', justifyContent: 'center' }}>
+                                                    <RowActions ariaLabel={`Actions for ${level.name}`} actions={levelActions(level)} />
+                                                </div>
                                             </td>
                                         )}
                                     </tr>

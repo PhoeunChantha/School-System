@@ -7,7 +7,7 @@
     updateRole,
 } from '@/actions/App/Http/Controllers/Backends/RolePermissionController';
 import AdminShell from '@/pages/admin/shell';
-import { AdminSelect } from '@/pages/admin/ui';
+import { AdminSelect, RowActions as RowActionsMenu } from '@/pages/admin/ui';
 import { type SharedData } from '@/types';
 import { router, useForm, usePage } from '@inertiajs/react';
 import { Edit3, Plus, ShieldCheck, Trash2 } from 'lucide-react';
@@ -514,25 +514,13 @@ function RowActions({ canEdit, canDelete, onEdit, onDelete }: { canEdit: boolean
     }
 
     return (
-        <div style={{ display: 'flex', gap: 6 }}>
-            {canEdit && <button onClick={onEdit} style={iconButton('#eff6ff', '#2563eb', '#bfdbfe')} title="Edit"><Edit3 size={14} /></button>}
-            {canDelete && <button onClick={onDelete} style={iconButton('#fff1f2', '#ef4444', '#fecaca')} title="Delete"><Trash2 size={14} /></button>}
-        </div>
+        <RowActionsMenu
+            actions={[
+                { key: 'edit', label: 'Edit', icon: Edit3, onSelect: onEdit, hidden: !canEdit },
+                { key: 'delete', label: 'Delete', icon: Trash2, onSelect: onDelete, variant: 'destructive', separatorBefore: true, hidden: !canDelete },
+            ]}
+        />
     );
-}
-
-function iconButton(background: string, color: string, border: string): CSSProperties {
-    return {
-        background,
-        color,
-        border: `1px solid ${border}`,
-        borderRadius: 7,
-        padding: '6px 9px',
-        cursor: 'pointer',
-        display: 'inline-flex',
-        alignItems: 'center',
-        justifyContent: 'center',
-    };
 }
 
 const formPanel: CSSProperties = {

@@ -124,7 +124,67 @@
 }
 .admin-wrap .data-table tr:last-child td { border-bottom: none; }
 .admin-wrap .data-table tbody tr:hover { background: #fafbff; }
+.admin-wrap .users-table-scroll {
+  width: 100%;
+  max-width: 100%;
+  overflow-x: auto;
+  overflow-y: hidden;
+  -webkit-overflow-scrolling: touch;
+}
+.admin-wrap .users-table-scroll .users-table {
+  min-width: 760px;
+}
 .admin-wrap .data-table.users-table td:first-child { max-width: 340px; }
+.admin-wrap .data-table.users-table.has-actions th:last-child,
+.admin-wrap .data-table.users-table.has-actions td:last-child {
+  position: sticky;
+  right: 0;
+  z-index: 2;
+  width: 112px;
+  min-width: 112px;
+  text-align: right;
+  background: white;
+  box-shadow: -16px 0 24px -22px rgba(15, 23, 42, 0.55);
+}
+.admin-wrap .data-table.users-table.has-actions th:last-child {
+  z-index: 3;
+}
+.admin-wrap .data-table.users-table.has-actions tbody tr:hover td:last-child {
+  background: #fafbff;
+}
+
+/* ── Row actions kebab trigger (⋮) ── */
+.admin-wrap .admin-row-actions-trigger {
+  width: 32px; height: 32px;
+  display: inline-flex; align-items: center; justify-content: center;
+  border-radius: 9px;
+  background: #f8fafc;
+  border: 1px solid #e8edf5;
+  color: #64748b;
+  cursor: pointer;
+  transition: background 0.15s, border-color 0.15s, color 0.15s;
+}
+.admin-wrap .admin-row-actions-trigger:hover,
+.admin-wrap .admin-row-actions-trigger[data-state="open"] {
+  background: #eff6ff;
+  border-color: #bfdbfe;
+  color: #2563eb;
+}
+
+/* ── Unified brand toolbar buttons ── */
+.admin-wrap .admin-btn {
+  display: inline-flex; align-items: center; justify-content: center; gap: 6px;
+  min-height: 38px; padding: 0 14px;
+  border-radius: 10px; font-size: 13px; font-weight: 800;
+  cursor: pointer; text-decoration: none; white-space: nowrap;
+  border: 1px solid transparent; transition: background 0.15s, border-color 0.15s, color 0.15s;
+}
+.admin-wrap .admin-btn-primary { background: #2563eb; color: #fff; }
+.admin-wrap .admin-btn-primary:hover { background: #1d4ed8; }
+.admin-wrap .admin-btn-ghost { background: #fff; color: #475569; border-color: #e2e8f0; }
+.admin-wrap .admin-btn-ghost:hover { background: #f8fafc; border-color: #cbd5e1; color: #2563eb; }
+.admin-wrap .admin-btn-danger { background: #fff1f2; color: #ef4444; border-color: #fecaca; }
+.admin-wrap .admin-btn-danger:hover { background: #fee2e2; }
 
 /* ── Progress bar ── */
 .admin-wrap .pbar { height: 6px; background: #f1f5f9; border-radius: 99px; overflow: hidden; }
@@ -415,10 +475,25 @@
   .admin-wrap .users-table-card {
     overflow: hidden !important;
   }
+  .admin-wrap .users-table-scroll {
+    overflow: visible;
+  }
   .admin-wrap .data-table.users-table {
     display: block;
     width: 100%;
     min-width: 0;
+  }
+  .admin-wrap .users-table-scroll .users-table {
+    min-width: 0;
+  }
+  .admin-wrap .data-table.users-table.has-actions th:last-child,
+  .admin-wrap .data-table.users-table.has-actions td:last-child {
+    position: static;
+    width: auto;
+    min-width: 0;
+    text-align: left;
+    background: transparent;
+    box-shadow: none;
   }
   .admin-wrap .data-table.users-table thead {
     display: none;
@@ -590,6 +665,12 @@
 .admin-wrap.dark .card,
 .admin-wrap.dark .stat-card { background: #1e293b; border-color: #334155; }
 .admin-wrap.dark .admin-quick-link { background: #3b82f6; color: #fff; }
+.admin-wrap.dark .admin-row-actions-trigger { background: #0f172a; border-color: #334155; color: #94a3b8; }
+.admin-wrap.dark .admin-row-actions-trigger:hover,
+.admin-wrap.dark .admin-row-actions-trigger[data-state="open"] { background: rgba(59,130,246,0.16); border-color: #2563eb; color: #93c5fd; }
+.admin-wrap.dark .admin-btn-ghost { background: #0f172a; border-color: #334155; color: #cbd5e1; }
+.admin-wrap.dark .admin-btn-ghost:hover { background: #111827; border-color: #475569; color: #93c5fd; }
+.admin-wrap.dark .admin-btn-danger { background: rgba(239,68,68,0.14); border-color: rgba(248,113,113,0.4); color: #fca5a5; }
 .admin-wrap.dark .topbar { background: #1e293b; border-color: #334155; }
 .admin-wrap.dark footer { background: #1e293b !important; border-color: #334155 !important; }
 .admin-wrap.dark .topbar .text-title { color: #f1f5f9 !important; }
