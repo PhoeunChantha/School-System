@@ -19,6 +19,7 @@ import {
     Home,
 } from 'lucide-react';
 import { type ReactNode, useCallback, useEffect, useState } from 'react';
+import { toast } from 'sonner';
 
 export interface StudentProfile {
     studentId?: number | null;
@@ -50,6 +51,10 @@ interface Props {
 }
 
 interface StudentNotificationEvent {
+    notification?: {
+        title?: string;
+        body?: string;
+    };
     unreadNotifications: number;
 }
 
@@ -173,6 +178,12 @@ export default function StudentShell({
     const handleRealtimeNotification = useCallback(
         (event: StudentNotificationEvent) => {
             setUnreadNotifications(event.unreadNotifications);
+
+            toast.info(event.notification?.title ?? 'New message', {
+                description:
+                    event.notification?.body ??
+                    'You have a new school notification.',
+            });
         },
         [],
     );
