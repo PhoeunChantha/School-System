@@ -103,6 +103,24 @@ function sortClasses(list: SchoolClass[], order: OrderKey): SchoolClass[] {
     });
 }
 
+function DayBadges({ days }: { days: string }) {
+    const list = days.split(/\s+/).filter(Boolean);
+
+    if (list.length === 0) {
+        return <span style={{ fontSize: 12, color: '#94a3b8' }}>-</span>;
+    }
+
+    return (
+        <div style={{ display: 'flex', flexWrap: 'wrap', gap: 4 }}>
+            {list.map((day) => (
+                <Badge key={day} type="blue">
+                    {day.charAt(0).toUpperCase() + day.slice(1)}
+                </Badge>
+            ))}
+        </div>
+    );
+}
+
 export default function ClassesPage({
     classes,
     levels,
@@ -388,13 +406,8 @@ export default function ClassesPage({
                                                     {cls.time}
                                                 </span>
                                             </td>
-                                            <td
-                                                style={{
-                                                    fontSize: 12,
-                                                    color: '#64748b',
-                                                }}
-                                            >
-                                                {cls.days}
+                                            <td>
+                                                <DayBadges days={cls.days} />
                                             </td>
                                             <td>
                                                 <div
@@ -475,7 +488,7 @@ export default function ClassesPage({
                                                     {translateText('Days')}
                                                 </span>
                                                 <strong>
-                                                    {cls.days || '-'}
+                                                    <DayBadges days={cls.days} />
                                                 </strong>
                                             </div>
                                             <div>

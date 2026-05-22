@@ -5,7 +5,7 @@ import { Badge, KH, ScoreChip } from '@/pages/admin/ui';
 import { Head, Link } from '@inertiajs/react';
 import { ArrowLeft, Award, CalendarDays, Edit3, TriangleAlert } from 'lucide-react';
 
-// â”€â”€ Types â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+//  Types â”€
 
 interface StudentDetail {
     id: number;
@@ -110,7 +110,7 @@ interface ShowStudentProps {
     certificates: Certificate[];
 }
 
-// â”€â”€ Helpers â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+//  Helpers 
 
 type Tab = 'overview' | 'grades' | 'attendance' | 'fees' | 'homework';
 
@@ -125,7 +125,6 @@ const attBg = (status: string) => ({
     present: '#f0fdf4', late: '#fffbeb', excused: '#eff6ff', absent: '#fef2f2',
 } as Record<string, string>)[status] ?? '#f8fafc';
 
-// â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
 export default function ShowStudentPage({ student, grades, attendance, fees, homework, certificates }: ShowStudentProps) {
     const [tab, setTab] = useState<Tab>('overview');
 
@@ -142,7 +141,7 @@ export default function ShowStudentPage({ student, grades, attendance, fees, hom
             <Head title={student.nameEn} />
             <div className="fade-in" style={{ padding: 24, display: 'flex', flexDirection: 'column', gap: 20 }}>
 
-                {/* â”€â”€ Back â”€â”€ */}
+                {/*  Back  */}
                 <div>
                     <Link href={studentIndex.url()} style={{ fontSize: 13, color: '#64748b', textDecoration: 'none', fontWeight: 600 }}>
                         <span style={{ display: 'inline-flex', alignItems: 'center', gap: 6 }}>
@@ -151,7 +150,7 @@ export default function ShowStudentPage({ student, grades, attendance, fees, hom
                     </Link>
                 </div>
 
-                {/* â”€â”€ Hero card â”€â”€ */}
+                {/*  Hero card  */}
                 <div className="card" style={{ padding: 24 }}>
                     <div style={{ display: 'flex', gap: 24, alignItems: 'flex-start', flexWrap: 'wrap' }}>
 
@@ -211,7 +210,7 @@ export default function ShowStudentPage({ student, grades, attendance, fees, hom
                     </div>
                 </div>
 
-                {/* â”€â”€ Tabs â”€â”€ */}
+                {/*  Tabs  */}
                 <div style={{ display: 'flex', gap: 4, borderBottom: '2px solid #f1f5f9', paddingBottom: 0, flexWrap: 'wrap' }}>
                     {tabs.map(t => (
                         <button key={t.id} onClick={() => setTab(t.id)}
@@ -224,7 +223,7 @@ export default function ShowStudentPage({ student, grades, attendance, fees, hom
                     ))}
                 </div>
 
-                {/* â”€â”€ Overview tab â”€â”€ */}
+                {/*  Overview tab  */}
                 {tab === 'overview' && (
                     <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: 16 }}>
 
@@ -333,7 +332,7 @@ export default function ShowStudentPage({ student, grades, attendance, fees, hom
                     </div>
                 )}
 
-                {/* â”€â”€ Grades tab â”€â”€ */}
+                {/*  Grades tab  */}
                 {tab === 'grades' && (
                     <div className="card" style={{ overflow: 'hidden' }}>
                         {grades.length === 0
@@ -363,7 +362,7 @@ export default function ShowStudentPage({ student, grades, attendance, fees, hom
                     </div>
                 )}
 
-                {/* â”€â”€ Attendance tab â”€â”€ */}
+                {/*  Attendance tab  */}
                 {tab === 'attendance' && (
                     <div className="card" style={{ overflow: 'hidden' }}>
                         <div style={{ padding: '14px 16px', borderBottom: '1px solid #f1f5f9', display: 'flex', gap: 16 }}>
@@ -386,7 +385,15 @@ export default function ShowStudentPage({ student, grades, attendance, fees, hom
                                     <tbody>
                                         {attendance.map(a => (
                                             <tr key={a.id}>
-                                                <td style={{ fontWeight: 700 }}>{a.date}</td>
+                                                <td style={{ fontWeight: 700 }}>
+                                                    {a.date
+                                                        ? new Date(a.date).toLocaleDateString('en-GB', {
+                                                            day: '2-digit',
+                                                            month: 'short',
+                                                            year: 'numeric',
+                                                        }).replace(' ', ',').replace(',', ', ')
+                                                        : '-'}
+                                                    </td>
                                                 <td style={{ fontSize: 12, color: '#64748b', textTransform: 'capitalize' }}>{a.period}</td>
                                                 <td>
                                                     <span style={{ display: 'inline-block', padding: '3px 10px', borderRadius: 99, fontSize: 11, fontWeight: 700, background: attBg(a.status), color: attColor(a.status), textTransform: 'capitalize' }}>
@@ -403,7 +410,7 @@ export default function ShowStudentPage({ student, grades, attendance, fees, hom
                     </div>
                 )}
 
-                {/* â”€â”€ Fees tab â”€â”€ */}
+                {/*  Fees tab  */}
                 {tab === 'fees' && (
                     <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
                         {fees.length === 0
@@ -413,7 +420,7 @@ export default function ShowStudentPage({ student, grades, attendance, fees, hom
                                     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: fc.payments.length > 0 ? 12 : 0 }}>
                                         <div>
                                             <div style={{ fontWeight: 700, fontSize: 14 }}>{fc.billingMonth?.slice(0, 7)}</div>
-                                            <div style={{ fontSize: 12, color: '#94a3b8' }}>Due: {fc.dueOn}</div>
+                                            <div style={{ fontSize: 12, color: '#94a3b8' }}>Due: {fc.dueOn ? new Date(fc.dueOn).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' }) : '-'}</div>
                                         </div>
                                         <div style={{ textAlign: 'right' }}>
                                             <div style={{ fontWeight: 800, fontSize: 16 }}>${fc.amount.toFixed(2)}</div>
@@ -442,7 +449,7 @@ export default function ShowStudentPage({ student, grades, attendance, fees, hom
                     </div>
                 )}
 
-                {/* â”€â”€ Homework tab â”€â”€ */}
+                {/*  Homework tab  */}
                 {tab === 'homework' && (
                     <div className="card" style={{ overflow: 'hidden' }}>
                         {homework.length === 0
@@ -454,7 +461,7 @@ export default function ShowStudentPage({ student, grades, attendance, fees, hom
                                         {homework.map(h => (
                                             <tr key={h.id}>
                                                 <td style={{ fontWeight: 700 }}>{h.title}</td>
-                                                <td style={{ fontSize: 12, color: '#64748b' }}>{h.dueOn}</td>
+                                                <td style={{ fontSize: 12, color: '#64748b' }}>{h.dueOn ? new Date(h.dueOn).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' }) : '-'}</td>
                                                 <td>
                                                     <Badge type={h.status === 'graded' ? 'green' : h.status === 'submitted' ? 'blue' : h.status === 'missing' ? 'red' : 'gray'}>
                                                         {h.status}
