@@ -14,6 +14,7 @@ use App\Http\Controllers\Backends\HomeworkSubmissionController;
 use App\Http\Controllers\Backends\LessonPlanController;
 use App\Http\Controllers\Backends\LevelController;
 use App\Http\Controllers\Backends\NotificationController;
+use App\Http\Controllers\Backends\ReportController;
 use App\Http\Controllers\Backends\RolePermissionController;
 use App\Http\Controllers\Backends\SchoolClassController;
 use App\Http\Controllers\Backends\SchoolSettingController;
@@ -206,7 +207,7 @@ Route::middleware(['auth', 'verified'])->prefix('admin')->name('admin.')->group(
     });
 
     // Reports / Honor Roll
-    Route::get('/reports', fn () => Inertia::render('admin/reports/index'))->middleware('can:viewReports')->name('reports');
+    Route::get('/reports', [ReportController::class, 'index'])->middleware('can:viewReports')->name('reports');
     Route::get('/honor-roll', fn () => Inertia::render('admin/honor-roll/index'))->middleware('can:viewHonorRoll')->name('honor-roll');
 
     // Certificates

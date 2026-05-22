@@ -1,0 +1,29 @@
+0 verbose cli C:\Program Files\nodejs\node.exe C:\Program Files\nodejs\node_modules\npm\bin\npm-cli.js
+1 info using npm@10.9.2
+2 info using node@v22.17.0
+3 silly config load:file:C:\Program Files\nodejs\node_modules\npm\npmrc
+4 silly config load:file:C:\laragon\www\system-school\.npmrc
+5 silly config load:file:C:\Users\SR GEARS\.npmrc
+6 silly config load:file:C:\Users\SR GEARS\AppData\Roaming\npm\etc\npmrc
+7 verbose title npm install sonner@2.0.7 input-otp@1.4.2 @babel/helper-compilation-targets@7.27.2
+8 verbose argv "install" "sonner@2.0.7" "input-otp@1.4.2" "@babel/helper-compilation-targets@7.27.2" "--cache" ".npm-cache" "--no-audit"
+9 verbose logfile logs-max:10 dir:C:\laragon\www\system-school\.npm-cache\_logs\2026-05-22T06_29_33_876Z-
+10 verbose logfile C:\laragon\www\system-school\.npm-cache\_logs\2026-05-22T06_29_33_876Z-debug-0.log
+11 silly logfile done cleaning log files
+12 silly packumentCache heap:2197815296 maxSize:549453824 maxEntrySize:274726912
+13 silly idealTree buildDeps
+14 silly fetch manifest input-otp@1.4.2
+15 silly packumentCache full:https://registry.npmjs.org/input-otp cache-miss
+16 verbose shrinkwrap failed to load node_modules/.package-lock.json out of date, updated: node_modules
+17 http fetch GET https://registry.npmjs.org/input-otp attempt 1 failed with EACCES
+18 http fetch GET https://registry.npmjs.org/input-otp attempt 2 failed with EACCES
+19 http fetch GET https://registry.npmjs.org/input-otp attempt 3 failed with EACCES
+20 silly fetch manifest sonner@2.0.7
+21 silly packumentCache full:https://registry.npmjs.org/sonner cache-miss
+22 http fetch GET https://registry.npmjs.org/sonner attempt 1 failed with EACCES
+23 http fetch GET https://registry.npmjs.org/sonner attempt 2 failed with EACCES
+24 http fetch GET https://registry.npmjs.org/sonner attempt 3 failed with EACCES
+25 silly fetch manifest @babel/helper-compilation-targets@7.27.2
+26 silly packumentCache full:https://registry.npmjs.org/@babel%2fhelper-compilation-targets cache-miss
+27 http fetch GET https://registry.npmjs.org/@babel%2fhelper-compilation-targets attempt 1 failed with EACCES
+28 http fetch GET https://registry.npmjs.org/@babel%2fhelper-compilation-targets attempt 2 failed with EACCES

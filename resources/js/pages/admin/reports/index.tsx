@@ -1,118 +1,526 @@
-﻿import { useState } from 'react';
 import AdminShell from '@/pages/admin/shell';
-import { STUDENTS, TEACHERS, CLASSES, PAYMENTS, HOMEWORK, avg } from '@/pages/admin/data';
-import { KH, Avatar, PBar, Badge, ScoreChip } from '@/pages/admin/ui';
+import { Avatar, Badge, KH, PBar, ScoreChip } from '@/pages/admin/ui';
 import type { LucideIcon } from 'lucide-react';
-import { ChartNoAxesColumn, CheckCircle2, ClipboardCheck, CreditCard, DollarSign, Download, GraduationCap, Hourglass, Printer, Star, TriangleAlert, XCircle } from 'lucide-react';
+import {
+    ChartNoAxesColumn,
+    CheckCircle2,
+    ClipboardCheck,
+    CreditCard,
+    DollarSign,
+    Download,
+    GraduationCap,
+    Hourglass,
+    Printer,
+    Star,
+    TriangleAlert,
+    XCircle,
+} from 'lucide-react';
+import { useState } from 'react';
 import { toast } from 'sonner';
 
 type ReportTab = 'attendance' | 'grades' | 'fees';
 
-function badgeIcon(Icon: LucideIcon, label: string) {
-    return <span style={{ display: 'inline-flex', alignItems: 'center', gap: 4 }}><Icon size={12} strokeWidth={2.6} />{label}</span>;
+interface Summary {
+    totalStudents: number;
+    avgAttendance: number;
+    avgGrade: number;
+    feesCollected: number;
+    paidCount: number;
+    unpaidCount: number;
+    outstandingFees: number;
 }
 
-export default function ReportsPage() {
+interface ClassAttendanceRow {
+    id: number;
+    name: string;
+    teacher: string;
+    attendance: number;
+    studentCount: number;
+}
+
+interface StudentReportRow {
+    id: number;
+    nameKh: string;
+    nameEn: string;
+    photo: string | null;
+    className: string;
+    level: string;
+    attendance: number;
+    speaking: number;
+    listening: number;
+    reading: number;
+    writing: number;
+    average: number;
+    feeStatus: string;
+    monthlyFee: number;
+}
+
+interface SkillAverageRow {
+    key: string;
+    labelKh: string;
+    label: string;
+    average: number;
+}
+
+interface PaymentRow {
+    id: number;
+    studentNameKh: string;
+    studentNameEn: string;
+    amount: number;
+    method: string;
+    date: string;
+    status: string;
+}
+
+interface FeeStudentRow {
+    id: number;
+    nameKh: string;
+    nameEn: string;
+    photo: string | null;
+    level: string;
+    amount: number;
+    status: string;
+}
+
+interface ReportsPageProps {
+    reportDate: string;
+    summary: Summary;
+    attendance: {
+        classes: ClassAttendanceRow[];
+        students: StudentReportRow[];
+    };
+    grades: {
+        skills: SkillAverageRow[];
+        students: StudentReportRow[];
+    };
+    fees: {
+        payments: PaymentRow[];
+        students: FeeStudentRow[];
+    };
+}
+
+function badgeIcon(Icon: LucideIcon, label: string) {
+    return (
+        <span style={{ display: 'inline-flex', alignItems: 'center', gap: 4 }}>
+            <Icon size={12} strokeWidth={2.6} />
+            {label}
+        </span>
+    );
+}
+
+function money(value: number): string {
+    return `$${Number(value || 0).toLocaleString(undefined, { maximumFractionDigits: 2 })}`;
+}
+
+function attendanceColor(value: number): 'green' | 'amber' | 'red' {
+    if (value >= 80) {
+        return 'green';
+    }
+
+    if (value >= 60) {
+        return 'amber';
+    }
+
+    return 'red';
+}
+
+function gradeColor(value: number): string {
+    if (value >= 75) {
+        return '#10b981';
+    }
+
+    if (value >= 50) {
+        return '#3b82f6';
+    }
+
+    return '#f59e0b';
+}
+
+function feeBadgeType(status: string): 'green' | 'red' | 'amber' | 'blue' {
+    if (status === 'paid') {
+        return 'green';
+    }
+
+    if (status === 'unpaid') {
+        return 'red';
+    }
+
+    if (status === 'partial' || status === 'pending') {
+        return 'amber';
+    }
+
+    return 'blue';
+}
+
+function paymentStatusLabel(status: string) {
+    if (status === 'paid') {
+        return badgeIcon(CheckCircle2, 'Paid');
+    }
+
+    if (status === 'pending') {
+        return badgeIcon(Hourglass, 'Pending');
+    }
+
+    if (status === 'failed') {
+        return badgeIcon(XCircle, 'Failed');
+    }
+
+    return status || 'Unknown';
+}
+
+function downloadCsv(
+    filename: string,
+    rows: Record<string, string | number>[],
+): void {
+    if (rows.length === 0) {
+        toast.info('No data to export.');
+        return;
+    }
+
+    const headers = Object.keys(rows[0]);
+    const escape = (value: string | number) =>
+        `"${String(value ?? '').replace(/"/g, '""')}"`;
+    const csv = [
+        headers.map(escape).join(','),
+        ...rows.map((row) =>
+            headers.map((header) => escape(row[header])).join(','),
+        ),
+    ].join('\n');
+
+    const url = URL.createObjectURL(
+        new Blob([csv], { type: 'text/csv;charset=utf-8;' }),
+    );
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = filename;
+    link.click();
+    URL.revokeObjectURL(url);
+}
+
+export default function ReportsPage({
+    reportDate,
+    summary,
+    attendance,
+    grades,
+    fees,
+}: ReportsPageProps) {
     const [tab, setTab] = useState<ReportTab>('attendance');
 
-    const totalRevenue   = PAYMENTS.filter(p => p.status === 'verified').reduce((a, p) => a + p.amount, 0);
-    const avgAttendance  = Math.round(STUDENTS.reduce((a, s) => a + s.attendance, 0) / STUDENTS.length);
-    const avgGrade       = Math.round(STUDENTS.reduce((a, s) => a + avg(s), 0) / STUDENTS.length);
-    const paidCount      = STUDENTS.filter(s => s.fees === 'Paid').length;
-    const unpaidCount    = STUDENTS.filter(s => s.fees === 'Unpaid').length;
+    const handleExport = () => {
+        if (tab === 'attendance') {
+            downloadCsv(
+                'attendance-report.csv',
+                attendance.students.map((student) => ({
+                    Student: student.nameEn,
+                    KhmerName: student.nameKh,
+                    Class: student.className,
+                    Attendance: `${student.attendance}%`,
+                })),
+            );
+            return;
+        }
 
-    const handleExport = (type: string) =>
-        toast.success(`Exporting ${type} report...`, { description: 'CSV download will start shortly.' });
-    const handlePrint = () => window.print();
+        if (tab === 'grades') {
+            downloadCsv(
+                'grades-report.csv',
+                grades.students.map((student) => ({
+                    Student: student.nameEn,
+                    KhmerName: student.nameKh,
+                    Level: student.level,
+                    Speaking: student.speaking,
+                    Listening: student.listening,
+                    Reading: student.reading,
+                    Writing: student.writing,
+                    Average: student.average,
+                })),
+            );
+            return;
+        }
+
+        downloadCsv(
+            'fees-report.csv',
+            fees.students.map((student) => ({
+                Student: student.nameEn,
+                KhmerName: student.nameKh,
+                Level: student.level,
+                Amount: student.amount,
+                Status: student.status,
+            })),
+        );
+    };
 
     const TABS: { id: ReportTab; label: string; icon: LucideIcon }[] = [
-        { id: 'attendance', label: 'Attendance',  icon: ClipboardCheck },
-        { id: 'grades',     label: 'Grades',      icon: Star },
-        { id: 'fees',       label: 'Fee Summary', icon: CreditCard },
+        { id: 'attendance', label: 'Attendance', icon: ClipboardCheck },
+        { id: 'grades', label: 'Grades', icon: Star },
+        { id: 'fees', label: 'Fee Summary', icon: CreditCard },
     ];
 
     return (
         <AdminShell>
-            <div className="fade-in" style={{ padding: 24, display: 'flex', flexDirection: 'column', gap: 20 }}>
-
-                {/* Header */}
-                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 12 }}>
+            <div
+                className="fade-in"
+                style={{
+                    padding: 24,
+                    display: 'flex',
+                    flexDirection: 'column',
+                    gap: 20,
+                }}
+            >
+                <div
+                    style={{
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'space-between',
+                        flexWrap: 'wrap',
+                        gap: 12,
+                    }}
+                >
                     <div>
-                        <div style={{ fontWeight: 800, fontSize: 18, color: '#1e293b', display: 'flex', alignItems: 'center', gap: 8 }}>
+                        <div
+                            style={{
+                                fontWeight: 800,
+                                fontSize: 18,
+                                color: '#1e293b',
+                                display: 'flex',
+                                alignItems: 'center',
+                                gap: 8,
+                            }}
+                        >
                             <ChartNoAxesColumn size={20} color="#2563eb" />
                             Reports
                         </div>
-                        <KH style={{ fontSize: 12, color: '#94a3b8', display: 'block' }}>របាយការណ៍សាលា - May 2026</KH>
+                        <KH
+                            style={{
+                                fontSize: 12,
+                                color: '#94a3b8',
+                                display: 'block',
+                            }}
+                        >
+                            របាយការណ៍សាលា - {reportDate}
+                        </KH>
                     </div>
                     <div style={{ display: 'flex', gap: 8 }}>
-                        <button onClick={() => handleExport(tab)} className="admin-btn admin-btn-ghost">
+                        <button
+                            onClick={handleExport}
+                            className="admin-btn admin-btn-ghost"
+                        >
                             <Download size={14} /> Export CSV
                         </button>
-                        <button onClick={handlePrint} className="admin-btn admin-btn-primary">
+                        <button
+                            onClick={() => window.print()}
+                            className="admin-btn admin-btn-primary"
+                        >
                             <Printer size={14} /> Print
                         </button>
                     </div>
                 </div>
 
-                {/* Summary stats */}
-                <div className="stat-grid-4" style={{ display: 'grid', gridTemplateColumns: 'repeat(4,1fr)', gap: 14 }}>
+                <div
+                    className="stat-grid-4"
+                    style={{
+                        display: 'grid',
+                        gridTemplateColumns: 'repeat(4,1fr)',
+                        gap: 14,
+                    }}
+                >
                     {[
-                        { icon: GraduationCap, lk: 'សិស្សទាំងអស់', l: 'Total Students',    v: STUDENTS.length,    bg: '#eff6ff', c: '#2563eb' },
-                        { icon: ClipboardCheck, lk: 'វត្តមានមធ្យម',  l: 'Avg Attendance',   v: `${avgAttendance}%`, bg: '#f0fdf4', c: '#16a34a' },
-                        { icon: Star, lk: 'ពិន្ទុមធ្យម',   l: 'Avg Grade',        v: avgGrade,            bg: '#fffbeb', c: '#d97706' },
-                        { icon: DollarSign, lk: 'ចំណូលខែនេះ',   l: 'Fees Collected',   v: `$${totalRevenue}`,  bg: '#f5f3ff', c: '#7c3aed' },
-                    ].map((s, i) => (
-                        <div key={i} className="stat-card">
-                            <div style={{ width: 40, height: 40, borderRadius: 10, background: s.bg, color: s.c, display: 'flex', alignItems: 'center', justifyContent: 'center', marginBottom: 10 }}>
-                                <s.icon size={20} strokeWidth={2.4} />
+                        {
+                            icon: GraduationCap,
+                            lk: 'សិស្សទាំងអស់',
+                            l: 'Total Students',
+                            v: summary.totalStudents,
+                            bg: '#eff6ff',
+                            c: '#2563eb',
+                        },
+                        {
+                            icon: ClipboardCheck,
+                            lk: 'វត្តមានមធ្យម',
+                            l: 'Avg Attendance',
+                            v: `${summary.avgAttendance}%`,
+                            bg: '#f0fdf4',
+                            c: '#16a34a',
+                        },
+                        {
+                            icon: Star,
+                            lk: 'ពិន្ទុមធ្យម',
+                            l: 'Avg Grade',
+                            v: summary.avgGrade,
+                            bg: '#fffbeb',
+                            c: '#d97706',
+                        },
+                        {
+                            icon: DollarSign,
+                            lk: 'ចំណូលខែនេះ',
+                            l: 'Fees Collected',
+                            v: money(summary.feesCollected),
+                            bg: '#f5f3ff',
+                            c: '#7c3aed',
+                        },
+                    ].map((stat) => (
+                        <div key={stat.l} className="stat-card">
+                            <div
+                                style={{
+                                    width: 40,
+                                    height: 40,
+                                    borderRadius: 10,
+                                    background: stat.bg,
+                                    color: stat.c,
+                                    display: 'flex',
+                                    alignItems: 'center',
+                                    justifyContent: 'center',
+                                    marginBottom: 10,
+                                }}
+                            >
+                                <stat.icon size={20} strokeWidth={2.4} />
                             </div>
-                            <div style={{ fontSize: 24, fontWeight: 800, color: s.c, marginBottom: 2 }}>{s.v}</div>
-                            <KH style={{ fontSize: 11, color: '#64748b', display: 'block' }}>{s.lk}</KH>
-                            <div style={{ fontSize: 11, color: '#94a3b8' }}>{s.l}</div>
+                            <div
+                                style={{
+                                    fontSize: 24,
+                                    fontWeight: 800,
+                                    color: stat.c,
+                                    marginBottom: 2,
+                                }}
+                            >
+                                {stat.v}
+                            </div>
+                            <KH
+                                style={{
+                                    fontSize: 11,
+                                    color: '#64748b',
+                                    display: 'block',
+                                }}
+                            >
+                                {stat.lk}
+                            </KH>
+                            <div style={{ fontSize: 11, color: '#94a3b8' }}>
+                                {stat.l}
+                            </div>
                         </div>
                     ))}
                 </div>
 
-                {/* Tabs */}
-                <div style={{ display: 'flex', gap: 8 }}>
-                    {TABS.map(t => {
-                        const Icon = t.icon;
+                <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+                    {TABS.map((item) => {
+                        const Icon = item.icon;
 
                         return (
-                            <button key={t.id} onClick={() => setTab(t.id)}
-                                style={{ padding: '8px 18px', borderRadius: 8, border: '1.5px solid', cursor: 'pointer', fontSize: 13, fontWeight: 700, transition: 'all 0.15s', borderColor: tab === t.id ? '#3b82f6' : '#e2e8f0', background: tab === t.id ? '#eff6ff' : 'white', color: tab === t.id ? '#2563eb' : '#64748b', display: 'inline-flex', alignItems: 'center', gap: 6 }}>
-                                <Icon size={14} /> {t.label}
+                            <button
+                                key={item.id}
+                                onClick={() => setTab(item.id)}
+                                style={{
+                                    padding: '8px 18px',
+                                    borderRadius: 8,
+                                    border: '1.5px solid',
+                                    cursor: 'pointer',
+                                    fontSize: 13,
+                                    fontWeight: 700,
+                                    transition: 'all 0.15s',
+                                    borderColor:
+                                        tab === item.id ? '#3b82f6' : '#e2e8f0',
+                                    background:
+                                        tab === item.id ? '#eff6ff' : 'white',
+                                    color:
+                                        tab === item.id ? '#2563eb' : '#64748b',
+                                    display: 'inline-flex',
+                                    alignItems: 'center',
+                                    gap: 6,
+                                }}
+                            >
+                                <Icon size={14} /> {item.label}
                             </button>
                         );
                     })}
                 </div>
 
-                {/* Attendance report */}
                 {tab === 'attendance' && (
-                    <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
-                        {/* Class attendance summary */}
+                    <div
+                        style={{
+                            display: 'flex',
+                            flexDirection: 'column',
+                            gap: 16,
+                        }}
+                    >
                         <div className="card" style={{ padding: 20 }}>
-                            <KH style={{ fontWeight: 800, fontSize: 15, display: 'block', marginBottom: 14 }}>វត្តមានតាមថ្នាក់</KH>
-                            <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
-                                {CLASSES.map(cls => {
-                                    const clsStudents = STUDENTS.filter(s => s.cls === cls.name);
-                                    const rate = clsStudents.length
-                                        ? Math.round(clsStudents.reduce((a, s) => a + s.attendance, 0) / clsStudents.length)
-                                        : 0;
+                            <KH
+                                style={{
+                                    fontWeight: 800,
+                                    fontSize: 15,
+                                    display: 'block',
+                                    marginBottom: 14,
+                                }}
+                            >
+                                វត្តមានតាមថ្នាក់
+                            </KH>
+                            <div
+                                style={{
+                                    display: 'flex',
+                                    flexDirection: 'column',
+                                    gap: 12,
+                                }}
+                            >
+                                {attendance.classes.map((row) => {
+                                    const type = attendanceColor(
+                                        row.attendance,
+                                    );
+
                                     return (
-                                        <div key={cls.id} style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-                                            <div style={{ width: 140, flexShrink: 0 }}>
-                                                <div style={{ fontWeight: 700, fontSize: 13 }}>{cls.name}</div>
-                                                <div style={{ fontSize: 11, color: '#94a3b8' }}>{cls.teacher}</div>
+                                        <div
+                                            key={row.id}
+                                            style={{
+                                                display: 'flex',
+                                                alignItems: 'center',
+                                                gap: 12,
+                                            }}
+                                        >
+                                            <div
+                                                style={{
+                                                    width: 140,
+                                                    flexShrink: 0,
+                                                }}
+                                            >
+                                                <div
+                                                    style={{
+                                                        fontWeight: 700,
+                                                        fontSize: 13,
+                                                    }}
+                                                >
+                                                    {row.name}
+                                                </div>
+                                                <div
+                                                    style={{
+                                                        fontSize: 11,
+                                                        color: '#94a3b8',
+                                                    }}
+                                                >
+                                                    {row.teacher}
+                                                </div>
                                             </div>
                                             <div style={{ flex: 1 }}>
-                                                <PBar value={rate} color={rate >= 80 ? 'green' : rate >= 60 ? 'amber' : 'red'} height={10} />
+                                                <PBar
+                                                    value={row.attendance}
+                                                    color={type}
+                                                    height={10}
+                                                />
                                             </div>
-                                            <div style={{ width: 60, textAlign: 'right', fontWeight: 800, fontSize: 14, color: rate >= 80 ? '#10b981' : rate >= 60 ? '#d97706' : '#ef4444', flexShrink: 0 }}>
-                                                {rate}%
+                                            <div
+                                                style={{
+                                                    width: 60,
+                                                    textAlign: 'right',
+                                                    fontWeight: 800,
+                                                    fontSize: 14,
+                                                    color:
+                                                        type === 'green'
+                                                            ? '#10b981'
+                                                            : type === 'amber'
+                                                              ? '#d97706'
+                                                              : '#ef4444',
+                                                    flexShrink: 0,
+                                                }}
+                                            >
+                                                {row.attendance}%
                                             </div>
-                                            <Badge type={rate >= 80 ? 'green' : rate >= 60 ? 'amber' : 'red'}>
-                                                {clsStudents.length} students
+                                            <Badge type={type}>
+                                                {row.studentCount} students
                                             </Badge>
                                         </div>
                                     );
@@ -120,155 +528,659 @@ export default function ReportsPage() {
                             </div>
                         </div>
 
-                        {/* Student attendance table */}
                         <div className="card" style={{ overflowX: 'auto' }}>
                             <div style={{ padding: '16px 20px 0' }}>
-                                <KH style={{ fontWeight: 800, fontSize: 15, display: 'block', marginBottom: 4 }}>វត្តមានតាមសិស្ស</KH>
-                                <div style={{ fontSize: 12, color: '#94a3b8', marginBottom: 12 }}>Individual attendance - May 2026</div>
+                                <KH
+                                    style={{
+                                        fontWeight: 800,
+                                        fontSize: 15,
+                                        display: 'block',
+                                        marginBottom: 4,
+                                    }}
+                                >
+                                    វត្តមានតាមសិស្ស
+                                </KH>
+                                <div
+                                    style={{
+                                        fontSize: 12,
+                                        color: '#94a3b8',
+                                        marginBottom: 12,
+                                    }}
+                                >
+                                    Individual attendance - {reportDate}
+                                </div>
                             </div>
                             <table className="data-table">
-                                <thead><tr><th>Student</th><th>Class</th><th>Attendance</th><th>Status</th></tr></thead>
+                                <thead>
+                                    <tr>
+                                        <th>Student</th>
+                                        <th>Class</th>
+                                        <th>Attendance</th>
+                                        <th>Status</th>
+                                    </tr>
+                                </thead>
                                 <tbody>
-                                    {[...STUDENTS].sort((a, b) => a.attendance - b.attendance).map(s => (
-                                        <tr key={s.id}>
-                                            <td><div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-                                                <Avatar name={s.nameEn} size={32} />
-                                                <div><KH style={{ fontWeight: 700, fontSize: 13, display: 'block' }}>{s.nameKh}</KH><div style={{ fontSize: 11, color: '#94a3b8' }}>{s.nameEn}</div></div>
-                                            </div></td>
-                                            <td style={{ fontSize: 12, color: '#64748b' }}>{s.cls}</td>
-                                            <td><div style={{ display: 'flex', alignItems: 'center', gap: 8, minWidth: 120 }}>
-                                                <div style={{ flex: 1 }}><PBar value={s.attendance} color={s.attendance >= 80 ? 'green' : 'red'} /></div>
-                                                <span style={{ fontSize: 12, fontWeight: 700, width: 36, color: s.attendance >= 80 ? '#10b981' : '#ef4444' }}>{s.attendance}%</span>
-                                            </div></td>
-                                            <td><Badge type={s.attendance >= 80 ? 'green' : s.attendance >= 60 ? 'amber' : 'red'}>
-                                                {s.attendance >= 80 ? badgeIcon(CheckCircle2, 'Good') : s.attendance >= 60 ? badgeIcon(TriangleAlert, 'Warning') : badgeIcon(TriangleAlert, 'At Risk')}
-                                            </Badge></td>
-                                        </tr>
-                                    ))}
+                                    {[...attendance.students]
+                                        .sort(
+                                            (a, b) =>
+                                                a.attendance - b.attendance,
+                                        )
+                                        .map((student) => {
+                                            const type = attendanceColor(
+                                                student.attendance,
+                                            );
+
+                                            return (
+                                                <tr key={student.id}>
+                                                    <td>
+                                                        <div
+                                                            style={{
+                                                                display: 'flex',
+                                                                alignItems:
+                                                                    'center',
+                                                                gap: 10,
+                                                            }}
+                                                        >
+                                                            <Avatar
+                                                                name={
+                                                                    student.nameEn
+                                                                }
+                                                                src={
+                                                                    student.photo
+                                                                }
+                                                                size={32}
+                                                            />
+                                                            <div>
+                                                                <KH
+                                                                    style={{
+                                                                        fontWeight: 700,
+                                                                        fontSize: 13,
+                                                                        display:
+                                                                            'block',
+                                                                    }}
+                                                                >
+                                                                    {
+                                                                        student.nameKh
+                                                                    }
+                                                                </KH>
+                                                                <div
+                                                                    style={{
+                                                                        fontSize: 11,
+                                                                        color: '#94a3b8',
+                                                                    }}
+                                                                >
+                                                                    {
+                                                                        student.nameEn
+                                                                    }
+                                                                </div>
+                                                            </div>
+                                                        </div>
+                                                    </td>
+                                                    <td
+                                                        style={{
+                                                            fontSize: 12,
+                                                            color: '#64748b',
+                                                        }}
+                                                    >
+                                                        {student.className}
+                                                    </td>
+                                                    <td>
+                                                        <div
+                                                            style={{
+                                                                display: 'flex',
+                                                                alignItems:
+                                                                    'center',
+                                                                gap: 8,
+                                                                minWidth: 120,
+                                                            }}
+                                                        >
+                                                            <div
+                                                                style={{
+                                                                    flex: 1,
+                                                                }}
+                                                            >
+                                                                <PBar
+                                                                    value={
+                                                                        student.attendance
+                                                                    }
+                                                                    color={type}
+                                                                />
+                                                            </div>
+                                                            <span
+                                                                style={{
+                                                                    fontSize: 12,
+                                                                    fontWeight: 700,
+                                                                    width: 36,
+                                                                    color:
+                                                                        type ===
+                                                                        'green'
+                                                                            ? '#10b981'
+                                                                            : type ===
+                                                                                'amber'
+                                                                              ? '#d97706'
+                                                                              : '#ef4444',
+                                                                }}
+                                                            >
+                                                                {
+                                                                    student.attendance
+                                                                }
+                                                                %
+                                                            </span>
+                                                        </div>
+                                                    </td>
+                                                    <td>
+                                                        <Badge type={type}>
+                                                            {student.attendance >=
+                                                            80
+                                                                ? badgeIcon(
+                                                                      CheckCircle2,
+                                                                      'Good',
+                                                                  )
+                                                                : student.attendance >=
+                                                                    60
+                                                                  ? badgeIcon(
+                                                                        TriangleAlert,
+                                                                        'Warning',
+                                                                    )
+                                                                  : badgeIcon(
+                                                                        TriangleAlert,
+                                                                        'At Risk',
+                                                                    )}
+                                                        </Badge>
+                                                    </td>
+                                                </tr>
+                                            );
+                                        })}
                                 </tbody>
                             </table>
                         </div>
                     </div>
                 )}
 
-                {/* Grades report */}
                 {tab === 'grades' && (
-                    <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
-                        {/* Skill averages */}
+                    <div
+                        style={{
+                            display: 'flex',
+                            flexDirection: 'column',
+                            gap: 16,
+                        }}
+                    >
                         <div className="card" style={{ padding: 20 }}>
-                            <KH style={{ fontWeight: 800, fontSize: 15, display: 'block', marginBottom: 16 }}>ពិន្ទុជំនាញមធ្យម</KH>
-                            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill,minmax(180px,1fr))', gap: 14 }}>
-                                {(['speaking', 'listening', 'reading', 'writing'] as const).map(sk => {
-                                    const skKh = { speaking: 'និយាយ', listening: 'ស្ដាប់', reading: 'អាន', writing: 'សរសេរ' }[sk];
-                                    const skAvg = Math.round(STUDENTS.reduce((a, s) => a + s.grade[sk], 0) / STUDENTS.length);
-                                    return (
-                                        <div key={sk} style={{ background: '#f8fafc', borderRadius: 12, padding: 16 }}>
-                                            <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 10 }}>
-                                                <KH style={{ fontWeight: 700, fontSize: 14 }}>{skKh}</KH>
-                                                <ScoreChip score={skAvg} />
-                                            </div>
-                                            <PBar value={skAvg} color={skAvg >= 75 ? 'green' : skAvg >= 50 ? 'blue' : 'amber'} height={8} />
-                                            <div style={{ fontSize: 11, color: '#94a3b8', marginTop: 6, textTransform: 'capitalize' }}>{sk}</div>
+                            <KH
+                                style={{
+                                    fontWeight: 800,
+                                    fontSize: 15,
+                                    display: 'block',
+                                    marginBottom: 16,
+                                }}
+                            >
+                                ពិន្ទុជំនាញមធ្យម
+                            </KH>
+                            <div
+                                style={{
+                                    display: 'grid',
+                                    gridTemplateColumns:
+                                        'repeat(auto-fill,minmax(180px,1fr))',
+                                    gap: 14,
+                                }}
+                            >
+                                {grades.skills.map((skill) => (
+                                    <div
+                                        key={skill.key}
+                                        style={{
+                                            background: '#f8fafc',
+                                            borderRadius: 12,
+                                            padding: 16,
+                                        }}
+                                    >
+                                        <div
+                                            style={{
+                                                display: 'flex',
+                                                justifyContent: 'space-between',
+                                                marginBottom: 10,
+                                            }}
+                                        >
+                                            <KH
+                                                style={{
+                                                    fontWeight: 700,
+                                                    fontSize: 14,
+                                                }}
+                                            >
+                                                {skill.labelKh}
+                                            </KH>
+                                            <ScoreChip score={skill.average} />
                                         </div>
-                                    );
-                                })}
+                                        <PBar
+                                            value={skill.average}
+                                            color={
+                                                skill.average >= 75
+                                                    ? 'green'
+                                                    : skill.average >= 50
+                                                      ? 'blue'
+                                                      : 'amber'
+                                            }
+                                            height={8}
+                                        />
+                                        <div
+                                            style={{
+                                                fontSize: 11,
+                                                color: '#94a3b8',
+                                                marginTop: 6,
+                                            }}
+                                        >
+                                            {skill.label}
+                                        </div>
+                                    </div>
+                                ))}
                             </div>
                         </div>
 
-                        {/* Full grades table */}
                         <div className="card" style={{ overflowX: 'auto' }}>
-                            <div style={{ padding: '16px 20px 0', marginBottom: 4 }}>
-                                <KH style={{ fontWeight: 800, fontSize: 15, display: 'block' }}>ពិន្ទុសិស្សទាំងអស់</KH>
+                            <div
+                                style={{
+                                    padding: '16px 20px 0',
+                                    marginBottom: 4,
+                                }}
+                            >
+                                <KH
+                                    style={{
+                                        fontWeight: 800,
+                                        fontSize: 15,
+                                        display: 'block',
+                                    }}
+                                >
+                                    ពិន្ទុសិស្សទាំងអស់
+                                </KH>
                             </div>
                             <table className="data-table">
-                                <thead><tr>
-                                    <th>Student</th><th>Level</th>
-                                    <th><KH>និយាយ</KH></th><th><KH>ស្ដាប់</KH></th><th><KH>អាន</KH></th><th><KH>សរសេរ</KH></th>
-                                    <th>Average</th>
-                                </tr></thead>
+                                <thead>
+                                    <tr>
+                                        <th>Student</th>
+                                        <th>Level</th>
+                                        <th>
+                                            <KH>និយាយ</KH>
+                                        </th>
+                                        <th>
+                                            <KH>ស្ដាប់</KH>
+                                        </th>
+                                        <th>
+                                            <KH>អាន</KH>
+                                        </th>
+                                        <th>
+                                            <KH>សរសេរ</KH>
+                                        </th>
+                                        <th>Average</th>
+                                    </tr>
+                                </thead>
                                 <tbody>
-                                    {[...STUDENTS].sort((a, b) => avg(b) - avg(a)).map(s => (
-                                        <tr key={s.id}>
-                                            <td><div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-                                                <Avatar name={s.nameEn} size={30} />
-                                                <div><KH style={{ fontWeight: 700, fontSize: 12, display: 'block' }}>{s.nameKh}</KH><div style={{ fontSize: 11, color: '#94a3b8' }}>{s.nameEn}</div></div>
-                                            </div></td>
-                                            <td><Badge type="blue">{s.level}</Badge></td>
-                                            <td><ScoreChip score={s.grade.speaking} /></td>
-                                            <td><ScoreChip score={s.grade.listening} /></td>
-                                            <td><ScoreChip score={s.grade.reading} /></td>
-                                            <td><ScoreChip score={s.grade.writing} /></td>
-                                            <td><span style={{ fontWeight: 800, fontSize: 15, color: avg(s) >= 75 ? '#10b981' : avg(s) >= 50 ? '#3b82f6' : '#f59e0b' }}>{avg(s)}</span></td>
-                                        </tr>
-                                    ))}
+                                    {[...grades.students]
+                                        .sort((a, b) => b.average - a.average)
+                                        .map((student) => (
+                                            <tr key={student.id}>
+                                                <td>
+                                                    <div
+                                                        style={{
+                                                            display: 'flex',
+                                                            alignItems:
+                                                                'center',
+                                                            gap: 10,
+                                                        }}
+                                                    >
+                                                        <Avatar
+                                                            name={
+                                                                student.nameEn
+                                                            }
+                                                            src={student.photo}
+                                                            size={30}
+                                                        />
+                                                        <div>
+                                                            <KH
+                                                                style={{
+                                                                    fontWeight: 700,
+                                                                    fontSize: 12,
+                                                                    display:
+                                                                        'block',
+                                                                }}
+                                                            >
+                                                                {student.nameKh}
+                                                            </KH>
+                                                            <div
+                                                                style={{
+                                                                    fontSize: 11,
+                                                                    color: '#94a3b8',
+                                                                }}
+                                                            >
+                                                                {student.nameEn}
+                                                            </div>
+                                                        </div>
+                                                    </div>
+                                                </td>
+                                                <td>
+                                                    <Badge type="blue">
+                                                        {student.level}
+                                                    </Badge>
+                                                </td>
+                                                <td>
+                                                    <ScoreChip
+                                                        score={student.speaking}
+                                                    />
+                                                </td>
+                                                <td>
+                                                    <ScoreChip
+                                                        score={
+                                                            student.listening
+                                                        }
+                                                    />
+                                                </td>
+                                                <td>
+                                                    <ScoreChip
+                                                        score={student.reading}
+                                                    />
+                                                </td>
+                                                <td>
+                                                    <ScoreChip
+                                                        score={student.writing}
+                                                    />
+                                                </td>
+                                                <td>
+                                                    <span
+                                                        style={{
+                                                            fontWeight: 800,
+                                                            fontSize: 15,
+                                                            color: gradeColor(
+                                                                student.average,
+                                                            ),
+                                                        }}
+                                                    >
+                                                        {student.average}
+                                                    </span>
+                                                </td>
+                                            </tr>
+                                        ))}
                                 </tbody>
                             </table>
                         </div>
                     </div>
                 )}
 
-                {/* Fee summary report */}
                 {tab === 'fees' && (
-                    <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
-                        {/* Collection summary */}
-                        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill,minmax(160px,1fr))', gap: 12 }}>
+                    <div
+                        style={{
+                            display: 'flex',
+                            flexDirection: 'column',
+                            gap: 16,
+                        }}
+                    >
+                        <div
+                            style={{
+                                display: 'grid',
+                                gridTemplateColumns:
+                                    'repeat(auto-fill,minmax(160px,1fr))',
+                                gap: 12,
+                            }}
+                        >
                             {[
-                                { lk: 'ប្រមូលបាន', l: 'Collected',   v: `$${totalRevenue}`, c: '#10b981', bg: '#f0fdf4' },
-                                { lk: 'នៅខ្វះ',    l: 'Outstanding', v: `$${unpaidCount * 25}`, c: '#ef4444', bg: '#fff1f2' },
-                                { lk: 'ក្បាលគ្រប',  l: 'Paid',        v: paidCount,          c: '#2563eb', bg: '#eff6ff' },
-                                { lk: 'មិនទាន់',   l: 'Unpaid',      v: unpaidCount,         c: '#f59e0b', bg: '#fffbeb' },
-                            ].map((s, i) => (
-                                <div key={i} style={{ background: s.bg, borderRadius: 14, padding: 16, border: `1px solid ${s.c}30` }}>
-                                    <div style={{ fontSize: 24, fontWeight: 800, color: s.c, marginBottom: 2 }}>{s.v}</div>
-                                    <KH style={{ fontSize: 12, color: s.c, display: 'block', opacity: 0.8 }}>{s.lk}</KH>
-                                    <div style={{ fontSize: 11, color: s.c, opacity: 0.6 }}>{s.l}</div>
+                                {
+                                    lk: 'ប្រមូលបាន',
+                                    l: 'Collected',
+                                    v: money(summary.feesCollected),
+                                    c: '#10b981',
+                                    bg: '#f0fdf4',
+                                },
+                                {
+                                    lk: 'នៅខ្វះ',
+                                    l: 'Outstanding',
+                                    v: money(summary.outstandingFees),
+                                    c: '#ef4444',
+                                    bg: '#fff1f2',
+                                },
+                                {
+                                    lk: 'បានបង់',
+                                    l: 'Paid',
+                                    v: summary.paidCount,
+                                    c: '#2563eb',
+                                    bg: '#eff6ff',
+                                },
+                                {
+                                    lk: 'មិនទាន់',
+                                    l: 'Unpaid',
+                                    v: summary.unpaidCount,
+                                    c: '#f59e0b',
+                                    bg: '#fffbeb',
+                                },
+                            ].map((stat) => (
+                                <div
+                                    key={stat.l}
+                                    style={{
+                                        background: stat.bg,
+                                        borderRadius: 14,
+                                        padding: 16,
+                                        border: `1px solid ${stat.c}30`,
+                                    }}
+                                >
+                                    <div
+                                        style={{
+                                            fontSize: 24,
+                                            fontWeight: 800,
+                                            color: stat.c,
+                                            marginBottom: 2,
+                                        }}
+                                    >
+                                        {stat.v}
+                                    </div>
+                                    <KH
+                                        style={{
+                                            fontSize: 12,
+                                            color: stat.c,
+                                            display: 'block',
+                                            opacity: 0.8,
+                                        }}
+                                    >
+                                        {stat.lk}
+                                    </KH>
+                                    <div
+                                        style={{
+                                            fontSize: 11,
+                                            color: stat.c,
+                                            opacity: 0.6,
+                                        }}
+                                    >
+                                        {stat.l}
+                                    </div>
                                 </div>
                             ))}
                         </div>
 
-                        {/* Payment history */}
                         <div className="card" style={{ overflowX: 'auto' }}>
-                            <div style={{ padding: '16px 20px 0', marginBottom: 4 }}>
-                                <KH style={{ fontWeight: 800, fontSize: 15, display: 'block' }}>ប្រវត្តិការទូទាត់</KH>
-                                <div style={{ fontSize: 12, color: '#94a3b8', marginBottom: 12 }}>Payment History - May 2026</div>
+                            <div
+                                style={{
+                                    padding: '16px 20px 0',
+                                    marginBottom: 4,
+                                }}
+                            >
+                                <KH
+                                    style={{
+                                        fontWeight: 800,
+                                        fontSize: 15,
+                                        display: 'block',
+                                    }}
+                                >
+                                    ប្រវត្តិការទូទាត់
+                                </KH>
+                                <div
+                                    style={{
+                                        fontSize: 12,
+                                        color: '#94a3b8',
+                                        marginBottom: 12,
+                                    }}
+                                >
+                                    Payment History - {reportDate}
+                                </div>
                             </div>
                             <table className="data-table">
-                                <thead><tr><th>Student</th><th>Amount</th><th>Method</th><th>Date</th><th>Status</th></tr></thead>
+                                <thead>
+                                    <tr>
+                                        <th>Student</th>
+                                        <th>Amount</th>
+                                        <th>Method</th>
+                                        <th>Date</th>
+                                        <th>Status</th>
+                                    </tr>
+                                </thead>
                                 <tbody>
-                                    {PAYMENTS.map(p => (
-                                        <tr key={p.id}>
-                                            <td><KH style={{ fontWeight: 700, fontSize: 13 }}>{p.nameKh}</KH><div style={{ fontSize: 11, color: '#94a3b8' }}>{p.nameEn}</div></td>
-                                            <td><span style={{ fontWeight: 700 }}>${p.amount}</span></td>
-                                            <td><Badge type="blue">{p.method}</Badge></td>
-                                            <td style={{ fontSize: 12, color: '#64748b' }}>{p.date}</td>
-                                            <td><Badge type={p.status === 'verified' ? 'green' : p.status === 'pending' ? 'amber' : 'blue'}>
-                                                {p.status === 'verified' ? badgeIcon(CheckCircle2, 'Verified') : p.status === 'pending' ? badgeIcon(Hourglass, 'Pending') : 'Partial'}
-                                            </Badge></td>
+                                    {fees.payments.map((payment) => (
+                                        <tr key={payment.id}>
+                                            <td>
+                                                <KH
+                                                    style={{
+                                                        fontWeight: 700,
+                                                        fontSize: 13,
+                                                    }}
+                                                >
+                                                    {payment.studentNameKh}
+                                                </KH>
+                                                <div
+                                                    style={{
+                                                        fontSize: 11,
+                                                        color: '#94a3b8',
+                                                    }}
+                                                >
+                                                    {payment.studentNameEn}
+                                                </div>
+                                            </td>
+                                            <td>
+                                                <span
+                                                    style={{ fontWeight: 700 }}
+                                                >
+                                                    {money(payment.amount)}
+                                                </span>
+                                            </td>
+                                            <td>
+                                                <Badge type="blue">
+                                                    {payment.method}
+                                                </Badge>
+                                            </td>
+                                            <td
+                                                style={{
+                                                    fontSize: 12,
+                                                    color: '#64748b',
+                                                }}
+                                            >
+                                                {payment.date || '-'}
+                                            </td>
+                                            <td>
+                                                <Badge
+                                                    type={feeBadgeType(
+                                                        payment.status,
+                                                    )}
+                                                >
+                                                    {paymentStatusLabel(
+                                                        payment.status,
+                                                    )}
+                                                </Badge>
+                                            </td>
                                         </tr>
                                     ))}
                                 </tbody>
                             </table>
                         </div>
 
-                        {/* Per-student fee status */}
                         <div className="card" style={{ overflowX: 'auto' }}>
-                            <div style={{ padding: '16px 20px 0', marginBottom: 4 }}>
-                                <KH style={{ fontWeight: 800, fontSize: 15, display: 'block' }}>ស្ថានភាពថ្លៃតាមសិស្ស</KH>
+                            <div
+                                style={{
+                                    padding: '16px 20px 0',
+                                    marginBottom: 4,
+                                }}
+                            >
+                                <KH
+                                    style={{
+                                        fontWeight: 800,
+                                        fontSize: 15,
+                                        display: 'block',
+                                    }}
+                                >
+                                    ស្ថានភាពថ្លៃតាមសិស្ស
+                                </KH>
                             </div>
                             <table className="data-table">
-                                <thead><tr><th>Student</th><th>Level</th><th>Amount</th><th>Status</th></tr></thead>
+                                <thead>
+                                    <tr>
+                                        <th>Student</th>
+                                        <th>Level</th>
+                                        <th>Amount</th>
+                                        <th>Status</th>
+                                    </tr>
+                                </thead>
                                 <tbody>
-                                    {STUDENTS.map(s => (
-                                        <tr key={s.id}>
-                                            <td><div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-                                                <Avatar name={s.nameEn} size={30} />
-                                                <div><KH style={{ fontWeight: 700, fontSize: 13, display: 'block' }}>{s.nameKh}</KH><div style={{ fontSize: 11, color: '#94a3b8' }}>{s.nameEn}</div></div>
-                                            </div></td>
-                                            <td><Badge type="blue">{s.level}</Badge></td>
-                                            <td><span style={{ fontWeight: 700 }}>${s.amt}</span></td>
-                                            <td><Badge type={s.fees === 'Paid' ? 'green' : s.fees === 'Unpaid' ? 'red' : 'amber'}>
-                                                {s.fees === 'Paid' ? badgeIcon(CheckCircle2, 'Paid') : s.fees === 'Unpaid' ? badgeIcon(XCircle, 'Unpaid') : 'Partial'}
-                                            </Badge></td>
+                                    {fees.students.map((student) => (
+                                        <tr key={student.id}>
+                                            <td>
+                                                <div
+                                                    style={{
+                                                        display: 'flex',
+                                                        alignItems: 'center',
+                                                        gap: 10,
+                                                    }}
+                                                >
+                                                    <Avatar
+                                                        name={student.nameEn}
+                                                        src={student.photo}
+                                                        size={30}
+                                                    />
+                                                    <div>
+                                                        <KH
+                                                            style={{
+                                                                fontWeight: 700,
+                                                                fontSize: 13,
+                                                                display:
+                                                                    'block',
+                                                            }}
+                                                        >
+                                                            {student.nameKh}
+                                                        </KH>
+                                                        <div
+                                                            style={{
+                                                                fontSize: 11,
+                                                                color: '#94a3b8',
+                                                            }}
+                                                        >
+                                                            {student.nameEn}
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            </td>
+                                            <td>
+                                                <Badge type="blue">
+                                                    {student.level}
+                                                </Badge>
+                                            </td>
+                                            <td>
+                                                <span
+                                                    style={{ fontWeight: 700 }}
+                                                >
+                                                    {money(student.amount)}
+                                                </span>
+                                            </td>
+                                            <td>
+                                                <Badge
+                                                    type={feeBadgeType(
+                                                        student.status,
+                                                    )}
+                                                >
+                                                    {student.status === 'paid'
+                                                        ? badgeIcon(
+                                                              CheckCircle2,
+                                                              'Paid',
+                                                          )
+                                                        : student.status ===
+                                                            'unpaid'
+                                                          ? badgeIcon(
+                                                                XCircle,
+                                                                'Unpaid',
+                                                            )
+                                                          : 'Partial'}
+                                                </Badge>
+                                            </td>
                                         </tr>
                                     ))}
                                 </tbody>
@@ -280,6 +1192,3 @@ export default function ReportsPage() {
         </AdminShell>
     );
 }
-
-
-

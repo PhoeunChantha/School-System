@@ -1,4 +1,8 @@
-﻿import { destroy, store, update } from '@/actions/App/Http/Controllers/Backends/ActivityLogController';
+﻿import {
+    destroy,
+    store,
+    update,
+} from '@/actions/App/Http/Controllers/Backends/ActivityLogController';
 import {
     Sheet,
     SheetContent,
@@ -7,11 +11,18 @@ import {
     SheetTitle,
 } from '@/components/ui/sheet';
 import AdminShell from '@/pages/admin/shell';
-import { AdminSelect, Avatar, Badge, KH, Pagination, RowActions } from '@/pages/admin/ui';
+import {
+    AdminSelect,
+    Avatar,
+    Badge,
+    KH,
+    Pagination,
+    RowActions,
+} from '@/pages/admin/ui';
 import { router, useForm } from '@inertiajs/react';
-import { Edit3, Plus, Trash2 } from 'lucide-react';
-import { FormEvent, useEffect, useMemo, useState } from 'react';
+import { Edit3, Eye, Plus, Trash2 } from 'lucide-react';
 import type { CSSProperties, ReactNode } from 'react';
+import { FormEvent, useEffect, useMemo, useState } from 'react';
 import { toast } from 'sonner';
 
 interface ActivityLogItem {
@@ -68,7 +79,9 @@ const emptyForm: ActivityLogFormData = {
     user_agent: '',
 };
 
-function eventBadge(event: string): 'green' | 'red' | 'amber' | 'blue' | 'purple' | 'gray' {
+function eventBadge(
+    event: string,
+): 'green' | 'red' | 'amber' | 'blue' | 'purple' | 'gray' {
     if (event.includes('deleted')) return 'red';
     if (event.includes('updated')) return 'amber';
     if (event.includes('created')) return 'green';
@@ -77,7 +90,12 @@ function eventBadge(event: string): 'green' | 'red' | 'amber' | 'blue' | 'purple
     return 'gray';
 }
 
-export default function ActivityLogsPage({ logs, users, events, summary }: ActivityLogsPageProps) {
+export default function ActivityLogsPage({
+    logs,
+    users,
+    events,
+    summary,
+}: ActivityLogsPageProps) {
     const [selectedEvent, setSelectedEvent] = useState<string>('all');
     const [selectedUser, setSelectedUser] = useState<number | 'all'>('all');
     const [search, setSearch] = useState('');
@@ -85,26 +103,36 @@ export default function ActivityLogsPage({ logs, users, events, summary }: Activ
     const [perPage, setPerPage] = useState(5);
     const [drawerMode, setDrawerMode] = useState<DrawerMode | null>(null);
     const [editingLog, setEditingLog] = useState<ActivityLogItem | null>(null);
-    const [deleteTarget, setDeleteTarget] = useState<ActivityLogItem | null>(null);
+    const [viewingLog, setViewingLog] = useState<ActivityLogItem | null>(null);
+    const [deleteTarget, setDeleteTarget] = useState<ActivityLogItem | null>(
+        null,
+    );
 
-    const { data, setData, post, put, processing, errors, reset } = useForm<ActivityLogFormData>(emptyForm);
+    const { data, setData, post, put, processing, errors, reset } =
+        useForm<ActivityLogFormData>(emptyForm);
 
-    useEffect(() => { setPage(1); }, [selectedEvent, selectedUser, search, perPage]);
+    useEffect(() => {
+        setPage(1);
+    }, [selectedEvent, selectedUser, search, perPage]);
 
     const filtered = useMemo(
-        () => logs.filter(log => {
-            const eventMatches = selectedEvent === 'all' || log.event === selectedEvent;
-            const userMatches = selectedUser === 'all' || log.userId === selectedUser;
-            const query = search.toLowerCase();
-            const searchMatches = !query
-                || log.userName.toLowerCase().includes(query)
-                || log.userEmail.toLowerCase().includes(query)
-                || log.event.toLowerCase().includes(query)
-                || log.description.toLowerCase().includes(query)
-                || log.ipAddress.toLowerCase().includes(query);
+        () =>
+            logs.filter((log) => {
+                const eventMatches =
+                    selectedEvent === 'all' || log.event === selectedEvent;
+                const userMatches =
+                    selectedUser === 'all' || log.userId === selectedUser;
+                const query = search.toLowerCase();
+                const searchMatches =
+                    !query ||
+                    log.userName.toLowerCase().includes(query) ||
+                    log.userEmail.toLowerCase().includes(query) ||
+                    log.event.toLowerCase().includes(query) ||
+                    log.description.toLowerCase().includes(query) ||
+                    log.ipAddress.toLowerCase().includes(query);
 
-            return eventMatches && userMatches && searchMatches;
-        }),
+                return eventMatches && userMatches && searchMatches;
+            }),
         [logs, selectedEvent, selectedUser, search],
     );
 
@@ -149,13 +177,20 @@ export default function ActivityLogsPage({ logs, users, events, summary }: Activ
         const options = {
             preserveScroll: true,
             onSuccess: () => {
-                toast.success(drawerMode === 'edit' ? 'Activity log updated.' : 'Activity log created.');
+                toast.success(
+                    drawerMode === 'edit'
+                        ? 'Activity log updated.'
+                        : 'Activity log created.',
+                );
                 closeDrawer();
             },
         };
 
         if (drawerMode === 'edit' && editingLog) {
-            put(update.url((editingLog.routeKey ?? editingLog.id) as never), options);
+            put(
+                update.url((editingLog.routeKey ?? editingLog.id) as never),
+                options,
+            );
             return;
         }
 
@@ -167,22 +202,57 @@ export default function ActivityLogsPage({ logs, users, events, summary }: Activ
             return;
         }
 
-        router.delete(destroy.url((deleteTarget.routeKey ?? deleteTarget.id) as never), {
-            preserveScroll: true,
-            onSuccess: () => {
-                toast.success('Activity log deleted.');
-                setDeleteTarget(null);
+        router.delete(
+            destroy.url((deleteTarget.routeKey ?? deleteTarget.id) as never),
+            {
+                preserveScroll: true,
+                onSuccess: () => {
+                    toast.success('Activity log deleted.');
+                    setDeleteTarget(null);
+                },
             },
-        });
+        );
     };
 
     return (
         <AdminShell>
-            <div className="fade-in" style={{ padding: 24, display: 'flex', flexDirection: 'column', gap: 16 }}>
-                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 12 }}>
+            <div
+                className="fade-in"
+                style={{
+                    padding: 24,
+                    display: 'flex',
+                    flexDirection: 'column',
+                    gap: 16,
+                }}
+            >
+                <div
+                    style={{
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'space-between',
+                        flexWrap: 'wrap',
+                        gap: 12,
+                    }}
+                >
                     <div>
-                        <div style={{ fontWeight: 800, fontSize: 18, color: '#1e293b' }}>Activity Logs</div>
-                        <KH style={{ fontSize: 12, color: '#94a3b8', display: 'block' }}>កំណត់ត្រាសកម្មភាព - Audit system activity</KH>
+                        <div
+                            style={{
+                                fontWeight: 800,
+                                fontSize: 18,
+                                color: '#1e293b',
+                            }}
+                        >
+                            Activity Logs
+                        </div>
+                        <KH
+                            style={{
+                                fontSize: 12,
+                                color: '#94a3b8',
+                                display: 'block',
+                            }}
+                        >
+                            កំណត់ត្រាសកម្មភាព - Audit system activity
+                        </KH>
                     </div>
                     <button onClick={openCreateDrawer} style={primaryButton}>
                         <Plus size={16} />
@@ -190,50 +260,136 @@ export default function ActivityLogsPage({ logs, users, events, summary }: Activ
                     </button>
                 </div>
 
-                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill,minmax(150px,1fr))', gap: 12 }}>
+                <div
+                    style={{
+                        display: 'grid',
+                        gridTemplateColumns:
+                            'repeat(auto-fill,minmax(150px,1fr))',
+                        gap: 12,
+                    }}
+                >
                     {[
-                        { label: 'Logs', value: summary.logCount, color: '#3b82f6', bg: '#eff6ff' },
-                        { label: 'Users', value: summary.userCount, color: '#10b981', bg: '#f0fdf4' },
-                        { label: 'Events', value: summary.eventCount, color: '#f59e0b', bg: '#fffbeb' },
-                        { label: 'Manual', value: summary.manualCount, color: '#7c3aed', bg: '#f5f3ff' },
-                    ].map(card => (
-                        <div key={card.label} style={{ background: card.bg, border: `1px solid ${card.color}30`, borderRadius: 14, padding: 16 }}>
-                            <div style={{ color: card.color, fontSize: 24, fontWeight: 900 }}>{card.value}</div>
-                            <div style={{ color: card.color, opacity: 0.72, fontSize: 11 }}>{card.label}</div>
+                        {
+                            label: 'Logs',
+                            value: summary.logCount,
+                            color: '#3b82f6',
+                            bg: '#eff6ff',
+                        },
+                        {
+                            label: 'Users',
+                            value: summary.userCount,
+                            color: '#10b981',
+                            bg: '#f0fdf4',
+                        },
+                        {
+                            label: 'Events',
+                            value: summary.eventCount,
+                            color: '#f59e0b',
+                            bg: '#fffbeb',
+                        },
+                        {
+                            label: 'Manual',
+                            value: summary.manualCount,
+                            color: '#7c3aed',
+                            bg: '#f5f3ff',
+                        },
+                    ].map((card) => (
+                        <div
+                            key={card.label}
+                            style={{
+                                background: card.bg,
+                                border: `1px solid ${card.color}30`,
+                                borderRadius: 14,
+                                padding: 16,
+                            }}
+                        >
+                            <div
+                                style={{
+                                    color: card.color,
+                                    fontSize: 24,
+                                    fontWeight: 900,
+                                }}
+                            >
+                                {card.value}
+                            </div>
+                            <div
+                                style={{
+                                    color: card.color,
+                                    opacity: 0.72,
+                                    fontSize: 11,
+                                }}
+                            >
+                                {card.label}
+                            </div>
                         </div>
                     ))}
                 </div>
 
                 <div className="card" style={{ overflowX: 'auto' }}>
-                    <div style={{ padding: '12px 16px', borderBottom: '1px solid #f1f5f9', display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap' }}>
+                    <div
+                        style={{
+                            padding: '12px 16px',
+                            borderBottom: '1px solid #f1f5f9',
+                            display: 'flex',
+                            alignItems: 'center',
+                            gap: 10,
+                            flexWrap: 'wrap',
+                        }}
+                    >
                         <AdminSelect
                             value={selectedEvent}
                             onChange={setSelectedEvent}
-                            options={[{ value: 'all', label: 'All events' }, ...events.map(event => ({ value: event, label: event }))]}
+                            options={[
+                                { value: 'all', label: 'All events' },
+                                ...events.map((event) => ({
+                                    value: event,
+                                    label: event,
+                                })),
+                            ]}
                             style={{ minWidth: 150 }}
                             triggerClassName="f-input h-9 min-h-9 px-3 py-1 text-xs font-extrabold"
                         />
                         <AdminSelect
                             value={String(selectedUser)}
-                            onChange={value => setSelectedUser(value === 'all' ? 'all' : Number(value))}
-                            options={[{ value: 'all', label: 'All users' }, ...users.map(user => ({ value: String(user.id), label: user.name }))]}
+                            onChange={(value) =>
+                                setSelectedUser(
+                                    value === 'all' ? 'all' : Number(value),
+                                )
+                            }
+                            options={[
+                                { value: 'all', label: 'All users' },
+                                ...users.map((user) => ({
+                                    value: String(user.id),
+                                    label: user.name,
+                                })),
+                            ]}
                             style={{ minWidth: 150 }}
                             triggerClassName="f-input h-9 min-h-9 px-3 py-1 text-xs font-extrabold"
                         />
                         <AdminSelect
                             value={perPage.toString()}
-                            onChange={value => setPerPage(Number(value))}
-                            options={[5, 10, 25, 50].map(size => ({ value: size.toString(), label: `${size} per page` }))}
+                            onChange={(value) => setPerPage(Number(value))}
+                            options={[5, 10, 25, 50].map((size) => ({
+                                value: size.toString(),
+                                label: `${size} per page`,
+                            }))}
                             style={{ minWidth: 130 }}
                             triggerClassName="f-input h-9 min-h-9 px-3 py-1 text-xs font-extrabold"
                         />
-                        <span style={{ fontSize: 11, color: '#94a3b8' }}>{filtered.length} result{filtered.length !== 1 ? 's' : ''}</span>
+                        <span style={{ fontSize: 11, color: '#94a3b8' }}>
+                            {filtered.length} result
+                            {filtered.length !== 1 ? 's' : ''}
+                        </span>
                         <input
                             value={search}
-                            onChange={event => setSearch(event.target.value)}
+                            onChange={(event) => setSearch(event.target.value)}
                             className="f-input"
                             placeholder="Search activity logs..."
-                            style={{ width: 260, maxWidth: '100%', marginLeft: 'auto' }}
+                            style={{
+                                width: 260,
+                                maxWidth: '100%',
+                                marginLeft: 'auto',
+                            }}
                         />
                     </div>
 
@@ -251,44 +407,165 @@ export default function ActivityLogsPage({ logs, users, events, summary }: Activ
                         <tbody>
                             {paginated.length === 0 ? (
                                 <tr>
-                                    <td colSpan={6} style={{ padding: '38px 24px', textAlign: 'center', color: '#64748b', fontSize: 14, fontWeight: 700 }}>
-                                        {search ? <>No activity logs found for <strong>"{search}"</strong></> : 'No activity logs found'}
+                                    <td
+                                        colSpan={6}
+                                        style={{
+                                            padding: '38px 24px',
+                                            textAlign: 'center',
+                                            color: '#64748b',
+                                            fontSize: 14,
+                                            fontWeight: 700,
+                                        }}
+                                    >
+                                        {search ? (
+                                            <>
+                                                No activity logs found for{' '}
+                                                <strong>"{search}"</strong>
+                                            </>
+                                        ) : (
+                                            'No activity logs found'
+                                        )}
                                     </td>
                                 </tr>
-                            ) : paginated.map(log => (
-                                <tr key={log.id}>
-                                    <td>
-                                        {log.userName ? (
-                                            <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-                                                <Avatar name={log.userName} size={34} />
-                                                <div>
-                                                    <div style={{ fontWeight: 800, fontSize: 13, color: '#1e293b' }}>{log.userName}</div>
-                                                    <div style={{ fontSize: 11, color: '#94a3b8' }}>{log.userEmail}</div>
+                            ) : (
+                                paginated.map((log) => (
+                                    <tr key={log.id}>
+                                        <td>
+                                            {log.userName ? (
+                                                <div
+                                                    style={{
+                                                        display: 'flex',
+                                                        alignItems: 'center',
+                                                        gap: 10,
+                                                    }}
+                                                >
+                                                    <Avatar
+                                                        name={log.userName}
+                                                        size={34}
+                                                    />
+                                                    <div>
+                                                        <div
+                                                            style={{
+                                                                fontWeight: 800,
+                                                                fontSize: 13,
+                                                                color: '#1e293b',
+                                                            }}
+                                                        >
+                                                            {log.userName}
+                                                        </div>
+                                                        <div
+                                                            style={{
+                                                                fontSize: 11,
+                                                                color: '#94a3b8',
+                                                            }}
+                                                        >
+                                                            {log.userEmail}
+                                                        </div>
+                                                    </div>
                                                 </div>
+                                            ) : (
+                                                <span
+                                                    style={{
+                                                        color: '#94a3b8',
+                                                        fontSize: 12,
+                                                    }}
+                                                >
+                                                    System
+                                                </span>
+                                            )}
+                                        </td>
+                                        <td>
+                                            <Badge type={eventBadge(log.event)}>
+                                                {log.event}
+                                            </Badge>
+                                        </td>
+                                        <td style={{ maxWidth: 360 }}>
+                                            <div
+                                                style={{
+                                                    fontSize: 13,
+                                                    color: '#374151',
+                                                    fontWeight: 700,
+                                                }}
+                                            >
+                                                {log.description || '-'}
                                             </div>
-                                        ) : <span style={{ color: '#94a3b8', fontSize: 12 }}>System</span>}
-                                    </td>
-                                    <td><Badge type={eventBadge(log.event)}>{log.event}</Badge></td>
-                                    <td style={{ maxWidth: 360 }}>
-                                        <div style={{ fontSize: 13, color: '#374151', fontWeight: 700 }}>{log.description || '-'}</div>
-                                        <div style={{ fontSize: 11, color: '#94a3b8', marginTop: 3 }}>{Object.keys(log.properties ?? {}).length} properties</div>
-                                    </td>
-                                    <td style={{ fontSize: 12, color: '#64748b' }}>{log.ipAddress || '-'}</td>
-                                    <td>
-                                        <div style={{ fontSize: 12, color: '#1e293b', fontWeight: 800 }}>{log.time}</div>
-                                        <div style={{ fontSize: 11, color: '#94a3b8' }}>{log.createdAt}</div>
-                                    </td>
-                                    <td>
-                                        <RowActions
-                                            ariaLabel={`Actions for ${log.event} log`}
-                                            actions={[
-                                                { key: 'edit', label: 'Edit', icon: Edit3, onSelect: () => openEditDrawer(log) },
-                                                { key: 'delete', label: 'Delete', icon: Trash2, onSelect: () => setDeleteTarget(log), variant: 'destructive', separatorBefore: true },
-                                            ]}
-                                        />
-                                    </td>
-                                </tr>
-                            ))}
+                                            <div
+                                                style={{
+                                                    fontSize: 11,
+                                                    color: '#94a3b8',
+                                                    marginTop: 3,
+                                                }}
+                                            >
+                                                {
+                                                    Object.keys(
+                                                        log.properties ?? {},
+                                                    ).length
+                                                }{' '}
+                                                properties
+                                            </div>
+                                        </td>
+                                        <td
+                                            style={{
+                                                fontSize: 12,
+                                                color: '#64748b',
+                                            }}
+                                        >
+                                            {log.ipAddress || '-'}
+                                        </td>
+                                        <td>
+                                            <div
+                                                style={{
+                                                    fontSize: 12,
+                                                    color: '#1e293b',
+                                                    fontWeight: 800,
+                                                }}
+                                            >
+                                                {log.time}
+                                            </div>
+                                            <div
+                                                style={{
+                                                    fontSize: 11,
+                                                    color: '#94a3b8',
+                                                }}
+                                            >
+                                                {log.createdAt}
+                                            </div>
+                                        </td>
+                                        <td>
+                                            <RowActions
+                                                ariaLabel={`Actions for ${log.event} log`}
+                                                actions={[
+                                                    {
+                                                        key: 'view',
+                                                        label: 'View',
+                                                        icon: Eye,
+                                                        onSelect: () =>
+                                                            setViewingLog(log),
+                                                    },
+                                                    {
+                                                        key: 'edit',
+                                                        label: 'Edit',
+                                                        icon: Edit3,
+                                                        onSelect: () =>
+                                                            openEditDrawer(log),
+                                                    },
+                                                    {
+                                                        key: 'delete',
+                                                        label: 'Delete',
+                                                        icon: Trash2,
+                                                        onSelect: () =>
+                                                            setDeleteTarget(
+                                                                log,
+                                                            ),
+                                                        variant: 'destructive',
+                                                        separatorBefore: true,
+                                                    },
+                                                ]}
+                                            />
+                                        </td>
+                                    </tr>
+                                ))
+                            )}
                         </tbody>
                     </table>
                     {filtered.length > 0 && (
@@ -304,48 +581,193 @@ export default function ActivityLogsPage({ logs, users, events, summary }: Activ
                 </div>
             </div>
 
-            <Sheet open={drawerMode !== null} onOpenChange={(open) => { if (!open) closeDrawer(); }}>
-                <SheetContent side="right" className="w-full gap-0 overflow-y-auto p-0 sm:max-w-[520px]">
+            <Sheet
+                open={drawerMode !== null}
+                onOpenChange={(open) => {
+                    if (!open) closeDrawer();
+                }}
+            >
+                <SheetContent
+                    side="right"
+                    className="w-full gap-0 overflow-y-auto p-0 sm:max-w-[520px]"
+                >
                     {drawerMode && (
-                        <form onSubmit={submitLog} className="flex min-h-full flex-col bg-white">
+                        <form
+                            onSubmit={submitLog}
+                            className="flex min-h-full flex-col bg-white"
+                        >
                             <SheetHeader className="border-b border-slate-200 px-6 py-5 text-left">
                                 <SheetTitle className="text-lg font-black text-slate-800">
-                                    {drawerMode === 'create' ? 'Add Activity Log' : 'Edit Activity Log'}
+                                    {drawerMode === 'create'
+                                        ? 'Add Activity Log'
+                                        : 'Edit Activity Log'}
                                 </SheetTitle>
                                 <SheetDescription>
-                                    {drawerMode === 'create' ? 'Create a manual audit entry' : editingLog?.event}
+                                    {drawerMode === 'create'
+                                        ? 'Create a manual audit entry'
+                                        : editingLog?.event}
                                 </SheetDescription>
                             </SheetHeader>
 
-                            <div style={{ padding: 24, display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16 }}>
+                            <div
+                                style={{
+                                    padding: 24,
+                                    display: 'grid',
+                                    gridTemplateColumns: '1fr 1fr',
+                                    gap: 16,
+                                }}
+                            >
                                 <Field label="User" error={errors.user_id} wide>
                                     <AdminSelect
-                                        value={data.user_id ? String(data.user_id) : 'system'}
-                                        onChange={value => setData('user_id', value === 'system' ? null : Number(value))}
-                                        options={[{ value: 'system', label: 'System' }, ...users.map(user => ({ value: String(user.id), label: user.name }))]}
+                                        value={
+                                            data.user_id
+                                                ? String(data.user_id)
+                                                : 'system'
+                                        }
+                                        onChange={(value) =>
+                                            setData(
+                                                'user_id',
+                                                value === 'system'
+                                                    ? null
+                                                    : Number(value),
+                                            )
+                                        }
+                                        options={[
+                                            {
+                                                value: 'system',
+                                                label: 'System',
+                                            },
+                                            ...users.map((user) => ({
+                                                value: String(user.id),
+                                                label: user.name,
+                                            })),
+                                        ]}
                                     />
                                 </Field>
                                 <Field label="Event" error={errors.event}>
-                                    <input style={fieldStyle} value={data.event} onChange={event => setData('event', event.target.value)} />
+                                    <input
+                                        style={fieldStyle}
+                                        value={data.event}
+                                        onChange={(event) =>
+                                            setData('event', event.target.value)
+                                        }
+                                    />
                                 </Field>
-                                <Field label="IP Address" error={errors.ip_address}>
-                                    <input style={fieldStyle} value={data.ip_address} onChange={event => setData('ip_address', event.target.value)} />
+                                <Field
+                                    label="IP Address"
+                                    error={errors.ip_address}
+                                >
+                                    <input
+                                        style={fieldStyle}
+                                        value={data.ip_address}
+                                        onChange={(event) =>
+                                            setData(
+                                                'ip_address',
+                                                event.target.value,
+                                            )
+                                        }
+                                    />
                                 </Field>
-                                <Field label="Description" error={errors.description} wide>
-                                    <textarea style={{ ...fieldStyle, minHeight: 105, resize: 'vertical' }} value={data.description} onChange={event => setData('description', event.target.value)} />
+                                <Field
+                                    label="Description"
+                                    error={errors.description}
+                                    wide
+                                >
+                                    <textarea
+                                        style={{
+                                            ...fieldStyle,
+                                            minHeight: 105,
+                                            resize: 'vertical',
+                                        }}
+                                        value={data.description}
+                                        onChange={(event) =>
+                                            setData(
+                                                'description',
+                                                event.target.value,
+                                            )
+                                        }
+                                    />
                                 </Field>
                                 <Field label="Property: source" wide>
-                                    <input style={fieldStyle} value={data.properties.source ?? ''} onChange={event => setData('properties', { ...data.properties, source: event.target.value })} />
+                                    <input
+                                        style={fieldStyle}
+                                        value={data.properties.source ?? ''}
+                                        onChange={(event) =>
+                                            setData('properties', {
+                                                ...data.properties,
+                                                source: event.target.value,
+                                            })
+                                        }
+                                    />
                                 </Field>
-                                <Field label="User Agent" error={errors.user_agent} wide>
-                                    <textarea style={{ ...fieldStyle, minHeight: 90, resize: 'vertical' }} value={data.user_agent} onChange={event => setData('user_agent', event.target.value)} />
+                                <Field
+                                    label="User Agent"
+                                    error={errors.user_agent}
+                                    wide
+                                >
+                                    <textarea
+                                        style={{
+                                            ...fieldStyle,
+                                            minHeight: 90,
+                                            resize: 'vertical',
+                                        }}
+                                        value={data.user_agent}
+                                        onChange={(event) =>
+                                            setData(
+                                                'user_agent',
+                                                event.target.value,
+                                            )
+                                        }
+                                    />
                                 </Field>
                             </div>
 
-                            <div style={{ marginTop: 'auto', padding: 24, borderTop: '1px solid #e2e8f0', display: 'flex', gap: 10 }}>
-                                <button type="button" onClick={closeDrawer} style={{ flex: 1, background: '#f1f5f9', color: '#64748b', border: 'none', borderRadius: 10, padding: '12px', fontWeight: 800, cursor: 'pointer' }}>Cancel</button>
-                                <button disabled={processing} type="submit" style={{ flex: 2, background: processing ? '#93c5fd' : '#2563eb', color: 'white', border: 'none', borderRadius: 10, padding: '12px', fontWeight: 800, cursor: processing ? 'default' : 'pointer' }}>
-                                    {drawerMode === 'create' ? 'Save Log' : 'Save Changes'}
+                            <div
+                                style={{
+                                    marginTop: 'auto',
+                                    padding: 24,
+                                    borderTop: '1px solid #e2e8f0',
+                                    display: 'flex',
+                                    gap: 10,
+                                }}
+                            >
+                                <button
+                                    type="button"
+                                    onClick={closeDrawer}
+                                    style={{
+                                        flex: 1,
+                                        background: '#f1f5f9',
+                                        color: '#64748b',
+                                        border: 'none',
+                                        borderRadius: 10,
+                                        padding: '12px',
+                                        fontWeight: 800,
+                                        cursor: 'pointer',
+                                    }}
+                                >
+                                    Cancel
+                                </button>
+                                <button
+                                    disabled={processing}
+                                    type="submit"
+                                    style={{
+                                        flex: 2,
+                                        background: processing
+                                            ? '#93c5fd'
+                                            : '#2563eb',
+                                        color: 'white',
+                                        border: 'none',
+                                        borderRadius: 10,
+                                        padding: '12px',
+                                        fontWeight: 800,
+                                        cursor: processing
+                                            ? 'default'
+                                            : 'pointer',
+                                    }}
+                                >
+                                    {drawerMode === 'create'
+                                        ? 'Save Log'
+                                        : 'Save Changes'}
                                 </button>
                             </div>
                         </form>
@@ -353,16 +775,213 @@ export default function ActivityLogsPage({ logs, users, events, summary }: Activ
                 </SheetContent>
             </Sheet>
 
+            <Sheet
+                open={viewingLog !== null}
+                onOpenChange={(open) => {
+                    if (!open) setViewingLog(null);
+                }}
+            >
+                <SheetContent
+                    side="right"
+                    className="w-full gap-0 overflow-y-auto p-0 sm:max-w-[560px]"
+                >
+                    {viewingLog && (
+                        <div className="flex min-h-full flex-col bg-white">
+                            <SheetHeader className="border-b border-slate-200 px-6 py-5 text-left">
+                                <div className="mb-3 flex items-center gap-3">
+                                    <span className="inline-flex h-11 w-11 items-center justify-center rounded-2xl bg-blue-50 text-blue-600">
+                                        <Eye size={20} />
+                                    </span>
+                                    <div>
+                                        <SheetTitle className="text-lg font-black text-slate-800">
+                                            Activity Detail
+                                        </SheetTitle>
+                                        <SheetDescription>
+                                            {viewingLog.createdAt}
+                                        </SheetDescription>
+                                    </div>
+                                </div>
+                                <div className="flex flex-wrap items-center gap-2">
+                                    <Badge type={eventBadge(viewingLog.event)}>
+                                        {viewingLog.event}
+                                    </Badge>
+                                    <span className="rounded-full bg-slate-100 px-3 py-1 text-xs font-bold text-slate-500">
+                                        {viewingLog.time}
+                                    </span>
+                                </div>
+                            </SheetHeader>
+
+                            <div className="grid gap-4 px-6 py-5">
+                                <section className="rounded-2xl border border-slate-200 bg-slate-50 p-4">
+                                    <div className="mb-3 text-xs font-black tracking-[0.14em] text-slate-400 uppercase">
+                                        Actor
+                                    </div>
+                                    {viewingLog.userName ? (
+                                        <div className="flex items-center gap-3">
+                                            <Avatar
+                                                name={viewingLog.userName}
+                                                size={42}
+                                            />
+                                            <div>
+                                                <div className="text-sm font-black text-slate-800">
+                                                    {viewingLog.userName}
+                                                </div>
+                                                <div className="text-xs font-semibold text-slate-400">
+                                                    {viewingLog.userEmail}
+                                                </div>
+                                            </div>
+                                        </div>
+                                    ) : (
+                                        <div className="text-sm font-bold text-slate-500">
+                                            System
+                                        </div>
+                                    )}
+                                </section>
+
+                                <section className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
+                                    <div className="mb-2 text-xs font-black tracking-[0.14em] text-slate-400 uppercase">
+                                        Description
+                                    </div>
+                                    <p className="text-sm leading-6 font-bold text-slate-800">
+                                        {viewingLog.description || '-'}
+                                    </p>
+                                </section>
+
+                                <div className="grid gap-3 sm:grid-cols-2">
+                                    <DetailField
+                                        label="IP Address"
+                                        value={viewingLog.ipAddress || '-'}
+                                    />
+                                    <DetailField
+                                        label="Created At"
+                                        value={viewingLog.createdAt || '-'}
+                                    />
+                                </div>
+
+                                <section className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
+                                    <div className="mb-3 text-xs font-black tracking-[0.14em] text-slate-400 uppercase">
+                                        Properties
+                                    </div>
+                                    {Object.keys(viewingLog.properties ?? {})
+                                        .length === 0 ? (
+                                        <div className="text-sm font-semibold text-slate-400">
+                                            No properties recorded
+                                        </div>
+                                    ) : (
+                                        <div className="grid gap-2">
+                                            {Object.entries(
+                                                viewingLog.properties ?? {},
+                                            ).map(([key, value]) => (
+                                                <div
+                                                    key={key}
+                                                    className="rounded-xl border border-slate-100 bg-slate-50 px-3 py-2"
+                                                >
+                                                    <div className="text-[11px] font-black tracking-[0.12em] text-slate-400 uppercase">
+                                                        {key}
+                                                    </div>
+                                                    <div className="mt-1 text-sm font-bold break-words text-slate-700">
+                                                        {formatPropertyValue(
+                                                            value,
+                                                        )}
+                                                    </div>
+                                                </div>
+                                            ))}
+                                        </div>
+                                    )}
+                                </section>
+
+                                <section className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
+                                    <div className="mb-2 text-xs font-black tracking-[0.14em] text-slate-400 uppercase">
+                                        User Agent
+                                    </div>
+                                    <p className="text-xs leading-5 font-semibold break-words text-slate-500">
+                                        {viewingLog.userAgent || '-'}
+                                    </p>
+                                </section>
+                            </div>
+                        </div>
+                    )}
+                </SheetContent>
+            </Sheet>
+
             {deleteTarget && (
-                <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.45)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 230, padding: 16 }}>
-                    <div style={{ background: 'white', borderRadius: 20, padding: 30, maxWidth: 420, width: '100%', boxShadow: '0 24px 60px rgba(0,0,0,0.15)' }}>
+                <div
+                    style={{
+                        position: 'fixed',
+                        inset: 0,
+                        background: 'rgba(0,0,0,0.45)',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        zIndex: 230,
+                        padding: 16,
+                    }}
+                >
+                    <div
+                        style={{
+                            background: 'white',
+                            borderRadius: 20,
+                            padding: 30,
+                            maxWidth: 420,
+                            width: '100%',
+                            boxShadow: '0 24px 60px rgba(0,0,0,0.15)',
+                        }}
+                    >
                         <div style={{ textAlign: 'center', marginBottom: 20 }}>
-                            <div style={{ fontSize: 18, fontWeight: 800, color: '#1e293b', marginBottom: 6 }}>Delete Activity Log?</div>
-                            <div style={{ fontSize: 13, color: '#64748b', lineHeight: 1.5 }}>Remove <strong>{deleteTarget.event}</strong> log?</div>
+                            <div
+                                style={{
+                                    fontSize: 18,
+                                    fontWeight: 800,
+                                    color: '#1e293b',
+                                    marginBottom: 6,
+                                }}
+                            >
+                                Delete Activity Log?
+                            </div>
+                            <div
+                                style={{
+                                    fontSize: 13,
+                                    color: '#64748b',
+                                    lineHeight: 1.5,
+                                }}
+                            >
+                                Remove <strong>{deleteTarget.event}</strong>{' '}
+                                log?
+                            </div>
                         </div>
                         <div style={{ display: 'flex', gap: 10 }}>
-                            <button onClick={() => setDeleteTarget(null)} style={{ flex: 1, background: '#f1f5f9', color: '#64748b', border: 'none', borderRadius: 10, padding: '11px', fontWeight: 700, cursor: 'pointer', fontSize: 14 }}>Cancel</button>
-                            <button onClick={confirmDelete} style={{ flex: 1, background: '#ef4444', color: 'white', border: 'none', borderRadius: 10, padding: '11px', fontWeight: 700, cursor: 'pointer', fontSize: 14 }}>Delete</button>
+                            <button
+                                onClick={() => setDeleteTarget(null)}
+                                style={{
+                                    flex: 1,
+                                    background: '#f1f5f9',
+                                    color: '#64748b',
+                                    border: 'none',
+                                    borderRadius: 10,
+                                    padding: '11px',
+                                    fontWeight: 700,
+                                    cursor: 'pointer',
+                                    fontSize: 14,
+                                }}
+                            >
+                                Cancel
+                            </button>
+                            <button
+                                onClick={confirmDelete}
+                                style={{
+                                    flex: 1,
+                                    background: '#ef4444',
+                                    color: 'white',
+                                    border: 'none',
+                                    borderRadius: 10,
+                                    padding: '11px',
+                                    fontWeight: 700,
+                                    cursor: 'pointer',
+                                    fontSize: 14,
+                                }}
+                            >
+                                Delete
+                            </button>
                         </div>
                     </div>
                 </div>
@@ -371,10 +990,55 @@ export default function ActivityLogsPage({ logs, users, events, summary }: Activ
     );
 }
 
-function Field({ label, error, children, wide = false }: { label: string; error?: string; children: ReactNode; wide?: boolean }) {
+function DetailField({ label, value }: { label: string; value: string }) {
+    return (
+        <div className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
+            <div className="mb-2 text-xs font-black tracking-[0.14em] text-slate-400 uppercase">
+                {label}
+            </div>
+            <div className="text-sm font-bold break-words text-slate-800">
+                {value}
+            </div>
+        </div>
+    );
+}
+
+function formatPropertyValue(value: unknown): string {
+    if (value === null || value === undefined || value === '') {
+        return '-';
+    }
+
+    if (typeof value === 'object') {
+        return JSON.stringify(value, null, 2);
+    }
+
+    return String(value);
+}
+
+function Field({
+    label,
+    error,
+    children,
+    wide = false,
+}: {
+    label: string;
+    error?: string;
+    children: ReactNode;
+    wide?: boolean;
+}) {
     return (
         <div style={{ gridColumn: wide ? '1 / -1' : undefined }}>
-            <label style={{ display: 'block', fontSize: 12, fontWeight: 800, color: '#64748b', marginBottom: 6 }}>{label}</label>
+            <label
+                style={{
+                    display: 'block',
+                    fontSize: 12,
+                    fontWeight: 800,
+                    color: '#64748b',
+                    marginBottom: 6,
+                }}
+            >
+                {label}
+            </label>
             {children}
             {error && <div className="field-error">{error}</div>}
         </div>
@@ -406,6 +1070,3 @@ const fieldStyle: CSSProperties = {
     color: '#1e293b',
     outline: 'none',
 };
-
-
-

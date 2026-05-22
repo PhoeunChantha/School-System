@@ -37,8 +37,8 @@ import {
     Moon,
     NotebookPen,
     PanelLeftClose,
-    Receipt,
     PanelLeftOpen,
+    Receipt,
     School,
     ScrollText,
     Send,
@@ -610,7 +610,11 @@ export default function AdminShell({ children }: AdminShellProps) {
                             gap: 10,
                         }}
                     >
-                        <Avatar name={user?.name ?? 'Admin'} size={32} />
+                        <Avatar
+                            name={user?.name ?? 'Admin'}
+                            src={user?.avatar}
+                            size={32}
+                        />
                         {!collapsed && (
                             <div style={{ minWidth: 0 }}>
                                 <div
@@ -805,6 +809,7 @@ export default function AdminShell({ children }: AdminShellProps) {
                             >
                                 <Avatar
                                     name={user?.name ?? 'Admin'}
+                                    src={user?.avatar}
                                     size={34}
                                 />
                                 <div
@@ -844,6 +849,7 @@ export default function AdminShell({ children }: AdminShellProps) {
                                 <div className="flex items-center gap-2 px-2 py-2">
                                     <Avatar
                                         name={user?.name ?? 'Admin'}
+                                        src={user?.avatar}
                                         size={32}
                                     />
                                     <div style={{ minWidth: 0 }}>
