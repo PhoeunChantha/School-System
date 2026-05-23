@@ -266,6 +266,7 @@ Route::middleware(['auth', 'verified'])->prefix('admin')->name('admin.')->group(
         Route::get('/', [SchoolSettingController::class, 'index'])->can('view', SchoolSetting::class)->name('settings');
         Route::put('/{group}', [SchoolSettingController::class, 'update'])->can('update', SchoolSetting::class)->name('settings.update');
         Route::post('/upload-image', [SchoolSettingController::class, 'uploadImage'])->can('update', SchoolSetting::class)->name('settings.upload-image');
+        Route::post('/search-console-file', [SchoolSettingController::class, 'uploadSearchConsoleFile'])->can('update', SchoolSetting::class)->name('settings.search-console-file');
     });
 });
 

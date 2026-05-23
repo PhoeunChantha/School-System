@@ -39,6 +39,10 @@ class SchoolSettingService
                     'databaseName' => $this->environmentValue('DB_DATABASE')
                         ?? (string) config('database.connections.'.config('database.default').'.database', ''),
                 ],
+                'searchConsole' => [
+                    'verificationFile' => $this->searchConsoleVerificationFile(),
+                    'verificationUrl' => $this->searchConsoleVerificationUrl(),
+                ],
             ],
             'levels' => Level::query()
                 ->active()
@@ -227,6 +231,49 @@ class SchoolSettingService
         $this->update($group, $current, $userId);
 
         return $path;
+    }
+
+    public function uploadSearchConsoleFile(UploadedFile $file): string
+    {
+        $filename = $file->getClientOriginalName();
+
+        if (! preg_match('/^google[a-z0-9]+\.html$/i', $filename)) {
+            throw new InvalidArgumentException('Invalid Google Search Console verification file.');
+        }
+
+        foreach (glob(public_path('google*.html')) ?: [] as $existingFile) {
+            if (basename($existingFile) !== $filename && is_file($existingFile)) {
+                @unlink($existingFile);
+            }
+        }
+
+        $file->move(public_path(), $filename);
+
+        return $filename;
+    }
+
+    private function searchConsoleVerificationFile(): ?string
+    {
+        $files = glob(public_path('google*.html')) ?: [];
+
+        if ($files === []) {
+            return null;
+        }
+
+        usort($files, fn (string $left, string $right): int => filemtime($right) <=> filemtime($left));
+
+        return basename($files[0]);
+    }
+
+    private function searchConsoleVerificationUrl(): ?string
+    {
+        $filename = $this->searchConsoleVerificationFile();
+
+        if (! $filename) {
+            return null;
+        }
+
+        return url($filename);
     }
 
     /**
