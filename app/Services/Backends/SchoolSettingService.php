@@ -6,7 +6,9 @@ use App\Models\Level;
 use App\Models\SchoolClass;
 use App\Models\SchoolSetting;
 use Illuminate\Http\UploadedFile;
+use Illuminate\Support\Facades\Artisan;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\File;
 use InvalidArgumentException;
 
 class SchoolSettingService
@@ -18,6 +20,8 @@ class SchoolSettingService
         'classes' => 'schedule',
         'notifications' => 'preferences',
     ];
+
+    public function __construct(private readonly ?string $environmentPath = null) {}
 
     /**
      * @return array{settings: array<string, mixed>, levels: mixed, classes: mixed}
@@ -31,6 +35,10 @@ class SchoolSettingService
                 'fees' => $this->settingValue('fees'),
                 'classes' => $this->settingValue('classes'),
                 'notifications' => $this->settingValue('notifications'),
+                'database' => [
+                    'databaseName' => $this->environmentValue('DB_DATABASE')
+                        ?? (string) config('database.connections.'.config('database.default').'.database', ''),
+                ],
             ],
             'levels' => Level::query()
                 ->active()
@@ -62,6 +70,17 @@ class SchoolSettingService
      */
     public function update(string $group, array $value, ?int $userId): SchoolSetting
     {
+        if ($group === 'database') {
+            $this->updateDatabaseName((string) ($value['databaseName'] ?? ''));
+
+            return new SchoolSetting([
+                'group' => 'database',
+                'key' => 'environment',
+                'value' => ['databaseName' => $value['databaseName'] ?? ''],
+                'updated_by' => $userId,
+            ]);
+        }
+
         if (! array_key_exists($group, self::GROUP_KEYS)) {
             throw new InvalidArgumentException('Unknown settings group.');
         }
@@ -85,6 +104,80 @@ class SchoolSettingService
 
             return $setting;
         });
+    }
+
+    public function updateDatabaseName(string $databaseName): void
+    {
+        $databaseName = trim($databaseName);
+
+        if ($databaseName === '') {
+            throw new InvalidArgumentException('Database name is required.');
+        }
+
+        if (! $this->databaseExists($databaseName)) {
+            throw new InvalidArgumentException("Database [{$databaseName}] does not exist.");
+        }
+
+        $path = $this->environmentFilePath();
+        $contents = File::exists($path) ? File::get($path) : '';
+        $line = 'DB_DATABASE='.$this->formatEnvironmentValue($databaseName);
+
+        if (preg_match('/^DB_DATABASE=.*$/m', $contents)) {
+            $contents = preg_replace('/^DB_DATABASE=.*$/m', $line, $contents) ?? $contents;
+        } else {
+            $contents = rtrim($contents, "\r\n").PHP_EOL.$line.PHP_EOL;
+        }
+
+        File::put($path, $contents);
+
+        Artisan::call('config:clear');
+    }
+
+    private function environmentFilePath(): string
+    {
+        return $this->environmentPath ?? base_path('.env');
+    }
+
+    private function environmentValue(string $key): ?string
+    {
+        $path = $this->environmentFilePath();
+
+        if (! File::exists($path)) {
+            return null;
+        }
+
+        $contents = File::get($path);
+
+        if (! preg_match('/^'.preg_quote($key, '/').'=(.*)$/m', $contents, $matches)) {
+            return null;
+        }
+
+        return trim($matches[1], " \t\n\r\0\x0B\"'");
+    }
+
+    private function formatEnvironmentValue(string $value): string
+    {
+        if (preg_match('/^[A-Za-z0-9_.-]+$/', $value)) {
+            return $value;
+        }
+
+        return '"'.str_replace('"', '\"', $value).'"';
+    }
+
+    private function databaseExists(string $databaseName): bool
+    {
+        if (config('database.connections.'.config('database.default').'.driver') !== 'mysql') {
+            return true;
+        }
+
+        try {
+            return DB::selectOne(
+                'select schema_name from information_schema.schemata where schema_name = ? limit 1',
+                [$databaseName],
+            ) !== null;
+        } catch (\Throwable) {
+            return false;
+        }
     }
 
     /**

@@ -5,6 +5,7 @@ namespace Tests\Feature;
 use App\Models\Level;
 use App\Models\SchoolSetting;
 use App\Models\User;
+use App\Services\Backends\SchoolSettingService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
 
@@ -31,6 +32,7 @@ class AdminSchoolSettingCrudTest extends TestCase
                 ->component('admin/settings/index')
                 ->where('settings.school.nameEn', 'Testing School')
                 ->where('settings.seo.title', 'Frania English School')
+                ->has('settings.database.databaseName')
                 ->where('settings.school.nameKh', 'សាលា សាកល្បង'));
     }
 
@@ -145,5 +147,26 @@ class AdminSchoolSettingCrudTest extends TestCase
 
         $this->assertSame('75', $setting->value['lowAttendanceThreshold']);
         $this->assertFalse($setting->value['feeReminder']);
+    }
+
+    public function test_database_setting_updates_environment_file(): void
+    {
+        $path = storage_path('framework/testing/settings-env');
+        file_put_contents($path, "APP_NAME=Testing\nDB_DATABASE=old_demo\n");
+
+        $databaseName = (string) config('database.connections.'.config('database.default').'.database');
+
+        try {
+            (new SchoolSettingService($path))->updateDatabaseName($databaseName);
+
+            $this->assertStringContainsString(
+                'DB_DATABASE='.$databaseName,
+                file_get_contents($path),
+            );
+        } finally {
+            if (file_exists($path)) {
+                unlink($path);
+            }
+        }
     }
 }

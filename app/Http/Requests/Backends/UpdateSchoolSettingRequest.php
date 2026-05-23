@@ -22,8 +22,30 @@ class UpdateSchoolSettingRequest extends FormRequest
      */
     public function rules(): array
     {
+        if ($this->route('group') === 'database') {
+            return [
+                'value' => ['required', 'array'],
+                'value.databaseName' => [
+                    'required',
+                    'string',
+                    'max:64',
+                    'regex:/^[A-Za-z0-9_.-]+$/',
+                ],
+            ];
+        }
+
         return [
             'value' => ['required', 'array'],
+        ];
+    }
+
+    /**
+     * @return array<string, string>
+     */
+    public function messages(): array
+    {
+        return [
+            'value.databaseName.regex' => 'The database name may only contain letters, numbers, dots, underscores, and hyphens.',
         ];
     }
 }

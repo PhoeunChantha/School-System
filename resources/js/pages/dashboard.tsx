@@ -1,4 +1,5 @@
 import '@/pages/admin/admin.css';
+import { useAdminTranslation } from '@/hooks/use-admin-translation';
 import AdminShell from '@/pages/admin/shell';
 import { Avatar, Badge, FeeTag, KH, PBar, ScoreChip } from '@/pages/admin/ui';
 import { Head, Link } from '@inertiajs/react';
@@ -182,6 +183,8 @@ export default function Dashboard({
     recentStudents,
     classes,
 }: DashboardProps) {
+    const { lang } = useAdminTranslation();
+    const isKh = lang === 'kh';
 
     const totalStudents = stats.totalStudents;
 
@@ -194,9 +197,13 @@ export default function Dashboard({
     const skillsData = [
         { skill: 'Speaking', skKh: 'និយាយ', avg: skillsAvg.speaking },
         { skill: 'Listening', skKh: 'ស្ដាប់', avg: skillsAvg.listening },
-        { skill: 'Reading',  skKh: 'អាន',   avg: skillsAvg.reading },
-        { skill: 'Writing',  skKh: 'សរសេរ', avg: skillsAvg.writing },
-    ];
+        { skill: 'Reading', skKh: 'អាន', avg: skillsAvg.reading },
+        { skill: 'Writing', skKh: 'សរសេរ', avg: skillsAvg.writing },
+    ].map((skill) => ({
+        ...skill,
+        label: isKh ? skill.skKh : skill.skill,
+        fontFamily: isKh ? "'Noto Sans Khmer',sans-serif" : 'inherit',
+    }));
 
     const DonutLabel = ({ cx, cy }: any) => (
         <>
@@ -240,7 +247,7 @@ export default function Dashboard({
                     <div className="dashboard-main-grid" style={{ display: 'grid', gridTemplateColumns: 'minmax(0,1fr) 340px', gap: 16 }}>
 
                         {/* Revenue area chart */}
-                        <ChartCard titleKh="ចំណូលប្រចាំខែ" title="Monthly Revenue Trend" subtitle="Last 6 months · USD">
+                        {/* <ChartCard titleKh="ចំណូលប្រចាំខែ" title="Monthly Revenue Trend" subtitle="Last 6 months · USD">
                             <ResponsiveContainer width="100%" height={200}>
                                 <AreaChart data={revenueTrend} margin={{ top: 4, right: 4, left: -20, bottom: 0 }}>
                                     <defs>
@@ -275,10 +282,10 @@ export default function Dashboard({
                                     );
                                 })()}
                             </div>
-                        </ChartCard>
+                        </ChartCard> */}
 
                         {/* Fee donut */}
-                        <ChartCard titleKh="ស្ថានភាពថ្លៃ" title="Fee Status" subtitle={`${new Date().toLocaleString('default', { month: 'long', year: 'numeric' })}`}>
+                        {/* <ChartCard titleKh="ស្ថានភាពថ្លៃ" title="Fee Status" subtitle={`${new Date().toLocaleString('default', { month: 'long', year: 'numeric' })}`}>
                             <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 12 }}>
                                 <ResponsiveContainer width="100%" height={160}>
                                     <PieChart>
@@ -300,7 +307,7 @@ export default function Dashboard({
                                     ))}
                                 </div>
                             </div>
-                        </ChartCard>
+                        </ChartCard> */}
                     </div>
 
                     {/* ── Charts row 2: Attendance + Skills ── */}
@@ -336,7 +343,7 @@ export default function Dashboard({
                             <ResponsiveContainer width="100%" height={200}>
                                 <RadarChart data={skillsData} margin={{ top: 4, right: 20, left: 20, bottom: 4 }}>
                                     <PolarGrid stroke="#e2e8f0" />
-                                    <PolarAngleAxis dataKey="skKh" tick={{ fontSize: 12, fill: '#64748b', fontWeight: 700, fontFamily: "'Noto Sans Khmer',sans-serif" }} />
+                                    <PolarAngleAxis dataKey="label" tick={{ fontSize: 12, fill: '#64748b', fontWeight: 700, fontFamily: isKh ? "'Noto Sans Khmer',sans-serif" : 'inherit' }} />
                                     <PolarRadiusAxis angle={30} domain={[0, 100]} tick={{ fontSize: 9, fill: '#94a3b8' }} axisLine={false} />
                                     <Radar name="Avg" dataKey="avg" stroke="#6366f1" fill="#6366f1" fillOpacity={0.18} strokeWidth={2.5} dot={{ r: 4, fill: '#6366f1', strokeWidth: 2, stroke: 'white' }} isAnimationActive animationDuration={800} />
                                     <Tooltip content={<DarkTooltip />} />
@@ -346,7 +353,11 @@ export default function Dashboard({
                                 {skillsData.map(sk => (
                                     <div key={sk.skill} className="dashboard-soft-tile" style={{ textAlign: 'center', background: '#f8fafc', borderRadius: 10, padding: '8px 12px' }}>
                                         <div style={{ fontSize: 16, fontWeight: 800, color: sk.avg >= 75 ? '#10b981' : sk.avg >= 50 ? '#3b82f6' : '#f59e0b' }}>{sk.avg}</div>
-                                        <KH style={{ fontSize: 10, color: '#64748b', display: 'block' }}>{sk.skKh}</KH>
+                                        {isKh ? (
+                                            <KH style={{ fontSize: 10, color: '#64748b', display: 'block' }}>{sk.skKh}</KH>
+                                        ) : (
+                                            <div style={{ fontSize: 10, color: '#64748b' }}>{sk.skill}</div>
+                                        )}
                                     </div>
                                 ))}
                             </div>

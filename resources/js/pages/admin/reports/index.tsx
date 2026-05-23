@@ -1,5 +1,6 @@
 import AdminShell from '@/pages/admin/shell';
 import { Avatar, Badge, KH, PBar, ScoreChip } from '@/pages/admin/ui';
+import { useAdminTranslation } from '@/hooks/use-admin-translation';
 import type { LucideIcon } from 'lucide-react';
 import {
     ChartNoAxesColumn,
@@ -15,7 +16,7 @@ import {
     TriangleAlert,
     XCircle,
 } from 'lucide-react';
-import { useState } from 'react';
+import { type CSSProperties, useState } from 'react';
 import { toast } from 'sonner';
 
 type ReportTab = 'attendance' | 'grades' | 'fees';
@@ -168,6 +169,51 @@ function paymentStatusLabel(status: string) {
     return status || 'Unknown';
 }
 
+function LocalizedCopy({
+    isKh,
+    kh,
+    en,
+    style,
+}: {
+    isKh: boolean;
+    kh: string;
+    en: string;
+    style?: CSSProperties;
+}) {
+    if (isKh) {
+        return <KH style={style}>{kh}</KH>;
+    }
+
+    return <span style={style}>{en}</span>;
+}
+
+function PersonName({
+    isKh,
+    kh,
+    en,
+    primaryStyle,
+    secondaryStyle,
+}: {
+    isKh: boolean;
+    kh?: string;
+    en: string;
+    primaryStyle?: CSSProperties;
+    secondaryStyle?: CSSProperties;
+}) {
+    const hasKhmerName = Boolean(kh?.trim());
+
+    if (isKh && hasKhmerName) {
+        return (
+            <>
+                <KH style={primaryStyle}>{kh}</KH>
+                <div style={secondaryStyle}>{en}</div>
+            </>
+        );
+    }
+
+    return <div style={primaryStyle}>{en || kh}</div>;
+}
+
 function downloadCsv(
     filename: string,
     rows: Record<string, string | number>[],
@@ -204,7 +250,9 @@ export default function ReportsPage({
     grades,
     fees,
 }: ReportsPageProps) {
+    const { lang } = useAdminTranslation();
     const [tab, setTab] = useState<ReportTab>('attendance');
+    const isKh = lang === 'kh';
 
     const handleExport = () => {
         if (tab === 'attendance') {
@@ -289,15 +337,16 @@ export default function ReportsPage({
                             <ChartNoAxesColumn size={20} color="#2563eb" />
                             Reports
                         </div>
-                        <KH
+                        <LocalizedCopy
+                            isKh={isKh}
+                            kh={`របាយការណ៍សាលា - ${reportDate}`}
+                            en={`School reports - ${reportDate}`}
                             style={{
                                 fontSize: 12,
                                 color: '#94a3b8',
                                 display: 'block',
                             }}
-                        >
-                            របាយការណ៍សាលា - {reportDate}
-                        </KH>
+                        />
                     </div>
                     <div style={{ display: 'flex', gap: 8 }}>
                         <button
@@ -383,18 +432,16 @@ export default function ReportsPage({
                             >
                                 {stat.v}
                             </div>
-                            <KH
+                            <LocalizedCopy
+                                isKh={isKh}
+                                kh={stat.lk}
+                                en={stat.l}
                                 style={{
                                     fontSize: 11,
                                     color: '#64748b',
                                     display: 'block',
                                 }}
-                            >
-                                {stat.lk}
-                            </KH>
-                            <div style={{ fontSize: 11, color: '#94a3b8' }}>
-                                {stat.l}
-                            </div>
+                            />
                         </div>
                     ))}
                 </div>
@@ -441,16 +488,17 @@ export default function ReportsPage({
                         }}
                     >
                         <div className="card" style={{ padding: 20 }}>
-                            <KH
+                            <LocalizedCopy
+                                isKh={isKh}
+                                kh="វត្តមានតាមថ្នាក់"
+                                en="Class attendance"
                                 style={{
                                     fontWeight: 800,
                                     fontSize: 15,
                                     display: 'block',
                                     marginBottom: 14,
                                 }}
-                            >
-                                វត្តមានតាមថ្នាក់
-                            </KH>
+                            />
                             <div
                                 style={{
                                     display: 'flex',
@@ -530,16 +578,17 @@ export default function ReportsPage({
 
                         <div className="card" style={{ overflowX: 'auto' }}>
                             <div style={{ padding: '16px 20px 0' }}>
-                                <KH
+                                <LocalizedCopy
+                                    isKh={isKh}
+                                    kh="វត្តមានតាមសិស្ស"
+                                    en="Student attendance"
                                     style={{
                                         fontWeight: 800,
                                         fontSize: 15,
                                         display: 'block',
                                         marginBottom: 4,
                                     }}
-                                >
-                                    វត្តមានតាមសិស្ស
-                                </KH>
+                                />
                                 <div
                                     style={{
                                         fontSize: 12,
@@ -591,28 +640,25 @@ export default function ReportsPage({
                                                                 size={32}
                                                             />
                                                             <div>
-                                                                <KH
-                                                                    style={{
+                                                                <PersonName
+                                                                    isKh={isKh}
+                                                                    kh={
+                                                                        student.nameKh
+                                                                    }
+                                                                    en={
+                                                                        student.nameEn
+                                                                    }
+                                                                    primaryStyle={{
                                                                         fontWeight: 700,
                                                                         fontSize: 13,
                                                                         display:
                                                                             'block',
                                                                     }}
-                                                                >
-                                                                    {
-                                                                        student.nameKh
-                                                                    }
-                                                                </KH>
-                                                                <div
-                                                                    style={{
+                                                                    secondaryStyle={{
                                                                         fontSize: 11,
                                                                         color: '#94a3b8',
                                                                     }}
-                                                                >
-                                                                    {
-                                                                        student.nameEn
-                                                                    }
-                                                                </div>
+                                                                />
                                                             </div>
                                                         </div>
                                                     </td>
@@ -706,16 +752,17 @@ export default function ReportsPage({
                         }}
                     >
                         <div className="card" style={{ padding: 20 }}>
-                            <KH
+                            <LocalizedCopy
+                                isKh={isKh}
+                                kh="ពិន្ទុជំនាញមធ្យម"
+                                en="Average skill scores"
                                 style={{
                                     fontWeight: 800,
                                     fontSize: 15,
                                     display: 'block',
                                     marginBottom: 16,
                                 }}
-                            >
-                                ពិន្ទុជំនាញមធ្យម
-                            </KH>
+                            />
                             <div
                                 style={{
                                     display: 'grid',
@@ -740,14 +787,15 @@ export default function ReportsPage({
                                                 marginBottom: 10,
                                             }}
                                         >
-                                            <KH
+                                            <LocalizedCopy
+                                                isKh={isKh}
+                                                kh={skill.labelKh}
+                                                en={skill.label}
                                                 style={{
                                                     fontWeight: 700,
                                                     fontSize: 14,
                                                 }}
-                                            >
-                                                {skill.labelKh}
-                                            </KH>
+                                            />
                                             <ScoreChip score={skill.average} />
                                         </div>
                                         <PBar
@@ -761,15 +809,17 @@ export default function ReportsPage({
                                             }
                                             height={8}
                                         />
-                                        <div
-                                            style={{
-                                                fontSize: 11,
-                                                color: '#94a3b8',
-                                                marginTop: 6,
-                                            }}
-                                        >
-                                            {skill.label}
-                                        </div>
+                                        {isKh && (
+                                            <div
+                                                style={{
+                                                    fontSize: 11,
+                                                    color: '#94a3b8',
+                                                    marginTop: 6,
+                                                }}
+                                            >
+                                                {skill.label}
+                                            </div>
+                                        )}
                                     </div>
                                 ))}
                             </div>
@@ -782,15 +832,16 @@ export default function ReportsPage({
                                     marginBottom: 4,
                                 }}
                             >
-                                <KH
+                                <LocalizedCopy
+                                    isKh={isKh}
+                                    kh="ពិន្ទុសិស្សទាំងអស់"
+                                    en="All student scores"
                                     style={{
                                         fontWeight: 800,
                                         fontSize: 15,
                                         display: 'block',
                                     }}
-                                >
-                                    ពិន្ទុសិស្សទាំងអស់
-                                </KH>
+                                />
                             </div>
                             <table className="data-table">
                                 <thead>
@@ -798,16 +849,32 @@ export default function ReportsPage({
                                         <th>Student</th>
                                         <th>Level</th>
                                         <th>
-                                            <KH>និយាយ</KH>
+                                            <LocalizedCopy
+                                                isKh={isKh}
+                                                kh="និយាយ"
+                                                en="Speaking"
+                                            />
                                         </th>
                                         <th>
-                                            <KH>ស្ដាប់</KH>
+                                            <LocalizedCopy
+                                                isKh={isKh}
+                                                kh="ស្ដាប់"
+                                                en="Listening"
+                                            />
                                         </th>
                                         <th>
-                                            <KH>អាន</KH>
+                                            <LocalizedCopy
+                                                isKh={isKh}
+                                                kh="អាន"
+                                                en="Reading"
+                                            />
                                         </th>
                                         <th>
-                                            <KH>សរសេរ</KH>
+                                            <LocalizedCopy
+                                                isKh={isKh}
+                                                kh="សរសេរ"
+                                                en="Writing"
+                                            />
                                         </th>
                                         <th>Average</th>
                                     </tr>
@@ -834,24 +901,25 @@ export default function ReportsPage({
                                                             size={30}
                                                         />
                                                         <div>
-                                                            <KH
-                                                                style={{
+                                                            <PersonName
+                                                                isKh={isKh}
+                                                                kh={
+                                                                    student.nameKh
+                                                                }
+                                                                en={
+                                                                    student.nameEn
+                                                                }
+                                                                primaryStyle={{
                                                                     fontWeight: 700,
                                                                     fontSize: 12,
                                                                     display:
                                                                         'block',
                                                                 }}
-                                                            >
-                                                                {student.nameKh}
-                                                            </KH>
-                                                            <div
-                                                                style={{
+                                                                secondaryStyle={{
                                                                     fontSize: 11,
                                                                     color: '#94a3b8',
                                                                 }}
-                                                            >
-                                                                {student.nameEn}
-                                                            </div>
+                                                            />
                                                         </div>
                                                     </div>
                                                 </td>
@@ -968,25 +1036,17 @@ export default function ReportsPage({
                                     >
                                         {stat.v}
                                     </div>
-                                    <KH
+                                    <LocalizedCopy
+                                        isKh={isKh}
+                                        kh={stat.lk}
+                                        en={stat.l}
                                         style={{
                                             fontSize: 12,
                                             color: stat.c,
                                             display: 'block',
                                             opacity: 0.8,
                                         }}
-                                    >
-                                        {stat.lk}
-                                    </KH>
-                                    <div
-                                        style={{
-                                            fontSize: 11,
-                                            color: stat.c,
-                                            opacity: 0.6,
-                                        }}
-                                    >
-                                        {stat.l}
-                                    </div>
+                                    />
                                 </div>
                             ))}
                         </div>
@@ -998,15 +1058,16 @@ export default function ReportsPage({
                                     marginBottom: 4,
                                 }}
                             >
-                                <KH
+                                <LocalizedCopy
+                                    isKh={isKh}
+                                    kh="ប្រវត្តិការទូទាត់"
+                                    en="Payment history"
                                     style={{
                                         fontWeight: 800,
                                         fontSize: 15,
                                         display: 'block',
                                     }}
-                                >
-                                    ប្រវត្តិការទូទាត់
-                                </KH>
+                                />
                                 <div
                                     style={{
                                         fontSize: 12,
@@ -1031,22 +1092,19 @@ export default function ReportsPage({
                                     {fees.payments.map((payment) => (
                                         <tr key={payment.id}>
                                             <td>
-                                                <KH
-                                                    style={{
+                                                <PersonName
+                                                    isKh={isKh}
+                                                    kh={payment.studentNameKh}
+                                                    en={payment.studentNameEn}
+                                                    primaryStyle={{
                                                         fontWeight: 700,
                                                         fontSize: 13,
                                                     }}
-                                                >
-                                                    {payment.studentNameKh}
-                                                </KH>
-                                                <div
-                                                    style={{
+                                                    secondaryStyle={{
                                                         fontSize: 11,
                                                         color: '#94a3b8',
                                                     }}
-                                                >
-                                                    {payment.studentNameEn}
-                                                </div>
+                                                />
                                             </td>
                                             <td>
                                                 <span
@@ -1092,15 +1150,16 @@ export default function ReportsPage({
                                     marginBottom: 4,
                                 }}
                             >
-                                <KH
+                                <LocalizedCopy
+                                    isKh={isKh}
+                                    kh="ស្ថានភាពថ្លៃតាមសិស្ស"
+                                    en="Student fee status"
                                     style={{
                                         fontWeight: 800,
                                         fontSize: 15,
                                         display: 'block',
                                     }}
-                                >
-                                    ស្ថានភាពថ្លៃតាមសិស្ស
-                                </KH>
+                                />
                             </div>
                             <table className="data-table">
                                 <thead>
@@ -1128,24 +1187,21 @@ export default function ReportsPage({
                                                         size={30}
                                                     />
                                                     <div>
-                                                        <KH
-                                                            style={{
+                                                        <PersonName
+                                                            isKh={isKh}
+                                                            kh={student.nameKh}
+                                                            en={student.nameEn}
+                                                            primaryStyle={{
                                                                 fontWeight: 700,
                                                                 fontSize: 13,
                                                                 display:
                                                                     'block',
                                                             }}
-                                                        >
-                                                            {student.nameKh}
-                                                        </KH>
-                                                        <div
-                                                            style={{
+                                                            secondaryStyle={{
                                                                 fontSize: 11,
                                                                 color: '#94a3b8',
                                                             }}
-                                                        >
-                                                            {student.nameEn}
-                                                        </div>
+                                                        />
                                                     </div>
                                                 </div>
                                             </td>

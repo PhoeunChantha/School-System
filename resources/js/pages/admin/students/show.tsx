@@ -191,7 +191,7 @@ export default function ShowStudentPage({ student, grades, attendance, fees, hom
                         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(90px, 1fr))', gap: 10, flex: '1 1 280px', minWidth: 0 }}>
                             {[
                                 { label: 'Attendance', value: `${student.attendanceRate}%`, color: student.attendanceRate >= 80 ? '#10b981' : '#ef4444' },
-                                { label: 'Monthly Fee', value: `$${student.monthlyFee.toFixed(0)}`, color: '#2563eb' },
+                                // { label: 'Monthly Fee', value: `$${student.monthlyFee.toFixed(0)}`, color: '#2563eb' },
                                 { label: 'Enrolled', value: student.enrolledOn ?? '-', color: '#64748b' },
                             ].map(s => (
                                 <div key={s.label} style={{ textAlign: 'center', background: '#f8fafc', borderRadius: 12, padding: '12px 16px', minWidth: 0 }}>

@@ -25,6 +25,7 @@ import {
     Bell,
     CalendarDays,
     CreditCard,
+    Database,
     Globe2,
     KeyRound,
     Palette,
@@ -47,6 +48,7 @@ type SettingsTab =
     | 'fees'
     | 'classes'
     | 'notifications'
+    | 'database'
     | 'sidebar'
     | 'appearance'
     | 'profile'
@@ -107,6 +109,10 @@ interface NotificationSettings {
     systemUpdates: boolean;
 }
 
+interface DatabaseSettings {
+    databaseName: string;
+}
+
 interface SettingsPageProps {
     settings: {
         school: SchoolSettings;
@@ -114,6 +120,7 @@ interface SettingsPageProps {
         fees: FeeSettings;
         classes: ClassSettings;
         notifications: NotificationSettings;
+        database: DatabaseSettings;
     };
     mustVerifyEmail?: boolean;
     profileStatus?: string;
@@ -127,6 +134,7 @@ const tabs: { id: SettingsTab; label: string; icon: ElementType }[] = [
     { id: 'fees', label: 'Fee Settings', icon: CreditCard },
     { id: 'classes', label: 'Class Schedule', icon: CalendarDays },
     { id: 'notifications', label: 'Notifications', icon: Bell },
+    { id: 'database', label: 'Database', icon: Database },
     { id: 'sidebar', label: 'Sidebar', icon: PanelLeft },
     { id: 'appearance', label: 'Appearance', icon: Palette },
     { id: 'profile', label: 'Profile', icon: User },
@@ -242,6 +250,9 @@ export default function SettingsPage({
     const [classes, setClasses] = useState<ClassSettings>(settings.classes);
     const [notifications, setNotifications] = useState<NotificationSettings>(
         settings.notifications,
+    );
+    const [database, setDatabase] = useState<DatabaseSettings>(
+        settings.database,
     );
     const [savingGroup, setSavingGroup] = useState<SettingsTab | null>(null);
     const [hiddenItems, setHiddenItems] = useState<Set<string>>(() => {
@@ -1290,6 +1301,50 @@ export default function SettingsPage({
                                             />
                                         </div>
                                     ))}
+                                </div>
+                            </SettingsPanel>
+                        )}
+
+                        {tab === 'database' && (
+                            <SettingsPanel
+                                title="Database"
+                                onSave={() => saveGroup('database', database)}
+                                saving={savingGroup === 'database'}
+                            >
+                                <div style={formGrid}>
+                                    <Field label="Database Name" wide>
+                                        <input
+                                            style={inputStyle}
+                                            value={database.databaseName}
+                                            placeholder="system-school"
+                                            onChange={(event) =>
+                                                setDatabase((current) => ({
+                                                    ...current,
+                                                    databaseName:
+                                                        event.target.value,
+                                                }))
+                                            }
+                                        />
+                                    </Field>
+                                </div>
+
+                                <div
+                                    style={{
+                                        marginTop: 16,
+                                        padding: '14px 16px',
+                                        borderRadius: 12,
+                                        background: '#fff7ed',
+                                        border: '1px solid #fed7aa',
+                                        color: '#9a3412',
+                                        fontSize: 12,
+                                        fontWeight: 700,
+                                        lineHeight: 1.6,
+                                    }}
+                                >
+                                    This updates the real .env value
+                                    DB_DATABASE. The target database must
+                                    already exist and should have the same
+                                    tables before switching.
                                 </div>
                             </SettingsPanel>
                         )}
