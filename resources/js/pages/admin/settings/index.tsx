@@ -376,7 +376,20 @@ export default function SettingsPage({
         );
     };
 
-    const handleSearchConsoleUpload = (file: File) => {
+    const handleSearchConsoleUpload = async (file: File) => {
+        const contents = await file.text();
+        const verificationFilename = contents.match(
+            /google-site-verification:\s*(google[a-z0-9]+\.html)/i,
+        )?.[1]?.toLowerCase();
+
+        if (!verificationFilename) {
+            toast.error(
+                'Upload the HTML verification file downloaded from Google Search Console.',
+            );
+
+            return;
+        }
+
         setUploadingType('searchConsole');
         router.post(
             uploadSearchConsoleFile.url(),
@@ -385,13 +398,16 @@ export default function SettingsPage({
                 forceFormData: true,
                 preserveScroll: true,
                 onSuccess: () => {
-                    setSearchConsoleFile(file.name);
-                    setSearchConsoleUrl(`${window.location.origin}/${file.name}`);
+                    setSearchConsoleFile(verificationFilename);
+                    setSearchConsoleUrl(
+                        `${window.location.origin}/${verificationFilename}`,
+                    );
                     toast.success('Google verification file uploaded.');
                 },
-                onError: () =>
+                onError: (errors) =>
                     toast.error(
-                        'Upload failed. Use the exact google....html file from Search Console.',
+                        errors.verification_file ??
+                            'Upload failed. Use the HTML file downloaded from Google Search Console.',
                     ),
                 onFinish: () => setUploadingType(null),
             },
@@ -1733,9 +1749,12 @@ export default function SettingsPage({
                                     Update your name and email address.
                                 </KH>
                                 <Form
-                                    {...ProfileController.update.form()}
+                                    action={ProfileController.update()}
                                     options={{ preserveScroll: true }}
                                     className="space-y-5"
+                                    onSuccess={() =>
+                                        toast.success('Profile updated.')
+                                    }
                                 >
                                     {({
                                         processing,
@@ -1743,6 +1762,11 @@ export default function SettingsPage({
                                         errors,
                                     }) => (
                                         <>
+                                            <input
+                                                type="hidden"
+                                                name="redirect_to"
+                                                value="admin_settings"
+                                            />
                                             <div className="grid gap-2">
                                                 <Label htmlFor="name">
                                                     Name
@@ -1810,7 +1834,10 @@ export default function SettingsPage({
                                                     </div>
                                                 )}
                                             <div className="flex items-center gap-4">
-                                                <Button disabled={processing}>
+                                                <Button
+                                                    type="submit"
+                                                    disabled={processing}
+                                                >
                                                     Save
                                                 </Button>
                                                 <Transition
@@ -1930,7 +1957,10 @@ export default function SettingsPage({
                                                 />
                                             </div>
                                             <div className="flex items-center gap-4">
-                                                <Button disabled={processing}>
+                                                <Button
+                                                    type="submit"
+                                                    disabled={processing}
+                                                >
                                                     Save password
                                                 </Button>
                                                 <Transition

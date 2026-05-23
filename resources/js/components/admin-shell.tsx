@@ -2,7 +2,6 @@ import { AdminFooter } from '@/components/admin-footer';
 import {
     DropdownMenu,
     DropdownMenuContent,
-    DropdownMenuGroup,
     DropdownMenuItem,
     DropdownMenuLabel,
     DropdownMenuSeparator,
@@ -14,7 +13,6 @@ import { cn } from '@/lib/utils';
 import '@/pages/admin/admin.css';
 import { Avatar, KH } from '@/pages/admin/ui';
 import { logout } from '@/routes';
-import { edit as editProfile } from '@/routes/profile';
 import { type BreadcrumbItem, type SharedData } from '@/types';
 import { Head, Link, router, usePage } from '@inertiajs/react';
 import type { LucideIcon } from 'lucide-react';
@@ -879,19 +877,6 @@ export default function AdminShell({ children }: AdminShellProps) {
                                     </div>
                                 </div>
                             </DropdownMenuLabel>
-                            <DropdownMenuSeparator />
-                            <DropdownMenuGroup>
-                                <DropdownMenuItem asChild>
-                                    <Link
-                                        href={editProfile()}
-                                        prefetch
-                                        className="flex w-full cursor-pointer items-center"
-                                    >
-                                        <Settings className="mr-2 h-4 w-4" />
-                                        {t('ui.settings')}
-                                    </Link>
-                                </DropdownMenuItem>
-                            </DropdownMenuGroup>
                             <DropdownMenuSeparator />
                             <DropdownMenuItem asChild>
                                 <Link

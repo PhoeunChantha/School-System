@@ -5,11 +5,11 @@
 } from '@/actions/App/Http/Controllers/Backends/UserController';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import AdminShell from '@/pages/admin/shell';
-import { Avatar, Badge, RowActions } from '@/pages/admin/ui';
+import { Avatar, Badge, Pagination, RowActions } from '@/pages/admin/ui';
 import { type SharedData } from '@/types';
 import { router, useForm, usePage } from '@inertiajs/react';
-import { Camera, Edit3, Plus, ShieldCheck, Trash2, UserRound } from 'lucide-react';
-import { FormEvent, useMemo, useRef, useState } from 'react';
+import { Camera, Edit3, Plus, Search, ShieldCheck, Trash2, UserRound } from 'lucide-react';
+import { FormEvent, useEffect, useMemo, useRef, useState } from 'react';
 import type { CSSProperties, ReactNode } from 'react';
 import { toast } from 'sonner';
 
@@ -64,6 +64,8 @@ export default function UsersPage({ users, roles, summary }: UsersPageProps) {
     const [editing, setEditing] = useState<UserItem | null>(null);
     const [deleteTarget, setDeleteTarget] = useState<UserItem | null>(null);
     const [search, setSearch] = useState('');
+    const [page, setPage] = useState(1);
+    const [perPage, setPerPage] = useState(5);
     const [avatarPreview, setAvatarPreview] = useState<string | null>(null);
     const fileInputRef = useRef<HTMLInputElement>(null);
     const showForm = canCreate || (mode === 'edit' && canUpdate);
@@ -88,6 +90,15 @@ export default function UsersPage({ users, roles, summary }: UsersPageProps) {
             user.roleNames.some(role => role.toLowerCase().includes(query)),
         );
     }, [users, search]);
+
+    useEffect(() => {
+        setPage(1);
+    }, [search, users.length, perPage]);
+
+    const paginatedUsers = useMemo(
+        () => filteredUsers.slice((page - 1) * perPage, page * perPage),
+        [filteredUsers, page, perPage],
+    );
 
     const resetForm = () => {
         form.setData({
@@ -286,9 +297,32 @@ export default function UsersPage({ users, roles, summary }: UsersPageProps) {
                     )}
 
                     <div className="card users-table-card">
-                        <div style={{ padding: 14, borderBottom: '1px solid #f1f5f9', display: 'flex', justifyContent: 'space-between', gap: 12, flexWrap: 'wrap' }}>
-                            <div style={{ fontSize: 13, fontWeight: 900, color: '#1e293b' }}>User Accounts</div>
-                            <input className="f-input" style={{ width: 280, maxWidth: '100%' }} placeholder="Search users..." value={search} onChange={event => setSearch(event.target.value)} />
+                        <div className="users-table-toolbar">
+                            <div className="users-table-toolbar-left">
+                                <div>
+                                    <div className="users-table-title">User Accounts</div>
+                                    <div className="users-table-subtitle">{filteredUsers.length} account{filteredUsers.length === 1 ? '' : 's'} found</div>
+                                </div>
+                                <Select
+                                    value={perPage.toString()}
+                                    onValueChange={value => setPerPage(Number(value))}
+                                >
+                                    <SelectTrigger className="users-table-per-page">
+                                        <SelectValue />
+                                    </SelectTrigger>
+                                    <SelectContent>
+                                        {[5, 10, 25, 50].map(value => (
+                                            <SelectItem key={value} value={value.toString()}>
+                                                {value} per page
+                                            </SelectItem>
+                                        ))}
+                                    </SelectContent>
+                                </Select>
+                            </div>
+                            <div className="users-table-search">
+                                <Search size={16} />
+                                <input placeholder="Search users..." value={search} onChange={event => setSearch(event.target.value)} />
+                            </div>
                         </div>
                         <div className="users-table-scroll" role="region" aria-label="User accounts table">
                             <table className={`data-table users-table${canUpdate || canDelete ? ' has-actions' : ''}`}>
@@ -304,7 +338,7 @@ export default function UsersPage({ users, roles, summary }: UsersPageProps) {
                                 <tbody>
                                     {filteredUsers.length === 0 ? (
                                         <tr><td colSpan={canUpdate || canDelete ? 5 : 4} style={emptyCell}>No users found</td></tr>
-                                    ) : filteredUsers.map(user => (
+                                    ) : paginatedUsers.map(user => (
                                         <tr key={user.id}>
                                             <td>
                                                 <div style={{ display: 'flex', alignItems: 'center', gap: 10, minWidth: 0 }}>
@@ -342,6 +376,16 @@ export default function UsersPage({ users, roles, summary }: UsersPageProps) {
                                 </tbody>
                             </table>
                         </div>
+                        {filteredUsers.length > 0 && (
+                            <Pagination
+                                total={filteredUsers.length}
+                                page={page}
+                                perPage={perPage}
+                                onPageChange={setPage}
+                                onPerPageChange={setPerPage}
+                                showPerPage={false}
+                            />
+                        )}
                     </div>
                 </div>
             </div>
@@ -442,5 +486,3 @@ const emptyCell: CSSProperties = {
     color: '#94a3b8',
     fontSize: 13,
 };
-
-
