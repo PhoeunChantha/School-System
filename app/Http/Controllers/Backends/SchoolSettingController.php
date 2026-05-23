@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Backends;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Backends\UpdateSchoolSettingRequest;
 use App\Http\Requests\Backends\UploadSchoolImageRequest;
+use App\Http\Requests\Backends\UploadSearchConsoleFileRequest;
 use App\Services\Backends\SchoolSettingService;
 use Illuminate\Contracts\Auth\MustVerifyEmail;
 use Illuminate\Http\RedirectResponse;
@@ -66,6 +67,21 @@ class SchoolSettingController extends Controller
             report($exception);
 
             return back()->with('error', 'Unable to upload image. Please try again.');
+        }
+    }
+
+    public function uploadSearchConsoleFile(UploadSearchConsoleFileRequest $request): RedirectResponse
+    {
+        try {
+            $filename = $this->schoolSettingService->uploadSearchConsoleFile(
+                $request->file('verification_file'),
+            );
+
+            return back()->with('success', $filename.' uploaded successfully.');
+        } catch (Throwable $exception) {
+            report($exception);
+
+            return back()->with('error', 'Unable to upload Google verification file. Please try again.');
         }
     }
 }

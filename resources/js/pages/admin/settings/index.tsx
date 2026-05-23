@@ -1,6 +1,7 @@
 ﻿import {
     update,
     uploadImage,
+    uploadSearchConsoleFile,
 } from '@/actions/App/Http/Controllers/Backends/SchoolSettingController';
 import PasswordController from '@/actions/App/Http/Controllers/Settings/PasswordController';
 import ProfileController from '@/actions/App/Http/Controllers/Settings/ProfileController';
@@ -26,6 +27,7 @@ import {
     CalendarDays,
     CreditCard,
     Database,
+    FileCheck2,
     Globe2,
     KeyRound,
     Palette,
@@ -49,6 +51,7 @@ type SettingsTab =
     | 'classes'
     | 'notifications'
     | 'database'
+    | 'search-console'
     | 'sidebar'
     | 'appearance'
     | 'profile'
@@ -113,6 +116,11 @@ interface DatabaseSettings {
     databaseName: string;
 }
 
+interface SearchConsoleSettings {
+    verificationFile: string | null;
+    verificationUrl: string | null;
+}
+
 interface SettingsPageProps {
     settings: {
         school: SchoolSettings;
@@ -121,6 +129,7 @@ interface SettingsPageProps {
         classes: ClassSettings;
         notifications: NotificationSettings;
         database: DatabaseSettings;
+        searchConsole: SearchConsoleSettings;
     };
     mustVerifyEmail?: boolean;
     profileStatus?: string;
@@ -135,6 +144,7 @@ const tabs: { id: SettingsTab; label: string; icon: ElementType }[] = [
     { id: 'classes', label: 'Class Schedule', icon: CalendarDays },
     { id: 'notifications', label: 'Notifications', icon: Bell },
     { id: 'database', label: 'Database', icon: Database },
+    { id: 'search-console', label: 'Search Console', icon: FileCheck2 },
     { id: 'sidebar', label: 'Sidebar', icon: PanelLeft },
     { id: 'appearance', label: 'Appearance', icon: Palette },
     { id: 'profile', label: 'Profile', icon: User },
@@ -254,6 +264,12 @@ export default function SettingsPage({
     const [database, setDatabase] = useState<DatabaseSettings>(
         settings.database,
     );
+    const [searchConsoleFile, setSearchConsoleFile] = useState<string | null>(
+        settings.searchConsole.verificationFile,
+    );
+    const [searchConsoleUrl, setSearchConsoleUrl] = useState<string | null>(
+        settings.searchConsole.verificationUrl,
+    );
     const [savingGroup, setSavingGroup] = useState<SettingsTab | null>(null);
     const [hiddenItems, setHiddenItems] = useState<Set<string>>(() => {
         try {
@@ -303,12 +319,13 @@ export default function SettingsPage({
         toUrl(settings.seo.seoImage),
     );
     const [uploadingType, setUploadingType] = useState<
-        'logo' | 'favicon' | 'loginBg' | 'seoImage' | null
+        'logo' | 'favicon' | 'loginBg' | 'seoImage' | 'searchConsole' | null
     >(null);
     const logoInputRef = useRef<HTMLInputElement>(null);
     const faviconInputRef = useRef<HTMLInputElement>(null);
     const loginBgInputRef = useRef<HTMLInputElement>(null);
     const seoImageInputRef = useRef<HTMLInputElement>(null);
+    const searchConsoleInputRef = useRef<HTMLInputElement>(null);
 
     const saveGroup = (group: SettingsTab, value: object) => {
         setSavingGroup(group);
@@ -354,6 +371,28 @@ export default function SettingsPage({
                     else setSeoImagePreview(toUrl(settings.seo.seoImage));
                     toast.error('Upload failed. Please try again.');
                 },
+                onFinish: () => setUploadingType(null),
+            },
+        );
+    };
+
+    const handleSearchConsoleUpload = (file: File) => {
+        setUploadingType('searchConsole');
+        router.post(
+            uploadSearchConsoleFile.url(),
+            { verification_file: file },
+            {
+                forceFormData: true,
+                preserveScroll: true,
+                onSuccess: () => {
+                    setSearchConsoleFile(file.name);
+                    setSearchConsoleUrl(`${window.location.origin}/${file.name}`);
+                    toast.success('Google verification file uploaded.');
+                },
+                onError: () =>
+                    toast.error(
+                        'Upload failed. Use the exact google....html file from Search Console.',
+                    ),
                 onFinish: () => setUploadingType(null),
             },
         );
@@ -1092,6 +1131,141 @@ export default function SettingsPage({
                                     </div>
                                 </div>
                             </SettingsPanel>
+                        )}
+
+                        {tab === 'search-console' && (
+                            <div className="card" style={{ padding: 28 }}>
+                                <div
+                                    style={{
+                                        fontWeight: 900,
+                                        fontSize: 15,
+                                        color: '#1e293b',
+                                        marginBottom: 4,
+                                    }}
+                                >
+                                    Google Search Console
+                                </div>
+                                <div
+                                    style={{
+                                        fontSize: 12,
+                                        color: '#94a3b8',
+                                        marginBottom: 22,
+                                    }}
+                                >
+                                    Upload the HTML verification file from
+                                    Google. It will be placed at the website
+                                    root for ownership verification.
+                                </div>
+
+                                <input
+                                    ref={searchConsoleInputRef}
+                                    type="file"
+                                    accept=".html,text/html"
+                                    style={{ display: 'none' }}
+                                    onChange={(event) => {
+                                        const file = event.target.files?.[0];
+                                        if (file) {
+                                            handleSearchConsoleUpload(file);
+                                        }
+                                        event.target.value = '';
+                                    }}
+                                />
+
+                                <button
+                                    type="button"
+                                    onClick={() =>
+                                        searchConsoleInputRef.current?.click()
+                                    }
+                                    style={{
+                                        width: '100%',
+                                        minHeight: 132,
+                                        border: '2px dashed #cbd5e1',
+                                        borderRadius: 14,
+                                        background: '#f8fafc',
+                                        cursor: 'pointer',
+                                        display: 'flex',
+                                        alignItems: 'center',
+                                        justifyContent: 'center',
+                                        flexDirection: 'column',
+                                        gap: 8,
+                                        color: '#64748b',
+                                    }}
+                                >
+                                    <Upload size={24} />
+                                    <span
+                                        style={{
+                                            fontSize: 13,
+                                            fontWeight: 800,
+                                            color: '#1e293b',
+                                        }}
+                                    >
+                                        {uploadingType === 'searchConsole'
+                                            ? 'Uploading...'
+                                            : 'Upload google....html file'}
+                                    </span>
+                                    <span
+                                        style={{
+                                            fontSize: 11,
+                                            color: '#94a3b8',
+                                        }}
+                                    >
+                                        Example: googleb060d26401f59404.html
+                                    </span>
+                                </button>
+
+                                <div
+                                    style={{
+                                        marginTop: 18,
+                                        padding: '14px 16px',
+                                        background: searchConsoleFile
+                                            ? '#f0fdf4'
+                                            : '#fff7ed',
+                                        border: `1px solid ${
+                                            searchConsoleFile
+                                                ? '#bbf7d0'
+                                                : '#fed7aa'
+                                        }`,
+                                        borderRadius: 12,
+                                        color: searchConsoleFile
+                                            ? '#166534'
+                                            : '#9a3412',
+                                        fontSize: 12,
+                                        fontWeight: 700,
+                                        lineHeight: 1.6,
+                                    }}
+                                >
+                                    {searchConsoleFile ? (
+                                        <>
+                                            Current file:{' '}
+                                            {searchConsoleUrl ? (
+                                                <a
+                                                    href={searchConsoleUrl}
+                                                    target="_blank"
+                                                    rel="noreferrer"
+                                                    style={{
+                                                        color: '#166534',
+                                                        textDecoration:
+                                                            'underline',
+                                                    }}
+                                                >
+                                                    {searchConsoleFile}
+                                                </a>
+                                            ) : (
+                                                searchConsoleFile
+                                            )}
+                                            <br />
+                                            Keep this file online after Google
+                                            verification succeeds.
+                                        </>
+                                    ) : (
+                                        <>
+                                            No Google verification file found.
+                                            Download the HTML file from Search
+                                            Console and upload it here.
+                                        </>
+                                    )}
+                                </div>
+                            </div>
                         )}
 
                         {tab === 'fees' && (

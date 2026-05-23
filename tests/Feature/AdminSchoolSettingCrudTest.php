@@ -7,6 +7,7 @@ use App\Models\SchoolSetting;
 use App\Models\User;
 use App\Services\Backends\SchoolSettingService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Http\UploadedFile;
 use Tests\TestCase;
 
 class AdminSchoolSettingCrudTest extends TestCase
@@ -33,6 +34,7 @@ class AdminSchoolSettingCrudTest extends TestCase
                 ->where('settings.school.nameEn', 'Testing School')
                 ->where('settings.seo.title', 'Frania English School')
                 ->has('settings.database.databaseName')
+                ->has('settings.searchConsole.verificationFile')
                 ->where('settings.school.nameKh', 'សាលា សាកល្បង'));
     }
 
@@ -166,6 +168,47 @@ class AdminSchoolSettingCrudTest extends TestCase
         } finally {
             if (file_exists($path)) {
                 unlink($path);
+            }
+        }
+    }
+
+    public function test_admin_can_upload_search_console_verification_file(): void
+    {
+        $this->actingAs(User::factory()->create());
+
+        $filename = 'googleb060d26401f59404.html';
+        $target = public_path($filename);
+        $source = storage_path('framework/testing/'.$filename);
+
+        if (! is_dir(dirname($source))) {
+            mkdir(dirname($source), 0755, true);
+        }
+
+        file_put_contents($source, 'google-site-verification: '.$filename);
+
+        try {
+            $this->post(route('admin.settings.search-console-file'), [
+                'verification_file' => new UploadedFile(
+                    $source,
+                    $filename,
+                    'text/html',
+                    null,
+                    true,
+                ),
+            ])->assertRedirect();
+
+            $this->assertFileExists($target);
+            $this->assertSame(
+                'google-site-verification: '.$filename,
+                file_get_contents($target),
+            );
+        } finally {
+            if (file_exists($source)) {
+                unlink($source);
+            }
+
+            if (file_exists($target)) {
+                unlink($target);
             }
         }
     }
