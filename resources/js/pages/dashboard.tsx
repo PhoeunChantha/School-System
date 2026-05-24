@@ -1,24 +1,26 @@
 import '@/pages/admin/admin.css';
 import { useAdminTranslation } from '@/hooks/use-admin-translation';
 import AdminShell from '@/pages/admin/shell';
-import { Avatar, Badge, FeeTag, KH, PBar, ScoreChip } from '@/pages/admin/ui';
-import { Head, Link } from '@inertiajs/react';
+import { Avatar, Badge, FeeTag, KH, ScoreChip } from '@/pages/admin/ui';
+import { type SharedData } from '@/types';
+import { Head, Link, usePage } from '@inertiajs/react';
 import {
-    Check,
-    CheckCircle2,
+    ArrowRight,
+    BookOpenCheck,
+    CalendarCheck2,
     ClipboardCheck,
     Clock,
-    CreditCard,
     DollarSign,
     GraduationCap,
-    Hourglass,
-    ArrowRight,
     Plus,
-    TriangleAlert,
+    School,
+    Sparkles,
+    TrendingUp,
     UserRound,
     Users,
 } from 'lucide-react';
 import type { LucideIcon } from 'lucide-react';
+import type { CSSProperties, ReactNode } from 'react';
 import {
     Area,
     AreaChart,
@@ -26,8 +28,6 @@ import {
     BarChart,
     CartesianGrid,
     Cell,
-    Pie,
-    PieChart,
     PolarAngleAxis,
     PolarGrid,
     PolarRadiusAxis,
@@ -38,8 +38,6 @@ import {
     XAxis,
     YAxis,
 } from 'recharts';
-
-// ── Prop types ────────────────────────────────────────────
 
 interface Stats {
     totalStudents: number;
@@ -100,7 +98,12 @@ interface RecentStudent {
     photo: string | null;
     level: string;
     attendance: number;
-    grade: { speaking: number; listening: number; reading: number; writing: number };
+    grade: {
+        speaking: number;
+        listening: number;
+        reading: number;
+        writing: number;
+    };
     fees: 'Paid' | 'Unpaid' | 'Partial';
     province: string;
 }
@@ -127,51 +130,77 @@ interface DashboardProps {
     classes: ClassSummary[];
 }
 
-// ── Helpers ───────────────────────────────────────────────
+interface StatCard {
+    icon: LucideIcon;
+    label: string;
+    value: ReactNode;
+    accent: string;
+    tone: string;
+}
 
-const avg = (g: RecentStudent['grade']) =>
-    Math.round((g.speaking + g.listening + g.reading + g.writing) / 4);
+const avg = (grade: RecentStudent['grade']): number =>
+    Math.round(
+        (grade.speaking + grade.listening + grade.reading + grade.writing) / 4,
+    );
 
-const iconBadge = (Icon: LucideIcon, label: React.ReactNode) => (
-    <span style={{ display: 'inline-flex', alignItems: 'center', gap: 4 }}>
-        <Icon size={12} strokeWidth={2.4} />
-        {label}
-    </span>
-);
+const formatMoney = (amount: number): string =>
+    new Intl.NumberFormat('en-US', {
+        currency: 'USD',
+        maximumFractionDigits: 0,
+        style: 'currency',
+    }).format(amount);
 
-// ── Custom tooltip ────────────────────────────────────────
-const DarkTooltip = ({ active, payload, label }: any) => {
-    if (!active || !payload?.length) return null;
+function DashboardTooltip({ active, payload, label }: any) {
+    if (!active || !payload?.length) {
+        return null;
+    }
+
     return (
-        <div style={{ background: '#1e2940', color: 'white', padding: '10px 14px', borderRadius: 10, fontSize: 12, fontWeight: 700, boxShadow: '0 8px 24px rgba(0,0,0,0.25)', border: '1px solid rgba(255,255,255,0.08)' }}>
-            {label && <div style={{ color: 'rgba(255,255,255,0.45)', marginBottom: 6, fontSize: 11 }}>{label}</div>}
-            {payload.map((p: any) => (
-                <div key={p.name} style={{ color: p.color ?? '#fff', display: 'flex', alignItems: 'center', gap: 6 }}>
-                    <span style={{ width: 6, height: 6, borderRadius: '50%', background: p.color ?? '#fff', display: 'inline-block' }} />
-                    {p.name}: <strong style={{ marginLeft: 2 }}>{typeof p.value === 'number' && p.name === 'revenue' ? `$${p.value.toLocaleString()}` : p.value}{p.name === 'rate' ? '%' : ''}</strong>
+        <div className="dashboard-tooltip">
+            {label && <div className="dashboard-tooltip-label">{label}</div>}
+            {payload.map((item: any) => (
+                <div key={item.name} className="dashboard-tooltip-row">
+                    <span style={{ background: item.color ?? '#2563eb' }} />
+                    <strong>
+                        {item.name}:&nbsp;
+                        {item.name === 'revenue'
+                            ? formatMoney(Number(item.value))
+                            : item.value}
+                        {item.name === 'rate' ? '%' : ''}
+                    </strong>
                 </div>
             ))}
         </div>
     );
-};
+}
 
-// ── Chart card wrapper ────────────────────────────────────
-const ChartCard = ({ title, titleKh, subtitle, children, style = {} }: {
-    title: string; titleKh: string; subtitle?: string; children: React.ReactNode; style?: React.CSSProperties;
-}) => (
-    <div className="card" style={{ padding: 20, display: 'flex', flexDirection: 'column', gap: 16, ...style }}>
-        <div>
-            <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                <KH style={{ fontWeight: 800, fontSize: 15, color: '#1e293b' }}>{titleKh}</KH>
-                <span style={{ fontSize: 11, color: '#94a3b8', fontWeight: 500 }}>— {title}</span>
+function SectionCard({
+    title,
+    subtitle,
+    action,
+    children,
+    className = '',
+}: {
+    title: string;
+    subtitle?: string;
+    action?: ReactNode;
+    children: ReactNode;
+    className?: string;
+}) {
+    return (
+        <section className={`dashboard-panel ${className}`}>
+            <div className="dashboard-section-head">
+                <div>
+                    <h2>{title}</h2>
+                    {subtitle && <p>{subtitle}</p>}
+                </div>
+                {action}
             </div>
-            {subtitle && <div style={{ fontSize: 11, color: '#94a3b8', marginTop: 2 }}>{subtitle}</div>}
-        </div>
-        {children}
-    </div>
-);
+            {children}
+        </section>
+    );
+}
 
-// ═════════════════════════════════════════════════════════
 export default function Dashboard({
     stats,
     revenueTrend,
@@ -183,335 +212,500 @@ export default function Dashboard({
     recentStudents,
     classes,
 }: DashboardProps) {
+    const { props } = usePage<SharedData>();
     const { lang } = useAdminTranslation();
     const isKh = lang === 'kh';
+    const userName = props.auth?.user?.name ?? 'Admin';
+    const latestRevenue = revenueTrend.at(-1)?.revenue ?? stats.monthlyRevenue;
+    const previousRevenue = revenueTrend.at(-2)?.revenue ?? 0;
+    const revenueChange =
+        previousRevenue > 0
+            ? Math.round(((latestRevenue - previousRevenue) / previousRevenue) * 100)
+            : 0;
 
-    const totalStudents = stats.totalStudents;
-
-    const feeData = [
-        { name: 'Paid',    value: feeStatus.paid,    color: '#10b981' },
-        { name: 'Unpaid',  value: feeStatus.unpaid,  color: '#ef4444' },
-        { name: 'Partial', value: feeStatus.partial, color: '#f59e0b' },
+    const statCards: StatCard[] = [
+        {
+            icon: GraduationCap,
+            label: 'Students',
+            value: stats.totalStudents,
+            accent: '#2563eb',
+            tone: 'blue',
+        },
+        {
+            icon: Users,
+            label: 'Teachers',
+            value: stats.totalTeachers,
+            accent: '#7c3aed',
+            tone: 'purple',
+        },
+        {
+            icon: DollarSign,
+            label: 'Revenue',
+            value: formatMoney(stats.monthlyRevenue),
+            accent: '#059669',
+            tone: 'green',
+        },
+        {
+            icon: ClipboardCheck,
+            label: 'Attendance',
+            value: `${stats.avgAttendance}%`,
+            accent: '#d97706',
+            tone: 'amber',
+        },
     ];
 
+    const feeTotal = feeStatus.paid + feeStatus.unpaid + feeStatus.partial;
+    const paidRate = feeTotal > 0 ? Math.round((feeStatus.paid / feeTotal) * 100) : 0;
+
     const skillsData = [
-        { skill: 'Speaking', skKh: 'និយាយ', avg: skillsAvg.speaking },
-        { skill: 'Listening', skKh: 'ស្ដាប់', avg: skillsAvg.listening },
-        { skill: 'Reading', skKh: 'អាន', avg: skillsAvg.reading },
-        { skill: 'Writing', skKh: 'សរសេរ', avg: skillsAvg.writing },
+        { skill: 'Speaking', labelKh: 'Speaking', avg: skillsAvg.speaking },
+        { skill: 'Listening', labelKh: 'Listening', avg: skillsAvg.listening },
+        { skill: 'Reading', labelKh: 'Reading', avg: skillsAvg.reading },
+        { skill: 'Writing', labelKh: 'Writing', avg: skillsAvg.writing },
     ].map((skill) => ({
         ...skill,
-        label: isKh ? skill.skKh : skill.skill,
-        fontFamily: isKh ? "'Noto Sans Khmer',sans-serif" : 'inherit',
+        label: isKh ? skill.labelKh : skill.skill,
     }));
 
-    const DonutLabel = ({ cx, cy }: any) => (
-        <>
-            <text x={cx} y={cy - 8} textAnchor="middle" fill="#1e293b" style={{ fontSize: 26, fontWeight: 800 }}>
-                {totalStudents}
-            </text>
-            <text x={cx} y={cy + 14} textAnchor="middle" fill="#94a3b8" style={{ fontSize: 11 }}>
-                students
-            </text>
-        </>
-    );
+    const compactAttendance = attendanceByClass.slice(0, 5);
+    const visibleStudents = recentStudents.slice(0, 5);
+    const visibleClasses = classes.slice(0, 4);
+    const urgentStudents = atRiskStudents.slice(0, 3);
 
     return (
         <AdminShell>
             <Head title="Dashboard" />
-            <div className="dashboard-surface" style={{ height: 'auto', overflow: 'visible' }}>
-                <div className="fade-in" style={{ padding: 24, display: 'flex', flexDirection: 'column', gap: 20 }}>
 
-                    {/* ── Stat cards ── */}
-                    <div className="stat-grid-4" style={{ display: 'grid', gridTemplateColumns: 'repeat(4,1fr)', gap: 16 }}>
-                        {[
-                            { icon: GraduationCap, lk: 'សិស្សទាំងអស់', l: 'Total Students',   v: stats.totalStudents,               bg: '#eff6ff', c: '#2563eb' },
-                            { icon: Users, lk: 'គ្រូបង្រៀន',   l: 'Teachers',        v: stats.totalTeachers,               bg: '#f5f3ff', c: '#7c3aed' },
-                            { icon: DollarSign, lk: 'ចំណូលខែនេះ',   l: 'Monthly Revenue', v: `$${stats.monthlyRevenue.toFixed(0)}`, bg: '#f0fdf4', c: '#10b981' },
-                            { icon: ClipboardCheck, lk: 'អត្រាវត្តមាន',  l: 'Avg Attendance',  v: `${stats.avgAttendance}%`,         bg: '#fffbeb', c: '#d97706' },
-                        ].map((s, i) => (
-                            <div key={i} className="stat-card">
-                                <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', marginBottom: 12 }}>
-                                    <div style={{ width: 44, height: 44, borderRadius: 12, background: s.bg, color: s.c, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                                        <s.icon size={22} strokeWidth={2.4} />
-                                    </div>
-                                </div>
-                                <div style={{ fontSize: 26, fontWeight: 800, color: '#1e293b', marginBottom: 2 }}>{s.v}</div>
-                                <KH style={{ fontSize: 12, color: '#64748b', display: 'block', lineHeight: 1.3 }}>{s.lk}</KH>
-                                <div style={{ fontSize: 11, color: '#94a3b8' }}>{s.l}</div>
+            <div className="dashboard-surface dashboard-mobile-app">
+                <div className="dashboard-content fade-in">
+                    <section className="dashboard-hero">
+                        <div className="dashboard-hero-copy">
+                            <span className="dashboard-kicker">
+                                <Sparkles size={14} />
+                                Live school overview
+                            </span>
+                            <h1>Good afternoon, {userName}</h1>
+                            <p>
+                                Here is today&apos;s school activity, attendance,
+                                payments, and class progress.
+                            </p>
+                        </div>
+
+                        <div className="dashboard-hero-card">
+                            <div>
+                                <span>Monthly revenue</span>
+                                <strong>{formatMoney(latestRevenue)}</strong>
                             </div>
-                        ))}
+                            <Badge type={revenueChange >= 0 ? 'green' : 'red'}>
+                                <TrendingUp size={12} />
+                                {revenueChange >= 0 ? '+' : ''}
+                                {revenueChange}%
+                            </Badge>
+                        </div>
+                    </section>
+
+                    <div className="dashboard-quick-actions">
+                        <Link href="/admin/students/create">
+                            <Plus size={16} />
+                            Add student
+                        </Link>
+                        <Link href="/admin/attendance">
+                            <CalendarCheck2 size={16} />
+                            Attendance
+                        </Link>
+                        <Link href="/admin/classes">
+                            <BookOpenCheck size={16} />
+                            Classes
+                        </Link>
                     </div>
 
-                    {/* ── Charts row 1: Revenue trend + Fee donut ── */}
-                    <div className="dashboard-main-grid" style={{ display: 'grid', gridTemplateColumns: 'minmax(0,1fr) 340px', gap: 16 }}>
+                    <section className="dashboard-stat-grid">
+                        {statCards.map((stat) => {
+                            const Icon = stat.icon;
 
-                        {/* Revenue area chart */}
-                        {/* <ChartCard titleKh="ចំណូលប្រចាំខែ" title="Monthly Revenue Trend" subtitle="Last 6 months · USD">
-                            <ResponsiveContainer width="100%" height={200}>
-                                <AreaChart data={revenueTrend} margin={{ top: 4, right: 4, left: -20, bottom: 0 }}>
+                            return (
+                                <article
+                                    key={stat.label}
+                                    className={`dashboard-stat-card tone-${stat.tone}`}
+                                >
+                                    <span
+                                        className="dashboard-stat-icon"
+                                        style={{ color: stat.accent }}
+                                    >
+                                        <Icon size={20} strokeWidth={2.4} />
+                                    </span>
+                                    <span>{stat.label}</span>
+                                    <strong>{stat.value}</strong>
+                                </article>
+                            );
+                        })}
+                    </section>
+
+                    <div className="dashboard-insight-grid">
+                        <SectionCard
+                            title="Revenue trend"
+                            subtitle="Last 6 months"
+                            className="dashboard-chart-card dashboard-revenue-card"
+                        >
+                            <ResponsiveContainer width="100%" height={176}>
+                                <AreaChart
+                                    data={revenueTrend}
+                                    margin={{ top: 8, right: 8, left: -18, bottom: 0 }}
+                                >
                                     <defs>
-                                        <linearGradient id="revGrad" x1="0" y1="0" x2="0" y2="1">
-                                            <stop offset="5%"  stopColor="#3b82f6" stopOpacity={0.18} />
-                                            <stop offset="95%" stopColor="#3b82f6" stopOpacity={0} />
+                                        <linearGradient
+                                            id="dashboardRevenue"
+                                            x1="0"
+                                            x2="0"
+                                            y1="0"
+                                            y2="1"
+                                        >
+                                            <stop
+                                                offset="0%"
+                                                stopColor="#2563eb"
+                                                stopOpacity={0.3}
+                                            />
+                                            <stop
+                                                offset="100%"
+                                                stopColor="#2563eb"
+                                                stopOpacity={0}
+                                            />
                                         </linearGradient>
                                     </defs>
-                                    <CartesianGrid strokeDasharray="3 3" stroke="#f1f5f9" vertical={false} />
-                                    <XAxis dataKey="month" tick={{ fontSize: 11, fill: '#94a3b8', fontWeight: 600 }} axisLine={false} tickLine={false} />
-                                    <YAxis tick={{ fontSize: 10, fill: '#94a3b8' }} axisLine={false} tickLine={false} tickFormatter={v => `$${(v / 1000).toFixed(1)}k`} />
-                                    <Tooltip content={<DarkTooltip />} />
-                                    <Area type="monotone" dataKey="revenue" name="revenue" stroke="#3b82f6" strokeWidth={2.5} fill="url(#revGrad)" dot={{ r: 4, fill: '#3b82f6', strokeWidth: 2, stroke: 'white' }} activeDot={{ r: 6, fill: '#2563eb', stroke: 'white', strokeWidth: 2 }} />
+                                    <CartesianGrid
+                                        stroke="#e8edf5"
+                                        strokeDasharray="4 4"
+                                        vertical={false}
+                                    />
+                                    <XAxis
+                                        axisLine={false}
+                                        dataKey="month"
+                                        tick={{ fill: '#94a3b8', fontSize: 11 }}
+                                        tickLine={false}
+                                    />
+                                    <YAxis
+                                        axisLine={false}
+                                        tick={{ fill: '#94a3b8', fontSize: 10 }}
+                                        tickFormatter={(value) =>
+                                            `$${Number(value) / 1000}k`
+                                        }
+                                        tickLine={false}
+                                    />
+                                    <Tooltip content={<DashboardTooltip />} />
+                                    <Area
+                                        activeDot={{
+                                            fill: '#2563eb',
+                                            r: 5,
+                                            stroke: '#fff',
+                                            strokeWidth: 2,
+                                        }}
+                                        dataKey="revenue"
+                                        fill="url(#dashboardRevenue)"
+                                        name="revenue"
+                                        stroke="#2563eb"
+                                        strokeWidth={3}
+                                        type="monotone"
+                                    />
                                 </AreaChart>
                             </ResponsiveContainer>
-                            <div style={{ display: 'flex', justifyContent: 'space-between', paddingTop: 8, borderTop: '1px solid #f1f5f9' }}>
-                                {revenueTrend.slice(-3).map((d, i) => (
-                                    <div key={i} style={{ textAlign: 'center' }}>
-                                        <div style={{ fontSize: 14, fontWeight: 800, color: '#1e293b' }}>${d.revenue >= 1000 ? (d.revenue / 1000).toFixed(1) + 'k' : d.revenue.toFixed(0)}</div>
-                                        <div style={{ fontSize: 10, color: '#94a3b8' }}>{d.month}</div>
-                                    </div>
-                                ))}
-                                {revenueTrend.length >= 2 && (() => {
-                                    const last = revenueTrend[revenueTrend.length - 1].revenue;
-                                    const prev = revenueTrend[revenueTrend.length - 2].revenue;
-                                    const pct  = prev > 0 ? (((last - prev) / prev) * 100).toFixed(1) : '—';
-                                    return (
-                                        <div style={{ textAlign: 'center' }}>
-                                            <div style={{ fontSize: 14, fontWeight: 800, color: last >= prev ? '#10b981' : '#ef4444' }}>{last >= prev ? '+' : ''}{pct}%</div>
-                                            <div style={{ fontSize: 10, color: '#94a3b8' }}>vs prev</div>
-                                        </div>
-                                    );
-                                })()}
-                            </div>
-                        </ChartCard> */}
+                        </SectionCard>
 
-                        {/* Fee donut */}
-                        {/* <ChartCard titleKh="ស្ថានភាពថ្លៃ" title="Fee Status" subtitle={`${new Date().toLocaleString('default', { month: 'long', year: 'numeric' })}`}>
-                            <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 12 }}>
-                                <ResponsiveContainer width="100%" height={160}>
-                                    <PieChart>
-                                        <Pie data={feeData} cx="50%" cy="50%" innerRadius={52} outerRadius={72} paddingAngle={3} dataKey="value" labelLine={false} label={DonutLabel} isAnimationActive animationBegin={200} animationDuration={800}>
-                                            {feeData.map((entry, i) => (
-                                                <Cell key={i} fill={entry.color} />
-                                            ))}
-                                        </Pie>
-                                        <Tooltip content={<DarkTooltip />} />
-                                    </PieChart>
-                                </ResponsiveContainer>
-                                <div style={{ display: 'flex', gap: 16, justifyContent: 'center', width: '100%' }}>
-                                    {feeData.map(f => (
-                                        <div key={f.name} style={{ display: 'flex', alignItems: 'center', gap: 5 }}>
-                                            <span style={{ width: 8, height: 8, borderRadius: '50%', background: f.color, display: 'inline-block', flexShrink: 0 }} />
-                                            <span style={{ fontSize: 11, color: '#64748b', fontWeight: 700 }}>{f.name}</span>
-                                            <span style={{ fontSize: 12, fontWeight: 800, color: '#1e293b' }}>{f.value}</span>
-                                        </div>
-                                    ))}
+                        <SectionCard
+                            title="Fee health"
+                            subtitle={`${paidRate}% paid this cycle`}
+                            className="dashboard-fee-card"
+                        >
+                            <div
+                                className="dashboard-ring"
+                                style={
+                                    {
+                                        '--dashboard-ring': `${paidRate}%`,
+                                    } as CSSProperties
+                                }
+                            >
+                                <div>
+                                    <strong>{paidRate}%</strong>
+                                    <span>Paid</span>
                                 </div>
                             </div>
-                        </ChartCard> */}
+                            <div className="dashboard-fee-list">
+                                <span>
+                                    <i className="paid" />
+                                    Paid <strong>{feeStatus.paid}</strong>
+                                </span>
+                                <span>
+                                    <i className="partial" />
+                                    Partial <strong>{feeStatus.partial}</strong>
+                                </span>
+                                <span>
+                                    <i className="unpaid" />
+                                    Unpaid <strong>{feeStatus.unpaid}</strong>
+                                </span>
+                            </div>
+                        </SectionCard>
                     </div>
 
-                    {/* ── Charts row 2: Attendance + Skills ── */}
-                    <div className="grid-2-col" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16 }}>
-
-                        {/* Attendance by class */}
-                        <ChartCard titleKh="វត្តមានតាមថ្នាក់" title="Attendance by Class" subtitle="Average % · last 30 days">
-                            <ResponsiveContainer width="100%" height={200}>
-                                <BarChart data={attendanceByClass} layout="vertical" margin={{ top: 0, right: 40, left: 0, bottom: 0 }} barSize={14}>
-                                    <CartesianGrid strokeDasharray="3 3" stroke="#f1f5f9" horizontal={false} />
-                                    <XAxis type="number" domain={[0, 100]} tick={{ fontSize: 10, fill: '#94a3b8' }} axisLine={false} tickLine={false} tickFormatter={v => `${v}%`} />
-                                    <YAxis type="category" dataKey="short" tick={{ fontSize: 11, fill: '#64748b', fontWeight: 700 }} axisLine={false} tickLine={false} width={88} />
-                                    <Tooltip content={<DarkTooltip />} cursor={{ fill: 'rgba(59,130,246,0.04)' }} />
-                                    <Bar dataKey="rate" name="rate" radius={[0, 6, 6, 0]} isAnimationActive animationDuration={700}>
-                                        {attendanceByClass.map((entry, i) => (
-                                            <Cell key={i} fill={entry.rate >= 80 ? '#10b981' : entry.rate >= 60 ? '#f59e0b' : '#ef4444'} />
+                    <div className="dashboard-insight-grid">
+                        <SectionCard
+                            title="Attendance by class"
+                            subtitle="Average, last 30 days"
+                            className="dashboard-chart-card"
+                        >
+                            <ResponsiveContainer width="100%" height={210}>
+                                <BarChart
+                                    data={compactAttendance}
+                                    layout="vertical"
+                                    margin={{ top: 4, right: 18, left: -18, bottom: 0 }}
+                                >
+                                    <CartesianGrid
+                                        horizontal={false}
+                                        stroke="#e8edf5"
+                                        strokeDasharray="4 4"
+                                    />
+                                    <XAxis
+                                        axisLine={false}
+                                        domain={[0, 100]}
+                                        tick={{ fill: '#94a3b8', fontSize: 10 }}
+                                        tickFormatter={(value) => `${value}%`}
+                                        tickLine={false}
+                                        type="number"
+                                    />
+                                    <YAxis
+                                        axisLine={false}
+                                        dataKey="short"
+                                        tick={{ fill: '#475569', fontSize: 11 }}
+                                        tickLine={false}
+                                        type="category"
+                                        width={78}
+                                    />
+                                    <Tooltip content={<DashboardTooltip />} />
+                                    <Bar
+                                        barSize={14}
+                                        dataKey="rate"
+                                        name="rate"
+                                        radius={[0, 999, 999, 0]}
+                                    >
+                                        {compactAttendance.map((entry) => (
+                                            <Cell
+                                                key={entry.short}
+                                                fill={
+                                                    entry.rate >= 80
+                                                        ? '#10b981'
+                                                        : entry.rate >= 60
+                                                          ? '#f59e0b'
+                                                          : '#ef4444'
+                                                }
+                                            />
                                         ))}
                                     </Bar>
                                 </BarChart>
                             </ResponsiveContainer>
-                            <div style={{ display: 'flex', gap: 14, fontSize: 11, color: '#64748b' }}>
-                                {[{ c: '#10b981', l: '≥80% Good' }, { c: '#f59e0b', l: '60–79% Warning' }, { c: '#ef4444', l: '<60% At Risk' }].map(lg => (
-                                    <div key={lg.l} style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
-                                        <span style={{ width: 8, height: 8, borderRadius: 2, background: lg.c, display: 'inline-block' }} />
-                                        {lg.l}
-                                    </div>
-                                ))}
-                            </div>
-                        </ChartCard>
+                        </SectionCard>
 
-                        {/* Skills average radar */}
-                        <ChartCard titleKh="ពិន្ទុជំនាញ" title="Avg Skill Scores" subtitle="All students · speaking, listening, reading, writing">
-                            <ResponsiveContainer width="100%" height={200}>
-                                <RadarChart data={skillsData} margin={{ top: 4, right: 20, left: 20, bottom: 4 }}>
+                        <SectionCard
+                            title="Skill average"
+                            subtitle="All active students"
+                            className="dashboard-chart-card"
+                        >
+                            <ResponsiveContainer width="100%" height={210}>
+                                <RadarChart
+                                    data={skillsData}
+                                    margin={{ top: 8, right: 18, left: 18, bottom: 8 }}
+                                >
                                     <PolarGrid stroke="#e2e8f0" />
-                                    <PolarAngleAxis dataKey="label" tick={{ fontSize: 12, fill: '#64748b', fontWeight: 700, fontFamily: isKh ? "'Noto Sans Khmer',sans-serif" : 'inherit' }} />
-                                    <PolarRadiusAxis angle={30} domain={[0, 100]} tick={{ fontSize: 9, fill: '#94a3b8' }} axisLine={false} />
-                                    <Radar name="Avg" dataKey="avg" stroke="#6366f1" fill="#6366f1" fillOpacity={0.18} strokeWidth={2.5} dot={{ r: 4, fill: '#6366f1', strokeWidth: 2, stroke: 'white' }} isAnimationActive animationDuration={800} />
-                                    <Tooltip content={<DarkTooltip />} />
+                                    <PolarAngleAxis
+                                        dataKey="label"
+                                        tick={{
+                                            fill: '#475569',
+                                            fontFamily: isKh
+                                                ? "'Noto Sans Khmer', sans-serif"
+                                                : 'inherit',
+                                            fontSize: 11,
+                                            fontWeight: 700,
+                                        }}
+                                    />
+                                    <PolarRadiusAxis
+                                        angle={30}
+                                        axisLine={false}
+                                        domain={[0, 100]}
+                                        tick={{ fill: '#94a3b8', fontSize: 9 }}
+                                    />
+                                    <Radar
+                                        dataKey="avg"
+                                        dot={{
+                                            fill: '#4f46e5',
+                                            r: 3,
+                                            stroke: '#fff',
+                                            strokeWidth: 2,
+                                        }}
+                                        fill="#4f46e5"
+                                        fillOpacity={0.16}
+                                        name="Avg"
+                                        stroke="#4f46e5"
+                                        strokeWidth={2.5}
+                                    />
+                                    <Tooltip content={<DashboardTooltip />} />
                                 </RadarChart>
                             </ResponsiveContainer>
-                            <div style={{ display: 'flex', gap: 10, justifyContent: 'center' }}>
-                                {skillsData.map(sk => (
-                                    <div key={sk.skill} className="dashboard-soft-tile" style={{ textAlign: 'center', background: '#f8fafc', borderRadius: 10, padding: '8px 12px' }}>
-                                        <div style={{ fontSize: 16, fontWeight: 800, color: sk.avg >= 75 ? '#10b981' : sk.avg >= 50 ? '#3b82f6' : '#f59e0b' }}>{sk.avg}</div>
-                                        {isKh ? (
-                                            <KH style={{ fontSize: 10, color: '#64748b', display: 'block' }}>{sk.skKh}</KH>
-                                        ) : (
-                                            <div style={{ fontSize: 10, color: '#64748b' }}>{sk.skill}</div>
-                                        )}
-                                    </div>
-                                ))}
-                            </div>
-                        </ChartCard>
+                        </SectionCard>
                     </div>
 
-                    {/* ── At-risk + Recent payments ── */}
-                    {/* <div className="grid-2-col" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16 }}>
-                        <div className="card dashboard-list-card" style={{ padding: 20 }}>
-                            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 16 }}>
-                                <div>
-                                    <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                                        <TriangleAlert size={20} color="#d97706" strokeWidth={2.4} />
-                                        <KH className="dark-text-strong" style={{ fontWeight: 800, fontSize: 15, color: '#1e293b' }}>សិស្សត្រូវការជំនួយ</KH>
-                                    </div>
-                                    <div style={{ fontSize: 12, color: '#94a3b8', marginTop: 2 }}>At-risk — {atRiskStudents.length} alerts</div>
-                                </div>
-                                    <Link href="/admin/students" style={{ fontSize: 12, color: '#3b82f6', fontWeight: 700, textDecoration: 'none', display: 'inline-flex', alignItems: 'center', gap: 4 }}>View All <ArrowRight size={13} /></Link>
-                            </div>
-                            <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
-                                {atRiskStudents.length === 0 && (
-                                    <div style={{ textAlign: 'center', color: '#94a3b8', fontSize: 13, padding: '20px 0', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6 }}>
-                                        <Check size={14} />
-                                        No at-risk students
-                                    </div>
-                                )}
-                                {atRiskStudents.map(s => (
-                                    <div key={s.id} className="dashboard-risk-row" style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '10px 12px', background: '#fff7ed', borderRadius: 12, border: '1px solid #fed7aa' }}>
-                                        <Avatar name={s.nameEn} src={s.photo} size={36} />
-                                        <div style={{ flex: 1, minWidth: 0 }}>
-                                            <KH className="dark-text-strong" style={{ fontWeight: 700, fontSize: 13, display: 'block', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{s.nameKh}</KH>
-                                            <div style={{ fontSize: 11, color: '#94a3b8' }}>{s.level}</div>
-                                        </div>
-                                        <div style={{ display: 'flex', gap: 6, flexShrink: 0 }}>
-                                            {s.attendance < 70 && <Badge type="red">{iconBadge(ClipboardCheck, `${s.attendance}%`)}</Badge>}
-                                            {s.fees === 'Unpaid' && <Badge type="amber">{iconBadge(CreditCard, 'Unpaid')}</Badge>}
-                                        </div>
-                                    </div>
-                                ))}
-                            </div>
-                        </div>
-
-                        <div className="card" style={{ padding: 20 }}>
-                            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 16 }}>
-                                <div>
-                                    <KH style={{ fontWeight: 800, fontSize: 15, color: '#1e293b', display: 'block' }}>ការទូទាត់ថ្មីៗ</KH>
-                                    <div style={{ fontSize: 12, color: '#94a3b8' }}>Recent Payments</div>
-                                </div>
-                                    <Link href="/admin/fee" style={{ fontSize: 12, color: '#3b82f6', fontWeight: 700, textDecoration: 'none', display: 'inline-flex', alignItems: 'center', gap: 4 }}>View All <ArrowRight size={13} /></Link>
-                            </div>
-                            {recentPayments.length === 0
-                                ? <div style={{ textAlign: 'center', color: '#94a3b8', fontSize: 13, padding: '20px 0' }}>No payments yet</div>
-                                : (
-                                    <table className="data-table">
-                                        <thead><tr><th>Student</th><th>Amount</th><th>Method</th><th>Status</th></tr></thead>
-                                        <tbody>
-                                            {recentPayments.map(p => (
-                                                <tr key={p.id}>
-                                                    <td>
-                                                        <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-                                                            <Avatar name={p.nameEn} size={28} />
-                                                            <div>
-                                                                <KH style={{ fontWeight: 700, fontSize: 12, display: 'block' }}>{p.nameKh}</KH>
-                                                                <div style={{ fontSize: 11, color: '#94a3b8' }}>{p.date}</div>
-                                                            </div>
-                                                        </div>
-                                                    </td>
-                                                    <td><span style={{ fontWeight: 700 }}>${p.amount.toFixed(2)}</span></td>
-                                                    <td><Badge type="blue">{p.method}</Badge></td>
-                                                    <td>
-                                                        <Badge type={p.status === 'paid' ? 'green' : 'amber'}>
-                                                            {p.status === 'paid' ? iconBadge(CheckCircle2, 'Paid') : iconBadge(Hourglass, 'Pending')}
-                                                        </Badge>
-                                                    </td>
-                                                </tr>
-                                            ))}
-                                        </tbody>
-                                    </table>
-                                )
+                    {urgentStudents.length > 0 && (
+                        <SectionCard
+                            title="Needs attention"
+                            subtitle={`${atRiskStudents.length} student alerts`}
+                            action={
+                                <Link className="dashboard-link" href="/admin/students">
+                                    View all <ArrowRight size={14} />
+                                </Link>
                             }
-                        </div>
-                    </div> */}
-
-                    {/* ── Recent students overview ── */}
-                    <div className="card">
-                        <div style={{ padding: '20px 20px 0', display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 4 }}>
-                            <div>
-                                <KH style={{ fontWeight: 800, fontSize: 15, color: '#1e293b', display: 'block' }}>សិស្សថ្មីៗ</KH>
-                                <div style={{ fontSize: 12, color: '#94a3b8' }}>Recent Students</div>
+                        >
+                            <div className="dashboard-alert-list">
+                                {urgentStudents.map((student) => (
+                                    <article
+                                        key={student.id}
+                                        className="dashboard-alert-row"
+                                    >
+                                        <div className="dashboard-alert-identity">
+                                            <Avatar
+                                                name={student.nameEn}
+                                                size={42}
+                                                src={student.photo}
+                                            />
+                                            <div>
+                                                <KH>{student.nameKh}</KH>
+                                                <span>{student.nameEn}</span>
+                                            </div>
+                                        </div>
+                                        <div className="dashboard-alert-detail">
+                                            <span>{student.level}</span>
+                                            <strong>
+                                                {student.attendance < 70
+                                                    ? 'Low attendance'
+                                                    : 'Needs review'}
+                                            </strong>
+                                        </div>
+                                        <div className="dashboard-alert-meter">
+                                            <strong>{student.attendance}%</strong>
+                                            <span>Attend</span>
+                                        </div>
+                                    </article>
+                                ))}
                             </div>
-                            <Link href="/admin/students/create" style={{ fontSize: 12, color: '#3b82f6', fontWeight: 700, background: '#eff6ff', padding: '6px 14px', borderRadius: 8, textDecoration: 'none', display: 'inline-flex', alignItems: 'center', gap: 5 }}><Plus size={13} /> Add Student</Link>
-                        </div>
-                        <div style={{ overflowX: 'auto' }}>
-                            <table className="data-table">
-                                <thead><tr><th>Student</th><th>Level</th><th>Attendance</th><th>Avg Score</th><th>Fee</th><th>Province</th></tr></thead>
-                                <tbody>
-                                    {recentStudents.map(s => (
-                                        <tr key={s.id}>
-                                            <td>
-                                                <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-                                                    <Avatar name={s.nameEn} src={s.photo} size={32} />
-                                                    <div>
-                                                        <KH style={{ fontWeight: 700, fontSize: 13, display: 'block' }}>{s.nameKh}</KH>
-                                                        <div style={{ fontSize: 11, color: '#94a3b8' }}>{s.nameEn}</div>
-                                                    </div>
-                                                </div>
-                                            </td>
-                                            <td><Badge type="blue">{s.level}</Badge></td>
-                                            <td>
-                                                <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                                                    <div style={{ flex: 1, minWidth: 80 }}><PBar value={s.attendance} color={s.attendance >= 80 ? 'green' : 'red'} /></div>
-                                                    <span style={{ fontSize: 12, fontWeight: 700, color: s.attendance >= 80 ? '#10b981' : '#ef4444', width: 36 }}>{s.attendance}%</span>
-                                                </div>
-                                            </td>
-                                            <td><ScoreChip score={avg(s.grade)} /></td>
-                                            <td><FeeTag status={s.fees} /></td>
-                                            <td style={{ fontSize: 12, color: '#64748b' }}>{s.province}</td>
-                                        </tr>
-                                    ))}
-                                </tbody>
-                            </table>
-                        </div>
-                    </div>
+                        </SectionCard>
+                    )}
 
-                    {/* ── Classes overview ── */}
-                    <div className="card" style={{ padding: 20 }}>
-                        <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 16 }}>
-                            <div>
-                                <KH style={{ fontWeight: 800, fontSize: 15, color: '#1e293b', display: 'block' }}>ថ្នាក់ទាំងអស់</KH>
-                                <div style={{ fontSize: 12, color: '#94a3b8' }}>All Classes</div>
-                            </div>
-                                    <Link href="/admin/classes" style={{ fontSize: 12, color: '#3b82f6', fontWeight: 700, textDecoration: 'none', display: 'inline-flex', alignItems: 'center', gap: 4 }}>View All <ArrowRight size={13} /></Link>
-                        </div>
-                        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill,minmax(180px,1fr))', gap: 12 }}>
-                            {classes.map(cls => (
-                                <div key={cls.id} className="dashboard-soft-tile" style={{ background: '#f8fafc', borderRadius: 12, padding: 14, border: '1px solid #e8edf5' }}>
-                                    <div style={{ fontWeight: 700, fontSize: 13, marginBottom: 4 }}>{cls.name}</div>
-                                    <div style={{ fontSize: 11, color: '#64748b', marginBottom: 4 }}>{cls.teacher}</div>
-                                    <div style={{ fontSize: 11, color: '#3b82f6', fontWeight: 600, marginBottom: 6, display: 'flex', alignItems: 'center', gap: 4 }}>
-                                        <Clock size={12} strokeWidth={2.4} />
-                                        {cls.time}
+                    <SectionCard
+                        title="Recent students"
+                        subtitle="Latest enrolled profiles"
+                        action={
+                            <Link
+                                className="dashboard-primary-action"
+                                href="/admin/students/create"
+                            >
+                                <Plus size={14} />
+                                Add
+                            </Link>
+                        }
+                    >
+                        <div className="dashboard-student-list">
+                            {visibleStudents.map((student) => (
+                                <article
+                                    key={student.id}
+                                    className="dashboard-student-card"
+                                >
+                                    <Avatar
+                                        name={student.nameEn}
+                                        size={44}
+                                        src={student.photo}
+                                    />
+                                    <div className="dashboard-student-main">
+                                        <KH>{student.nameKh}</KH>
+                                        <span>{student.nameEn}</span>
+                                        <div>
+                                            <Badge type="blue">{student.level}</Badge>
+                                            <FeeTag status={student.fees} />
+                                        </div>
                                     </div>
-                                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                                        <Badge type="gray">Room {cls.room}</Badge>
-                                        <span style={{ fontSize: 11, fontWeight: 700, color: '#64748b', display: 'inline-flex', alignItems: 'center', gap: 4 }}>
-                                            {cls.count}
-                                            <UserRound size={12} strokeWidth={2.4} />
-                                        </span>
+                                    <div className="dashboard-student-score">
+                                        <ScoreChip score={avg(student.grade)} />
+                                        <span>{student.attendance}%</span>
                                     </div>
-                                </div>
+                                </article>
                             ))}
                         </div>
-                    </div>
+                    </SectionCard>
 
+                    <SectionCard
+                        title="Classes"
+                        subtitle="Today and active rooms"
+                        action={
+                            <Link className="dashboard-link" href="/admin/classes">
+                                View all <ArrowRight size={14} />
+                            </Link>
+                        }
+                    >
+                        <div className="dashboard-class-grid">
+                            {visibleClasses.map((classItem) => (
+                                <article
+                                    key={classItem.id}
+                                    className="dashboard-class-card"
+                                >
+                                    <div>
+                                        <span>
+                                            <School size={15} />
+                                            {classItem.room}
+                                        </span>
+                                        <strong>{classItem.name}</strong>
+                                        <p>{classItem.teacher}</p>
+                                    </div>
+                                    <div className="dashboard-class-meta">
+                                        <span>
+                                            <Clock size={13} />
+                                            {classItem.time}
+                                        </span>
+                                        <span>
+                                            <UserRound size={13} />
+                                            {classItem.count}
+                                        </span>
+                                    </div>
+                                </article>
+                            ))}
+                        </div>
+                    </SectionCard>
+
+                    {recentPayments.length > 0 && (
+                        <SectionCard
+                            title="Recent payments"
+                            subtitle="Latest fee activity"
+                            action={
+                                <Link className="dashboard-link" href="/admin/fee">
+                                    View all <ArrowRight size={14} />
+                                </Link>
+                            }
+                        >
+                            <div className="dashboard-payment-list">
+                                {recentPayments.slice(0, 4).map((payment) => (
+                                    <article
+                                        key={payment.id}
+                                        className="dashboard-payment-row"
+                                    >
+                                        <div className="dashboard-payment-left">
+                                            <Avatar name={payment.nameEn} size={38} />
+                                            <div>
+                                                <KH>{payment.nameKh}</KH>
+                                                <span>{payment.method}</span>
+                                            </div>
+                                        </div>
+                                        <div className="dashboard-payment-right">
+                                            <strong>{formatMoney(payment.amount)}</strong>
+                                            <span>{payment.date}</span>
+                                        </div>
+                                    </article>
+                                ))}
+                            </div>
+                        </SectionCard>
+                    )}
                 </div>
             </div>
         </AdminShell>

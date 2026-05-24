@@ -20,6 +20,7 @@ import {
     ClipboardCheck,
     Clock,
     Edit3,
+    Plus,
     School,
     Trash2,
 } from 'lucide-react';
@@ -196,8 +197,24 @@ export default function ClassesPage({
                         gap: 16,
                     }}
                 >
+                    <section className="classes-mobile-hero">
+                        <div>
+                            <span>Class directory</span>
+                            <strong>{classes.length} classes</strong>
+                            <p>
+                                {classes.reduce((total, cls) => total + cls.count, 0)} students
+                                {' '}·{' '}
+                                {new Set(classes.map((cls) => cls.room).filter(Boolean)).size} rooms
+                            </p>
+                        </div>
+                        <button type="button" onClick={() => setView('add')}>
+                            <Plus size={17} />
+                        </button>
+                    </section>
+
                     {/* Toolbar */}
                     <div
+                        className="admin-classes-actions"
                         style={{
                             display: 'flex',
                             alignItems: 'center',
@@ -208,7 +225,7 @@ export default function ClassesPage({
                     >
                         <button
                             onClick={() => setView('add')}
-                            className="admin-btn admin-btn-primary"
+                            className="admin-btn admin-btn-primary admin-classes-add-btn"
                             style={{ marginLeft: 'auto' }}
                         >
                             <School size={14} /> {translateText('Add Class')}
@@ -230,6 +247,7 @@ export default function ClassesPage({
                             }}
                         >
                             <span
+                                className="admin-classes-result-count"
                                 style={{
                                     fontSize: 11,
                                     fontWeight: 700,
@@ -472,6 +490,12 @@ export default function ClassesPage({
                                             <Badge type="blue">
                                                 {cls.room}
                                             </Badge>
+                                            <div className="admin-class-mobile-header-actions" onClick={(event) => event.stopPropagation()}>
+                                                <RowActions
+                                                    ariaLabel={`Actions for ${cls.name}`}
+                                                    actions={classActions(cls)}
+                                                />
+                                            </div>
                                         </div>
                                         <div className="admin-class-mobile-meta">
                                             <div>
@@ -500,12 +524,6 @@ export default function ClassesPage({
                                                     {translateText('students')}
                                                 </strong>
                                             </div>
-                                        </div>
-                                        <div className="admin-class-mobile-actions" style={{ justifyContent: 'flex-end' }}>
-                                            <RowActions
-                                                ariaLabel={`Actions for ${cls.name}`}
-                                                actions={classActions(cls)}
-                                            />
                                         </div>
                                     </div>
                                 ))

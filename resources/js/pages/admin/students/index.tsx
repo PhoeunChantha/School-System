@@ -167,6 +167,7 @@ function StudentCard({ student, onSelect, selected, canShow, canUpdate, canDelet
 }) {
     return (
         <div
+            className={`student-mobile-card${selected ? ' selected' : ''}`}
             onClick={onSelect}
             style={{
                 background: selected ? '#eff6ff' : 'white',
@@ -178,31 +179,43 @@ function StudentCard({ student, onSelect, selected, canShow, canUpdate, canDelet
             }}
         >
             {/* Top row: avatar + name + fee */}
-            <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 10 }}>
+            <div className="student-mobile-card-head" style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 10 }}>
                 <Avatar name={student.nameEn} src={student.photo} size={42} />
                 <div style={{ flex: 1, minWidth: 0 }}>
                     <KH style={{ fontWeight: 700, fontSize: 14, display: 'block', lineHeight: 1.3 }}>{student.nameKh}</KH>
                     <div style={{ fontSize: 12, color: '#94a3b8', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{student.nameEn}</div>
                 </div>
                 <FeeTag status={student.fees} />
+                <div className="student-mobile-header-actions" onClick={e => e.stopPropagation()}>
+                    <RowActions
+                        ariaLabel={`Actions for ${student.nameEn}`}
+                        actions={[
+                            { key: 'view', label: 'View', icon: Eye, href: showStudent.url((student.routeKey ?? student.id) as never), hidden: !canShow },
+                            { key: 'edit', label: 'Edit', icon: Edit3, href: editStudent.url((student.routeKey ?? student.id) as never), hidden: !canUpdate },
+                            { key: 'delete', label: 'Delete', icon: Trash2, onSelect: onDelete, variant: 'destructive', separatorBefore: true, hidden: !canDelete },
+                        ]}
+                    />
+                </div>
             </div>
 
             {/* Badges row */}
-            <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap', marginBottom: 10 }}>
+            <div className="student-mobile-tags" style={{ display: 'flex', gap: 6, flexWrap: 'wrap', marginBottom: 10 }}>
                 <Badge type="blue">{student.level}</Badge>
                 <span style={{ fontSize: 11, color: '#64748b', background: '#f8fafc', border: '1px solid #e2e8f0', borderRadius: 6, padding: '2px 8px' }}>{student.cls}</span>
                 <span style={{ fontSize: 11, color: '#64748b', background: '#f8fafc', border: '1px solid #e2e8f0', borderRadius: 6, padding: '2px 8px' }}>{student.province}</span>
             </div>
 
             {/* Attendance */}
-            <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 10 }}>
-                <span style={{ fontSize: 11, color: '#94a3b8', width: 72, flexShrink: 0 }}>Attendance</span>
+            <div className="student-mobile-attendance" style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 10 }}>
+                <div>
+                    <span>Attendance</span>
+                    <strong>{student.attendance}%</strong>
+                </div>
                 <PBar value={student.attendance} color={student.attendance >= 80 ? 'green' : 'red'} />
-                <span style={{ fontSize: 12, fontWeight: 700, color: student.attendance >= 80 ? '#10b981' : '#ef4444', width: 36, flexShrink: 0 }}>{student.attendance}%</span>
             </div>
 
             {/* Scores grid */}
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 6, marginBottom: 12 }}>
+            <div className="student-mobile-scores" style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 6, marginBottom: 12 }}>
                 {(['speaking', 'listening', 'reading', 'writing'] as const).map(skill => (
                     <div key={skill} style={{ textAlign: 'center' }}>
                         <div style={{ fontSize: 10, color: '#94a3b8', marginBottom: 2, textTransform: 'capitalize' }}>{skill.slice(0, 4)}</div>
@@ -211,17 +224,6 @@ function StudentCard({ student, onSelect, selected, canShow, canUpdate, canDelet
                 ))}
             </div>
 
-            {/* Actions */}
-            <div style={{ display: 'flex', justifyContent: 'flex-end' }} onClick={e => e.stopPropagation()}>
-                <RowActions
-                    ariaLabel={`Actions for ${student.nameEn}`}
-                    actions={[
-                        { key: 'view', label: 'View', icon: Eye, href: showStudent.url((student.routeKey ?? student.id) as never), hidden: !canShow },
-                        { key: 'edit', label: 'Edit', icon: Edit3, href: editStudent.url((student.routeKey ?? student.id) as never), hidden: !canUpdate },
-                        { key: 'delete', label: 'Delete', icon: Trash2, onSelect: onDelete, variant: 'destructive', separatorBefore: true, hidden: !canDelete },
-                    ]}
-                />
-            </div>
         </div>
     );
 }
@@ -315,18 +317,29 @@ export default function StudentsPage({ students }: StudentsPageProps) {
 
     return (
         <AdminShell>
-            <div className="fade-in" style={{ padding: '16px', display: 'flex', flexDirection: 'column', gap: 16 }}>
+            <div className="fade-in students-page" style={{ padding: '16px', display: 'flex', flexDirection: 'column', gap: 16 }}>
+
+                <section className="students-mobile-hero">
+                    <div>
+                        <span>Student directory</span>
+                        <strong>{students.length} students</strong>
+                    </div>
+                    {canCreate && (
+                        <Link href={createStudent.url()}>
+                            <Plus size={16} />
+                        </Link>
+                    )}
+                </section>
 
                 {/* â”€â”€ Top bar: stats + add button â”€â”€ */}
                 <div className="students-topbar" style={{ display: 'flex', gap: 12, flexWrap: 'wrap', alignItems: 'center' }}>
                     <div className="students-stats" style={{ display: 'flex', gap: 12, flexWrap: 'wrap' }}>
                         {[
-                            { l: 'Total', v: students.length, c: '#3b82f6' },
                             { l: 'Paid', v: students.filter(s => s.fees === 'Paid').length, c: '#10b981' },
                             { l: 'Unpaid', v: students.filter(s => s.fees === 'Unpaid').length, c: '#ef4444' },
                             { l: 'At-Risk', v: students.filter(s => s.attendance < 70 || s.fees === 'Unpaid').length, c: '#f59e0b' },
                         ].map(stat => (
-                            <div key={stat.l} style={{ background: 'white', borderRadius: 10, padding: '10px 16px', border: '1px solid #e8edf5', display: 'flex', gap: 8, alignItems: 'center', flex: '1 1 auto' }}>
+                            <div key={stat.l} className="students-stat-card" style={{ background: 'white', borderRadius: 10, padding: '10px 16px', border: '1px solid #e8edf5', display: 'flex', gap: 8, alignItems: 'center', flex: '1 1 auto' }}>
                                 <div style={{ width: 8, height: 8, borderRadius: '50%', background: stat.c, flexShrink: 0 }} />
                                 <span style={{ fontSize: 11, color: '#64748b' }}>{stat.l}</span>
                                 <span style={{ fontWeight: 800, fontSize: 16, color: '#1e293b' }}>{stat.v}</span>
@@ -365,7 +378,7 @@ export default function StudentsPage({ students }: StudentsPageProps) {
                 </div>
 
                 {/* â”€â”€ Table card â”€â”€ */}
-                <div className="card" style={{ overflowX: 'auto' }}>
+                <div className="card students-list-panel" style={{ overflowX: 'auto' }}>
 
                     {/* Toolbar */}
                     <div className="students-toolbar" style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '12px 16px', borderBottom: '1px solid #f1f5f9', flexWrap: 'wrap' }}>
@@ -388,7 +401,7 @@ export default function StudentsPage({ students }: StudentsPageProps) {
                                 style={{ minWidth: 120 }}
                                 triggerClassName="f-input h-9 min-h-9 px-3 py-1 text-xs font-bold"
                             />
-                            <span style={{ fontSize: 11, color: '#94a3b8' }}>{filtered.length} result{filtered.length !== 1 ? 's' : ''}</span>
+                            <span className="students-result-count" style={{ fontSize: 11, color: '#94a3b8' }}>{filtered.length} result{filtered.length !== 1 ? 's' : ''}</span>
                         </div>
 
                         {/* Filters */}
@@ -579,6 +592,3 @@ export default function StudentsPage({ students }: StudentsPageProps) {
         </AdminShell>
     );
 }
-
-
-

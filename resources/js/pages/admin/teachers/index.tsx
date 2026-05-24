@@ -33,6 +33,7 @@ import {
     FileDown,
     GraduationCap,
     Phone,
+    Plus,
     Save,
     School,
     Trash2,
@@ -261,6 +262,23 @@ export default function TeachersPage({ teachers }: TeachersPageProps) {
                         gap: 16,
                     }}
                 >
+                    <section className="teachers-mobile-hero">
+                        <div>
+                            <span>Teacher directory</span>
+                            <strong>{teachers.length} teachers</strong>
+                            <p>
+                                {teachers.filter((teacher) => teacher.status === 'active').length} active
+                                {' '}·{' '}
+                                {teachers.reduce((total, teacher) => total + teacher.students, 0)} students
+                            </p>
+                        </div>
+                        {canCreate && (
+                            <button type="button" onClick={() => setView('add')}>
+                                <Plus size={17} />
+                            </button>
+                        )}
+                    </section>
+
                     <div
                         style={{
                             display: 'flex',
@@ -270,6 +288,7 @@ export default function TeachersPage({ teachers }: TeachersPageProps) {
                         }}
                     >
                         <div
+                            className="admin-teachers-actions"
                             style={{
                                 marginLeft: 'auto',
                                 display: 'flex',
@@ -299,7 +318,7 @@ export default function TeachersPage({ teachers }: TeachersPageProps) {
                             </a>}
                             {canCreate && <button
                                 onClick={() => setView('add')}
-                                className="admin-btn admin-btn-primary"
+                                className="admin-btn admin-btn-primary admin-teachers-add-btn"
                             >
                                 <GraduationCap size={14} /> {translateText('Add Teacher')}
                             </button>}
@@ -328,6 +347,7 @@ export default function TeachersPage({ teachers }: TeachersPageProps) {
                             }}
                         >
                             <span
+                                className="admin-teachers-result-count"
                                 style={{
                                     fontSize: 11,
                                     fontWeight: 700,
@@ -609,10 +629,11 @@ export default function TeachersPage({ teachers }: TeachersPageProps) {
                                 </div>
                             ) : (
                                 paginated.map((t) => (
-                                    <AdminMobileCard
-                                        key={t.id}
-                                        leading={
-                                            <Avatar
+                                        <AdminMobileCard
+                                            key={t.id}
+                                            className="admin-teacher-mobile-card"
+                                            leading={
+                                                <Avatar
                                                 name={t.nameEn}
                                                 src={t.photo}
                                                 size={38}
