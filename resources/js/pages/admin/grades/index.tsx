@@ -107,6 +107,10 @@ function performanceLabel(score: number): { label: string; type: 'green' | 'blue
     return { label: 'Needs Work', type: 'red' };
 }
 
+function averageScore(form: GradeFormData): number {
+    return Math.round(((form.speaking + form.listening + form.reading + form.writing) / 4) * 100) / 100;
+}
+
 function sortRecords(list: GradeRecordItem[], order: OrderKey): GradeRecordItem[] {
     return [...list].sort((a, b) => {
         switch (order) {
@@ -218,6 +222,8 @@ export default function GradesPage({ records, periods, students, classes, summar
         () => students.find(student => student.id === data.student_id) ?? null,
         [data.student_id, students],
     );
+    const selectedAverage = averageScore(data);
+    const selectedPerformance = performanceLabel(selectedAverage);
 
     const searchableStudents = useMemo(() => {
         const query = studentSearch.trim().toLowerCase();
@@ -358,13 +364,13 @@ export default function GradesPage({ records, periods, students, classes, summar
 
     return (
         <AdminShell>
-            <div className="fade-in" style={{ padding: 24, display: 'flex', flexDirection: 'column', gap: 16 }}>
-                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12, flexWrap: 'wrap' }}>
+            <div className="fade-in grades-page" style={{ padding: 24, display: 'flex', flexDirection: 'column', gap: 16 }}>
+                <div className="grades-header" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12, flexWrap: 'wrap' }}>
                     <div>
                         <KH style={{ fontWeight: 800, fontSize: 18, color: '#1e293b', display: 'block' }}>Grade Book</KH>
                         <div style={{ fontSize: 12, color: '#94a3b8', marginTop: 2 }}>Manage speaking, listening, reading, and writing scores</div>
                     </div>
-                    <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', alignItems: 'center' }}>
+                    <div className="grades-header-actions" style={{ display: 'flex', gap: 8, flexWrap: 'wrap', alignItems: 'center' }}>
                         {canDownloadLayout && (
                             <a href={downloadLayout.url()} className="admin-btn admin-btn-ghost">
                                 <Download size={14} /> Layout
@@ -395,22 +401,35 @@ export default function GradesPage({ records, periods, students, classes, summar
                     </div>
                 </div>
 
-                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill,minmax(150px,1fr))', gap: 12 }}>
+                <div className="grades-mobile-hero">
+                    <div>
+                        <span>Grade book</span>
+                        <strong>{filtered.length} records</strong>
+                        <p>{visibleAverage} average - {filtered.filter(record => record.average < 50).length} need work</p>
+                    </div>
+                    {canCreate && (
+                        <button type="button" onClick={openCreateDrawer} aria-label="Add grade">
+                            +
+                        </button>
+                    )}
+                </div>
+
+                <div className="grades-summary-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill,minmax(150px,1fr))', gap: 12 }}>
                     {[
                         { label: 'Records', value: filtered.length, color: '#3b82f6', bg: '#eff6ff' },
                         { label: 'Average', value: visibleAverage, color: '#10b981', bg: '#f0fdf4' },
                         { label: 'Passing', value: filtered.filter(record => record.average >= 50).length, color: '#6366f1', bg: '#eef2ff' },
                         { label: 'Needs Work', value: filtered.filter(record => record.average < 50).length, color: '#ef4444', bg: '#fff1f2' },
                     ].map(card => (
-                        <div key={card.label} style={{ background: card.bg, border: `1px solid ${card.color}30`, borderRadius: 14, padding: 16 }}>
+                        <div className="grades-summary-card" key={card.label} style={{ background: card.bg, border: `1px solid ${card.color}30`, borderRadius: 14, padding: 16 }}>
                             <div style={{ color: card.color, fontSize: 24, fontWeight: 900 }}>{card.value}</div>
                             <div style={{ color: card.color, opacity: 0.7, fontSize: 11 }}>{card.label}</div>
                         </div>
                     ))}
                 </div>
 
-                <div className="card" style={{ overflowX: 'auto' }}>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '12px 16px', borderBottom: '1px solid #f1f5f9', flexWrap: 'wrap' }}>
+                <div className="card grades-list-card" style={{ overflowX: 'auto' }}>
+                    <div className="grades-controls" style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '12px 16px', borderBottom: '1px solid #f1f5f9', flexWrap: 'wrap' }}>
                         <AdminSelect
                             value={perPage.toString()}
                             onChange={value => setPerPage(Number(value))}
@@ -459,6 +478,7 @@ export default function GradesPage({ records, periods, students, classes, summar
                             className="f-input"
                             style={{ width: 260, maxWidth: '100%', marginLeft: 'auto' }}
                             placeholder="Search grades..."
+                            data-role="grades-search"
                         />
                     </div>
 
@@ -524,6 +544,57 @@ export default function GradesPage({ records, periods, students, classes, summar
                             })}
                         </tbody>
                     </table>
+
+                    <div className="grades-mobile-list">
+                        {paginated.length === 0 ? (
+                            <div className="grades-mobile-empty">
+                                {search ? <>No grades found for <strong>"{search}"</strong></> : 'Data not found'}
+                            </div>
+                        ) : paginated.map(record => {
+                            const perf = performanceLabel(record.average);
+
+                            return (
+                                <div className="grades-mobile-card" key={record.id}>
+                                    <div className="grades-mobile-card-head">
+                                        <div style={{ display: 'flex', minWidth: 0, alignItems: 'center', gap: 10 }}>
+                                            <Avatar name={record.studentNameEn} size={36} />
+                                            <div style={{ minWidth: 0 }}>
+                                                <KH style={{ fontWeight: 900, fontSize: 14, display: 'block' }}>{record.studentNameKh}</KH>
+                                                <p>{record.studentNameEn} - {record.className || record.level}</p>
+                                            </div>
+                                        </div>
+                                        {canManageRecords && (
+                                            <RowActions
+                                                ariaLabel={`Actions for ${record.studentNameEn}`}
+                                                actions={[
+                                                    { key: 'edit', label: 'Edit', icon: Edit3, onSelect: () => openEditDrawer(record), hidden: !canUpdate },
+                                                    { key: 'delete', label: 'Delete', icon: Trash2, onSelect: () => setDeleteTarget(record), variant: 'destructive', separatorBefore: true, hidden: !canDelete },
+                                                ]}
+                                            />
+                                        )}
+                                    </div>
+                                    <div className="grades-mobile-average">
+                                        <div>
+                                            <span>Average</span>
+                                            <strong>{record.average}</strong>
+                                        </div>
+                                        <PBar value={record.average} color={record.average >= 75 ? 'green' : record.average >= 50 ? 'blue' : 'red'} />
+                                        <Badge type={perf.type}>{perf.label}</Badge>
+                                    </div>
+                                    <div className="grades-mobile-scores">
+                                        <div><span>Speak</span><ScoreChip score={record.speaking} /></div>
+                                        <div><span>Listen</span><ScoreChip score={record.listening} /></div>
+                                        <div><span>Read</span><ScoreChip score={record.reading} /></div>
+                                        <div><span>Write</span><ScoreChip score={record.writing} /></div>
+                                    </div>
+                                    <div className="grades-mobile-foot">
+                                        <span>{record.periodName}</span>
+                                        <strong>{record.gradedAt}</strong>
+                                    </div>
+                                </div>
+                            );
+                        })}
+                    </div>
                     {filtered.length > 0 && <Pagination total={filtered.length} page={page} perPage={perPage} onPageChange={setPage} onPerPageChange={setPerPage} showPerPage={false} />}
                 </div>
             </div>
@@ -536,10 +607,10 @@ export default function GradesPage({ records, periods, students, classes, summar
                     }
                 }}
             >
-                <SheetContent side="right" className="w-full gap-0 overflow-y-auto p-0 sm:max-w-[520px]">
+                <SheetContent side="right" className="grade-drawer-sheet w-full gap-0 overflow-y-auto p-0 sm:max-w-[520px]">
                     {drawerMode && (
-                        <form onSubmit={submitGrade} className="flex min-h-full flex-col bg-white">
-                            <SheetHeader className="border-b border-slate-200 px-6 py-5 text-left">
+                        <form onSubmit={submitGrade} className="grade-drawer-form flex min-h-full flex-col bg-white">
+                            <SheetHeader className="grade-drawer-header border-b border-slate-200 px-6 py-5 text-left">
                                 <SheetTitle className="text-lg font-black text-slate-800">
                                     {drawerMode === 'create' ? 'Add Grade' : 'Edit Grade'}
                                 </SheetTitle>
@@ -548,8 +619,15 @@ export default function GradesPage({ records, periods, students, classes, summar
                                 </SheetDescription>
                             </SheetHeader>
 
-                            <div style={{ padding: 24, display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16 }}>
-                            <div style={{ gridColumn: '1 / -1' }}>
+                            <div className="grade-drawer-body" style={{ padding: 24, display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16 }}>
+                            <div className="grade-drawer-score-summary">
+                                <div>
+                                    <span>Live average</span>
+                                    <strong>{selectedAverage}</strong>
+                                </div>
+                                <Badge type={selectedPerformance.type}>{selectedPerformance.label}</Badge>
+                            </div>
+                            <div className="grade-drawer-field grade-drawer-field-full" style={{ gridColumn: '1 / -1' }}>
                                 <label style={drawerLabelStyle}>Period *</label>
                                 <Select value={data.grade_period_id ? String(data.grade_period_id) : ''} onValueChange={value => setData('grade_period_id', Number(value) || null)}>
                                     <SelectTrigger className="f-input" style={{ minHeight: 42 }}>
@@ -565,7 +643,7 @@ export default function GradesPage({ records, periods, students, classes, summar
                                 </Select>
                                 {errors.grade_period_id && <div className="field-error">{errors.grade_period_id}</div>}
                             </div>
-                            <div style={{ gridColumn: '1 / -1' }}>
+                            <div className="grade-drawer-field grade-drawer-field-full" style={{ gridColumn: '1 / -1' }}>
                                 <label style={drawerLabelStyle}>Student *</label>
                                 <Popover open={studentPickerOpen} onOpenChange={open => { if (drawerMode !== 'edit') setStudentPickerOpen(open); }}>
                                     <PopoverTrigger asChild>
@@ -621,7 +699,7 @@ export default function GradesPage({ records, periods, students, classes, summar
                                 {errors.student_id && <div className="field-error">{errors.student_id}</div>}
                             </div>
                             {(['speaking', 'listening', 'reading', 'writing'] as const).map(skill => (
-                                <div key={skill}>
+                                <div className="grade-score-field" key={skill}>
                                     <label style={drawerLabelStyle}>{skill.charAt(0).toUpperCase() + skill.slice(1)} *</label>
                                     <input type="number" min={0} max={100} style={drawerFieldStyle} value={data[skill]} onChange={event => setData(skill, Math.min(100, Math.max(0, Number(event.target.value))))} />
                                     {errors[skill] && <div className="field-error">{errors[skill]}</div>}
@@ -629,7 +707,7 @@ export default function GradesPage({ records, periods, students, classes, summar
                             ))}
                             </div>
 
-                        <div style={{ marginTop: 'auto', padding: 24, borderTop: '1px solid #e2e8f0', display: 'flex', gap: 10 }}>
+                        <div className="grade-drawer-actions" style={{ marginTop: 'auto', padding: 24, borderTop: '1px solid #e2e8f0', display: 'flex', gap: 10 }}>
                             <button type="button" onClick={closeDrawer} style={{ flex: 1, background: '#f1f5f9', color: '#64748b', border: 'none', borderRadius: 10, padding: '12px', fontWeight: 800, cursor: 'pointer', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: 6 }}><X size={16} /> Cancel</button>
                             <button disabled={processing} type="submit" style={{ flex: 2, background: processing ? '#93c5fd' : '#2563eb', color: 'white', border: 'none', borderRadius: 10, padding: '12px', fontWeight: 800, cursor: processing ? 'default' : 'pointer', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: 6 }}>
                                 <Save size={16} /> {drawerMode === 'create' ? 'Save Grade' : 'Save Changes'}
@@ -657,6 +735,3 @@ export default function GradesPage({ records, periods, students, classes, summar
         </AdminShell>
     );
 }
-
-
-

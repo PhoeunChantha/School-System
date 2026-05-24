@@ -3,7 +3,7 @@ import { useAdminPermissions } from '@/hooks/use-admin-permissions';
 import AdminShell from '@/pages/admin/shell';
 import { AdminSelect, Badge, KH, Pagination, RowActions } from '@/pages/admin/ui';
 import { router } from '@inertiajs/react';
-import { Download, Edit3, FileDown, Trash2, Upload, X } from 'lucide-react';
+import { Download, Edit3, FileDown, Plus, Trash2, Upload, X } from 'lucide-react';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { toast } from 'sonner';
 
@@ -162,13 +162,26 @@ export default function AttendancePage({ sessions, classes, summary }: Attendanc
 
     return (
         <AdminShell>
-            <div className="fade-in" style={{ padding: 24, display: 'flex', flexDirection: 'column', gap: 16 }}>
-                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12, flexWrap: 'wrap' }}>
+            <div className="attendance-page fade-in" style={{ padding: 24, display: 'flex', flexDirection: 'column', gap: 16 }}>
+                <section className="attendance-mobile-hero">
+                    <div>
+                        <span>Attendance</span>
+                        <strong>{summary.sessionCount} sessions</strong>
+                        <p>{summary.presentCount} present · {summary.absentCount} absent</p>
+                    </div>
+                    {canCreate && (
+                        <button type="button" onClick={() => router.visit(create.url())}>
+                            <Plus size={17} />
+                        </button>
+                    )}
+                </section>
+
+                <div className="attendance-desktop-header" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12, flexWrap: 'wrap' }}>
                     <div>
                         <KH style={{ fontWeight: 800, fontSize: 18, color: '#1e293b', display: 'block' }}>Attendance</KH>
                         <div style={{ fontSize: 12, color: '#94a3b8', marginTop: 2 }}>Track daily class attendance</div>
                     </div>
-                    <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', alignItems: 'center' }}>
+                    <div className="attendance-actions" style={{ display: 'flex', gap: 8, flexWrap: 'wrap', alignItems: 'center' }}>
                         {canDownloadLayout && (
                             <a href={downloadLayout.url()} className="admin-btn admin-btn-ghost">
                                 <Download size={14} /> Layout
@@ -199,22 +212,22 @@ export default function AttendancePage({ sessions, classes, summary }: Attendanc
                     </div>
                 </div>
 
-                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill,minmax(150px,1fr))', gap: 12 }}>
+                <div className="attendance-summary-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill,minmax(150px,1fr))', gap: 12 }}>
                     {[
                         { label: 'Sessions', value: summary.sessionCount, color: '#3b82f6', bg: '#eff6ff' },
                         { label: 'Present', value: summary.presentCount, color: '#10b981', bg: '#f0fdf4' },
                         { label: 'Absent', value: summary.absentCount, color: '#ef4444', bg: '#fff1f2' },
                         { label: 'Late', value: summary.lateCount, color: '#f59e0b', bg: '#fffbeb' },
                     ].map(card => (
-                        <div key={card.label} style={{ background: card.bg, border: `1px solid ${card.color}30`, borderRadius: 14, padding: 16 }}>
+                        <div key={card.label} className="attendance-summary-card" style={{ background: card.bg, border: `1px solid ${card.color}30`, borderRadius: 14, padding: 16 }}>
                             <div style={{ color: card.color, fontSize: 24, fontWeight: 900 }}>{card.value}</div>
                             <div style={{ color: card.color, opacity: 0.7, fontSize: 11 }}>{card.label}</div>
                         </div>
                     ))}
                 </div>
 
-                <div className="card" style={{ overflowX: 'auto' }}>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '12px 16px', borderBottom: '1px solid #f1f5f9', flexWrap: 'wrap' }}>
+                <div className="card attendance-list-card" style={{ overflowX: 'auto' }}>
+                    <div className="attendance-controls" style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '12px 16px', borderBottom: '1px solid #f1f5f9', flexWrap: 'wrap' }}>
                         <span style={{ fontSize: 11, fontWeight: 700, color: '#94a3b8', whiteSpace: 'nowrap' }}>Sort by</span>
                         <AdminSelect
                             value={orderBy}
@@ -238,11 +251,11 @@ export default function AttendancePage({ sessions, classes, summary }: Attendanc
                             style={{ minWidth: 150 }}
                             triggerClassName="f-input h-9 min-h-9 px-3 py-1 text-xs font-bold"
                         />
-                        <span style={{ fontSize: 11, color: '#94a3b8' }}>{filtered.length} result{filtered.length !== 1 ? 's' : ''}</span>
-                        <input value={search} onChange={event => setSearch(event.target.value)} className="f-input" style={{ width: 260, maxWidth: '100%', marginLeft: 'auto' }} placeholder="Search attendance..." />
+                        <span className="attendance-result-count" style={{ fontSize: 11, color: '#94a3b8' }}>{filtered.length} result{filtered.length !== 1 ? 's' : ''}</span>
+                        <input value={search} onChange={event => setSearch(event.target.value)} className="f-input" data-role="attendance-search" style={{ width: 260, maxWidth: '100%', marginLeft: 'auto' }} placeholder="Search attendance..." />
                     </div>
 
-                    <table className="data-table">
+                    <table className="data-table attendance-table">
                         <thead>
                             <tr>
                                 <th>Date</th>
@@ -289,6 +302,41 @@ export default function AttendancePage({ sessions, classes, summary }: Attendanc
                             ))}
                         </tbody>
                     </table>
+                    <div className="attendance-mobile-list">
+                        {paginated.length === 0 ? (
+                            <div className="attendance-mobile-empty">
+                                {search ? <>No attendance found for <strong>"{search}"</strong></> : 'Data not found'}
+                            </div>
+                        ) : paginated.map((session) => (
+                            <article key={session.id} className="attendance-mobile-card">
+                                <div className="attendance-mobile-head">
+                                    <div>
+                                        <span>{session.attendanceDate}</span>
+                                        <strong>{session.className}</strong>
+                                        <p>{session.markedAt || 'Not marked'}</p>
+                                    </div>
+                                    <div className="attendance-mobile-head-actions">
+                                        <Badge type="blue">{periodLabel(session.period)}</Badge>
+                                        {canManageAttendance && (
+                                            <RowActions
+                                                ariaLabel={`Actions for ${session.className} ${session.attendanceDate}`}
+                                                actions={[
+                                                    { key: 'edit', label: 'Edit', icon: Edit3, onSelect: () => router.visit(edit.url((session.routeKey ?? session.id) as never)), hidden: !canUpdate },
+                                                    { key: 'delete', label: 'Delete', icon: Trash2, onSelect: () => setDeleteTarget(session), variant: 'destructive', separatorBefore: true, hidden: !canDelete },
+                                                ]}
+                                            />
+                                        )}
+                                    </div>
+                                </div>
+                                <div className="attendance-mobile-meta">
+                                    <div className="present"><span>Present</span><strong>{session.presentCount}</strong></div>
+                                    <div className="absent"><span>Absent</span><strong>{session.absentCount}</strong></div>
+                                    <div className="late"><span>Late</span><strong>{session.lateCount}</strong></div>
+                                    <div className="excused"><span>Excused</span><strong>{session.excusedCount}</strong></div>
+                                </div>
+                            </article>
+                        ))}
+                    </div>
                     {filtered.length > 0 && <Pagination total={filtered.length} page={page} perPage={perPage} onPageChange={setPage} onPerPageChange={setPerPage} showPerPage={false} />}
                 </div>
             </div>
@@ -310,6 +358,4 @@ export default function AttendancePage({ sessions, classes, summary }: Attendanc
         </AdminShell>
     );
 }
-
-
 

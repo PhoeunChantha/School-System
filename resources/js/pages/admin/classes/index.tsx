@@ -83,6 +83,15 @@ const ORDER_OPTIONS: { value: OrderKey; label: string }[] = [
     { value: 'students-asc', label: 'Students Least' },
     { value: 'room-asc', label: 'Room' },
 ];
+const controlInputClass = 'min-h-9 rounded-xl border border-slate-200 bg-white px-3 py-1 text-xs font-bold text-slate-900 dark:border-slate-700 dark:bg-slate-950 dark:text-slate-100';
+const primaryButtonClass = 'inline-flex min-h-9 items-center justify-center gap-1.5 rounded-xl bg-blue-600 px-3 py-2 text-xs font-black text-white';
+const mobileCardClass = 'rounded-[22px] border border-slate-200/80 bg-white/95 p-3 shadow-[0_14px_34px_rgba(15,23,42,0.07)] dark:border-slate-700 dark:bg-slate-800/90';
+const softTileClass = 'rounded-2xl bg-slate-50 p-2 dark:bg-slate-950/70';
+const fieldGroupClass = 'grid gap-1.5';
+const fieldLabelClass = 'text-[11px] font-black uppercase text-slate-500 dark:text-slate-400';
+const fieldInputClass = 'min-h-12 w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm font-bold text-slate-900 outline-none transition focus:border-blue-400 focus:ring-2 focus:ring-blue-500/15 dark:border-slate-700 dark:bg-slate-950 dark:text-slate-100';
+const errorTextClass = 'mt-1 text-[11px] font-bold text-red-500';
+
 function sortClasses(list: SchoolClass[], order: OrderKey): SchoolClass[] {
     return [...list].sort((a, b) => {
         switch (order) {
@@ -108,11 +117,11 @@ function DayBadges({ days }: { days: string }) {
     const list = days.split(/\s+/).filter(Boolean);
 
     if (list.length === 0) {
-        return <span style={{ fontSize: 12, color: '#94a3b8' }}>-</span>;
+        return <span className="text-xs text-slate-400">-</span>;
     }
 
     return (
-        <div style={{ display: 'flex', flexWrap: 'wrap', gap: 4 }}>
+        <div className="flex flex-wrap gap-1">
             {list.map((day) => (
                 <Badge key={day} type="blue">
                     {day.charAt(0).toUpperCase() + day.slice(1)}
@@ -189,87 +198,44 @@ export default function ClassesPage({
         <AdminShell>
             {/* List view */}
             {view === 'list' && (
-                <div
-                    className="admin-classes-page fade-in"
-                    style={{
-                        display: 'flex',
-                        flexDirection: 'column',
-                        gap: 16,
-                    }}
-                >
-                    <section className="classes-mobile-hero">
+                <div className="fade-in flex flex-col gap-3 bg-slate-50 p-4 dark:bg-slate-950 max-md:bg-[radial-gradient(circle_at_100%_0,rgba(37,99,235,0.12),transparent_34%),linear-gradient(180deg,#f7f9fc_0%,#eef3f8_100%)] max-md:px-2.5 max-md:py-3 max-md:pb-[calc(104px+env(safe-area-inset-bottom))] dark:max-md:bg-[radial-gradient(circle_at_100%_0,rgba(96,165,250,0.14),transparent_34%),linear-gradient(180deg,#0f172a_0%,#111827_100%)]">
+                    <section className="flex items-center justify-between gap-3 rounded-[24px] border border-slate-200 bg-white p-4 shadow-[0_14px_36px_rgba(15,23,42,0.07)] dark:border-slate-700 dark:bg-slate-800/90">
                         <div>
-                            <span>Class directory</span>
-                            <strong>{classes.length} classes</strong>
-                            <p>
+                            <span className="block text-xs font-black text-slate-400">Class directory</span>
+                            <strong className="mt-1 block text-2xl font-black text-slate-900 dark:text-slate-50">{classes.length} classes</strong>
+                            <p className="mt-1 text-xs font-extrabold text-slate-400">
                                 {classes.reduce((total, cls) => total + cls.count, 0)} students
                                 {' '}·{' '}
                                 {new Set(classes.map((cls) => cls.room).filter(Boolean)).size} rooms
                             </p>
                         </div>
-                        <button type="button" onClick={() => setView('add')}>
+                        <button className="inline-flex h-11 w-11 items-center justify-center rounded-2xl bg-blue-600 text-white shadow-[0_14px_26px_rgba(37,99,235,0.28)]" type="button" onClick={() => setView('add')}>
                             <Plus size={17} />
                         </button>
                     </section>
 
                     {/* Toolbar */}
-                    <div
-                        className="admin-classes-actions"
-                        style={{
-                            display: 'flex',
-                            alignItems: 'center',
-                            justifyContent: 'flex-end',
-                            flexWrap: 'wrap',
-                            gap: 12,
-                        }}
-                    >
+                    <div className="hidden flex-wrap items-center justify-end gap-3 md:flex">
                         <button
                             onClick={() => setView('add')}
-                            className="admin-btn admin-btn-primary admin-classes-add-btn"
-                            style={{ marginLeft: 'auto' }}
+                            className={`${primaryButtonClass} ml-auto max-md:w-full`}
                         >
                             <School size={14} /> {translateText('Add Class')}
                         </button>
                     </div>
 
                     {/* Table */}
-                    <div className="card admin-classes-card">
+                    <div className="overflow-visible rounded-[24px] border-0 bg-transparent shadow-none md:overflow-x-auto md:rounded-2xl md:border md:border-slate-200 md:bg-white md:shadow-sm dark:md:border-slate-700 dark:md:bg-slate-800/90">
                         {/* Sort + per-page controls */}
-                        <div
-                            className="admin-classes-controls"
-                            style={{
-                                display: 'flex',
-                                alignItems: 'center',
-                                flexWrap: 'wrap',
-                                gap: 8,
-                                padding: '12px 16px',
-                                borderBottom: '1px solid #f1f5f9',
-                            }}
-                        >
-                            <span
-                                className="admin-classes-result-count"
-                                style={{
-                                    fontSize: 11,
-                                    fontWeight: 700,
-                                    color: '#94a3b8',
-                                    whiteSpace: 'nowrap',
-                                }}
-                            >
+                        <div className="sticky top-0 z-10 mb-3 grid grid-cols-2 gap-2 rounded-[22px] border border-slate-200 bg-white/90 p-3 shadow-[0_12px_32px_rgba(15,23,42,0.07)] backdrop-blur dark:border-slate-700 dark:bg-slate-800/90 md:mb-0 md:flex md:flex-wrap md:items-center md:border-b md:shadow-none">
+                            <span className="hidden text-[11px] font-black text-slate-400 md:inline">
                                 {translateText('Sort by')}
                             </span>
                             <Select
                                 value={orderBy}
                                 onValueChange={(e) => setOrderBy(e as OrderKey)}
                             >
-                                <SelectTrigger
-                                    style={{
-                                        width: 'auto',
-                                        minWidth: 150,
-                                        padding: '5px 10px',
-                                        fontSize: 12,
-                                        height: 'auto',
-                                    }}
-                                >
+                                <SelectTrigger className={`${controlInputClass} min-w-[150px]`}>
                                     <SelectValue />
                                 </SelectTrigger>
                                 <SelectContent>
@@ -284,14 +250,7 @@ export default function ClassesPage({
                                 </SelectContent>
                             </Select>
 
-                            <div
-                                style={{
-                                    width: 1,
-                                    height: 18,
-                                    background: '#e2e8f0',
-                                    margin: '0 2px',
-                                }}
-                            />
+                            <div className="hidden h-5 w-px bg-slate-200 md:block" />
 
                             <Select
                                 value={perPage.toString()}
@@ -300,15 +259,7 @@ export default function ClassesPage({
                                     setPage(1);
                                 }}
                             >
-                                <SelectTrigger
-                                    style={{
-                                        width: 'auto',
-                                        minWidth: 120,
-                                        padding: '5px 10px',
-                                        fontSize: 12,
-                                        height: 'auto',
-                                    }}
-                                >
+                                <SelectTrigger className={`${controlInputClass} min-w-[120px]`}>
                                     <SelectValue />
                                 </SelectTrigger>
                                 <SelectContent>
@@ -323,13 +274,7 @@ export default function ClassesPage({
                                 </SelectContent>
                             </Select>
 
-                            <span
-                                style={{
-                                    fontSize: 11,
-                                    color: '#94a3b8',
-                                    marginLeft: 4,
-                                }}
-                            >
+                            <span className="hidden text-[11px] font-extrabold text-slate-400 md:inline">
                                 {filtered.length}{' '}
                                 {translateText(
                                     filtered.length === 1
@@ -341,18 +286,13 @@ export default function ClassesPage({
                             <input
                                 value={search}
                                 onChange={(e) => setSearch(e.target.value)}
-                                className="f-input"
+                                className={`${controlInputClass} col-span-2 w-full md:ml-auto md:max-w-[260px]`}
                                 data-role="classes-search"
-                                style={{
-                                    width: 260,
-                                    maxWidth: '100%',
-                                    marginLeft: 'auto',
-                                }}
                                 placeholder={translateText('Search classes...')}
                             />
                         </div>
 
-                        <table className="data-table admin-classes-table">
+                        <table className="data-table hidden md:table">
                             <thead>
                                 <tr>
                                     <th>{translateText('Class')}</th>
@@ -369,12 +309,7 @@ export default function ClassesPage({
                                     <tr>
                                         <td
                                             colSpan={7}
-                                            style={{
-                                                textAlign: 'center',
-                                                padding: '44px 16px',
-                                                color: '#94a3b8',
-                                                fontSize: 14,
-                                            }}
+                                            className="px-4 py-11 text-center text-sm text-slate-400"
                                         >
                                             {translateText('No classes found')}{' '}
                                             <strong>"{search}"</strong>
@@ -384,20 +319,12 @@ export default function ClassesPage({
                                     paginated.map((cls) => (
                                         <tr key={cls.id}>
                                             <td>
-                                                <span
-                                                    style={{
-                                                        fontWeight: 700,
-                                                        fontSize: 14,
-                                                    }}
-                                                >
+                                                <span className="text-sm font-bold text-slate-900 dark:text-slate-50">
                                                     {cls.name}
                                                 </span>
                                             </td>
                                             <td
-                                                style={{
-                                                    fontSize: 13,
-                                                    color: '#64748b',
-                                                }}
+                                                className="text-[13px] text-slate-500 dark:text-slate-400"
                                             >
                                                 {cls.teacher}
                                             </td>
@@ -407,18 +334,10 @@ export default function ClassesPage({
                                                 </Badge>
                                             </td>
                                             <td
-                                                style={{
-                                                    fontSize: 13,
-                                                    color: '#3b82f6',
-                                                    fontWeight: 600,
-                                                }}
+                                                className="text-[13px] font-semibold text-blue-500"
                                             >
                                                 <span
-                                                    style={{
-                                                        display: 'inline-flex',
-                                                        alignItems: 'center',
-                                                        gap: 4,
-                                                    }}
+                                                    className="inline-flex items-center gap-1"
                                                 >
                                                     <Clock size={13} />
                                                     {cls.time}
@@ -429,24 +348,15 @@ export default function ClassesPage({
                                             </td>
                                             <td>
                                                 <div
-                                                    style={{
-                                                        display: 'flex',
-                                                        alignItems: 'center',
-                                                        gap: 6,
-                                                    }}
+                                                    className="flex items-center gap-1.5"
                                                 >
                                                     <span
-                                                        style={{
-                                                            fontWeight: 700,
-                                                        }}
+                                                        className="font-bold text-slate-900 dark:text-slate-50"
                                                     >
                                                         {cls.count}
                                                     </span>
                                                     <span
-                                                        style={{
-                                                            fontSize: 11,
-                                                            color: '#94a3b8',
-                                                        }}
+                                                        className="text-[11px] text-slate-400"
                                                     >
                                                         {translateText(
                                                             'students',
@@ -466,66 +376,66 @@ export default function ClassesPage({
                             </tbody>
                         </table>
 
-                        <div className="admin-classes-mobile-list">
+                        <div className="grid gap-3 md:hidden">
                             {paginated.length === 0 ? (
-                                <div className="admin-classes-empty">
+                                <div className="py-8 text-center text-sm font-bold text-slate-500">
                                     {translateText('No classes found')}{' '}
                                     <strong>"{search}"</strong>
                                 </div>
                             ) : (
                                 paginated.map((cls) => (
-                                    <div
+                                    <article
                                         key={cls.id}
-                                        className="admin-class-mobile-card"
+                                        className={mobileCardClass}
                                     >
-                                        <div className="admin-class-mobile-head">
+                                        <div className="mb-3 flex items-start gap-3">
                                             <div>
-                                                <div className="admin-class-mobile-title">
+                                                <div className="text-sm font-black text-slate-900 dark:text-slate-50">
                                                     {cls.name}
                                                 </div>
-                                                <div className="admin-class-mobile-teacher">
+                                                <div className="text-xs font-extrabold text-slate-400">
                                                     {cls.teacher}
                                                 </div>
                                             </div>
                                             <Badge type="blue">
                                                 {cls.room}
                                             </Badge>
-                                            <div className="admin-class-mobile-header-actions" onClick={(event) => event.stopPropagation()}>
+                                            <div className="ml-auto" onClick={(event) => event.stopPropagation()}>
                                                 <RowActions
                                                     ariaLabel={`Actions for ${cls.name}`}
                                                     actions={classActions(cls)}
                                                 />
                                             </div>
                                         </div>
-                                        <div className="admin-class-mobile-meta">
-                                            <div>
-                                                <span>
+                                        <div className="grid gap-0 overflow-hidden rounded-2xl border border-slate-200 bg-slate-950/5 dark:border-slate-700 dark:bg-slate-950/70">
+                                            <div className="flex items-center justify-between gap-3 border-b border-slate-200 px-3 py-2.5 dark:border-slate-700">
+                                                <span className="text-[10px] font-black uppercase text-slate-400">
                                                     {translateText('Schedule')}
                                                 </span>
-                                                <strong>
+                                                <strong className="inline-flex items-center gap-1 text-xs font-black text-blue-500">
                                                     <Clock size={13} />
                                                     {cls.time}
                                                 </strong>
                                             </div>
-                                            <div>
-                                                <span>
+                                            <div className="flex items-center justify-between gap-3 border-b border-slate-200 px-3 py-2.5 dark:border-slate-700">
+                                                <span className="text-[10px] font-black uppercase text-slate-400">
                                                     {translateText('Days')}
                                                 </span>
-                                                <strong>
+                                                <strong className="flex justify-end">
                                                     <DayBadges days={cls.days} />
                                                 </strong>
                                             </div>
-                                            <div>
-                                                <span>
+                                            <div className="flex items-center justify-between gap-3 px-3 py-2.5">
+                                                <span className="text-[10px] font-black uppercase text-slate-400">
                                                     {translateText('Students')}
                                                 </span>
-                                                <strong>
+                                                <strong className="text-xs font-black text-slate-900 dark:text-slate-50">
                                                     {cls.count}{' '}
                                                     {translateText('students')}
                                                 </strong>
                                             </div>
                                         </div>
-                                    </div>
+                                    </article>
                                 ))
                             )}
                         </div>
@@ -561,63 +471,20 @@ export default function ClassesPage({
             {/* Delete confirmation modal */}
             {deleteTarget && (
                 <div
-                    style={{
-                        position: 'fixed',
-                        inset: 0,
-                        background: 'rgba(0,0,0,0.45)',
-                        display: 'flex',
-                        alignItems: 'center',
-                        justifyContent: 'center',
-                        zIndex: 200,
-                        padding: 16,
-                    }}
+                    className="fixed inset-0 z-[200] flex items-center justify-center bg-black/45 p-4"
                     onClick={(e) => {
                         if (e.target === e.currentTarget) setDeleteTarget(null);
                     }}
                 >
-                    <div
-                        style={{
-                            background: 'white',
-                            borderRadius: 20,
-                            padding: 32,
-                            maxWidth: 420,
-                            width: '100%',
-                            boxShadow: '0 24px 60px rgba(0,0,0,0.15)',
-                        }}
-                    >
-                        <div style={{ textAlign: 'center', marginBottom: 20 }}>
-                            <div
-                                style={{
-                                    width: 56,
-                                    height: 56,
-                                    borderRadius: '50%',
-                                    background: '#fee2e2',
-                                    color: '#ef4444',
-                                    display: 'flex',
-                                    alignItems: 'center',
-                                    justifyContent: 'center',
-                                    margin: '0 auto 14px',
-                                }}
-                            >
+                    <div className="w-full max-w-[420px] rounded-[20px] bg-white p-8 shadow-[0_24px_60px_rgba(0,0,0,0.15)] dark:bg-slate-800">
+                        <div className="mb-5 text-center">
+                            <div className="mx-auto mb-3.5 grid h-14 w-14 place-items-center rounded-full bg-red-100 text-red-500 dark:bg-red-500/15 dark:text-red-300">
                                 <Trash2 size={26} />
                             </div>
-                            <div
-                                style={{
-                                    fontSize: 18,
-                                    fontWeight: 800,
-                                    color: '#1e293b',
-                                    marginBottom: 6,
-                                }}
-                            >
+                            <div className="mb-1.5 text-lg font-black text-slate-900 dark:text-slate-50">
                                 {translateText('Delete Class?')}
                             </div>
-                            <div
-                                style={{
-                                    fontSize: 13,
-                                    color: '#64748b',
-                                    lineHeight: 1.5,
-                                }}
-                            >
+                            <div className="text-[13px] font-bold leading-6 text-slate-500 dark:text-slate-400">
                                 {translateText(
                                     'Are you sure you want to remove',
                                 )}{' '}
@@ -630,36 +497,16 @@ export default function ClassesPage({
                                 {translateText('and cannot be undone.')}
                             </div>
                         </div>
-                        <div style={{ display: 'flex', gap: 10 }}>
+                        <div className="flex gap-2.5">
                             <button
                                 onClick={() => setDeleteTarget(null)}
-                                style={{
-                                    flex: 1,
-                                    background: '#f1f5f9',
-                                    color: '#64748b',
-                                    border: 'none',
-                                    borderRadius: 10,
-                                    padding: '11px',
-                                    fontWeight: 700,
-                                    cursor: 'pointer',
-                                    fontSize: 14,
-                                }}
+                                className="flex-1 rounded-xl bg-slate-100 p-3 text-sm font-bold text-slate-500 dark:bg-slate-950 dark:text-slate-300"
                             >
                                 {translateText('Cancel')}
                             </button>
                             <button
                                 onClick={confirmDelete}
-                                style={{
-                                    flex: 1,
-                                    background: '#ef4444',
-                                    color: 'white',
-                                    border: 'none',
-                                    borderRadius: 10,
-                                    padding: '11px',
-                                    fontWeight: 700,
-                                    cursor: 'pointer',
-                                    fontSize: 14,
-                                }}
+                                className="flex-1 rounded-xl bg-red-500 p-3 text-sm font-bold text-white"
                             >
                                 {translateText('Yes, Delete')}
                             </button>
@@ -750,63 +597,32 @@ function ClassForm({ mode, cls, levels, teachers, onBack }: FormProps) {
     };
 
     return (
-        <div className="fade-in" style={{ padding: 24 }}>
+        <div className="fade-in bg-slate-50 p-6 dark:bg-slate-950 max-md:bg-[radial-gradient(circle_at_100%_0,rgba(37,99,235,0.12),transparent_34%),linear-gradient(180deg,#f7f9fc_0%,#eef3f8_100%)] max-md:px-2.5 max-md:py-3 max-md:pb-[calc(104px+env(safe-area-inset-bottom))] dark:max-md:bg-[radial-gradient(circle_at_100%_0,rgba(96,165,250,0.14),transparent_34%),linear-gradient(180deg,#0f172a_0%,#111827_100%)]">
             <form
-                className="card"
+                className="mx-auto flex min-h-[calc(100dvh-112px)] w-full max-w-[600px] flex-col rounded-[24px] border border-slate-200 bg-white p-7 shadow-[0_18px_42px_rgba(15,23,42,0.08)] dark:border-slate-700 dark:bg-slate-800/90 max-md:min-h-[calc(100dvh-112px)] max-md:p-3"
                 onSubmit={submit}
-                style={{ padding: 28, maxWidth: 600, margin: '0 auto' }}
             >
-                <div
-                    style={{
-                        display: 'flex',
-                        alignItems: 'center',
-                        gap: 12,
-                        marginBottom: 24,
-                    }}
-                >
-                    <div
-                        style={{
-                            width: 40,
-                            height: 40,
-                            borderRadius: 10,
-                            background: '#eff6ff',
-                            color: '#2563eb',
-                            display: 'flex',
-                            alignItems: 'center',
-                            justifyContent: 'center',
-                        }}
-                    >
+                <div className="mb-5 flex items-center gap-3 rounded-[24px] border border-slate-200 bg-white p-4 shadow-[0_14px_36px_rgba(15,23,42,0.07)] dark:border-slate-700 dark:bg-slate-800/90 md:border-0 md:bg-transparent md:p-0 md:shadow-none">
+                    <div className="grid h-11 w-11 shrink-0 place-items-center rounded-2xl bg-blue-50 text-blue-600 dark:bg-blue-500/15 dark:text-blue-300">
                         {isEdit ? <Edit3 size={20} /> : <School size={20} />}
                     </div>
                     <div>
-                        <div
-                            style={{
-                                fontWeight: 800,
-                                fontSize: 16,
-                                color: '#1e293b',
-                            }}
-                        >
+                        <div className="text-lg font-black text-slate-900 dark:text-slate-50">
                             {translateText(
                                 isEdit ? 'Edit Class' : 'Add New Class',
                             )}
                         </div>
                         {isEdit && cls && (
-                            <div style={{ fontSize: 12, color: '#94a3b8' }}>
+                            <div className="text-xs font-extrabold text-slate-400">
                                 {cls.name}
                             </div>
                         )}
                     </div>
                 </div>
 
-                <div
-                    style={{
-                        display: 'grid',
-                        gridTemplateColumns: '1fr 1fr',
-                        gap: 16,
-                    }}
-                >
-                    <div className="f-group" style={{ gridColumn: '1/-1' }}>
-                        <label className="f-label">
+                <div className="grid grid-cols-2 gap-4 max-md:grid-cols-1">
+                    <div className={`${fieldGroupClass} col-span-full`}>
+                        <label className={fieldLabelClass}>
                             {translateText('Class Name')} *
                         </label>
                         <Select
@@ -823,7 +639,7 @@ function ClassForm({ mode, cls, levels, teachers, onBack }: FormProps) {
                                 }));
                             }}
                         >
-                            <SelectTrigger className="f-input">
+                            <SelectTrigger className={fieldInputClass}>
                                 <SelectValue
                                     placeholder={translateText(
                                         'Select level...',
@@ -842,19 +658,13 @@ function ClassForm({ mode, cls, levels, teachers, onBack }: FormProps) {
                             </SelectContent>
                         </Select>
                         {errors.name && (
-                            <div
-                                style={{
-                                    color: '#ef4444',
-                                    fontSize: 11,
-                                    marginTop: 4,
-                                }}
-                            >
+                            <div className={errorTextClass}>
                                 {errors.name}
                             </div>
                         )}
                     </div>
-                    <div className="f-group">
-                        <label className="f-label">
+                    <div className={fieldGroupClass}>
+                        <label className={fieldLabelClass}>
                             {translateText('Teacher')} *
                         </label>
                         <Select
@@ -863,7 +673,7 @@ function ClassForm({ mode, cls, levels, teachers, onBack }: FormProps) {
                                 setData('teacher_id', e ? Number(e) : null)
                             }
                         >
-                            <SelectTrigger className="f-input">
+                            <SelectTrigger className={fieldInputClass}>
                                 <SelectValue
                                     placeholder={translateText(
                                         'Select teacher...',
@@ -882,96 +692,66 @@ function ClassForm({ mode, cls, levels, teachers, onBack }: FormProps) {
                             </SelectContent>
                         </Select>
                         {errors.teacher_id && (
-                            <div
-                                style={{
-                                    color: '#ef4444',
-                                    fontSize: 11,
-                                    marginTop: 4,
-                                }}
-                            >
+                            <div className={errorTextClass}>
                                 {errors.teacher_id}
                             </div>
                         )}
                     </div>
-                    <div className="f-group">
-                        <label className="f-label">
+                    <div className={fieldGroupClass}>
+                        <label className={fieldLabelClass}>
                             {translateText('Room')} *
                         </label>
                         <input
-                            className="f-input"
+                            className={fieldInputClass}
                             placeholder="e.g. A1"
                             value={data.room}
                             onChange={(e) => setData('room', e.target.value)}
                         />
                         {errors.room && (
-                            <div
-                                style={{
-                                    color: '#ef4444',
-                                    fontSize: 11,
-                                    marginTop: 4,
-                                }}
-                            >
+                            <div className={errorTextClass}>
                                 {errors.room}
                             </div>
                         )}
                     </div>
-                    <div className="f-group">
-                        <label className="f-label">
+                    <div className={fieldGroupClass}>
+                        <label className={fieldLabelClass}>
                             {translateText('Start Time')}
                         </label>
                         <input
                             type="time"
-                            className="f-input"
+                            className={fieldInputClass}
                             value={data.starts_at}
                             onChange={(e) =>
                                 setData('starts_at', e.target.value)
                             }
                         />
                         {errors.starts_at && (
-                            <div
-                                style={{
-                                    color: '#ef4444',
-                                    fontSize: 11,
-                                    marginTop: 4,
-                                }}
-                            >
+                            <div className={errorTextClass}>
                                 {errors.starts_at}
                             </div>
                         )}
                     </div>
-                    <div className="f-group">
-                        <label className="f-label">
+                    <div className={fieldGroupClass}>
+                        <label className={fieldLabelClass}>
                             {translateText('End Time')}
                         </label>
                         <input
                             type="time"
-                            className="f-input"
+                            className={fieldInputClass}
                             value={data.ends_at}
                             onChange={(e) => setData('ends_at', e.target.value)}
                         />
                         {errors.ends_at && (
-                            <div
-                                style={{
-                                    color: '#ef4444',
-                                    fontSize: 11,
-                                    marginTop: 4,
-                                }}
-                            >
+                            <div className={errorTextClass}>
                                 {errors.ends_at}
                             </div>
                         )}
                     </div>
-                    <div className="f-group" style={{ gridColumn: '1/-1' }}>
-                        <label className="f-label">
+                    <div className={`${fieldGroupClass} col-span-full`}>
+                        <label className={fieldLabelClass}>
                             {translateText('Days')} *
                         </label>
-                        <div
-                            style={{
-                                display: 'flex',
-                                gap: 8,
-                                flexWrap: 'wrap',
-                            }}
-                        >
+                        <div className="flex flex-wrap gap-2">
                             {(
                                 [
                                     'Mon',
@@ -985,48 +765,31 @@ function ClassForm({ mode, cls, levels, teachers, onBack }: FormProps) {
                             ).map((day) => (
                                 <label
                                     key={day}
-                                    style={{
-                                        display: 'flex',
-                                        alignItems: 'center',
-                                        gap: 6,
-                                        cursor: 'pointer',
-                                        background: '#f8fafc',
-                                        borderRadius: 8,
-                                        padding: '6px 12px',
-                                        border: '1.5px solid #e2e8f0',
-                                        fontSize: 12,
-                                        fontWeight: 700,
-                                    }}
+                                    className={`flex cursor-pointer items-center gap-1.5 rounded-xl border px-3 py-1.5 text-xs font-bold ${data.days.includes(day) ? 'border-blue-300 bg-blue-50 text-blue-600 dark:border-blue-400/50 dark:bg-blue-500/15 dark:text-blue-300' : 'border-slate-200 bg-slate-50 text-slate-500 dark:border-slate-700 dark:bg-slate-950 dark:text-slate-300'}`}
                                 >
                                     <input
                                         type="checkbox"
                                         checked={data.days.includes(day)}
                                         onChange={() => toggleDay(day)}
-                                        style={{ accentColor: '#2563eb' }}
+                                        className="accent-blue-600"
                                     />
                                     {day}
                                 </label>
                             ))}
                         </div>
                         {errors.days && (
-                            <div
-                                style={{
-                                    color: '#ef4444',
-                                    fontSize: 11,
-                                    marginTop: 4,
-                                }}
-                            >
+                            <div className={errorTextClass}>
                                 {errors.days}
                             </div>
                         )}
                     </div>
-                    <div className="f-group">
-                        <label className="f-label">
+                    <div className={fieldGroupClass}>
+                        <label className={fieldLabelClass}>
                             {translateText('Max Students')}
                         </label>
                         <input
                             type="number"
-                            className="f-input"
+                            className={fieldInputClass}
                             value={data.capacity}
                             min={1}
                             max={200}
@@ -1035,24 +798,18 @@ function ClassForm({ mode, cls, levels, teachers, onBack }: FormProps) {
                             }
                         />
                         {errors.capacity && (
-                            <div
-                                style={{
-                                    color: '#ef4444',
-                                    fontSize: 11,
-                                    marginTop: 4,
-                                }}
-                            >
+                            <div className={errorTextClass}>
                                 {errors.capacity}
                             </div>
                         )}
                     </div>
-                    <div className="f-group">
-                        <label className="f-label">
+                    <div className={fieldGroupClass}>
+                        <label className={fieldLabelClass}>
                             {translateText('Monthly Fee (USD)')}
                         </label>
                         <input
                             type="number"
-                            className="f-input"
+                            className={fieldInputClass}
                             value={selectedLevel?.monthly_fee ?? ''}
                             min={0}
                             readOnly
@@ -1060,44 +817,18 @@ function ClassForm({ mode, cls, levels, teachers, onBack }: FormProps) {
                     </div>
                 </div>
 
-                <div style={{ display: 'flex', gap: 12, marginTop: 8 }}>
+                <div className="mt-auto flex gap-3 pt-4 max-md:rounded-[22px] max-md:border max-md:border-slate-200 max-md:bg-white/90 max-md:p-2 max-md:shadow-[0_18px_42px_rgba(15,23,42,0.10)] dark:max-md:border-slate-700 dark:max-md:bg-slate-900/90">
                     <button
                         type="button"
                         onClick={onBack}
-                        style={{
-                            background: '#f1f5f9',
-                            color: '#64748b',
-                            border: 'none',
-                            borderRadius: 10,
-                            padding: '12px 20px',
-                            fontWeight: 700,
-                            cursor: 'pointer',
-                            display: 'inline-flex',
-                            alignItems: 'center',
-                            gap: 6,
-                        }}
+                        className="inline-flex min-h-12 items-center justify-center gap-1.5 rounded-2xl bg-slate-100 px-5 py-3 text-sm font-black text-slate-500 dark:bg-slate-950 dark:text-slate-300 max-md:flex-1"
                     >
                         <ArrowLeft size={14} /> {translateText('Cancel')}
                     </button>
                     <button
                         type="submit"
                         disabled={processing}
-                        style={{
-                            flex: 1,
-                            background: '#2563eb',
-                            color: 'white',
-                            border: 'none',
-                            borderRadius: 10,
-                            padding: '12px',
-                            fontWeight: 700,
-                            fontSize: 14,
-                            cursor: 'pointer',
-                            fontFamily: "'Noto Sans Khmer',sans-serif",
-                            display: 'inline-flex',
-                            alignItems: 'center',
-                            justifyContent: 'center',
-                            gap: 6,
-                        }}
+                        className="inline-flex min-h-12 flex-1 items-center justify-center gap-1.5 rounded-2xl bg-blue-600 p-3 text-sm font-black text-white disabled:opacity-70"
                     >
                         {processing ? (
                             translateText('Saving...')
