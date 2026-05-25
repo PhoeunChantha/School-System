@@ -218,6 +218,8 @@ const SIDEBAR_ITEMS: {
 ];
 
 const LOCKED_SIDEBAR_ITEMS = new Set(['dashboard']);
+const inputClass =
+    'min-h-12 w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm font-bold text-slate-900 outline-none transition placeholder:text-slate-400 focus:border-blue-400 focus:ring-2 focus:ring-blue-500/15 dark:border-slate-700 dark:bg-slate-950 dark:text-slate-100';
 
 export default function SettingsPage({
     settings,
@@ -416,72 +418,43 @@ export default function SettingsPage({
 
     return (
         <AdminShell>
-            <div
-                className="fade-in admin-settings-page"
-                style={{
-                    display: 'flex',
-                    flexDirection: 'column',
-                    gap: 20,
-                }}
-            >
-                <div>
-                    <div
-                        style={{
-                            fontWeight: 800,
-                            fontSize: 18,
-                            color: '#1e293b',
-                        }}
-                    >
-                        Settings
-                    </div>
-                    <KH
-                        style={{
-                            fontSize: 12,
-                            color: '#94a3b8',
-                            display: 'block',
-                        }}
-                    >
-                        កំណត់ - System configuration
-                    </KH>
-                </div>
+            <div className="fade-in flex flex-col gap-3 bg-slate-50 p-4 dark:bg-slate-950 max-md:bg-[radial-gradient(circle_at_100%_0,rgba(37,99,235,0.12),transparent_34%),linear-gradient(180deg,#f7f9fc_0%,#eef3f8_100%)] max-md:px-2.5 max-md:py-3 max-md:pb-[calc(104px+env(safe-area-inset-bottom))] dark:max-md:bg-[radial-gradient(circle_at_100%_0,rgba(96,165,250,0.14),transparent_34%),linear-gradient(180deg,#0f172a_0%,#111827_100%)]">
+                <section className="rounded-[26px] border border-slate-200 bg-white p-4 shadow-[0_18px_42px_rgba(15,23,42,0.08)] dark:border-slate-700 dark:bg-slate-800/90">
+                    <p className="text-xs font-black text-blue-500">System configuration</p>
+                    <h1 className="mt-1 text-xl font-black text-slate-900 dark:text-slate-50">Settings</h1>
+                    <KH className="mt-1 block truncate text-xs font-bold text-slate-400">កំណត់ - Manage school preferences</KH>
+                </section>
 
-                <div
-                    className="admin-settings-layout"
-                    style={{
-                        display: 'flex',
-                        gap: 20,
-                        alignItems: 'flex-start',
-                    }}
-                >
-                    <div className="admin-settings-tabs">
-                        <div className="card admin-settings-tabs-card">
+                <div className="grid gap-3 lg:grid-cols-[260px_minmax(0,1fr)]">
+                    <div className="rounded-[24px] border border-slate-200 bg-white p-2 shadow-[0_14px_36px_rgba(15,23,42,0.07)] dark:border-slate-700 dark:bg-slate-800/90">
+                        <div className="grid grid-cols-2 gap-1 md:grid-cols-3 lg:grid-cols-1">
                             {visibleTabs.map((item) => {
                                 const Icon = item.icon;
                                 return (
                                     <button
                                         key={item.id}
                                         onClick={() => setTab(item.id)}
-                                        style={tabButton(tab === item.id)}
+                                        className={`flex min-h-11 min-w-0 items-center gap-2 rounded-2xl px-3 text-left text-xs font-black transition ${tab === item.id ? 'bg-blue-600 text-white shadow-[0_12px_24px_rgba(37,99,235,0.22)]' : 'text-slate-500 hover:bg-slate-100 dark:text-slate-300 dark:hover:bg-slate-950'}`}
                                     >
-                                        <Icon size={17} />
-                                        {item.label}
+                                        <Icon size={16} className="shrink-0" />
+                                        <span className="truncate">{item.label}</span>
                                     </button>
                                 );
                             })}
                         </div>
                     </div>
 
-                    <div className="admin-settings-content">
+                    <div className="min-w-0">
                         {tab === 'school' && (
                             <SettingsPanel
                                 title="School Information"
                                 onSave={() => saveGroup('school', school)}
                                 saving={savingGroup === 'school'}
                             >
-                                <div style={formGrid}>
+                                <div className="grid gap-3 md:grid-cols-2">
                                     <Field label="Khmer Name">
                                         <input
-                                            style={inputStyle}
+                                            className={inputClass}
                                             value={school.nameKh}
                                             onChange={(event) =>
                                                 setSchool((current) => ({
@@ -493,7 +466,7 @@ export default function SettingsPage({
                                     </Field>
                                     <Field label="English Name">
                                         <input
-                                            style={inputStyle}
+                                            className={inputClass}
                                             value={school.nameEn}
                                             onChange={(event) =>
                                                 setSchool((current) => ({
@@ -505,7 +478,7 @@ export default function SettingsPage({
                                     </Field>
                                     <Field label="Address" wide>
                                         <input
-                                            style={inputStyle}
+                                            className={inputClass}
                                             value={school.address}
                                             onChange={(event) =>
                                                 setSchool((current) => ({
@@ -517,7 +490,7 @@ export default function SettingsPage({
                                     </Field>
                                     <Field label="Phone">
                                         <input
-                                            style={inputStyle}
+                                            className={inputClass}
                                             type="tel"
                                             value={school.phone}
                                             onChange={(event) =>
@@ -530,7 +503,7 @@ export default function SettingsPage({
                                     </Field>
                                     <Field label="Email">
                                         <input
-                                            style={inputStyle}
+                                            className={inputClass}
                                             type="email"
                                             value={school.email}
                                             onChange={(event) =>
@@ -543,7 +516,7 @@ export default function SettingsPage({
                                     </Field>
                                     <Field label="Telegram">
                                         <input
-                                            style={inputStyle}
+                                            className={inputClass}
                                             value={school.telegram}
                                             onChange={(event) =>
                                                 setSchool((current) => ({
@@ -556,7 +529,7 @@ export default function SettingsPage({
                                     </Field>
                                     <Field label="Principal">
                                         <input
-                                            style={inputStyle}
+                                            className={inputClass}
                                             value={school.principal}
                                             onChange={(event) =>
                                                 setSchool((current) => ({
@@ -569,7 +542,7 @@ export default function SettingsPage({
                                     </Field>
                                     <Field label="Year Founded">
                                         <input
-                                            style={inputStyle}
+                                            className={inputClass}
                                             value={school.founded}
                                             onChange={(event) =>
                                                 setSchool((current) => ({
@@ -2262,38 +2235,13 @@ function SettingsPanel({
     saving: boolean;
 }) {
     return (
-        <div className="card" style={{ padding: 28 }}>
-            <div
-                style={{
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'space-between',
-                    gap: 12,
-                    marginBottom: 20,
-                    flexWrap: 'wrap',
-                }}
-            >
-                <div
-                    style={{ fontWeight: 900, fontSize: 15, color: '#1e293b' }}
-                >
-                    {title}
-                </div>
+        <div className="rounded-[24px] border border-slate-200 bg-white p-3 shadow-[0_14px_36px_rgba(15,23,42,0.07)] dark:border-slate-700 dark:bg-slate-800/90">
+            <div className="mb-4 flex items-center justify-between gap-3">
+                <div className="text-base font-black text-slate-900 dark:text-slate-50">{title}</div>
                 <button
                     disabled={saving}
                     onClick={onSave}
-                    style={{
-                        background: saving ? '#93c5fd' : '#2563eb',
-                        color: 'white',
-                        border: 'none',
-                        borderRadius: 10,
-                        padding: '10px 18px',
-                        fontWeight: 800,
-                        fontSize: 13,
-                        cursor: saving ? 'default' : 'pointer',
-                        display: 'inline-flex',
-                        alignItems: 'center',
-                        gap: 8,
-                    }}
+                    className="inline-flex min-h-11 shrink-0 items-center justify-center gap-1.5 rounded-xl bg-blue-600 px-4 py-2 text-sm font-black text-white shadow-[0_12px_24px_rgba(37,99,235,0.22)] transition hover:bg-blue-500 disabled:cursor-default disabled:bg-blue-300"
                 >
                     <Save size={15} />
                     {saving ? 'Saving' : 'Save'}
@@ -2314,18 +2262,8 @@ function Field({
     wide?: boolean;
 }) {
     return (
-        <div style={{ gridColumn: wide ? '1 / -1' : undefined }}>
-            <label
-                style={{
-                    display: 'block',
-                    fontSize: 12,
-                    fontWeight: 800,
-                    color: '#64748b',
-                    marginBottom: 6,
-                }}
-            >
-                {label}
-            </label>
+        <div className={wide ? 'md:col-span-2' : undefined}>
+            <label className="mb-1.5 block text-[11px] font-black uppercase tracking-wide text-slate-400">{label}</label>
             {children}
         </div>
     );

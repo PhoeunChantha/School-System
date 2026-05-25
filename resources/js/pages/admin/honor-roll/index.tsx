@@ -2,7 +2,7 @@
 import AdminShell from '@/pages/admin/shell';
 import { AdminSelect, Avatar, KH } from '@/pages/admin/ui';
 import { Printer, Trophy } from 'lucide-react';
-import { useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 
 // â”€â”€ Medal config â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 const MEDALS = [
@@ -593,8 +593,22 @@ function HonorRollPoster({
 export default function HonorRollPage() {
     const [selClass, setSelClass] = useState(CLASSES[0].name);
     const [term, setTerm] = useState('Midterm 2026');
+    const shellRef = useRef<HTMLDivElement>(null);
+    const [posterScale, setPosterScale] = useState(1);
 
     const topStudents = getTopStudents(selClass);
+
+    useEffect(() => {
+        const updateScale = () => {
+            const width = shellRef.current?.clientWidth ?? 740;
+            setPosterScale(Math.min(1, width / 740));
+        };
+
+        updateScale();
+        window.addEventListener('resize', updateScale);
+
+        return () => window.removeEventListener('resize', updateScale);
+    }, []);
 
     return (
         <AdminShell>
@@ -659,68 +673,39 @@ export default function HonorRollPage() {
             `}</style>
 
             <div
-                className="fade-in"
-                style={{
-                    padding: 24,
-                    display: 'flex',
-                    flexDirection: 'column',
-                    gap: 20,
-                }}
+                className="fade-in flex flex-col gap-3 bg-slate-50 p-4 dark:bg-slate-950 max-md:bg-[radial-gradient(circle_at_100%_0,rgba(245,158,11,0.13),transparent_34%),linear-gradient(180deg,#f8fafc_0%,#eef3f8_100%)] max-md:px-2.5 max-md:py-3 max-md:pb-[calc(104px+env(safe-area-inset-bottom))] dark:max-md:bg-[radial-gradient(circle_at_100%_0,rgba(251,191,36,0.14),transparent_34%),linear-gradient(180deg,#0f172a_0%,#111827_100%)]"
             >
                 {/* â”€â”€ Controls â”€â”€ */}
                 <div
-                    className="no-print"
-                    style={{
-                        display: 'flex',
-                        alignItems: 'center',
-                        gap: 12,
-                        flexWrap: 'wrap',
-                    }}
+                    className="no-print rounded-[24px] border border-slate-200 bg-white p-4 shadow-[0_14px_36px_rgba(15,23,42,0.07)] dark:border-slate-700 dark:bg-slate-800/90"
                 >
-                    <div>
-                        <div
-                            style={{
-                                fontWeight: 800,
-                                fontSize: 18,
-                                color: '#1e293b',
-                                display: 'flex',
-                                alignItems: 'center',
-                                gap: 8,
-                            }}
-                        >
-                            <Trophy size={20} color="#d97706" />
-                            Honor Roll Chart
+                    <div className="flex items-start justify-between gap-3">
+                        <div className="min-w-0">
+                            <div className="flex items-center gap-2 text-xl font-black text-slate-900 dark:text-slate-50">
+                                <Trophy size={20} className="text-amber-500" />
+                                Honor Roll
+                            </div>
+                            <KH className="mt-1 block truncate text-xs font-bold text-slate-400">
+                                តារាងកិត្តិយស - Outstanding Students
+                            </KH>
                         </div>
-                        <KH
-                            style={{
-                                fontSize: 12,
-                                color: '#94a3b8',
-                                display: 'block',
-                            }}
+                        <button
+                            onClick={() => window.print()}
+                            className="inline-flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-blue-600 text-white shadow-[0_14px_26px_rgba(37,99,235,0.28)] transition hover:bg-blue-500"
+                            aria-label="Print honor roll"
                         >
-                            តារាងកិត្តិយស - Outstanding Students
-                        </KH>
+                            <Printer size={17} />
+                        </button>
                     </div>
 
                     <div
-                        style={{
-                            marginLeft: 'auto',
-                            display: 'flex',
-                            gap: 10,
-                            alignItems: 'center',
-                            flexWrap: 'wrap',
-                        }}
+                        className="mt-3 grid grid-cols-1 gap-2 sm:grid-cols-[1fr_auto]"
                     >
                         <input
                             value={term}
                             onChange={(e) => setTerm(e.target.value)}
-                            className="f-input"
+                            className="min-h-11 rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm font-bold text-slate-900 outline-none transition placeholder:text-slate-400 focus:border-blue-400 focus:ring-2 focus:ring-blue-500/15 dark:border-slate-700 dark:bg-slate-950 dark:text-slate-100"
                             placeholder="Term name..."
-                            style={{
-                                width: 170,
-                                padding: '8px 12px',
-                                fontSize: 13,
-                            }}
                         />
                         <AdminSelect
                             value={selClass}
@@ -729,36 +714,32 @@ export default function HonorRollPage() {
                                 value: c.name,
                                 label: c.name,
                             }))}
-                            style={{ minWidth: 150 }}
+                            className="min-w-0 sm:min-w-[150px]"
+                            triggerClassName="min-h-11 rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm font-bold text-slate-900 dark:border-slate-700 dark:bg-slate-950 dark:text-slate-100"
                         />
-                        <button
-                            onClick={() => window.print()}
-                            style={{
-                                background: '#1e2940',
-                                color: 'white',
-                                border: 'none',
-                                borderRadius: 10,
-                                padding: '9px 22px',
-                                fontWeight: 700,
-                                fontSize: 13,
-                                cursor: 'pointer',
-                                display: 'flex',
-                                alignItems: 'center',
-                                gap: 8,
-                            }}
-                        >
-                            <Printer size={14} /> Print
-                        </button>
                     </div>
                 </div>
 
                 {/* â”€â”€ Poster â”€â”€ */}
-                <div id="honor-print-root">
-                    <HonorRollPoster
-                        className={selClass}
-                        term={term}
-                        students={topStudents}
-                    />
+                <div
+                    ref={shellRef}
+                    id="honor-print-root"
+                    className="overflow-hidden rounded-[24px] border border-slate-200 bg-white p-1 shadow-[0_18px_42px_rgba(15,23,42,0.12)] dark:border-slate-700 dark:bg-slate-900 md:p-3"
+                >
+                    <div
+                        style={{
+                            width: 740,
+                            transform: `scale(${posterScale})`,
+                            transformOrigin: 'top left',
+                            height: `${Math.ceil(1040 * posterScale)}px`,
+                        }}
+                    >
+                        <HonorRollPoster
+                            className={selClass}
+                            term={term}
+                            students={topStudents}
+                        />
+                    </div>
                 </div>
             </div>
         </AdminShell>

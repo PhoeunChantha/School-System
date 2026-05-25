@@ -1,7 +1,6 @@
+import { useAdminTranslation } from '@/hooks/use-admin-translation';
 import AdminShell from '@/pages/admin/shell';
 import { Avatar, Badge, KH, PBar, ScoreChip } from '@/pages/admin/ui';
-import { useAdminTranslation } from '@/hooks/use-admin-translation';
-import type { LucideIcon } from 'lucide-react';
 import {
     ChartNoAxesColumn,
     CheckCircle2,
@@ -10,13 +9,12 @@ import {
     DollarSign,
     Download,
     GraduationCap,
-    Hourglass,
     Printer,
     Star,
-    TriangleAlert,
     XCircle,
 } from 'lucide-react';
-import { type CSSProperties, useState } from 'react';
+import type { LucideIcon } from 'lucide-react';
+import { ReactNode, useState } from 'react';
 import { toast } from 'sonner';
 
 type ReportTab = 'attendance' | 'grades' | 'fees';
@@ -100,9 +98,15 @@ interface ReportsPageProps {
     };
 }
 
+const pageClass = 'fade-in flex flex-col gap-3 bg-slate-50 p-4 dark:bg-slate-950 max-md:bg-[radial-gradient(circle_at_100%_0,rgba(37,99,235,0.12),transparent_34%),linear-gradient(180deg,#f7f9fc_0%,#eef3f8_100%)] max-md:px-2.5 max-md:py-3 max-md:pb-[calc(104px+env(safe-area-inset-bottom))] dark:max-md:bg-[radial-gradient(circle_at_100%_0,rgba(96,165,250,0.14),transparent_34%),linear-gradient(180deg,#0f172a_0%,#111827_100%)]';
+const panelClass = 'rounded-[24px] border border-slate-200 bg-white p-3 shadow-[0_14px_36px_rgba(15,23,42,0.07)] dark:border-slate-700 dark:bg-slate-800/90';
+const mobileCardClass = 'rounded-[22px] border border-slate-200/80 bg-white/95 p-3 shadow-[0_14px_34px_rgba(15,23,42,0.07)] dark:border-slate-700 dark:bg-slate-800/90';
+const desktopTableClass = 'hidden min-w-full border-collapse text-left md:table [&_td]:px-3 [&_td]:py-3 [&_th]:border-b [&_th]:border-slate-200 [&_th]:px-3 [&_th]:py-3 [&_th]:text-[10px] [&_th]:font-black [&_th]:uppercase [&_th]:tracking-[0.08em] [&_th]:text-slate-400 dark:[&_th]:border-slate-700';
+const actionButtonClass = 'inline-flex min-h-10 items-center justify-center gap-1.5 rounded-xl px-3 py-2 text-xs font-black transition';
+
 function badgeIcon(Icon: LucideIcon, label: string) {
     return (
-        <span style={{ display: 'inline-flex', alignItems: 'center', gap: 4 }}>
+        <span className="inline-flex items-center gap-1">
             <Icon size={12} strokeWidth={2.6} />
             {label}
         </span>
@@ -114,128 +118,32 @@ function money(value: number): string {
 }
 
 function attendanceColor(value: number): 'green' | 'amber' | 'red' {
-    if (value >= 80) {
-        return 'green';
-    }
-
-    if (value >= 60) {
-        return 'amber';
-    }
-
+    if (value >= 80) return 'green';
+    if (value >= 60) return 'amber';
     return 'red';
 }
 
-function gradeColor(value: number): string {
-    if (value >= 75) {
-        return '#10b981';
-    }
-
-    if (value >= 50) {
-        return '#3b82f6';
-    }
-
-    return '#f59e0b';
-}
-
 function feeBadgeType(status: string): 'green' | 'red' | 'amber' | 'blue' {
-    if (status === 'paid') {
-        return 'green';
-    }
-
-    if (status === 'unpaid') {
-        return 'red';
-    }
-
-    if (status === 'partial' || status === 'pending') {
-        return 'amber';
-    }
-
+    if (status === 'paid') return 'green';
+    if (status === 'unpaid') return 'red';
+    if (status === 'partial' || status === 'pending') return 'amber';
     return 'blue';
 }
 
-function paymentStatusLabel(status: string) {
-    if (status === 'paid') {
-        return badgeIcon(CheckCircle2, 'Paid');
-    }
-
-    if (status === 'pending') {
-        return badgeIcon(Hourglass, 'Pending');
-    }
-
-    if (status === 'failed') {
-        return badgeIcon(XCircle, 'Failed');
-    }
-
-    return status || 'Unknown';
-}
-
-function LocalizedCopy({
-    isKh,
-    kh,
-    en,
-    style,
-}: {
-    isKh: boolean;
-    kh: string;
-    en: string;
-    style?: CSSProperties;
-}) {
-    if (isKh) {
-        return <KH style={style}>{kh}</KH>;
-    }
-
-    return <span style={style}>{en}</span>;
-}
-
-function PersonName({
-    isKh,
-    kh,
-    en,
-    primaryStyle,
-    secondaryStyle,
-}: {
-    isKh: boolean;
-    kh?: string;
-    en: string;
-    primaryStyle?: CSSProperties;
-    secondaryStyle?: CSSProperties;
-}) {
-    const hasKhmerName = Boolean(kh?.trim());
-
-    if (isKh && hasKhmerName) {
-        return (
-            <>
-                <KH style={primaryStyle}>{kh}</KH>
-                <div style={secondaryStyle}>{en}</div>
-            </>
-        );
-    }
-
-    return <div style={primaryStyle}>{en || kh}</div>;
-}
-
-function downloadCsv(
-    filename: string,
-    rows: Record<string, string | number>[],
-): void {
+function downloadCsv(filename: string, rows: Record<string, string | number>[]): void {
     if (rows.length === 0) {
         toast.info('No data to export.');
         return;
     }
 
     const headers = Object.keys(rows[0]);
-    const escape = (value: string | number) =>
-        `"${String(value ?? '').replace(/"/g, '""')}"`;
+    const escape = (value: string | number) => `"${String(value ?? '').replace(/"/g, '""')}"`;
     const csv = [
         headers.map(escape).join(','),
-        ...rows.map((row) =>
-            headers.map((header) => escape(row[header])).join(','),
-        ),
+        ...rows.map(row => headers.map(header => escape(row[header])).join(',')),
     ].join('\n');
 
-    const url = URL.createObjectURL(
-        new Blob([csv], { type: 'text/csv;charset=utf-8;' }),
-    );
+    const url = URL.createObjectURL(new Blob([csv], { type: 'text/csv;charset=utf-8;' }));
     const link = document.createElement('a');
     link.href = url;
     link.download = filename;
@@ -243,61 +151,46 @@ function downloadCsv(
     URL.revokeObjectURL(url);
 }
 
-export default function ReportsPage({
-    reportDate,
-    summary,
-    attendance,
-    grades,
-    fees,
-}: ReportsPageProps) {
+export default function ReportsPage({ reportDate, summary, attendance, grades, fees }: ReportsPageProps) {
     const { lang } = useAdminTranslation();
     const [tab, setTab] = useState<ReportTab>('attendance');
     const isKh = lang === 'kh';
 
     const handleExport = () => {
         if (tab === 'attendance') {
-            downloadCsv(
-                'attendance-report.csv',
-                attendance.students.map((student) => ({
-                    Student: student.nameEn,
-                    KhmerName: student.nameKh,
-                    Class: student.className,
-                    Attendance: `${student.attendance}%`,
-                })),
-            );
+            downloadCsv('attendance-report.csv', attendance.students.map(student => ({
+                Student: student.nameEn,
+                KhmerName: student.nameKh,
+                Class: student.className,
+                Attendance: `${student.attendance}%`,
+            })));
             return;
         }
 
         if (tab === 'grades') {
-            downloadCsv(
-                'grades-report.csv',
-                grades.students.map((student) => ({
-                    Student: student.nameEn,
-                    KhmerName: student.nameKh,
-                    Level: student.level,
-                    Speaking: student.speaking,
-                    Listening: student.listening,
-                    Reading: student.reading,
-                    Writing: student.writing,
-                    Average: student.average,
-                })),
-            );
-            return;
-        }
-
-        downloadCsv(
-            'fees-report.csv',
-            fees.students.map((student) => ({
+            downloadCsv('grades-report.csv', grades.students.map(student => ({
                 Student: student.nameEn,
                 KhmerName: student.nameKh,
                 Level: student.level,
-                Amount: student.amount,
-                Status: student.status,
-            })),
-        );
+                Speaking: student.speaking,
+                Listening: student.listening,
+                Reading: student.reading,
+                Writing: student.writing,
+                Average: student.average,
+            })));
+            return;
+        }
+
+        downloadCsv('fees-report.csv', fees.students.map(student => ({
+            Student: student.nameEn,
+            KhmerName: student.nameKh,
+            Level: student.level,
+            Amount: student.amount,
+            Status: student.status,
+        })));
     };
 
-    const TABS: { id: ReportTab; label: string; icon: LucideIcon }[] = [
+    const tabs: { id: ReportTab; label: string; icon: LucideIcon }[] = [
         { id: 'attendance', label: 'Attendance', icon: ClipboardCheck },
         { id: 'grades', label: 'Grades', icon: Star },
         { id: 'fees', label: 'Fee Summary', icon: CreditCard },
@@ -305,946 +198,387 @@ export default function ReportsPage({
 
     return (
         <AdminShell>
-            <div
-                className="fade-in"
-                style={{
-                    padding: 24,
-                    display: 'flex',
-                    flexDirection: 'column',
-                    gap: 20,
-                }}
-            >
-                <div
-                    style={{
-                        display: 'flex',
-                        alignItems: 'center',
-                        justifyContent: 'space-between',
-                        flexWrap: 'wrap',
-                        gap: 12,
-                    }}
-                >
-                    <div>
-                        <div
-                            style={{
-                                fontWeight: 800,
-                                fontSize: 18,
-                                color: '#1e293b',
-                                display: 'flex',
-                                alignItems: 'center',
-                                gap: 8,
-                            }}
-                        >
-                            <ChartNoAxesColumn size={20} color="#2563eb" />
-                            Reports
-                        </div>
-                        <LocalizedCopy
-                            isKh={isKh}
-                            kh={`របាយការណ៍សាលា - ${reportDate}`}
-                            en={`School reports - ${reportDate}`}
-                            style={{
-                                fontSize: 12,
-                                color: '#94a3b8',
-                                display: 'block',
-                            }}
-                        />
+            <div className={pageClass}>
+                <section className="flex items-center justify-between gap-3 rounded-[24px] border border-slate-200 bg-white p-4 shadow-[0_14px_36px_rgba(15,23,42,0.07)] dark:border-slate-700 dark:bg-slate-800/90">
+                    <div className="min-w-0">
+                        <span className="flex items-center gap-1.5 text-xs font-black text-slate-400"><ChartNoAxesColumn size={15} /> Reports</span>
+                        <strong className="mt-1 block text-xl font-black text-slate-900 dark:text-slate-50">School reports</strong>
+                        <p className="mt-1 truncate text-xs font-extrabold text-slate-400">{reportDate}</p>
                     </div>
-                    <div style={{ display: 'flex', gap: 8 }}>
-                        <button
-                            onClick={handleExport}
-                            className="admin-btn admin-btn-ghost"
-                        >
-                            <Download size={14} /> Export CSV
+                    <div className="flex shrink-0 gap-2">
+                        <button onClick={handleExport} className={`${actionButtonClass} border border-slate-200 bg-white text-slate-700 shadow-sm hover:bg-slate-50 dark:border-slate-700 dark:bg-slate-950 dark:text-slate-200 dark:hover:bg-slate-900`} aria-label="Export CSV">
+                            <Download size={15} />
+                            <span className="hidden sm:inline">CSV</span>
                         </button>
-                        <button
-                            onClick={() => window.print()}
-                            className="admin-btn admin-btn-primary"
-                        >
-                            <Printer size={14} /> Print
+                        <button onClick={() => window.print()} className={`${actionButtonClass} bg-blue-600 text-white shadow-[0_12px_24px_rgba(37,99,235,0.22)] hover:bg-blue-500`} aria-label="Print">
+                            <Printer size={15} />
+                            <span className="hidden sm:inline">Print</span>
                         </button>
                     </div>
+                </section>
+
+                <div className="grid grid-cols-2 gap-2 md:grid-cols-4">
+                    <MetricCard icon={GraduationCap} label="Total Students" value={summary.totalStudents} tone="blue" />
+                    <MetricCard icon={ClipboardCheck} label="Avg Attendance" value={`${summary.avgAttendance}%`} tone="green" />
+                    <MetricCard icon={Star} label="Avg Grade" value={summary.avgGrade} tone="amber" />
+                    <MetricCard icon={DollarSign} label="Fees Collected" value={money(summary.feesCollected)} tone="violet" />
                 </div>
 
-                <div
-                    className="stat-grid-4"
-                    style={{
-                        display: 'grid',
-                        gridTemplateColumns: 'repeat(4,1fr)',
-                        gap: 14,
-                    }}
-                >
-                    {[
-                        {
-                            icon: GraduationCap,
-                            lk: 'សិស្សទាំងអស់',
-                            l: 'Total Students',
-                            v: summary.totalStudents,
-                            bg: '#eff6ff',
-                            c: '#2563eb',
-                        },
-                        {
-                            icon: ClipboardCheck,
-                            lk: 'វត្តមានមធ្យម',
-                            l: 'Avg Attendance',
-                            v: `${summary.avgAttendance}%`,
-                            bg: '#f0fdf4',
-                            c: '#16a34a',
-                        },
-                        {
-                            icon: Star,
-                            lk: 'ពិន្ទុមធ្យម',
-                            l: 'Avg Grade',
-                            v: summary.avgGrade,
-                            bg: '#fffbeb',
-                            c: '#d97706',
-                        },
-                        {
-                            icon: DollarSign,
-                            lk: 'ចំណូលខែនេះ',
-                            l: 'Fees Collected',
-                            v: money(summary.feesCollected),
-                            bg: '#f5f3ff',
-                            c: '#7c3aed',
-                        },
-                    ].map((stat) => (
-                        <div key={stat.l} className="stat-card">
-                            <div
-                                style={{
-                                    width: 40,
-                                    height: 40,
-                                    borderRadius: 10,
-                                    background: stat.bg,
-                                    color: stat.c,
-                                    display: 'flex',
-                                    alignItems: 'center',
-                                    justifyContent: 'center',
-                                    marginBottom: 10,
-                                }}
-                            >
-                                <stat.icon size={20} strokeWidth={2.4} />
-                            </div>
-                            <div
-                                style={{
-                                    fontSize: 24,
-                                    fontWeight: 800,
-                                    color: stat.c,
-                                    marginBottom: 2,
-                                }}
-                            >
-                                {stat.v}
-                            </div>
-                            <LocalizedCopy
-                                isKh={isKh}
-                                kh={stat.lk}
-                                en={stat.l}
-                                style={{
-                                    fontSize: 11,
-                                    color: '#64748b',
-                                    display: 'block',
-                                }}
-                            />
-                        </div>
-                    ))}
-                </div>
+                <section className={panelClass}>
+                    <div className="grid grid-cols-3 gap-1 rounded-2xl bg-slate-100 p-1 dark:bg-slate-950">
+                        {tabs.map(item => {
+                            const Icon = item.icon;
 
-                <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
-                    {TABS.map((item) => {
-                        const Icon = item.icon;
-
-                        return (
-                            <button
-                                key={item.id}
-                                onClick={() => setTab(item.id)}
-                                style={{
-                                    padding: '8px 18px',
-                                    borderRadius: 8,
-                                    border: '1.5px solid',
-                                    cursor: 'pointer',
-                                    fontSize: 13,
-                                    fontWeight: 700,
-                                    transition: 'all 0.15s',
-                                    borderColor:
-                                        tab === item.id ? '#3b82f6' : '#e2e8f0',
-                                    background:
-                                        tab === item.id ? '#eff6ff' : 'white',
-                                    color:
-                                        tab === item.id ? '#2563eb' : '#64748b',
-                                    display: 'inline-flex',
-                                    alignItems: 'center',
-                                    gap: 6,
-                                }}
-                            >
-                                <Icon size={14} /> {item.label}
-                            </button>
-                        );
-                    })}
-                </div>
+                            return (
+                                <button
+                                    key={item.id}
+                                    onClick={() => setTab(item.id)}
+                                    className={`flex min-h-10 items-center justify-center gap-1 rounded-xl px-2 text-[11px] font-black transition ${tab === item.id ? 'bg-white text-blue-600 shadow-sm dark:bg-slate-800 dark:text-blue-300' : 'text-slate-500 dark:text-slate-400'}`}
+                                >
+                                    <Icon size={14} />
+                                    <span className="truncate">{item.label}</span>
+                                </button>
+                            );
+                        })}
+                    </div>
+                </section>
 
                 {tab === 'attendance' && (
-                    <div
-                        style={{
-                            display: 'flex',
-                            flexDirection: 'column',
-                            gap: 16,
-                        }}
-                    >
-                        <div className="card" style={{ padding: 20 }}>
-                            <LocalizedCopy
-                                isKh={isKh}
-                                kh="វត្តមានតាមថ្នាក់"
-                                en="Class attendance"
-                                style={{
-                                    fontWeight: 800,
-                                    fontSize: 15,
-                                    display: 'block',
-                                    marginBottom: 14,
-                                }}
-                            />
-                            <div
-                                style={{
-                                    display: 'flex',
-                                    flexDirection: 'column',
-                                    gap: 12,
-                                }}
-                            >
-                                {attendance.classes.map((row) => {
-                                    const type = attendanceColor(
-                                        row.attendance,
-                                    );
+                    <div className="grid gap-3">
+                        <SectionTitle title={label(isKh, 'Class attendance', 'Class attendance')} />
+                        <div className="grid gap-3 md:grid-cols-2">
+                            {attendance.classes.map(row => {
+                                const type = attendanceColor(row.attendance);
 
-                                    return (
-                                        <div
-                                            key={row.id}
-                                            style={{
-                                                display: 'flex',
-                                                alignItems: 'center',
-                                                gap: 12,
-                                            }}
-                                        >
-                                            <div
-                                                style={{
-                                                    width: 140,
-                                                    flexShrink: 0,
-                                                }}
-                                            >
-                                                <div
-                                                    style={{
-                                                        fontWeight: 700,
-                                                        fontSize: 13,
-                                                    }}
-                                                >
-                                                    {row.name}
-                                                </div>
-                                                <div
-                                                    style={{
-                                                        fontSize: 11,
-                                                        color: '#94a3b8',
-                                                    }}
-                                                >
-                                                    {row.teacher}
-                                                </div>
+                                return (
+                                    <article key={row.id} className={mobileCardClass}>
+                                        <div className="flex items-start justify-between gap-3">
+                                            <div>
+                                                <h3 className="text-sm font-black text-slate-900 dark:text-slate-50">{row.name}</h3>
+                                                <p className="mt-0.5 text-[11px] font-bold text-slate-400">{row.teacher} - {row.studentCount} students</p>
                                             </div>
-                                            <div style={{ flex: 1 }}>
-                                                <PBar
-                                                    value={row.attendance}
-                                                    color={type}
-                                                    height={10}
-                                                />
-                                            </div>
-                                            <div
-                                                style={{
-                                                    width: 60,
-                                                    textAlign: 'right',
-                                                    fontWeight: 800,
-                                                    fontSize: 14,
-                                                    color:
-                                                        type === 'green'
-                                                            ? '#10b981'
-                                                            : type === 'amber'
-                                                              ? '#d97706'
-                                                              : '#ef4444',
-                                                    flexShrink: 0,
-                                                }}
-                                            >
-                                                {row.attendance}%
-                                            </div>
-                                            <Badge type={type}>
-                                                {row.studentCount} students
-                                            </Badge>
+                                            <strong className={`text-sm font-black ${barTextClass(type)}`}>{row.attendance}%</strong>
                                         </div>
-                                    );
-                                })}
-                            </div>
+                                        <div className="mt-3"><PBar value={row.attendance} color={type} height={10} /></div>
+                                    </article>
+                                );
+                            })}
                         </div>
 
-                        <div className="card" style={{ overflowX: 'auto' }}>
-                            <div style={{ padding: '16px 20px 0' }}>
-                                <LocalizedCopy
-                                    isKh={isKh}
-                                    kh="វត្តមានតាមសិស្ស"
-                                    en="Student attendance"
-                                    style={{
-                                        fontWeight: 800,
-                                        fontSize: 15,
-                                        display: 'block',
-                                        marginBottom: 4,
-                                    }}
-                                />
-                                <div
-                                    style={{
-                                        fontSize: 12,
-                                        color: '#94a3b8',
-                                        marginBottom: 12,
-                                    }}
-                                >
-                                    Individual attendance - {reportDate}
-                                </div>
-                            </div>
-                            <table className="data-table">
-                                <thead>
-                                    <tr>
-                                        <th>Student</th>
-                                        <th>Class</th>
-                                        <th>Attendance</th>
-                                        <th>Status</th>
-                                    </tr>
-                                </thead>
-                                <tbody>
-                                    {[...attendance.students]
-                                        .sort(
-                                            (a, b) =>
-                                                a.attendance - b.attendance,
-                                        )
-                                        .map((student) => {
-                                            const type = attendanceColor(
-                                                student.attendance,
-                                            );
-
-                                            return (
-                                                <tr key={student.id}>
-                                                    <td>
-                                                        <div
-                                                            style={{
-                                                                display: 'flex',
-                                                                alignItems:
-                                                                    'center',
-                                                                gap: 10,
-                                                            }}
-                                                        >
-                                                            <Avatar
-                                                                name={
-                                                                    student.nameEn
-                                                                }
-                                                                src={
-                                                                    student.photo
-                                                                }
-                                                                size={32}
-                                                            />
-                                                            <div>
-                                                                <PersonName
-                                                                    isKh={isKh}
-                                                                    kh={
-                                                                        student.nameKh
-                                                                    }
-                                                                    en={
-                                                                        student.nameEn
-                                                                    }
-                                                                    primaryStyle={{
-                                                                        fontWeight: 700,
-                                                                        fontSize: 13,
-                                                                        display:
-                                                                            'block',
-                                                                    }}
-                                                                    secondaryStyle={{
-                                                                        fontSize: 11,
-                                                                        color: '#94a3b8',
-                                                                    }}
-                                                                />
-                                                            </div>
-                                                        </div>
-                                                    </td>
-                                                    <td
-                                                        style={{
-                                                            fontSize: 12,
-                                                            color: '#64748b',
-                                                        }}
-                                                    >
-                                                        {student.className}
-                                                    </td>
-                                                    <td>
-                                                        <div
-                                                            style={{
-                                                                display: 'flex',
-                                                                alignItems:
-                                                                    'center',
-                                                                gap: 8,
-                                                                minWidth: 120,
-                                                            }}
-                                                        >
-                                                            <div
-                                                                style={{
-                                                                    flex: 1,
-                                                                }}
-                                                            >
-                                                                <PBar
-                                                                    value={
-                                                                        student.attendance
-                                                                    }
-                                                                    color={type}
-                                                                />
-                                                            </div>
-                                                            <span
-                                                                style={{
-                                                                    fontSize: 12,
-                                                                    fontWeight: 700,
-                                                                    width: 36,
-                                                                    color:
-                                                                        type ===
-                                                                        'green'
-                                                                            ? '#10b981'
-                                                                            : type ===
-                                                                                'amber'
-                                                                              ? '#d97706'
-                                                                              : '#ef4444',
-                                                                }}
-                                                            >
-                                                                {
-                                                                    student.attendance
-                                                                }
-                                                                %
-                                                            </span>
-                                                        </div>
-                                                    </td>
-                                                    <td>
-                                                        <Badge type={type}>
-                                                            {student.attendance >=
-                                                            80
-                                                                ? badgeIcon(
-                                                                      CheckCircle2,
-                                                                      'Good',
-                                                                  )
-                                                                : student.attendance >=
-                                                                    60
-                                                                  ? badgeIcon(
-                                                                        TriangleAlert,
-                                                                        'Warning',
-                                                                    )
-                                                                  : badgeIcon(
-                                                                        TriangleAlert,
-                                                                        'At Risk',
-                                                                    )}
-                                                        </Badge>
-                                                    </td>
-                                                </tr>
-                                            );
-                                        })}
-                                </tbody>
-                            </table>
-                        </div>
+                        <SectionTitle title="Student attendance" />
+                        <ResponsiveStudentAttendance students={attendance.students} isKh={isKh} />
                     </div>
                 )}
 
                 {tab === 'grades' && (
-                    <div
-                        style={{
-                            display: 'flex',
-                            flexDirection: 'column',
-                            gap: 16,
-                        }}
-                    >
-                        <div className="card" style={{ padding: 20 }}>
-                            <LocalizedCopy
-                                isKh={isKh}
-                                kh="ពិន្ទុជំនាញមធ្យម"
-                                en="Average skill scores"
-                                style={{
-                                    fontWeight: 800,
-                                    fontSize: 15,
-                                    display: 'block',
-                                    marginBottom: 16,
-                                }}
-                            />
-                            <div
-                                style={{
-                                    display: 'grid',
-                                    gridTemplateColumns:
-                                        'repeat(auto-fill,minmax(180px,1fr))',
-                                    gap: 14,
-                                }}
-                            >
-                                {grades.skills.map((skill) => (
-                                    <div
-                                        key={skill.key}
-                                        style={{
-                                            background: '#f8fafc',
-                                            borderRadius: 12,
-                                            padding: 16,
-                                        }}
-                                    >
-                                        <div
-                                            style={{
-                                                display: 'flex',
-                                                justifyContent: 'space-between',
-                                                marginBottom: 10,
-                                            }}
-                                        >
-                                            <LocalizedCopy
-                                                isKh={isKh}
-                                                kh={skill.labelKh}
-                                                en={skill.label}
-                                                style={{
-                                                    fontWeight: 700,
-                                                    fontSize: 14,
-                                                }}
-                                            />
-                                            <ScoreChip score={skill.average} />
-                                        </div>
-                                        <PBar
-                                            value={skill.average}
-                                            color={
-                                                skill.average >= 75
-                                                    ? 'green'
-                                                    : skill.average >= 50
-                                                      ? 'blue'
-                                                      : 'amber'
-                                            }
-                                            height={8}
-                                        />
-                                        {isKh && (
-                                            <div
-                                                style={{
-                                                    fontSize: 11,
-                                                    color: '#94a3b8',
-                                                    marginTop: 6,
-                                                }}
-                                            >
-                                                {skill.label}
-                                            </div>
-                                        )}
-                                    </div>
-                                ))}
-                            </div>
-                        </div>
-
-                        <div className="card" style={{ overflowX: 'auto' }}>
-                            <div
-                                style={{
-                                    padding: '16px 20px 0',
-                                    marginBottom: 4,
-                                }}
-                            >
-                                <LocalizedCopy
-                                    isKh={isKh}
-                                    kh="ពិន្ទុសិស្សទាំងអស់"
-                                    en="All student scores"
-                                    style={{
-                                        fontWeight: 800,
-                                        fontSize: 15,
-                                        display: 'block',
-                                    }}
-                                />
-                            </div>
-                            <table className="data-table">
-                                <thead>
-                                    <tr>
-                                        <th>Student</th>
-                                        <th>Level</th>
-                                        <th>
-                                            <LocalizedCopy
-                                                isKh={isKh}
-                                                kh="និយាយ"
-                                                en="Speaking"
-                                            />
-                                        </th>
-                                        <th>
-                                            <LocalizedCopy
-                                                isKh={isKh}
-                                                kh="ស្ដាប់"
-                                                en="Listening"
-                                            />
-                                        </th>
-                                        <th>
-                                            <LocalizedCopy
-                                                isKh={isKh}
-                                                kh="អាន"
-                                                en="Reading"
-                                            />
-                                        </th>
-                                        <th>
-                                            <LocalizedCopy
-                                                isKh={isKh}
-                                                kh="សរសេរ"
-                                                en="Writing"
-                                            />
-                                        </th>
-                                        <th>Average</th>
-                                    </tr>
-                                </thead>
-                                <tbody>
-                                    {[...grades.students]
-                                        .sort((a, b) => b.average - a.average)
-                                        .map((student) => (
-                                            <tr key={student.id}>
-                                                <td>
-                                                    <div
-                                                        style={{
-                                                            display: 'flex',
-                                                            alignItems:
-                                                                'center',
-                                                            gap: 10,
-                                                        }}
-                                                    >
-                                                        <Avatar
-                                                            name={
-                                                                student.nameEn
-                                                            }
-                                                            src={student.photo}
-                                                            size={30}
-                                                        />
-                                                        <div>
-                                                            <PersonName
-                                                                isKh={isKh}
-                                                                kh={
-                                                                    student.nameKh
-                                                                }
-                                                                en={
-                                                                    student.nameEn
-                                                                }
-                                                                primaryStyle={{
-                                                                    fontWeight: 700,
-                                                                    fontSize: 12,
-                                                                    display:
-                                                                        'block',
-                                                                }}
-                                                                secondaryStyle={{
-                                                                    fontSize: 11,
-                                                                    color: '#94a3b8',
-                                                                }}
-                                                            />
-                                                        </div>
-                                                    </div>
-                                                </td>
-                                                <td>
-                                                    <Badge type="blue">
-                                                        {student.level}
-                                                    </Badge>
-                                                </td>
-                                                <td>
-                                                    <ScoreChip
-                                                        score={student.speaking}
-                                                    />
-                                                </td>
-                                                <td>
-                                                    <ScoreChip
-                                                        score={
-                                                            student.listening
-                                                        }
-                                                    />
-                                                </td>
-                                                <td>
-                                                    <ScoreChip
-                                                        score={student.reading}
-                                                    />
-                                                </td>
-                                                <td>
-                                                    <ScoreChip
-                                                        score={student.writing}
-                                                    />
-                                                </td>
-                                                <td>
-                                                    <span
-                                                        style={{
-                                                            fontWeight: 800,
-                                                            fontSize: 15,
-                                                            color: gradeColor(
-                                                                student.average,
-                                                            ),
-                                                        }}
-                                                    >
-                                                        {student.average}
-                                                    </span>
-                                                </td>
-                                            </tr>
-                                        ))}
-                                </tbody>
-                            </table>
-                        </div>
-                    </div>
-                )}
-
-                {tab === 'fees' && (
-                    <div
-                        style={{
-                            display: 'flex',
-                            flexDirection: 'column',
-                            gap: 16,
-                        }}
-                    >
-                        <div
-                            style={{
-                                display: 'grid',
-                                gridTemplateColumns:
-                                    'repeat(auto-fill,minmax(160px,1fr))',
-                                gap: 12,
-                            }}
-                        >
-                            {[
-                                {
-                                    lk: 'ប្រមូលបាន',
-                                    l: 'Collected',
-                                    v: money(summary.feesCollected),
-                                    c: '#10b981',
-                                    bg: '#f0fdf4',
-                                },
-                                {
-                                    lk: 'នៅខ្វះ',
-                                    l: 'Outstanding',
-                                    v: money(summary.outstandingFees),
-                                    c: '#ef4444',
-                                    bg: '#fff1f2',
-                                },
-                                {
-                                    lk: 'បានបង់',
-                                    l: 'Paid',
-                                    v: summary.paidCount,
-                                    c: '#2563eb',
-                                    bg: '#eff6ff',
-                                },
-                                {
-                                    lk: 'មិនទាន់',
-                                    l: 'Unpaid',
-                                    v: summary.unpaidCount,
-                                    c: '#f59e0b',
-                                    bg: '#fffbeb',
-                                },
-                            ].map((stat) => (
-                                <div
-                                    key={stat.l}
-                                    style={{
-                                        background: stat.bg,
-                                        borderRadius: 14,
-                                        padding: 16,
-                                        border: `1px solid ${stat.c}30`,
-                                    }}
-                                >
-                                    <div
-                                        style={{
-                                            fontSize: 24,
-                                            fontWeight: 800,
-                                            color: stat.c,
-                                            marginBottom: 2,
-                                        }}
-                                    >
-                                        {stat.v}
-                                    </div>
-                                    <LocalizedCopy
-                                        isKh={isKh}
-                                        kh={stat.lk}
-                                        en={stat.l}
-                                        style={{
-                                            fontSize: 12,
-                                            color: stat.c,
-                                            display: 'block',
-                                            opacity: 0.8,
-                                        }}
-                                    />
+                    <div className="grid gap-3">
+                        <SectionTitle title="Skill averages" />
+                        <div className="grid grid-cols-2 gap-2 md:grid-cols-4">
+                            {grades.skills.map(skill => (
+                                <div key={skill.key} className="rounded-[18px] border border-slate-200 bg-white p-3 shadow-sm dark:border-slate-700 dark:bg-slate-800">
+                                    <span className="block truncate text-[11px] font-black text-slate-400">{isKh && skill.labelKh ? skill.labelKh : skill.label}</span>
+                                    <strong className={`mt-2 block text-2xl font-black ${scoreTextClass(skill.average)}`}>{skill.average}</strong>
+                                    <div className="mt-2"><PBar value={skill.average} color={scoreBarColor(skill.average)} height={8} /></div>
                                 </div>
                             ))}
                         </div>
 
-                        <div className="card" style={{ overflowX: 'auto' }}>
-                            <div
-                                style={{
-                                    padding: '16px 20px 0',
-                                    marginBottom: 4,
-                                }}
-                            >
-                                <LocalizedCopy
-                                    isKh={isKh}
-                                    kh="ប្រវត្តិការទូទាត់"
-                                    en="Payment history"
-                                    style={{
-                                        fontWeight: 800,
-                                        fontSize: 15,
-                                        display: 'block',
-                                    }}
-                                />
-                                <div
-                                    style={{
-                                        fontSize: 12,
-                                        color: '#94a3b8',
-                                        marginBottom: 12,
-                                    }}
-                                >
-                                    Payment History - {reportDate}
-                                </div>
-                            </div>
-                            <table className="data-table">
-                                <thead>
-                                    <tr>
-                                        <th>Student</th>
-                                        <th>Amount</th>
-                                        <th>Method</th>
-                                        <th>Date</th>
-                                        <th>Status</th>
-                                    </tr>
-                                </thead>
-                                <tbody>
-                                    {fees.payments.map((payment) => (
-                                        <tr key={payment.id}>
-                                            <td>
-                                                <PersonName
-                                                    isKh={isKh}
-                                                    kh={payment.studentNameKh}
-                                                    en={payment.studentNameEn}
-                                                    primaryStyle={{
-                                                        fontWeight: 700,
-                                                        fontSize: 13,
-                                                    }}
-                                                    secondaryStyle={{
-                                                        fontSize: 11,
-                                                        color: '#94a3b8',
-                                                    }}
-                                                />
-                                            </td>
-                                            <td>
-                                                <span
-                                                    style={{ fontWeight: 700 }}
-                                                >
-                                                    {money(payment.amount)}
-                                                </span>
-                                            </td>
-                                            <td>
-                                                <Badge type="blue">
-                                                    {payment.method}
-                                                </Badge>
-                                            </td>
-                                            <td
-                                                style={{
-                                                    fontSize: 12,
-                                                    color: '#64748b',
-                                                }}
-                                            >
-                                                {payment.date || '-'}
-                                            </td>
-                                            <td>
-                                                <Badge
-                                                    type={feeBadgeType(
-                                                        payment.status,
-                                                    )}
-                                                >
-                                                    {paymentStatusLabel(
-                                                        payment.status,
-                                                    )}
-                                                </Badge>
-                                            </td>
-                                        </tr>
-                                    ))}
-                                </tbody>
-                            </table>
+                        <SectionTitle title="Student grades" />
+                        <ResponsiveGradeRows students={grades.students} isKh={isKh} />
+                    </div>
+                )}
+
+                {tab === 'fees' && (
+                    <div className="grid gap-3">
+                        <div className="grid grid-cols-2 gap-2 md:grid-cols-4">
+                            <MiniMetric label="Collected" value={money(summary.feesCollected)} tone="green" />
+                            <MiniMetric label="Outstanding" value={money(summary.outstandingFees)} tone="red" />
+                            <MiniMetric label="Paid" value={summary.paidCount} tone="blue" />
+                            <MiniMetric label="Unpaid" value={summary.unpaidCount} tone="amber" />
                         </div>
 
-                        <div className="card" style={{ overflowX: 'auto' }}>
-                            <div
-                                style={{
-                                    padding: '16px 20px 0',
-                                    marginBottom: 4,
-                                }}
-                            >
-                                <LocalizedCopy
-                                    isKh={isKh}
-                                    kh="ស្ថានភាពថ្លៃតាមសិស្ស"
-                                    en="Student fee status"
-                                    style={{
-                                        fontWeight: 800,
-                                        fontSize: 15,
-                                        display: 'block',
-                                    }}
-                                />
-                            </div>
-                            <table className="data-table">
-                                <thead>
-                                    <tr>
-                                        <th>Student</th>
-                                        <th>Level</th>
-                                        <th>Amount</th>
-                                        <th>Status</th>
-                                    </tr>
-                                </thead>
-                                <tbody>
-                                    {fees.students.map((student) => (
-                                        <tr key={student.id}>
-                                            <td>
-                                                <div
-                                                    style={{
-                                                        display: 'flex',
-                                                        alignItems: 'center',
-                                                        gap: 10,
-                                                    }}
-                                                >
-                                                    <Avatar
-                                                        name={student.nameEn}
-                                                        src={student.photo}
-                                                        size={30}
-                                                    />
-                                                    <div>
-                                                        <PersonName
-                                                            isKh={isKh}
-                                                            kh={student.nameKh}
-                                                            en={student.nameEn}
-                                                            primaryStyle={{
-                                                                fontWeight: 700,
-                                                                fontSize: 13,
-                                                                display:
-                                                                    'block',
-                                                            }}
-                                                            secondaryStyle={{
-                                                                fontSize: 11,
-                                                                color: '#94a3b8',
-                                                            }}
-                                                        />
-                                                    </div>
-                                                </div>
-                                            </td>
-                                            <td>
-                                                <Badge type="blue">
-                                                    {student.level}
-                                                </Badge>
-                                            </td>
-                                            <td>
-                                                <span
-                                                    style={{ fontWeight: 700 }}
-                                                >
-                                                    {money(student.amount)}
-                                                </span>
-                                            </td>
-                                            <td>
-                                                <Badge
-                                                    type={feeBadgeType(
-                                                        student.status,
-                                                    )}
-                                                >
-                                                    {student.status === 'paid'
-                                                        ? badgeIcon(
-                                                              CheckCircle2,
-                                                              'Paid',
-                                                          )
-                                                        : student.status ===
-                                                            'unpaid'
-                                                          ? badgeIcon(
-                                                                XCircle,
-                                                                'Unpaid',
-                                                            )
-                                                          : 'Partial'}
-                                                </Badge>
-                                            </td>
-                                        </tr>
-                                    ))}
-                                </tbody>
-                            </table>
-                        </div>
+                        <SectionTitle title="Payment history" subtitle={`Payment History - ${reportDate}`} />
+                        <ResponsivePaymentRows payments={fees.payments} isKh={isKh} />
+
+                        <SectionTitle title="Student fee status" />
+                        <ResponsiveFeeRows students={fees.students} isKh={isKh} />
                     </div>
                 )}
             </div>
         </AdminShell>
     );
+}
+
+function ResponsiveStudentAttendance({ students, isKh }: { students: StudentReportRow[]; isKh: boolean }) {
+    return (
+        <section className="overflow-visible rounded-[24px] border-0 bg-transparent shadow-none md:overflow-x-auto md:rounded-2xl md:border md:border-slate-200 md:bg-white md:shadow-sm dark:md:border-slate-700 dark:md:bg-slate-800/90">
+            <table className={desktopTableClass}>
+                <thead>
+                    <tr><th>Student</th><th>Class</th><th>Attendance</th><th>Fee</th></tr>
+                </thead>
+                <tbody>
+                    {students.map(student => (
+                        <tr key={student.id} className="border-b border-slate-50 hover:bg-slate-50 dark:border-slate-800 dark:hover:bg-slate-900/60">
+                            <td><StudentName student={student} isKh={isKh} /></td>
+                            <td><Badge type="blue">{student.className || student.level}</Badge></td>
+                            <td><ProgressCell value={student.attendance} /></td>
+                            <td><Badge type={feeBadgeType(student.feeStatus)}>{student.feeStatus}</Badge></td>
+                        </tr>
+                    ))}
+                </tbody>
+            </table>
+            <div className="grid gap-3 md:hidden">
+                {students.map(student => (
+                    <article key={student.id} className={mobileCardClass}>
+                        <div className="flex items-center justify-between gap-3">
+                            <StudentName student={student} isKh={isKh} />
+                            <Badge type={feeBadgeType(student.feeStatus)}>{student.feeStatus}</Badge>
+                        </div>
+                        <div className="mt-3 rounded-2xl bg-slate-100 px-3 py-2 dark:bg-slate-950">
+                            <div className="mb-2 flex items-center justify-between text-xs font-black">
+                                <span className="text-slate-400">{student.className || student.level}</span>
+                                <span className={scoreTextClass(student.attendance)}>{student.attendance}%</span>
+                            </div>
+                            <PBar value={student.attendance} color={scoreBarColor(student.attendance)} />
+                        </div>
+                    </article>
+                ))}
+            </div>
+        </section>
+    );
+}
+
+function ResponsiveGradeRows({ students, isKh }: { students: StudentReportRow[]; isKh: boolean }) {
+    return (
+        <section className="overflow-visible rounded-[24px] border-0 bg-transparent shadow-none md:overflow-x-auto md:rounded-2xl md:border md:border-slate-200 md:bg-white md:shadow-sm dark:md:border-slate-700 dark:md:bg-slate-800/90">
+            <table className={desktopTableClass}>
+                <thead>
+                    <tr><th>Student</th><th>Level</th><th>Speak</th><th>Listen</th><th>Read</th><th>Write</th><th>Average</th></tr>
+                </thead>
+                <tbody>
+                    {students.map(student => (
+                        <tr key={student.id} className="border-b border-slate-50 hover:bg-slate-50 dark:border-slate-800 dark:hover:bg-slate-900/60">
+                            <td><StudentName student={student} isKh={isKh} /></td>
+                            <td><Badge type="blue">{student.level}</Badge></td>
+                            <td><ScoreChip score={student.speaking} /></td>
+                            <td><ScoreChip score={student.listening} /></td>
+                            <td><ScoreChip score={student.reading} /></td>
+                            <td><ScoreChip score={student.writing} /></td>
+                            <td><strong className={`text-sm font-black ${scoreTextClass(student.average)}`}>{student.average}</strong></td>
+                        </tr>
+                    ))}
+                </tbody>
+            </table>
+            <div className="grid gap-3 md:hidden">
+                {students.map(student => (
+                    <article key={student.id} className={mobileCardClass}>
+                        <div className="flex items-center justify-between gap-3">
+                            <StudentName student={student} isKh={isKh} />
+                            <strong className={`text-lg font-black ${scoreTextClass(student.average)}`}>{student.average}</strong>
+                        </div>
+                        <div className="mt-3 grid grid-cols-4 gap-2">
+                            <ScoreTile label="Speak" value={student.speaking} />
+                            <ScoreTile label="Listen" value={student.listening} />
+                            <ScoreTile label="Read" value={student.reading} />
+                            <ScoreTile label="Write" value={student.writing} />
+                        </div>
+                    </article>
+                ))}
+            </div>
+        </section>
+    );
+}
+
+function ResponsivePaymentRows({ payments, isKh }: { payments: PaymentRow[]; isKh: boolean }) {
+    return (
+        <section className="overflow-visible rounded-[24px] border-0 bg-transparent shadow-none md:overflow-x-auto md:rounded-2xl md:border md:border-slate-200 md:bg-white md:shadow-sm dark:md:border-slate-700 dark:md:bg-slate-800/90">
+            <table className={desktopTableClass}>
+                <thead>
+                    <tr><th>Student</th><th>Amount</th><th>Method</th><th>Date</th><th>Status</th></tr>
+                </thead>
+                <tbody>
+                    {payments.map(payment => (
+                        <tr key={payment.id} className="border-b border-slate-50 hover:bg-slate-50 dark:border-slate-800 dark:hover:bg-slate-900/60">
+                            <td><PersonName isKh={isKh} kh={payment.studentNameKh} en={payment.studentNameEn} /></td>
+                            <td><strong className="text-xs font-black text-slate-900 dark:text-slate-50">{money(payment.amount)}</strong></td>
+                            <td><Badge type="blue">{payment.method}</Badge></td>
+                            <td className="text-xs font-bold text-slate-500 dark:text-slate-300">{payment.date || '-'}</td>
+                            <td><Badge type={feeBadgeType(payment.status)}>{paymentStatusLabel(payment.status)}</Badge></td>
+                        </tr>
+                    ))}
+                </tbody>
+            </table>
+            <div className="grid gap-3 md:hidden">
+                {payments.map(payment => (
+                    <article key={payment.id} className={mobileCardClass}>
+                        <div className="flex items-start justify-between gap-3">
+                            <PersonName isKh={isKh} kh={payment.studentNameKh} en={payment.studentNameEn} />
+                            <strong className="text-sm font-black text-emerald-500">{money(payment.amount)}</strong>
+                        </div>
+                        <div className="mt-3 flex items-center justify-between rounded-2xl bg-slate-100 px-3 py-2 dark:bg-slate-950">
+                            <span className="text-xs font-black text-slate-400">{payment.date || '-'}</span>
+                            <div className="flex items-center gap-2">
+                                <Badge type="blue">{payment.method}</Badge>
+                                <Badge type={feeBadgeType(payment.status)}>{paymentStatusLabel(payment.status)}</Badge>
+                            </div>
+                        </div>
+                    </article>
+                ))}
+            </div>
+        </section>
+    );
+}
+
+function ResponsiveFeeRows({ students, isKh }: { students: FeeStudentRow[]; isKh: boolean }) {
+    return (
+        <section className="overflow-visible rounded-[24px] border-0 bg-transparent shadow-none md:overflow-x-auto md:rounded-2xl md:border md:border-slate-200 md:bg-white md:shadow-sm dark:md:border-slate-700 dark:md:bg-slate-800/90">
+            <table className={desktopTableClass}>
+                <thead>
+                    <tr><th>Student</th><th>Level</th><th>Amount</th><th>Status</th></tr>
+                </thead>
+                <tbody>
+                    {students.map(student => (
+                        <tr key={student.id} className="border-b border-slate-50 hover:bg-slate-50 dark:border-slate-800 dark:hover:bg-slate-900/60">
+                            <td><StudentName student={student} isKh={isKh} /></td>
+                            <td><Badge type="blue">{student.level}</Badge></td>
+                            <td><strong className="text-xs font-black text-slate-900 dark:text-slate-50">{money(student.amount)}</strong></td>
+                            <td><Badge type={feeBadgeType(student.status)}>{feeStatusLabel(student.status)}</Badge></td>
+                        </tr>
+                    ))}
+                </tbody>
+            </table>
+            <div className="grid gap-3 md:hidden">
+                {students.map(student => (
+                    <article key={student.id} className={mobileCardClass}>
+                        <div className="flex items-center justify-between gap-3">
+                            <StudentName student={student} isKh={isKh} />
+                            <Badge type={feeBadgeType(student.status)}>{feeStatusLabel(student.status)}</Badge>
+                        </div>
+                        <div className="mt-3 flex items-center justify-between rounded-2xl bg-slate-100 px-3 py-2 dark:bg-slate-950">
+                            <Badge type="blue">{student.level}</Badge>
+                            <strong className="text-sm font-black text-slate-900 dark:text-slate-50">{money(student.amount)}</strong>
+                        </div>
+                    </article>
+                ))}
+            </div>
+        </section>
+    );
+}
+
+function StudentName({ student, isKh }: { student: StudentReportRow | FeeStudentRow; isKh: boolean }) {
+    return (
+        <div className="flex min-w-0 items-center gap-2.5">
+            <Avatar name={student.nameEn} src={student.photo} size={34} />
+            <div className="min-w-0">
+                <PersonName isKh={isKh} kh={student.nameKh} en={student.nameEn} />
+            </div>
+        </div>
+    );
+}
+
+function PersonName({ isKh, kh, en }: { isKh: boolean; kh?: string; en: string }) {
+    const hasKhmerName = Boolean(kh?.trim());
+
+    if (isKh && hasKhmerName) {
+        return (
+            <>
+                <KH className="block truncate text-sm font-black text-slate-900 dark:text-slate-50">{kh}</KH>
+                <div className="truncate text-[11px] font-bold text-slate-400">{en}</div>
+            </>
+        );
+    }
+
+    return <div className="truncate text-sm font-black text-slate-900 dark:text-slate-50">{en || kh}</div>;
+}
+
+function MetricCard({ icon: Icon, label, value, tone }: { icon: LucideIcon; label: string; value: ReactNode; tone: 'blue' | 'green' | 'amber' | 'violet' }) {
+    return (
+        <div className={`rounded-[18px] border p-3 ${metricClass(tone)}`}>
+            <div className="mb-2 flex h-9 w-9 items-center justify-center rounded-2xl bg-current/10">
+                <Icon size={18} />
+            </div>
+            <div className="text-xl font-black leading-none">{value}</div>
+            <div className="mt-1 text-[11px] font-black opacity-70">{label}</div>
+        </div>
+    );
+}
+
+function MiniMetric({ label, value, tone }: { label: string; value: ReactNode; tone: 'green' | 'red' | 'blue' | 'amber' }) {
+    return (
+        <div className={`rounded-[18px] border p-3 ${metricClass(tone)}`}>
+            <div className="text-xl font-black leading-none">{value}</div>
+            <div className="mt-1 text-[11px] font-black opacity-70">{label}</div>
+        </div>
+    );
+}
+
+function SectionTitle({ title, subtitle }: { title: string; subtitle?: string }) {
+    return (
+        <div className="px-1">
+            <h2 className="text-sm font-black text-slate-900 dark:text-slate-50">{title}</h2>
+            {subtitle && <p className="mt-0.5 text-xs font-bold text-slate-400">{subtitle}</p>}
+        </div>
+    );
+}
+
+function ProgressCell({ value }: { value: number }) {
+    const color = attendanceColor(value);
+
+    return (
+        <div className="flex min-w-[130px] items-center gap-2">
+            <PBar value={value} color={color} />
+            <span className={`w-11 text-xs font-black ${barTextClass(color)}`}>{value}%</span>
+        </div>
+    );
+}
+
+function ScoreTile({ label, value }: { label: string; value: number }) {
+    return (
+        <div className="rounded-2xl bg-slate-100 px-2 py-2 text-center dark:bg-slate-950">
+            <span className="block text-[9px] font-black uppercase text-slate-400">{label}</span>
+            <strong className={`mt-1 block text-xs font-black ${scoreTextClass(value)}`}>{value}</strong>
+        </div>
+    );
+}
+
+function paymentStatusLabel(status: string) {
+    if (status === 'paid') return badgeIcon(CheckCircle2, 'Paid');
+    if (status === 'failed') return badgeIcon(XCircle, 'Failed');
+    return status || 'Unknown';
+}
+
+function feeStatusLabel(status: string) {
+    if (status === 'paid') return badgeIcon(CheckCircle2, 'Paid');
+    if (status === 'unpaid') return badgeIcon(XCircle, 'Unpaid');
+    return 'Partial';
+}
+
+function label(_isKh: boolean, kh: string, en: string) {
+    return kh || en;
+}
+
+function metricClass(tone: 'blue' | 'green' | 'amber' | 'violet' | 'red') {
+    if (tone === 'green') return 'border-emerald-500/25 bg-emerald-500/10 text-emerald-500';
+    if (tone === 'amber') return 'border-amber-500/25 bg-amber-500/10 text-amber-500';
+    if (tone === 'violet') return 'border-violet-500/25 bg-violet-500/10 text-violet-500';
+    if (tone === 'red') return 'border-red-500/25 bg-red-500/10 text-red-500';
+    return 'border-blue-500/25 bg-blue-500/10 text-blue-500';
+}
+
+function barTextClass(color: 'green' | 'amber' | 'red') {
+    if (color === 'green') return 'text-emerald-500';
+    if (color === 'amber') return 'text-amber-500';
+    return 'text-red-500';
+}
+
+function scoreBarColor(value: number): 'green' | 'blue' | 'red' {
+    if (value >= 75) return 'green';
+    if (value >= 50) return 'blue';
+    return 'red';
+}
+
+function scoreTextClass(value: number) {
+    if (value >= 75) return 'text-emerald-500';
+    if (value >= 50) return 'text-blue-500';
+    return 'text-amber-500';
 }

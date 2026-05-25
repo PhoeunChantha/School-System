@@ -1,4 +1,4 @@
-﻿import {
+import {
     destroyPermission,
     destroyRole,
     storePermission,
@@ -10,9 +10,8 @@ import AdminShell from '@/pages/admin/shell';
 import { AdminSelect, RowActions as RowActionsMenu } from '@/pages/admin/ui';
 import { type SharedData } from '@/types';
 import { router, useForm, usePage } from '@inertiajs/react';
-import { Edit3, Plus, ShieldCheck, Trash2 } from 'lucide-react';
-import { FormEvent, useMemo, useState } from 'react';
-import type { CSSProperties, ReactNode } from 'react';
+import { Edit3, Plus, Search, ShieldCheck, Trash2, X } from 'lucide-react';
+import { FormEvent, ReactNode, useMemo, useState } from 'react';
 import { toast } from 'sonner';
 
 interface RoleItem {
@@ -67,6 +66,11 @@ interface PermissionFormData {
 type Tab = 'roles' | 'permissions';
 type Mode = 'create' | 'edit';
 type DeleteTarget = { type: 'role'; item: RoleItem } | { type: 'permission'; item: PermissionItem };
+
+const pageClass = 'fade-in flex flex-col gap-3 bg-slate-50 p-4 dark:bg-slate-950 max-md:bg-[radial-gradient(circle_at_100%_0,rgba(37,99,235,0.12),transparent_34%),linear-gradient(180deg,#f7f9fc_0%,#eef3f8_100%)] max-md:px-2.5 max-md:py-3 max-md:pb-[calc(104px+env(safe-area-inset-bottom))] dark:max-md:bg-[radial-gradient(circle_at_100%_0,rgba(96,165,250,0.14),transparent_34%),linear-gradient(180deg,#0f172a_0%,#111827_100%)]';
+const panelClass = 'rounded-[24px] border border-slate-200 bg-white p-3 shadow-[0_14px_36px_rgba(15,23,42,0.07)] dark:border-slate-700 dark:bg-slate-800/90';
+const inputClass = 'min-h-12 w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm font-bold text-slate-900 outline-none transition placeholder:text-slate-400 focus:border-blue-400 focus:ring-2 focus:ring-blue-500/15 dark:border-slate-700 dark:bg-slate-950 dark:text-slate-100';
+const footerButtonClass = 'inline-flex min-h-11 items-center justify-center gap-1.5 rounded-xl px-3 py-2 text-sm font-black transition';
 
 export default function RolePermissionPage({ roles, permissions, permissionGroups, summary }: RolePermissionPageProps) {
     const { props } = usePage<SharedData>();
@@ -206,9 +210,7 @@ export default function RolePermissionPage({ roles, permissions, permissionGroup
     };
 
     const confirmDelete = () => {
-        if (!deleteTarget) {
-            return;
-        }
+        if (!deleteTarget) return;
 
         const route = deleteTarget.type === 'role'
             ? destroyRole.url((deleteTarget.item.routeKey ?? deleteTarget.item.id) as never)
@@ -225,238 +227,165 @@ export default function RolePermissionPage({ roles, permissions, permissionGroup
 
     return (
         <AdminShell>
-            <div className="fade-in" style={{ padding: 24, display: 'flex', flexDirection: 'column', gap: 16 }}>
-                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12, flexWrap: 'wrap' }}>
-                    <div>
-                        <div style={{ fontWeight: 900, fontSize: 18, color: '#1e293b' }}>Roles & Permissions</div>
-                        <div style={{ fontSize: 12, color: '#94a3b8' }}>Manage access groups and permission keys</div>
-                    </div>
-                    <div style={{ display: 'flex', gap: 8 }}>
-                        {canCreatePermission && (
-                            <button onClick={openCreatePermission} style={secondaryButton}>
-                                <Plus size={15} />
-                                Permission
-                            </button>
-                        )}
-                        {canCreateRole && (
-                            <button onClick={openCreateRole} style={primaryButton}>
-                                <ShieldCheck size={15} />
-                                Role
-                            </button>
-                        )}
-                    </div>
-                </div>
-
-                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill,minmax(150px,1fr))', gap: 12 }}>
-                    {[
-                        { label: 'Roles', value: summary.roleCount, color: '#2563eb', bg: '#eff6ff' },
-                        { label: 'Permissions', value: summary.permissionCount, color: '#10b981', bg: '#f0fdf4' },
-                        { label: 'Assignments', value: summary.assignedPermissionCount, color: '#6366f1', bg: '#eef2ff' },
-                        { label: 'User Roles', value: summary.userRoleCount, color: '#f59e0b', bg: '#fffbeb' },
-                    ].map(card => (
-                        <div key={card.label} style={{ background: card.bg, border: `1px solid ${card.color}30`, borderRadius: 14, padding: 16 }}>
-                            <div style={{ color: card.color, fontSize: 24, fontWeight: 900 }}>{card.value}</div>
-                            <div style={{ color: card.color, opacity: 0.72, fontSize: 11 }}>{card.label}</div>
+            <div className={pageClass}>
+                <section className="rounded-[26px] border border-slate-200 bg-white p-4 shadow-[0_18px_42px_rgba(15,23,42,0.08)] dark:border-slate-700 dark:bg-slate-800/90">
+                    <div className="flex items-start justify-between gap-3">
+                        <div className="min-w-0">
+                            <p className="text-xs font-black text-blue-500">Access management</p>
+                            <h1 className="mt-1 text-xl font-black text-slate-900 dark:text-slate-50">Roles & Permissions</h1>
+                            <p className="mt-1 truncate text-xs font-bold text-slate-400">Manage access groups and permission keys</p>
                         </div>
-                    ))}
+                        <div className="flex shrink-0 items-center gap-2">
+                            {canCreatePermission && (
+                                <button onClick={openCreatePermission} className="inline-flex h-11 w-11 items-center justify-center rounded-2xl border border-slate-200 bg-slate-50 text-slate-600 transition hover:bg-slate-100 dark:border-slate-700 dark:bg-slate-950 dark:text-slate-200" aria-label="Add permission">
+                                    <Plus size={17} />
+                                </button>
+                            )}
+                            {canCreateRole && (
+                                <button onClick={openCreateRole} className="inline-flex h-11 w-11 items-center justify-center rounded-2xl bg-blue-600 text-white shadow-[0_14px_26px_rgba(37,99,235,0.28)] transition hover:bg-blue-500" aria-label="Add role">
+                                    <ShieldCheck size={18} />
+                                </button>
+                            )}
+                        </div>
+                    </div>
+                </section>
+
+                <div className="grid grid-cols-2 gap-2 md:grid-cols-4">
+                    <Metric label="Roles" value={summary.roleCount} tone="blue" />
+                    <Metric label="Permissions" value={summary.permissionCount} tone="green" />
+                    <Metric label="Assignments" value={summary.assignedPermissionCount} tone="violet" />
+                    <Metric label="User Roles" value={summary.userRoleCount} tone="amber" />
                 </div>
 
-                <div className="card" style={{ padding: 16 }}>
-                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 12, marginBottom: 14 }}>
-                        <div style={{ display: 'inline-flex', padding: 4, borderRadius: 10, background: '#f1f5f9', gap: 4 }}>
+                <section className={panelClass}>
+                    <div className="mb-3 flex items-center gap-2">
+                        <div className="grid flex-1 grid-cols-2 gap-1 rounded-2xl bg-slate-100 p-1 dark:bg-slate-950">
                             <TabButton active={tab === 'roles'} onClick={() => setTab('roles')}>Roles</TabButton>
                             <TabButton active={tab === 'permissions'} onClick={() => setTab('permissions')}>Permissions</TabButton>
                         </div>
-                        <input
-                            className="f-input"
-                            style={{ maxWidth: 320 }}
-                            placeholder={`Search ${tab}...`}
-                            value={search}
-                            onChange={event => setSearch(event.target.value)}
-                        />
                     </div>
+                    <div className="flex min-h-12 items-center gap-2 rounded-2xl border border-slate-200 bg-white px-3 dark:border-slate-700 dark:bg-slate-950">
+                        <Search size={16} className="shrink-0 text-slate-400" />
+                        <input className="min-w-0 flex-1 bg-transparent text-sm font-bold text-slate-900 outline-none placeholder:text-slate-400 dark:text-slate-100" placeholder={`Search ${tab}...`} value={search} onChange={event => setSearch(event.target.value)} />
+                    </div>
+                </section>
 
-                    {tab === 'roles' ? (
-                        <div style={{ display: 'grid', gridTemplateColumns: showRoleForm ? 'repeat(auto-fit, minmax(min(100%, 420px), 1fr))' : '1fr', gap: 18, alignItems: 'start' }}>
-                            {showRoleForm && (
-                            <form onSubmit={submitRole} style={formPanel}>
+                {tab === 'roles' ? (
+                    <>
+                        {showRoleForm && (
+                            <form onSubmit={submitRole} className={panelClass}>
                                 <FormTitle>{roleMode === 'edit' ? `Edit ${editingRole?.name}` : 'Add Role'}</FormTitle>
-                                <Field label="Role Name" error={roleForm.errors.name}>
-                                    <input className="f-input" value={roleForm.data.name} onChange={event => roleForm.setData('name', event.target.value)} placeholder="admin" />
-                                </Field>
-                                <Field label="Guard" error={roleForm.errors.guard_name}>
-                                    <AdminSelect
-                                        value={roleForm.data.guard_name}
-                                        onChange={value => roleForm.setData('guard_name', value)}
-                                        options={[{ value: 'web', label: 'web' }]}
-                                    />
-                                </Field>
-                                <Field label="Permissions" error={roleForm.errors.permission_ids}>
-                                    <div style={{ display: 'grid', gap: 10, maxHeight: 360, overflowY: 'auto', paddingRight: 4 }}>
-                                        {permissionGroups.length === 0 ? (
-                                            <div style={emptyText}>Create permissions first, then assign them to roles.</div>
-                                        ) : permissionGroups.map(group => {
-                                            const checkedCount = group.permissions.filter(permission => roleForm.data.permission_ids.includes(permission.id)).length;
-                                            const isGroupChecked = checkedCount === group.permissions.length && group.permissions.length > 0;
-
-                                            return (
-                                            <div key={group.name} style={{ border: '1px solid #e2e8f0', borderRadius: 10, padding: 10 }}>
-                                                <label style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12, marginBottom: 8, cursor: 'pointer' }}>
-                                                    <span style={{ fontSize: 11, fontWeight: 900, color: '#475569', textTransform: 'uppercase' }}>{group.name}</span>
-                                                    <span style={{ display: 'inline-flex', alignItems: 'center', gap: 6, fontSize: 11, fontWeight: 800, color: '#64748b', textTransform: 'none' }}>
-                                                        All
-                                                        <input
-                                                            type="checkbox"
-                                                            checked={isGroupChecked}
-                                                            onChange={event => togglePermissionGroup(group, event.target.checked)}
-                                                        />
-                                                    </span>
-                                                </label>
-                                                <div style={{ display: 'grid', gap: 7 }}>
-                                                    {group.permissions.map(permission => (
-                                                        <label key={permission.id} style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: 12, color: '#334155', cursor: 'pointer' }}>
-                                                            <input
-                                                                type="checkbox"
-                                                                checked={roleForm.data.permission_ids.includes(permission.id)}
-                                                                onChange={event => togglePermission(permission.id, event.target.checked)}
-                                                            />
-                                                            {permission.name}
-                                                        </label>
-                                                    ))}
-                                                </div>
-                                            </div>
-                                            );
-                                        })}
-                                    </div>
-                                </Field>
-                                <div style={{ display: 'flex', gap: 10, marginTop: 16 }}>
-                                    <button type="button" onClick={openCreateRole} style={cancelButton}>Clear</button>
-                                    <button type="submit" disabled={roleForm.processing} style={{ ...saveButton, opacity: roleForm.processing ? 0.65 : 1 }}>
+                                <div className="grid gap-3">
+                                    <Field label="Role Name" error={roleForm.errors.name}>
+                                        <input className={inputClass} value={roleForm.data.name} onChange={event => roleForm.setData('name', event.target.value)} placeholder="admin" />
+                                    </Field>
+                                    <Field label="Guard" error={roleForm.errors.guard_name}>
+                                        <AdminSelect value={roleForm.data.guard_name} onChange={value => roleForm.setData('guard_name', value)} options={[{ value: 'web', label: 'web' }]} triggerClassName={inputClass} />
+                                    </Field>
+                                    <Field label="Permissions" error={roleForm.errors.permission_ids}>
+                                        <div className="grid max-h-[360px] gap-2 overflow-y-auto pr-1">
+                                            {permissionGroups.length === 0 ? (
+                                                <div className="rounded-2xl bg-slate-50 p-3 text-xs font-bold text-slate-400 dark:bg-slate-950">Create permissions first, then assign them to roles.</div>
+                                            ) : permissionGroups.map(group => (
+                                                <PermissionGroupBox key={group.name} group={group} selectedIds={roleForm.data.permission_ids} onToggleGroup={togglePermissionGroup} onTogglePermission={togglePermission} />
+                                            ))}
+                                        </div>
+                                    </Field>
+                                </div>
+                                <div className="mt-4 grid grid-cols-[1fr_2fr] gap-2">
+                                    <button type="button" onClick={openCreateRole} className={`${footerButtonClass} bg-slate-100 text-slate-500 hover:bg-slate-200 dark:bg-slate-950 dark:text-slate-300 dark:hover:bg-slate-800`}>
+                                        <X size={15} /> Clear
+                                    </button>
+                                    <button type="submit" disabled={roleForm.processing} className={`${footerButtonClass} bg-blue-600 text-white shadow-[0_12px_24px_rgba(37,99,235,0.22)] hover:bg-blue-500 disabled:cursor-default disabled:bg-blue-300`}>
                                         {roleMode === 'edit' ? 'Update Role' : 'Save Role'}
                                     </button>
                                 </div>
                             </form>
-                            )}
+                        )}
 
-                            <div style={{ overflowX: 'auto' }}>
-                                <table className="data-table">
-                                    <thead>
-                                        <tr>
-                                            <th>Role</th>
-                                            <th>Permissions</th>
-                                            <th>Users</th>
-                                            <th>Actions</th>
-                                        </tr>
-                                    </thead>
-                                    <tbody>
-                                        {filteredRoles.length === 0 ? (
-                                            <tr><td colSpan={4} style={emptyCell}>No roles found</td></tr>
-                                        ) : filteredRoles.map(role => (
-                                            <tr key={role.id}>
-                                                <td>
-                                                    <div style={{ fontWeight: 900, color: '#1e293b', fontSize: 13 }}>{role.name}</div>
-                                                    <div style={{ fontSize: 11, color: '#94a3b8' }}>{role.guardName}</div>
-                                                </td>
-                                                <td>
-                                                    <div style={{ display: 'flex', flexWrap: 'wrap', gap: 5, maxWidth: 360 }}>
-                                                        {role.permissionNames.length === 0
-                                                            ? <span style={{ fontSize: 12, color: '#94a3b8' }}>No permissions</span>
-                                                            : role.permissionNames.slice(0, 5).map(permission => <Chip key={permission}>{permission}</Chip>)}
-                                                        {role.permissionNames.length > 5 && <Chip>+{role.permissionNames.length - 5}</Chip>}
-                                                    </div>
-                                                </td>
-                                                <td style={{ fontSize: 12, fontWeight: 800, color: '#475569' }}>{role.userCount}</td>
-                                                <td>
-                                                    <RowActions
-                                                        canEdit={canUpdateRole}
-                                                        canDelete={canDeleteRole}
-                                                        onEdit={() => openEditRole(role)}
-                                                        onDelete={() => setDeleteTarget({ type: 'role', item: role })}
-                                                    />
-                                                </td>
-                                            </tr>
-                                        ))}
-                                    </tbody>
-                                </table>
-                            </div>
-                        </div>
-                    ) : (
-                        <div style={{ display: 'grid', gridTemplateColumns: showPermissionForm ? 'repeat(auto-fit, minmax(min(100%, 360px), 1fr))' : '1fr', gap: 18, alignItems: 'start' }}>
-                            {showPermissionForm && (
-                            <form onSubmit={submitPermission} style={formPanel}>
+                        <section className="grid gap-3">
+                            {filteredRoles.length === 0 && <EmptyState>No roles found</EmptyState>}
+                            {filteredRoles.map(role => (
+                                <article key={role.id} className="rounded-[22px] border border-slate-200 bg-white p-3 shadow-[0_14px_34px_rgba(15,23,42,0.07)] dark:border-slate-700 dark:bg-slate-800/90">
+                                    <div className="flex items-start justify-between gap-3">
+                                        <div className="min-w-0">
+                                            <p className="truncate text-sm font-black text-slate-900 dark:text-slate-50">{role.name}</p>
+                                            <p className="mt-0.5 text-[11px] font-bold text-slate-400">{role.guardName} guard - {role.userCount} users</p>
+                                        </div>
+                                        <RowActions canEdit={canUpdateRole} canDelete={canDeleteRole} onEdit={() => openEditRole(role)} onDelete={() => setDeleteTarget({ type: 'role', item: role })} />
+                                    </div>
+                                    <div className="mt-3 flex flex-wrap gap-1.5">
+                                        {role.permissionNames.length === 0
+                                            ? <Chip>No permissions</Chip>
+                                            : role.permissionNames.slice(0, 6).map(permission => <Chip key={permission}>{permission}</Chip>)}
+                                        {role.permissionNames.length > 6 && <Chip>+{role.permissionNames.length - 6}</Chip>}
+                                    </div>
+                                </article>
+                            ))}
+                        </section>
+                    </>
+                ) : (
+                    <>
+                        {showPermissionForm && (
+                            <form onSubmit={submitPermission} className={panelClass}>
                                 <FormTitle>{permissionMode === 'edit' ? `Edit ${editingPermission?.name}` : 'Add Permission'}</FormTitle>
-                                <Field label="Permission Name" error={permissionForm.errors.name}>
-                                    <input className="f-input" value={permissionForm.data.name} onChange={event => permissionForm.setData('name', event.target.value)} placeholder="students.view" />
-                                </Field>
-                                <Field label="Guard" error={permissionForm.errors.guard_name}>
-                                    <AdminSelect
-                                        value={permissionForm.data.guard_name}
-                                        onChange={value => permissionForm.setData('guard_name', value)}
-                                        options={[{ value: 'web', label: 'web' }]}
-                                    />
-                                </Field>
-                                <div style={{ display: 'flex', gap: 10, marginTop: 16 }}>
-                                    <button type="button" onClick={openCreatePermission} style={cancelButton}>Clear</button>
-                                    <button type="submit" disabled={permissionForm.processing} style={{ ...saveButton, opacity: permissionForm.processing ? 0.65 : 1 }}>
+                                <div className="grid gap-3">
+                                    <Field label="Permission Name" error={permissionForm.errors.name}>
+                                        <input className={inputClass} value={permissionForm.data.name} onChange={event => permissionForm.setData('name', event.target.value)} placeholder="students.view" />
+                                    </Field>
+                                    <Field label="Guard" error={permissionForm.errors.guard_name}>
+                                        <AdminSelect value={permissionForm.data.guard_name} onChange={value => permissionForm.setData('guard_name', value)} options={[{ value: 'web', label: 'web' }]} triggerClassName={inputClass} />
+                                    </Field>
+                                </div>
+                                <div className="mt-4 grid grid-cols-[1fr_2fr] gap-2">
+                                    <button type="button" onClick={openCreatePermission} className={`${footerButtonClass} bg-slate-100 text-slate-500 hover:bg-slate-200 dark:bg-slate-950 dark:text-slate-300 dark:hover:bg-slate-800`}>
+                                        <X size={15} /> Clear
+                                    </button>
+                                    <button type="submit" disabled={permissionForm.processing} className={`${footerButtonClass} bg-blue-600 text-white shadow-[0_12px_24px_rgba(37,99,235,0.22)] hover:bg-blue-500 disabled:cursor-default disabled:bg-blue-300`}>
                                         {permissionMode === 'edit' ? 'Update Permission' : 'Save Permission'}
                                     </button>
                                 </div>
                             </form>
-                            )}
+                        )}
 
-                            <div style={{ overflowX: 'auto' }}>
-                                <table className="data-table">
-                                    <thead>
-                                        <tr>
-                                            <th>Permission</th>
-                                            <th>Group</th>
-                                            <th>Roles</th>
-                                            <th>Actions</th>
-                                        </tr>
-                                    </thead>
-                                    <tbody>
-                                        {filteredPermissions.length === 0 ? (
-                                            <tr><td colSpan={4} style={emptyCell}>No permissions found</td></tr>
-                                        ) : filteredPermissions.map(permission => (
-                                            <tr key={permission.id}>
-                                                <td>
-                                                    <div style={{ fontWeight: 900, color: '#1e293b', fontSize: 13 }}>{permission.name}</div>
-                                                    <div style={{ fontSize: 11, color: '#94a3b8' }}>{permission.guardName}</div>
-                                                </td>
-                                                <td><Chip>{permission.group}</Chip></td>
-                                                <td style={{ fontSize: 12, fontWeight: 800, color: '#475569' }}>{permission.roleCount}</td>
-                                                <td>
-                                                    <RowActions
-                                                        canEdit={canUpdatePermission}
-                                                        canDelete={canDeletePermission}
-                                                        onEdit={() => openEditPermission(permission)}
-                                                        onDelete={() => setDeleteTarget({ type: 'permission', item: permission })}
-                                                    />
-                                                </td>
-                                            </tr>
-                                        ))}
-                                    </tbody>
-                                </table>
-                            </div>
-                        </div>
-                    )}
-                </div>
+                        <section className="grid gap-3">
+                            {filteredPermissions.length === 0 && <EmptyState>No permissions found</EmptyState>}
+                            {filteredPermissions.map(permission => (
+                                <article key={permission.id} className="rounded-[22px] border border-slate-200 bg-white p-3 shadow-[0_14px_34px_rgba(15,23,42,0.07)] dark:border-slate-700 dark:bg-slate-800/90">
+                                    <div className="flex items-start justify-between gap-3">
+                                        <div className="min-w-0">
+                                            <p className="truncate text-sm font-black text-slate-900 dark:text-slate-50">{permission.name}</p>
+                                            <p className="mt-0.5 text-[11px] font-bold text-slate-400">{permission.guardName} guard - {permission.roleCount} roles</p>
+                                        </div>
+                                        <RowActions canEdit={canUpdatePermission} canDelete={canDeletePermission} onEdit={() => openEditPermission(permission)} onDelete={() => setDeleteTarget({ type: 'permission', item: permission })} />
+                                    </div>
+                                    <div className="mt-3">
+                                        <Chip>{permission.group}</Chip>
+                                    </div>
+                                </article>
+                            ))}
+                        </section>
+                    </>
+                )}
             </div>
 
             {deleteTarget && (
-                <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.45)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 230, padding: 16 }}>
-                    <div style={{ background: 'white', borderRadius: 20, padding: 30, maxWidth: 420, width: '100%', boxShadow: '0 24px 60px rgba(0,0,0,0.15)' }}>
-                        <div style={{ textAlign: 'center', marginBottom: 20 }}>
-                            <div style={{ fontSize: 18, fontWeight: 900, color: '#1e293b', marginBottom: 6 }}>
-                                Delete {deleteTarget.type === 'role' ? 'Role' : 'Permission'}?
+                <div className="fixed inset-0 z-[230] flex items-center justify-center bg-black/45 p-4">
+                    <div className="w-full max-w-[420px] rounded-[24px] border border-slate-200 bg-white p-6 shadow-[0_24px_60px_rgba(0,0,0,0.18)] dark:border-slate-700 dark:bg-slate-800">
+                        <div className="mb-5 text-center">
+                            <div className="mx-auto mb-3 flex h-14 w-14 items-center justify-center rounded-full bg-red-500/10 text-red-500">
+                                <Trash2 size={24} />
                             </div>
-                            <div style={{ fontSize: 13, color: '#64748b', lineHeight: 1.5 }}>
-                                Remove <strong>{deleteTarget.item.name}</strong> from access management?
-                            </div>
+                            <div className="mb-1.5 text-lg font-black text-slate-900 dark:text-slate-50">Delete {deleteTarget.type === 'role' ? 'Role' : 'Permission'}?</div>
+                            <div className="text-sm font-medium leading-6 text-slate-500 dark:text-slate-300">Remove <strong>{deleteTarget.item.name}</strong> from access management?</div>
                         </div>
-                        <div style={{ display: 'flex', gap: 10 }}>
-                            <button onClick={() => setDeleteTarget(null)} style={{ flex: 1, background: '#f1f5f9', color: '#64748b', border: 'none', borderRadius: 10, padding: '11px', fontWeight: 700, cursor: 'pointer', fontSize: 14 }}>Cancel</button>
-                            <button onClick={confirmDelete} style={{ flex: 1, background: '#ef4444', color: 'white', border: 'none', borderRadius: 10, padding: '11px', fontWeight: 700, cursor: 'pointer', fontSize: 14 }}>Delete</button>
+                        <div className="grid grid-cols-2 gap-2.5">
+                            <button onClick={() => setDeleteTarget(null)} className={`${footerButtonClass} bg-slate-100 text-slate-500 hover:bg-slate-200 dark:bg-slate-950 dark:text-slate-300 dark:hover:bg-slate-900`}>
+                                <X size={15} /> Cancel
+                            </button>
+                            <button onClick={confirmDelete} className={`${footerButtonClass} bg-red-500 text-white hover:bg-red-600`}>
+                                <Trash2 size={15} /> Delete
+                            </button>
                         </div>
                     </div>
                 </div>
@@ -465,22 +394,34 @@ export default function RolePermissionPage({ roles, permissions, permissionGroup
     );
 }
 
+function PermissionGroupBox({ group, selectedIds, onToggleGroup, onTogglePermission }: { group: PermissionGroup; selectedIds: number[]; onToggleGroup: (group: PermissionGroup, checked: boolean) => void; onTogglePermission: (permissionId: number, checked: boolean) => void }) {
+    const checkedCount = group.permissions.filter(permission => selectedIds.includes(permission.id)).length;
+    const isGroupChecked = checkedCount === group.permissions.length && group.permissions.length > 0;
+
+    return (
+        <div className="rounded-2xl border border-slate-200 bg-white p-3 dark:border-slate-700 dark:bg-slate-950">
+            <label className="mb-2 flex cursor-pointer items-center justify-between gap-3">
+                <span className="truncate text-[11px] font-black uppercase tracking-wide text-slate-500 dark:text-slate-300">{group.name}</span>
+                <span className="inline-flex items-center gap-2 text-[11px] font-black text-slate-400">
+                    All
+                    <input type="checkbox" checked={isGroupChecked} onChange={event => onToggleGroup(group, event.target.checked)} />
+                </span>
+            </label>
+            <div className="grid gap-1.5">
+                {group.permissions.map(permission => (
+                    <label key={permission.id} className="flex min-h-8 cursor-pointer items-center gap-2 rounded-xl bg-slate-50 px-2 text-xs font-bold text-slate-600 dark:bg-slate-900 dark:text-slate-300">
+                        <input type="checkbox" checked={selectedIds.includes(permission.id)} onChange={event => onTogglePermission(permission.id, event.target.checked)} />
+                        <span className="truncate">{permission.name}</span>
+                    </label>
+                ))}
+            </div>
+        </div>
+    );
+}
+
 function TabButton({ active, onClick, children }: { active: boolean; onClick: () => void; children: ReactNode }) {
     return (
-        <button
-            onClick={onClick}
-            style={{
-                border: 'none',
-                borderRadius: 8,
-                padding: '7px 14px',
-                fontSize: 12,
-                fontWeight: 900,
-                cursor: 'pointer',
-                background: active ? '#fff' : 'transparent',
-                color: active ? '#2563eb' : '#64748b',
-                boxShadow: active ? '0 1px 4px rgba(15,23,42,0.08)' : 'none',
-            }}
-        >
+        <button type="button" onClick={onClick} className={`min-h-10 rounded-xl px-3 text-xs font-black transition ${active ? 'bg-white text-blue-600 shadow-sm dark:bg-slate-800 dark:text-blue-300' : 'text-slate-500 dark:text-slate-400'}`}>
             {children}
         </button>
     );
@@ -488,30 +429,24 @@ function TabButton({ active, onClick, children }: { active: boolean; onClick: ()
 
 function Field({ label, error, children }: { label: string; error?: string; children: ReactNode }) {
     return (
-        <div style={{ marginBottom: 12 }}>
-            <label style={{ display: 'block', fontSize: 12, fontWeight: 900, color: '#64748b', marginBottom: 6 }}>{label}</label>
+        <div>
+            <label className="mb-1.5 block text-[11px] font-black uppercase tracking-wide text-slate-400">{label}</label>
             {children}
-            {error && <div className="field-error">{error}</div>}
+            {error && <div className="mt-1.5 text-xs font-bold text-red-500">{error}</div>}
         </div>
     );
 }
 
 function FormTitle({ children }: { children: ReactNode }) {
-    return <div style={{ fontSize: 15, fontWeight: 900, color: '#1e293b', marginBottom: 14 }}>{children}</div>;
+    return <div className="mb-3 text-base font-black text-slate-900 dark:text-slate-50">{children}</div>;
 }
 
 function Chip({ children }: { children: ReactNode }) {
-    return (
-        <span style={{ display: 'inline-flex', alignItems: 'center', borderRadius: 999, background: '#f1f5f9', color: '#475569', fontSize: 11, fontWeight: 800, padding: '3px 8px' }}>
-            {children}
-        </span>
-    );
+    return <span className="inline-flex max-w-full items-center rounded-full bg-slate-100 px-2 py-1 text-[11px] font-black text-slate-500 dark:bg-slate-950 dark:text-slate-300">{children}</span>;
 }
 
 function RowActions({ canEdit, canDelete, onEdit, onDelete }: { canEdit: boolean; canDelete: boolean; onEdit: () => void; onDelete: () => void }) {
-    if (! canEdit && ! canDelete) {
-        return <span style={{ color: '#94a3b8', fontSize: 12 }}>-</span>;
-    }
+    if (!canEdit && !canDelete) return <span className="text-xs font-bold text-slate-400">-</span>;
 
     return (
         <RowActionsMenu
@@ -523,69 +458,22 @@ function RowActions({ canEdit, canDelete, onEdit, onDelete }: { canEdit: boolean
     );
 }
 
-const formPanel: CSSProperties = {
-    border: '1px solid #e2e8f0',
-    borderRadius: 14,
-    padding: 16,
-    background: '#fff',
-};
+function Metric({ label, value, tone }: { label: string; value: number; tone: 'blue' | 'green' | 'violet' | 'amber' }) {
+    return (
+        <div className={`rounded-[18px] border p-3 ${metricClass(tone)}`}>
+            <div className="text-2xl font-black leading-none">{value}</div>
+            <div className="mt-1 text-[11px] font-black opacity-70">{label}</div>
+        </div>
+    );
+}
 
-const primaryButton: CSSProperties = {
-    background: '#2563eb',
-    color: 'white',
-    border: 'none',
-    borderRadius: 10,
-    padding: '9px 16px',
-    fontWeight: 900,
-    fontSize: 13,
-    cursor: 'pointer',
-    display: 'inline-flex',
-    alignItems: 'center',
-    gap: 8,
-};
+function EmptyState({ children }: { children: ReactNode }) {
+    return <div className="rounded-[22px] border border-dashed border-slate-300 bg-white/80 px-4 py-10 text-center text-sm font-bold text-slate-500 dark:border-slate-700 dark:bg-slate-800/80 dark:text-slate-400">{children}</div>;
+}
 
-const secondaryButton: CSSProperties = {
-    ...primaryButton,
-    background: '#f1f5f9',
-    color: '#475569',
-};
-
-const cancelButton: CSSProperties = {
-    flex: 1,
-    background: '#f1f5f9',
-    color: '#64748b',
-    border: 'none',
-    borderRadius: 10,
-    padding: '11px',
-    fontWeight: 800,
-    cursor: 'pointer',
-};
-
-const saveButton: CSSProperties = {
-    flex: 2,
-    background: '#2563eb',
-    color: 'white',
-    border: 'none',
-    borderRadius: 10,
-    padding: '11px',
-    fontWeight: 800,
-    cursor: 'pointer',
-};
-
-const emptyCell: CSSProperties = {
-    padding: '34px 16px',
-    textAlign: 'center',
-    color: '#94a3b8',
-    fontSize: 13,
-};
-
-const emptyText: CSSProperties = {
-    color: '#94a3b8',
-    fontSize: 12,
-    padding: 12,
-    borderRadius: 10,
-    background: '#f8fafc',
-};
-
-
-
+function metricClass(tone: 'blue' | 'green' | 'violet' | 'amber') {
+    if (tone === 'green') return 'border-emerald-500/25 bg-emerald-500/10 text-emerald-500';
+    if (tone === 'violet') return 'border-violet-500/25 bg-violet-500/10 text-violet-500';
+    if (tone === 'amber') return 'border-amber-500/25 bg-amber-500/10 text-amber-500';
+    return 'border-blue-500/25 bg-blue-500/10 text-blue-500';
+}
