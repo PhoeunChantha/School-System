@@ -9,18 +9,8 @@ import {
 import AdminShell from '@/pages/admin/shell';
 import { AdminSelect, Badge, Pagination, RowActions } from '@/pages/admin/ui';
 import { router, useForm } from '@inertiajs/react';
-import {
-    Edit3,
-    FolderOpen,
-    Layers,
-    Plus,
-    Receipt,
-    Tag,
-    Trash2,
-    TrendingDown,
-    X,
-} from 'lucide-react';
-import { FormEvent, useMemo, useState } from 'react';
+import { CheckCircle2, Edit3, FolderOpen, Plus, Receipt, Tag, Trash2, X } from 'lucide-react';
+import { FormEvent, ReactNode, useMemo, useState } from 'react';
 import { toast } from 'sonner';
 
 export interface ExpenseItem {
@@ -69,16 +59,34 @@ const ORDER_OPTIONS: { value: OrderKey; label: string }[] = [
     { value: 'title-asc', label: 'Title A-Z' },
 ];
 
-const PRESET_COLORS = ['#6366f1', '#3b82f6', '#10b981', '#f59e0b', '#ef4444', '#8b5cf6', '#ec4899', '#14b8a6'];
+const PRESET_COLORS = [
+    { value: '#6366f1', className: 'bg-indigo-500' },
+    { value: '#3b82f6', className: 'bg-blue-500' },
+    { value: '#10b981', className: 'bg-emerald-500' },
+    { value: '#f59e0b', className: 'bg-amber-500' },
+    { value: '#ef4444', className: 'bg-red-500' },
+    { value: '#8b5cf6', className: 'bg-violet-500' },
+    { value: '#ec4899', className: 'bg-pink-500' },
+    { value: '#14b8a6', className: 'bg-teal-500' },
+];
+
+const pageClass = 'fade-in flex flex-col gap-3 bg-slate-50 p-4 dark:bg-slate-950 max-md:bg-[radial-gradient(circle_at_100%_0,rgba(239,68,68,0.12),transparent_34%),linear-gradient(180deg,#f8fafc_0%,#eef3f8_100%)] max-md:px-2.5 max-md:py-3 max-md:pb-[calc(104px+env(safe-area-inset-bottom))] dark:max-md:bg-[radial-gradient(circle_at_100%_0,rgba(248,113,113,0.14),transparent_34%),linear-gradient(180deg,#0f172a_0%,#111827_100%)]';
+const panelClass = 'rounded-[24px] border border-slate-200 bg-white p-3 shadow-[0_14px_36px_rgba(15,23,42,0.07)] dark:border-slate-700 dark:bg-slate-800/90';
+const controlInputClass = 'min-h-9 rounded-xl border border-slate-200 bg-white px-3 py-1 text-xs font-bold text-slate-900 dark:border-slate-700 dark:bg-slate-950 dark:text-slate-100';
+const inputClass = 'min-h-12 w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm font-bold text-slate-900 outline-none transition placeholder:text-slate-400 focus:border-blue-400 focus:ring-2 focus:ring-blue-500/15 dark:border-slate-700 dark:bg-slate-950 dark:text-slate-100';
+const fieldLabelClass = 'text-[11px] font-black uppercase tracking-wide text-slate-400';
+const mobileCardClass = 'rounded-[22px] border border-slate-200/80 bg-white/95 p-3 shadow-[0_14px_34px_rgba(15,23,42,0.07)] dark:border-slate-700 dark:bg-slate-800/90';
+const desktopTableClass = 'hidden min-w-full border-collapse text-left md:table [&_td]:px-3 [&_td]:py-3 [&_th]:border-b [&_th]:border-slate-200 [&_th]:px-3 [&_th]:py-3 [&_th]:text-[10px] [&_th]:font-black [&_th]:uppercase [&_th]:tracking-[0.08em] [&_th]:text-slate-400 dark:[&_th]:border-slate-700';
+const footerButtonClass = 'inline-flex min-h-11 items-center justify-center gap-1.5 rounded-xl px-3 py-2 text-sm font-black transition';
 
 function sortExpenses(list: ExpenseItem[], order: OrderKey): ExpenseItem[] {
     return [...list].sort((a, b) => {
         switch (order) {
             case 'date-desc': return b.expenseDate.localeCompare(a.expenseDate);
-            case 'date-asc':  return a.expenseDate.localeCompare(b.expenseDate);
+            case 'date-asc': return a.expenseDate.localeCompare(b.expenseDate);
             case 'amount-desc': return b.amount - a.amount;
-            case 'amount-asc':  return a.amount - b.amount;
-            case 'title-asc':   return a.title.localeCompare(b.title);
+            case 'amount-asc': return a.amount - b.amount;
+            case 'title-asc': return a.title.localeCompare(b.title);
             default: return 0;
         }
     });
@@ -99,7 +107,6 @@ export default function ExpensesPage({ expenses, categories, summary }: ExpenseP
     const [expenseModal, setExpenseModal] = useState<'create' | 'edit' | null>(null);
     const [editTarget, setEditTarget] = useState<ExpenseItem | null>(null);
     const [deleteTarget, setDeleteTarget] = useState<ExpenseItem | null>(null);
-
     const [catModal, setCatModal] = useState<'create' | 'edit' | null>(null);
     const [editCatTarget, setEditCatTarget] = useState<CategoryItem | null>(null);
     const [deleteCatTarget, setDeleteCatTarget] = useState<CategoryItem | null>(null);
@@ -109,17 +116,17 @@ export default function ExpensesPage({ expenses, categories, summary }: ExpenseP
 
     const catOptions = [
         { value: 'all', label: 'All Categories' },
-        ...categories.map(c => ({ value: String(c.id), label: c.name })),
+        ...categories.map(category => ({ value: String(category.id), label: category.name })),
     ];
 
     const filtered = useMemo(() => {
-        const q = search.toLowerCase();
-        const base = expenses.filter(e =>
-            (catFilter === 'all' || String(e.categoryId) === catFilter) &&
-            (!q || e.title.toLowerCase().includes(q) || e.categoryName.toLowerCase().includes(q) || e.expenseDate.includes(search)),
+        const query = search.toLowerCase();
+        const base = expenses.filter(expense =>
+            (catFilter === 'all' || String(expense.categoryId) === catFilter)
+            && (!query || expense.title.toLowerCase().includes(query) || expense.categoryName.toLowerCase().includes(query) || expense.expenseDate.includes(search)),
         );
         return sortExpenses(base, orderBy);
-    }, [expenses, search, orderBy, catFilter]);
+    }, [catFilter, expenses, orderBy, search]);
 
     const paginated = useMemo(
         () => filtered.slice((page - 1) * perPage, page * perPage),
@@ -138,13 +145,17 @@ export default function ExpensesPage({ expenses, categories, summary }: ExpenseP
         setExpenseModal('edit');
     };
 
-    const submitExpense = (e: FormEvent) => {
-        e.preventDefault();
+    const submitExpense = (event: FormEvent) => {
+        event.preventDefault();
         const isEdit = expenseModal === 'edit' && editTarget;
         const url = isEdit ? update.url((editTarget.routeKey ?? editTarget.id) as never) : store.url();
         router[isEdit ? 'put' : 'post'](url, expForm.data as Record<string, string>, {
             preserveScroll: true,
-            onSuccess: () => { toast.success(isEdit ? 'Expense updated.' : 'Expense recorded.'); setExpenseModal(null); expForm.reset(); },
+            onSuccess: () => {
+                toast.success(isEdit ? 'Expense updated.' : 'Expense recorded.');
+                setExpenseModal(null);
+                expForm.reset();
+            },
             onError: () => toast.error('Please check the form.'),
         });
     };
@@ -153,7 +164,10 @@ export default function ExpensesPage({ expenses, categories, summary }: ExpenseP
         if (!deleteTarget) return;
         router.delete(destroy.url((deleteTarget.routeKey ?? deleteTarget.id) as never), {
             preserveScroll: true,
-            onSuccess: () => { toast.success('Expense deleted.'); setDeleteTarget(null); },
+            onSuccess: () => {
+                toast.success('Expense deleted.');
+                setDeleteTarget(null);
+            },
         });
     };
 
@@ -163,19 +177,23 @@ export default function ExpensesPage({ expenses, categories, summary }: ExpenseP
         setCatModal('create');
     };
 
-    const openEditCat = (cat: CategoryItem) => {
-        setEditCatTarget(cat);
-        catForm.setData({ name: cat.name, name_kh: cat.nameKh, color: cat.color });
+    const openEditCat = (category: CategoryItem) => {
+        setEditCatTarget(category);
+        catForm.setData({ name: category.name, name_kh: category.nameKh, color: category.color });
         setCatModal('edit');
     };
 
-    const submitCat = (e: FormEvent) => {
-        e.preventDefault();
+    const submitCat = (event: FormEvent) => {
+        event.preventDefault();
         const isEdit = catModal === 'edit' && editCatTarget;
         const url = isEdit ? updateCategory.url((editCatTarget.routeKey ?? editCatTarget.id) as never) : storeCategory.url();
         router[isEdit ? 'put' : 'post'](url, catForm.data as Record<string, string>, {
             preserveScroll: true,
-            onSuccess: () => { toast.success(isEdit ? 'Category updated.' : 'Category created.'); setCatModal(null); catForm.reset(); },
+            onSuccess: () => {
+                toast.success(isEdit ? 'Category updated.' : 'Category created.');
+                setCatModal(null);
+                catForm.reset();
+            },
             onError: () => toast.error('Please check the form.'),
         });
     };
@@ -184,347 +202,260 @@ export default function ExpensesPage({ expenses, categories, summary }: ExpenseP
         if (!deleteCatTarget) return;
         router.delete(destroyCategory.url((deleteCatTarget.routeKey ?? deleteCatTarget.id) as never), {
             preserveScroll: true,
-            onSuccess: () => { toast.success('Category deleted.'); setDeleteCatTarget(null); },
+            onSuccess: () => {
+                toast.success('Category deleted.');
+                setDeleteCatTarget(null);
+            },
         });
     };
 
     return (
         <AdminShell>
-            <div className="fade-in" style={{ padding: 24, display: 'flex', flexDirection: 'column', gap: 16 }}>
-
-                {/* Header */}
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 12, flexWrap: 'wrap' }}>
-                    <div>
-                        <div style={{ fontWeight: 800, fontSize: 18, color: '#1e293b' }}>Expense Management</div>
-                        <div style={{ fontSize: 12, color: '#94a3b8', marginTop: 2 }}>Track and manage school expenses by category</div>
+            <div className={pageClass}>
+                <section className="flex items-center justify-between gap-3 rounded-[24px] border border-slate-200 bg-white p-4 shadow-[0_14px_36px_rgba(15,23,42,0.07)] dark:border-slate-700 dark:bg-slate-800/90">
+                    <div className="min-w-0">
+                        <span className="block text-xs font-black text-slate-400">Expense management</span>
+                        <strong className="mt-1 block text-2xl font-black text-slate-900 dark:text-slate-50">{fmt(summary.totalAmount)}</strong>
+                        <p className="mt-1 truncate text-xs font-extrabold text-slate-400">{summary.totalCount} records - {summary.categoryCount} categories</p>
                     </div>
-                    <button
-                        onClick={tab === 'expenses' ? openCreate : openCreateCat}
-                        className="admin-btn admin-btn-primary"
-                    >
-                        <Plus size={15} /> {tab === 'expenses' ? 'Add Expense' : 'Add Category'}
+                    <button onClick={tab === 'expenses' ? openCreate : openCreateCat} className="inline-flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-blue-600 text-white shadow-[0_14px_26px_rgba(37,99,235,0.28)] transition hover:bg-blue-500" aria-label={tab === 'expenses' ? 'Add expense' : 'Add category'}>
+                        <Plus size={18} />
                     </button>
-                </div>
+                </section>
 
-                {/* Summary cards */}
-                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill,minmax(160px,1fr))', gap: 12 }}>
+                <div className="grid grid-cols-2 gap-2 md:grid-cols-4">
                     {[
-                        { l: 'Total Expenses', v: fmt(summary.totalAmount), c: '#ef4444', bg: '#fff1f2' },
-                        { l: 'This Month',     v: fmt(summary.thisMonthAmount), c: '#6366f1', bg: '#f5f3ff' },
-                        { l: 'Total Records',  v: String(summary.totalCount), c: '#3b82f6', bg: '#eff6ff' },
-                        { l: 'Categories',     v: String(summary.categoryCount), c: '#10b981', bg: '#f0fdf4' },
+                        { label: 'Total Expenses', value: fmt(summary.totalAmount), className: 'border-red-500/25 bg-red-500/10 text-red-500' },
+                        { label: 'This Month', value: fmt(summary.thisMonthAmount), className: 'border-indigo-500/25 bg-indigo-500/10 text-indigo-500' },
+                        { label: 'Total Records', value: String(summary.totalCount), className: 'border-blue-500/25 bg-blue-500/10 text-blue-500' },
+                        { label: 'Categories', value: String(summary.categoryCount), className: 'border-emerald-500/25 bg-emerald-500/10 text-emerald-500' },
                     ].map(item => (
-                        <div key={item.l} style={{ background: item.bg, borderRadius: 14, padding: 16, border: `1px solid ${item.c}30` }}>
-                            <div style={{ fontSize: 24, fontWeight: 800, color: item.c, marginBottom: 2 }}>{item.v}</div>
-                            <div style={{ fontSize: 11, color: item.c, opacity: 0.7 }}>{item.l}</div>
+                        <div key={item.label} className={`rounded-[18px] border p-3 ${item.className}`}>
+                            <div className="text-xl font-black leading-none">{item.value}</div>
+                            <div className="mt-1 text-[11px] font-black opacity-70">{item.label}</div>
                         </div>
                     ))}
                 </div>
 
-                {/* Tabs */}
-                <div style={{ display: 'flex', gap: 4, borderBottom: '2px solid #f1f5f9' }}>
-                    {(['expenses', 'categories'] as Tab[]).map(t => (
-                        <button
-                            key={t}
-                            onClick={() => setTab(t)}
-                            style={{
-                                padding: '8px 20px',
-                                border: 'none',
-                                background: 'none',
-                                cursor: 'pointer',
-                                fontSize: 13,
-                                fontWeight: tab === t ? 800 : 600,
-                                color: tab === t ? '#2563eb' : '#64748b',
-                                borderBottom: tab === t ? '2px solid #2563eb' : '2px solid transparent',
-                                marginBottom: -2,
-                                transition: 'all 0.15s',
-                                textTransform: 'capitalize',
-                            }}
-                        >
-                            {t === 'expenses' ? `Expenses (${expenses.length})` : `Categories (${categories.length})`}
-                        </button>
-                    ))}
+                <div className={panelClass}>
+                    <div className="grid grid-cols-2 gap-2 rounded-2xl bg-slate-100 p-1 dark:bg-slate-950">
+                        {(['expenses', 'categories'] as Tab[]).map(item => (
+                            <button
+                                key={item}
+                                onClick={() => setTab(item)}
+                                className={`min-h-10 rounded-xl px-3 text-xs font-black transition ${tab === item ? 'bg-white text-blue-600 shadow-sm dark:bg-slate-800 dark:text-blue-300' : 'text-slate-500 dark:text-slate-400'}`}
+                            >
+                                {item === 'expenses' ? `Expenses (${expenses.length})` : `Categories (${categories.length})`}
+                            </button>
+                        ))}
+                    </div>
                 </div>
 
-                {/* EXPENSES TAB */}
                 {tab === 'expenses' && (
-                    <div className="card">
-                        <div style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '12px 16px', borderBottom: '1px solid #f1f5f9', flexWrap: 'wrap' }}>
-                            <AdminSelect
-                                value={catFilter}
-                                onChange={v => { setCatFilter(v); setPage(1); }}
-                                options={catOptions}
-                                triggerClassName="f-input h-9 min-h-9 px-3 py-1 text-xs font-bold"
-                            />
-                            <AdminSelect
-                                value={orderBy}
-                                onChange={v => { setOrderBy(v as OrderKey); setPage(1); }}
-                                options={ORDER_OPTIONS}
-                                triggerClassName="f-input h-9 min-h-9 px-3 py-1 text-xs font-bold"
-                            />
-                            <span style={{ fontSize: 11, color: '#94a3b8', marginLeft: 4 }}>{filtered.length} record{filtered.length !== 1 ? 's' : ''}</span>
-                            <input
-                                value={search}
-                                onChange={e => { setSearch(e.target.value); setPage(1); }}
-                                className="f-input"
-                                style={{ width: 240, maxWidth: '100%', marginLeft: 'auto' }}
-                                placeholder="Search expenses..."
-                            />
+                    <section className="overflow-visible rounded-[24px] border-0 bg-transparent shadow-none md:overflow-x-auto md:rounded-2xl md:border md:border-slate-200 md:bg-white md:shadow-sm dark:md:border-slate-700 dark:md:bg-slate-800/90">
+                        <div className="sticky top-0 z-10 mb-3 grid grid-cols-2 gap-2 rounded-[22px] border border-slate-200 bg-white/90 p-3 shadow-[0_12px_32px_rgba(15,23,42,0.07)] backdrop-blur dark:border-slate-700 dark:bg-slate-800/90 md:mb-0 md:flex md:flex-wrap md:items-center md:border-x-0 md:border-t-0 md:shadow-none">
+                            <AdminSelect value={catFilter} onChange={value => { setCatFilter(value); setPage(1); }} options={catOptions} className="min-w-0 md:min-w-[150px]" triggerClassName={controlInputClass} />
+                            <AdminSelect value={orderBy} onChange={value => { setOrderBy(value as OrderKey); setPage(1); }} options={ORDER_OPTIONS} className="min-w-0 md:min-w-[150px]" triggerClassName={controlInputClass} />
+                            <span className="hidden text-[11px] font-bold text-slate-400 md:inline">{filtered.length} record{filtered.length !== 1 ? 's' : ''}</span>
+                            <input value={search} onChange={event => { setSearch(event.target.value); setPage(1); }} className={`${controlInputClass} col-span-2 w-full md:ml-auto md:w-[260px]`} placeholder="Search expenses..." />
                         </div>
 
-                        <div style={{ overflowX: 'auto' }}>
-                            <table className="data-table">
-                                <thead>
+                        <table className={desktopTableClass}>
+                            <thead>
+                                <tr>
+                                    <th>Date</th>
+                                    <th>Title</th>
+                                    <th>Category</th>
+                                    <th>Amount</th>
+                                    <th>Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {paginated.length === 0 ? (
                                     <tr>
-                                        <th>Date</th>
-                                        <th>Title</th>
-                                        <th>Category</th>
-                                        <th>Amount</th>
-                                        <th>Actions</th>
+                                        <td colSpan={5} className="px-6 py-9 text-center text-sm font-bold text-slate-500 dark:text-slate-400">
+                                            {search ? <>No expenses found for <strong>"{search}"</strong></> : 'No expenses yet'}
+                                        </td>
                                     </tr>
-                                </thead>
-                                <tbody>
-                                    {paginated.length === 0 ? (
-                                        <tr>
-                                            <td colSpan={5} style={{ padding: '40px 24px', textAlign: 'center', color: '#64748b', fontSize: 14, fontWeight: 700 }}>
-                                                <FolderOpen size={32} style={{ margin: '0 auto 8px', display: 'block', opacity: 0.3 }} />
-                                                {search ? <>No expenses found for <strong>"{search}"</strong></> : 'No expenses yet'}
-                                            </td>
-                                        </tr>
-                                    ) : paginated.map(e => (
-                                        <tr key={e.id}>
-                                            <td style={{ fontSize: 12, color: '#64748b', whiteSpace: 'nowrap' }}>{e.expenseDate}</td>
-                                            <td>
-                                                <div style={{ fontWeight: 700, fontSize: 13 }}>{e.title}</div>
-                                                {e.description && <div style={{ fontSize: 11, color: '#94a3b8', marginTop: 2, maxWidth: 260, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{e.description}</div>}
-                                            </td>
-                                            <td>
-                                                {e.categoryName
-                                                    ? <Badge type="blue"><span style={{ display: 'inline-flex', alignItems: 'center', gap: 5 }}><span style={{ width: 8, height: 8, borderRadius: '50%', background: e.categoryColor, display: 'inline-block', flexShrink: 0 }} />{e.categoryName}</span></Badge>
-                                                    : <span style={{ color: '#cbd5e1', fontSize: 12 }}>—</span>
-                                                }
-                                            </td>
-                                            <td><span style={{ fontWeight: 800, color: '#ef4444' }}>{fmt(e.amount)}</span></td>
-                                            <td>
-                                                <RowActions
-                                                    ariaLabel={`Actions for ${e.title}`}
-                                                    actions={[
-                                                        { key: 'edit', label: 'Edit', icon: Edit3, onSelect: () => openEdit(e) },
-                                                        { key: 'delete', label: 'Delete', icon: Trash2, onSelect: () => setDeleteTarget(e), variant: 'destructive', separatorBefore: true },
-                                                    ]}
-                                                />
-                                            </td>
-                                        </tr>
-                                    ))}
-                                </tbody>
-                            </table>
+                                ) : paginated.map(expense => (
+                                    <tr key={expense.id} className="border-b border-slate-50 hover:bg-slate-50 dark:border-slate-800 dark:hover:bg-slate-900/60">
+                                        <td className="whitespace-nowrap text-xs font-bold text-slate-500 dark:text-slate-300">{expense.expenseDate}</td>
+                                        <td>
+                                            <div className="text-xs font-black text-slate-900 dark:text-slate-50">{expense.title}</div>
+                                            {expense.description && <div className="mt-0.5 max-w-[260px] truncate text-[11px] font-bold text-slate-400">{expense.description}</div>}
+                                        </td>
+                                        <td>{expense.categoryName ? <CategoryBadge name={expense.categoryName} /> : <span className="text-xs font-bold text-slate-300">-</span>}</td>
+                                        <td><span className="text-xs font-black text-red-500">{fmt(expense.amount)}</span></td>
+                                        <td>
+                                            <RowActions
+                                                ariaLabel={`Actions for ${expense.title}`}
+                                                actions={[
+                                                    { key: 'edit', label: 'Edit', icon: Edit3, onSelect: () => openEdit(expense) },
+                                                    { key: 'delete', label: 'Delete', icon: Trash2, onSelect: () => setDeleteTarget(expense), variant: 'destructive', separatorBefore: true },
+                                                ]}
+                                            />
+                                        </td>
+                                    </tr>
+                                ))}
+                            </tbody>
+                        </table>
+
+                        <div className="grid gap-3 md:hidden">
+                            {paginated.length === 0 ? (
+                                <EmptyState icon={<FolderOpen size={30} />} title={search ? `No expenses found for "${search}"` : 'No expenses yet'} />
+                            ) : paginated.map(expense => (
+                                <article key={expense.id} className={mobileCardClass}>
+                                    <div className="flex items-start justify-between gap-3">
+                                        <div className="min-w-0">
+                                            <div className="flex items-center gap-2">
+                                                <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-2xl bg-red-500/10 text-red-500">
+                                                    <Receipt size={17} />
+                                                </div>
+                                                <div className="min-w-0">
+                                                    <h3 className="truncate text-sm font-black text-slate-900 dark:text-slate-50">{expense.title}</h3>
+                                                    <p className="mt-0.5 text-[11px] font-bold text-slate-400">{expense.expenseDate}</p>
+                                                </div>
+                                            </div>
+                                        </div>
+                                        <RowActions
+                                            ariaLabel={`Actions for ${expense.title}`}
+                                            actions={[
+                                                { key: 'edit', label: 'Edit', icon: Edit3, onSelect: () => openEdit(expense) },
+                                                { key: 'delete', label: 'Delete', icon: Trash2, onSelect: () => setDeleteTarget(expense), variant: 'destructive', separatorBefore: true },
+                                            ]}
+                                        />
+                                    </div>
+                                    {expense.description && <p className="mt-3 line-clamp-2 text-xs font-bold leading-5 text-slate-500 dark:text-slate-400">{expense.description}</p>}
+                                    <div className="mt-3 flex items-center justify-between gap-3 rounded-2xl bg-slate-100 px-3 py-2 dark:bg-slate-950">
+                                        {expense.categoryName ? <CategoryBadge name={expense.categoryName} /> : <span className="text-xs font-black text-slate-400">No Category</span>}
+                                        <strong className="text-sm font-black text-red-500">{fmt(expense.amount)}</strong>
+                                    </div>
+                                </article>
+                            ))}
                         </div>
+
                         {filtered.length > 0 && (
                             <Pagination
                                 total={filtered.length}
                                 page={page}
                                 perPage={perPage}
                                 onPageChange={setPage}
-                                onPerPageChange={v => { setPerPage(v); setPage(1); }}
+                                onPerPageChange={value => { setPerPage(value); setPage(1); }}
+                                showPerPage={false}
                             />
                         )}
-                    </div>
+                    </section>
                 )}
 
-                {/* CATEGORIES TAB */}
                 {tab === 'categories' && (
-                    <div className="card">
+                    <section className="grid gap-3 md:grid-cols-2 lg:grid-cols-3">
                         {categories.length === 0 ? (
-                            <div style={{ padding: '60px 24px', textAlign: 'center', color: '#64748b' }}>
-                                <Tag size={36} style={{ margin: '0 auto 12px', display: 'block', opacity: 0.25 }} />
-                                <div style={{ fontWeight: 700, fontSize: 14 }}>No categories yet</div>
-                                <div style={{ fontSize: 12, color: '#94a3b8', marginTop: 4 }}>Add a category to organize your expenses</div>
+                            <div className="md:col-span-2 lg:col-span-3">
+                                <EmptyState icon={<Tag size={32} />} title="No categories yet" subtitle="Add a category to organize your expenses" />
                             </div>
-                        ) : (
-                            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill,minmax(220px,1fr))', gap: 12, padding: 16 }}>
-                                {categories.map(cat => (
-                                    <div key={cat.id} style={{ background: 'white', borderRadius: 14, border: '1.5px solid #f1f5f9', padding: '16px 18px', boxShadow: '0 1px 4px rgba(0,0,0,0.04)' }}>
-                                        <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 12 }}>
-                                            <div style={{ width: 40, height: 40, borderRadius: 10, background: cat.color + '22', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
-                                                <Tag size={18} color={cat.color} />
-                                            </div>
-                                            <div style={{ flex: 1, minWidth: 0 }}>
-                                                <div style={{ fontWeight: 800, fontSize: 13, color: '#1e293b', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{cat.name}</div>
-                                                {cat.nameKh && <div style={{ fontSize: 11, color: '#94a3b8' }}>{cat.nameKh}</div>}
-                                            </div>
-                                            <RowActions
-                                                ariaLabel={`Actions for ${cat.name}`}
-                                                actions={[
-                                                    { key: 'edit', label: 'Edit', icon: Edit3, onSelect: () => openEditCat(cat) },
-                                                    { key: 'delete', label: 'Delete', icon: Trash2, onSelect: () => setDeleteCatTarget(cat), variant: 'destructive', separatorBefore: true },
-                                                ]}
-                                            />
-                                        </div>
-                                        <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 12, marginBottom: 12 }}>
-                                            <span style={{ color: '#64748b' }}>{cat.expensesCount} expense{cat.expensesCount !== 1 ? 's' : ''}</span>
-                                            <span style={{ fontWeight: 800, color: '#ef4444' }}>{fmt(cat.totalAmount)}</span>
-                                        </div>
-                                        <div style={{ width: '100%', height: 3, borderRadius: 4, background: '#f1f5f9', overflow: 'hidden' }}>
-                                            <div style={{ height: '100%', background: cat.color, borderRadius: 4, width: summary.totalAmount > 0 ? `${Math.min(100, (cat.totalAmount / summary.totalAmount) * 100)}%` : '0%' }} />
+                        ) : categories.map(category => (
+                            <article key={category.id} className={mobileCardClass}>
+                                <div className="flex items-start justify-between gap-3">
+                                    <div className="flex min-w-0 items-center gap-3">
+                                        <ColorIcon value={category.color} />
+                                        <div className="min-w-0">
+                                            <h3 className="truncate text-sm font-black text-slate-900 dark:text-slate-50">{category.name}</h3>
+                                            {category.nameKh && <p className="mt-0.5 truncate text-[11px] font-bold text-slate-400">{category.nameKh}</p>}
                                         </div>
                                     </div>
-                                ))}
-                            </div>
-                        )}
-                    </div>
+                                    <RowActions
+                                        ariaLabel={`Actions for ${category.name}`}
+                                        actions={[
+                                            { key: 'edit', label: 'Edit', icon: Edit3, onSelect: () => openEditCat(category) },
+                                            { key: 'delete', label: 'Delete', icon: Trash2, onSelect: () => setDeleteCatTarget(category), variant: 'destructive', separatorBefore: true },
+                                        ]}
+                                    />
+                                </div>
+                                <div className="mt-3 grid grid-cols-2 gap-2">
+                                    <MetricTile label="Expenses" value={`${category.expensesCount}`} />
+                                    <MetricTile label="Total" value={fmt(category.totalAmount)} tone="red" />
+                                </div>
+                                <div className="mt-3 h-2 overflow-hidden rounded-full bg-slate-100 dark:bg-slate-950">
+                                    <div className={`h-full rounded-full ${progressWidth(category.totalAmount, summary.totalAmount)} ${colorClass(category.color)}`} />
+                                </div>
+                            </article>
+                        ))}
+                    </section>
                 )}
 
-                {/* EXPENSE MODAL */}
                 {expenseModal && (
-                    <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.45)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 200, padding: 16 }}
-                        onClick={e => { if (e.target === e.currentTarget) setExpenseModal(null); }}>
-                        <form onSubmit={submitExpense} style={{ background: 'white', borderRadius: 20, padding: 28, maxWidth: 480, width: '100%', boxShadow: '0 24px 60px rgba(0,0,0,0.15)', display: 'flex', flexDirection: 'column', gap: 14 }}>
-                            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-                                <div>
-                                    <div style={{ fontSize: 18, fontWeight: 800, color: '#1e293b' }}>{expenseModal === 'create' ? 'Add Expense' : 'Edit Expense'}</div>
-                                    <div style={{ fontSize: 12, color: '#94a3b8', marginTop: 2 }}>Fill in the expense details below</div>
-                                </div>
-                                <button type="button" onClick={() => setExpenseModal(null)} style={{ background: '#f1f5f9', border: 'none', borderRadius: 8, padding: 8, cursor: 'pointer', color: '#64748b', display: 'flex' }}>
-                                    <X size={16} />
-                                </button>
-                            </div>
-
+                    <Modal onClose={() => setExpenseModal(null)}>
+                        <form onSubmit={submitExpense} className="grid gap-3">
+                            <ModalHeader title={expenseModal === 'create' ? 'Add Expense' : 'Edit Expense'} subtitle="Fill in the expense details below" onClose={() => setExpenseModal(null)} />
                             <Field label="Category">
-                                <select value={expForm.data.category_id} onChange={e => expForm.setData('category_id', e.target.value)} className="f-input">
-                                    <option value="">— No Category —</option>
-                                    {categories.map(c => <option key={c.id} value={String(c.id)}>{c.name}</option>)}
+                                <select value={expForm.data.category_id} onChange={event => expForm.setData('category_id', event.target.value)} className={inputClass}>
+                                    <option value="">No Category</option>
+                                    {categories.map(category => <option key={category.id} value={String(category.id)}>{category.name}</option>)}
                                 </select>
                                 {expForm.errors.category_id && <Err>{expForm.errors.category_id}</Err>}
                             </Field>
-
                             <Field label="Title *">
-                                <input className="f-input" value={expForm.data.title} onChange={e => expForm.setData('title', e.target.value)} placeholder="e.g. Office Supplies" required />
+                                <input className={inputClass} value={expForm.data.title} onChange={event => expForm.setData('title', event.target.value)} placeholder="e.g. Office Supplies" required />
                                 {expForm.errors.title && <Err>{expForm.errors.title}</Err>}
                             </Field>
-
-                            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
-                                <Field label="Amount (USD) *">
-                                    <input className="f-input" type="number" min="0.01" step="0.01" value={expForm.data.amount} onChange={e => expForm.setData('amount', e.target.value)} placeholder="0.00" required />
+                            <div className="grid grid-cols-2 gap-2">
+                                <Field label="Amount *">
+                                    <input className={inputClass} type="number" min="0.01" step="0.01" value={expForm.data.amount} onChange={event => expForm.setData('amount', event.target.value)} placeholder="0.00" required />
                                     {expForm.errors.amount && <Err>{expForm.errors.amount}</Err>}
                                 </Field>
                                 <Field label="Date *">
-                                    <input className="f-input" type="date" value={expForm.data.expense_date} onChange={e => expForm.setData('expense_date', e.target.value)} required />
+                                    <input className={inputClass} type="date" value={expForm.data.expense_date} onChange={event => expForm.setData('expense_date', event.target.value)} required />
                                     {expForm.errors.expense_date && <Err>{expForm.errors.expense_date}</Err>}
                                 </Field>
                             </div>
-
                             <Field label="Description">
-                                <textarea className="f-input" style={{ minHeight: 68, resize: 'vertical' }} value={expForm.data.description} onChange={e => expForm.setData('description', e.target.value)} placeholder="Optional notes..." />
+                                <textarea className={`${inputClass} min-h-24 resize-y`} value={expForm.data.description} onChange={event => expForm.setData('description', event.target.value)} placeholder="Optional notes..." />
                             </Field>
-
-                            <div style={{ display: 'flex', gap: 10, marginTop: 4 }}>
-                                <button type="button" onClick={() => setExpenseModal(null)} style={{ flex: 1, background: '#f1f5f9', color: '#64748b', border: 'none', borderRadius: 10, padding: '11px', fontWeight: 700, cursor: 'pointer', fontSize: 14, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6 }}>
-                                    <X size={15} /> Cancel
-                                </button>
-                                <button type="submit" disabled={expForm.processing} style={{ flex: 2, background: '#2563eb', color: 'white', border: 'none', borderRadius: 10, padding: '11px', fontWeight: 700, cursor: 'pointer', fontSize: 14, opacity: expForm.processing ? 0.6 : 1 }}>
-                                    {expForm.processing ? 'Saving...' : expenseModal === 'create' ? 'Save Expense' : 'Update Expense'}
-                                </button>
-                            </div>
+                            <FormFooter onCancel={() => setExpenseModal(null)} processing={expForm.processing} submitLabel={expenseModal === 'create' ? 'Save Expense' : 'Update Expense'} />
                         </form>
-                    </div>
+                    </Modal>
                 )}
 
-                {/* CATEGORY MODAL */}
                 {catModal && (
-                    <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.45)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 200, padding: 16 }}
-                        onClick={e => { if (e.target === e.currentTarget) setCatModal(null); }}>
-                        <form onSubmit={submitCat} style={{ background: 'white', borderRadius: 20, padding: 28, maxWidth: 420, width: '100%', boxShadow: '0 24px 60px rgba(0,0,0,0.15)', display: 'flex', flexDirection: 'column', gap: 14 }}>
-                            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-                                <div>
-                                    <div style={{ fontSize: 18, fontWeight: 800, color: '#1e293b' }}>{catModal === 'create' ? 'Add Category' : 'Edit Category'}</div>
-                                    <div style={{ fontSize: 12, color: '#94a3b8', marginTop: 2 }}>Organize your expenses by category</div>
-                                </div>
-                                <button type="button" onClick={() => setCatModal(null)} style={{ background: '#f1f5f9', border: 'none', borderRadius: 8, padding: 8, cursor: 'pointer', color: '#64748b', display: 'flex' }}>
-                                    <X size={16} />
-                                </button>
-                            </div>
-
+                    <Modal onClose={() => setCatModal(null)}>
+                        <form onSubmit={submitCat} className="grid gap-3">
+                            <ModalHeader title={catModal === 'create' ? 'Add Category' : 'Edit Category'} subtitle="Organize your expenses by category" onClose={() => setCatModal(null)} />
                             <Field label="Name (English) *">
-                                <input className="f-input" value={catForm.data.name} onChange={e => catForm.setData('name', e.target.value)} placeholder="e.g. Utilities" required />
+                                <input className={inputClass} value={catForm.data.name} onChange={event => catForm.setData('name', event.target.value)} placeholder="e.g. Utilities" required />
                                 {catForm.errors.name && <Err>{catForm.errors.name}</Err>}
                             </Field>
-
                             <Field label="Name (Khmer)">
-                                <input className="f-input" value={catForm.data.name_kh} onChange={e => catForm.setData('name_kh', e.target.value)} placeholder="ឈ្មោះជាភាសាខ្មែរ" />
+                                <input className={inputClass} value={catForm.data.name_kh} onChange={event => catForm.setData('name_kh', event.target.value)} placeholder="Category name in Khmer" />
                             </Field>
-
                             <Field label="Color">
-                                <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
-                                    {PRESET_COLORS.map(c => (
-                                        <button key={c} type="button" onClick={() => catForm.setData('color', c)}
-                                            style={{ width: 28, height: 28, borderRadius: '50%', background: c, border: catForm.data.color === c ? '3px solid #1e293b' : '2px solid transparent', cursor: 'pointer', outline: 'none', transition: 'border 0.1s' }} />
+                                <div className="flex flex-wrap items-center gap-2">
+                                    {PRESET_COLORS.map(color => (
+                                        <button key={color.value} type="button" onClick={() => catForm.setData('color', color.value)} className={`h-8 w-8 rounded-full border transition ${color.className} ${catForm.data.color === color.value ? 'border-slate-950 ring-2 ring-blue-500 dark:border-white' : 'border-transparent'}`} aria-label={`Use ${color.value}`} />
                                     ))}
-                                    <input type="color" value={catForm.data.color} onChange={e => catForm.setData('color', e.target.value)}
-                                        style={{ width: 32, height: 28, padding: 2, border: '1.5px solid #e2e8f0', borderRadius: 6, cursor: 'pointer' }} />
-                                    <span style={{ fontSize: 12, color: '#94a3b8', fontFamily: 'monospace' }}>{catForm.data.color}</span>
+                                    <span className="ml-auto rounded-xl bg-slate-100 px-2 py-1 font-mono text-xs font-black text-slate-500 dark:bg-slate-950 dark:text-slate-300">{catForm.data.color}</span>
                                 </div>
                             </Field>
-
-                            <div style={{ display: 'flex', gap: 10, marginTop: 4 }}>
-                                <button type="button" onClick={() => setCatModal(null)} style={{ flex: 1, background: '#f1f5f9', color: '#64748b', border: 'none', borderRadius: 10, padding: '11px', fontWeight: 700, cursor: 'pointer', fontSize: 14, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6 }}>
-                                    <X size={15} /> Cancel
-                                </button>
-                                <button type="submit" disabled={catForm.processing} style={{ flex: 2, background: '#2563eb', color: 'white', border: 'none', borderRadius: 10, padding: '11px', fontWeight: 700, cursor: 'pointer', fontSize: 14, opacity: catForm.processing ? 0.6 : 1 }}>
-                                    {catForm.processing ? 'Saving...' : catModal === 'create' ? 'Save Category' : 'Update Category'}
-                                </button>
-                            </div>
+                            <FormFooter onCancel={() => setCatModal(null)} processing={catForm.processing} submitLabel={catModal === 'create' ? 'Save Category' : 'Update Category'} />
                         </form>
-                    </div>
+                    </Modal>
                 )}
 
-                {/* DELETE EXPENSE */}
                 {deleteTarget && (
-                    <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.45)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 200, padding: 16 }}>
-                        <div style={{ background: 'white', borderRadius: 20, padding: 32, maxWidth: 420, width: '100%', boxShadow: '0 24px 60px rgba(0,0,0,0.15)' }}>
-                            <div style={{ textAlign: 'center', marginBottom: 20 }}>
-                                <div style={{ width: 56, height: 56, borderRadius: '50%', background: '#fff1f2', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 12px' }}>
-                                    <Trash2 size={24} color="#ef4444" />
-                                </div>
-                                <div style={{ fontSize: 18, fontWeight: 800, color: '#1e293b', marginBottom: 6 }}>Delete Expense?</div>
-                                <div style={{ fontSize: 13, color: '#64748b', lineHeight: 1.5 }}>
-                                    Remove <strong>"{deleteTarget.title}"</strong> ({fmt(deleteTarget.amount)})? This cannot be undone.
-                                </div>
-                            </div>
-                            <div style={{ display: 'flex', gap: 10 }}>
-                                <button onClick={() => setDeleteTarget(null)} style={{ flex: 1, background: '#f1f5f9', color: '#64748b', border: 'none', borderRadius: 10, padding: '11px', fontWeight: 700, cursor: 'pointer', fontSize: 14, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6 }}>
-                                    <X size={15} /> Cancel
-                                </button>
-                                <button onClick={confirmDelete} style={{ flex: 1, background: '#ef4444', color: 'white', border: 'none', borderRadius: 10, padding: '11px', fontWeight: 700, cursor: 'pointer', fontSize: 14, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6 }}>
-                                    <Trash2 size={15} /> Delete
-                                </button>
-                            </div>
-                        </div>
-                    </div>
+                    <DeleteDialog
+                        title="Delete Expense?"
+                        message={<>Remove <strong>"{deleteTarget.title}"</strong> ({fmt(deleteTarget.amount)})? This cannot be undone.</>}
+                        onCancel={() => setDeleteTarget(null)}
+                        onDelete={confirmDelete}
+                    />
                 )}
 
-                {/* DELETE CATEGORY */}
                 {deleteCatTarget && (
-                    <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.45)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 200, padding: 16 }}>
-                        <div style={{ background: 'white', borderRadius: 20, padding: 32, maxWidth: 420, width: '100%', boxShadow: '0 24px 60px rgba(0,0,0,0.15)' }}>
-                            <div style={{ textAlign: 'center', marginBottom: 20 }}>
-                                <div style={{ width: 56, height: 56, borderRadius: '50%', background: '#fff1f2', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 12px' }}>
-                                    <Trash2 size={24} color="#ef4444" />
-                                </div>
-                                <div style={{ fontSize: 18, fontWeight: 800, color: '#1e293b', marginBottom: 6 }}>Delete Category?</div>
-                                <div style={{ fontSize: 13, color: '#64748b', lineHeight: 1.5 }}>
-                                    Delete <strong>"{deleteCatTarget.name}"</strong>? Expenses will become uncategorized.
-                                </div>
-                            </div>
-                            <div style={{ display: 'flex', gap: 10 }}>
-                                <button onClick={() => setDeleteCatTarget(null)} style={{ flex: 1, background: '#f1f5f9', color: '#64748b', border: 'none', borderRadius: 10, padding: '11px', fontWeight: 700, cursor: 'pointer', fontSize: 14, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6 }}>
-                                    <X size={15} /> Cancel
-                                </button>
-                                <button onClick={confirmDeleteCat} style={{ flex: 1, background: '#ef4444', color: 'white', border: 'none', borderRadius: 10, padding: '11px', fontWeight: 700, cursor: 'pointer', fontSize: 14, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6 }}>
-                                    <Trash2 size={15} /> Delete
-                                </button>
-                            </div>
-                        </div>
-                    </div>
+                    <DeleteDialog
+                        title="Delete Category?"
+                        message={<>Delete <strong>"{deleteCatTarget.name}"</strong>? Expenses will become uncategorized.</>}
+                        onCancel={() => setDeleteCatTarget(null)}
+                        onDelete={confirmDeleteCat}
+                    />
                 )}
             </div>
         </AdminShell>
@@ -535,15 +466,157 @@ function today() {
     return new Date().toISOString().slice(0, 10);
 }
 
-function Field({ label, children }: { label: string; children: React.ReactNode }) {
+function Field({ label, children }: { label: string; children: ReactNode }) {
     return (
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 5 }}>
-            <label style={{ fontSize: 11, fontWeight: 700, color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.05em' }}>{label}</label>
+        <div className="grid gap-1.5">
+            <label className={fieldLabelClass}>{label}</label>
             {children}
         </div>
     );
 }
 
-function Err({ children }: { children: React.ReactNode }) {
-    return <p style={{ margin: 0, fontSize: 11, color: '#ef4444', fontWeight: 600 }}>{children}</p>;
+function Err({ children }: { children: ReactNode }) {
+    return <p className="text-xs font-bold text-red-500">{children}</p>;
+}
+
+function CategoryBadge({ name }: { name: string }) {
+    return (
+        <Badge type="blue">
+            <span className="inline-flex items-center gap-1.5">
+                <span className="h-2 w-2 shrink-0 rounded-full bg-blue-500" />
+                {name}
+            </span>
+        </Badge>
+    );
+}
+
+function EmptyState({ icon, title, subtitle }: { icon: ReactNode; title: string; subtitle?: string }) {
+    return (
+        <div className="rounded-[22px] border border-dashed border-slate-300 bg-white/80 px-4 py-9 text-center text-sm font-bold text-slate-500 dark:border-slate-700 dark:bg-slate-800/80 dark:text-slate-400">
+            <div className="mx-auto mb-3 flex h-12 w-12 items-center justify-center rounded-2xl bg-slate-100 text-slate-400 dark:bg-slate-950">{icon}</div>
+            <div>{title}</div>
+            {subtitle && <div className="mt-1 text-xs text-slate-400">{subtitle}</div>}
+        </div>
+    );
+}
+
+function MetricTile({ label, value, tone = 'slate' }: { label: string; value: string; tone?: 'slate' | 'red' }) {
+    return (
+        <div className="rounded-2xl bg-slate-100 px-3 py-2 dark:bg-slate-950">
+            <span className="block text-[9px] font-black uppercase text-slate-400">{label}</span>
+            <strong className={`mt-1 block text-sm font-black ${tone === 'red' ? 'text-red-500' : 'text-slate-900 dark:text-slate-50'}`}>{value}</strong>
+        </div>
+    );
+}
+
+function Modal({ children, onClose }: { children: ReactNode; onClose: () => void }) {
+    return (
+        <div className="fixed inset-0 z-[200] flex items-center justify-center bg-black/45 p-4" onClick={event => { if (event.target === event.currentTarget) onClose(); }}>
+            <div className="max-h-[calc(100dvh-32px)] w-full max-w-[480px] overflow-y-auto rounded-[24px] border border-slate-200 bg-white p-5 shadow-[0_24px_60px_rgba(0,0,0,0.18)] dark:border-slate-700 dark:bg-slate-800">
+                {children}
+            </div>
+        </div>
+    );
+}
+
+function ModalHeader({ title, subtitle, onClose }: { title: string; subtitle: string; onClose: () => void }) {
+    return (
+        <div className="flex items-start justify-between gap-3">
+            <div>
+                <div className="text-lg font-black text-slate-900 dark:text-slate-50">{title}</div>
+                <div className="mt-0.5 text-xs font-bold text-slate-400">{subtitle}</div>
+            </div>
+            <button type="button" onClick={onClose} className="inline-flex h-9 w-9 items-center justify-center rounded-xl bg-slate-100 text-slate-500 transition hover:bg-slate-200 dark:bg-slate-950 dark:text-slate-300 dark:hover:bg-slate-900">
+                <X size={16} />
+            </button>
+        </div>
+    );
+}
+
+function FormFooter({ onCancel, processing, submitLabel }: { onCancel: () => void; processing: boolean; submitLabel: string }) {
+    return (
+        <div className="mt-1 grid grid-cols-[1fr_2fr] gap-2 border-t border-slate-200 pt-3 dark:border-slate-700">
+            <button type="button" onClick={onCancel} className={`${footerButtonClass} bg-slate-100 text-slate-500 hover:bg-slate-200 dark:bg-slate-950 dark:text-slate-300 dark:hover:bg-slate-900`}>
+                <X size={15} /> Cancel
+            </button>
+            <button type="submit" disabled={processing} className={`${footerButtonClass} bg-blue-600 text-white shadow-[0_12px_24px_rgba(37,99,235,0.22)] hover:bg-blue-500 disabled:cursor-default disabled:bg-blue-300`}>
+                <CheckCircle2 size={15} /> {processing ? 'Saving...' : submitLabel}
+            </button>
+        </div>
+    );
+}
+
+function DeleteDialog({ title, message, onCancel, onDelete }: { title: string; message: ReactNode; onCancel: () => void; onDelete: () => void }) {
+    return (
+        <div className="fixed inset-0 z-[200] flex items-center justify-center bg-black/45 p-4">
+            <div className="w-full max-w-[420px] rounded-[24px] border border-slate-200 bg-white p-6 shadow-[0_24px_60px_rgba(0,0,0,0.18)] dark:border-slate-700 dark:bg-slate-800">
+                <div className="mb-5 text-center">
+                    <div className="mx-auto mb-3 flex h-14 w-14 items-center justify-center rounded-full bg-red-500/10 text-red-500">
+                        <Trash2 size={24} />
+                    </div>
+                    <div className="mb-1.5 text-lg font-black text-slate-900 dark:text-slate-50">{title}</div>
+                    <div className="text-sm font-medium leading-6 text-slate-500 dark:text-slate-300">{message}</div>
+                </div>
+                <div className="grid grid-cols-2 gap-2.5">
+                    <button onClick={onCancel} className={`${footerButtonClass} bg-slate-100 text-slate-500 hover:bg-slate-200 dark:bg-slate-950 dark:text-slate-300 dark:hover:bg-slate-900`}>
+                        <X size={15} /> Cancel
+                    </button>
+                    <button onClick={onDelete} className={`${footerButtonClass} bg-red-500 text-white hover:bg-red-600`}>
+                        <Trash2 size={15} /> Delete
+                    </button>
+                </div>
+            </div>
+        </div>
+    );
+}
+
+function ColorIcon({ value }: { value: string }) {
+    return (
+        <div className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl ${colorSoftClass(value)}`}>
+            <Tag size={18} className={colorTextClass(value)} />
+        </div>
+    );
+}
+
+function colorClass(value: string) {
+    return PRESET_COLORS.find(color => color.value === value)?.className ?? 'bg-blue-500';
+}
+
+function colorTextClass(value: string) {
+    const map: Record<string, string> = {
+        '#6366f1': 'text-indigo-500',
+        '#3b82f6': 'text-blue-500',
+        '#10b981': 'text-emerald-500',
+        '#f59e0b': 'text-amber-500',
+        '#ef4444': 'text-red-500',
+        '#8b5cf6': 'text-violet-500',
+        '#ec4899': 'text-pink-500',
+        '#14b8a6': 'text-teal-500',
+    };
+    return map[value] ?? 'text-blue-500';
+}
+
+function colorSoftClass(value: string) {
+    const map: Record<string, string> = {
+        '#6366f1': 'bg-indigo-500/10',
+        '#3b82f6': 'bg-blue-500/10',
+        '#10b981': 'bg-emerald-500/10',
+        '#f59e0b': 'bg-amber-500/10',
+        '#ef4444': 'bg-red-500/10',
+        '#8b5cf6': 'bg-violet-500/10',
+        '#ec4899': 'bg-pink-500/10',
+        '#14b8a6': 'bg-teal-500/10',
+    };
+    return map[value] ?? 'bg-blue-500/10';
+}
+
+function progressWidth(amount: number, total: number) {
+    if (total <= 0) return 'w-0';
+    const percent = (amount / total) * 100;
+    if (percent >= 90) return 'w-full';
+    if (percent >= 75) return 'w-3/4';
+    if (percent >= 50) return 'w-1/2';
+    if (percent >= 25) return 'w-1/4';
+    if (percent > 0) return 'w-[12%]';
+    return 'w-0';
 }

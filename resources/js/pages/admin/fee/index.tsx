@@ -4,7 +4,7 @@ import { useAdminPermissions } from '@/hooks/use-admin-permissions';
 import AdminShell from '@/pages/admin/shell';
 import { AdminSelect, Avatar, Badge, KH, Pagination, RowActions } from '@/pages/admin/ui';
 import { Link, router, useForm } from '@inertiajs/react';
-import { CheckCircle2, Edit3, Trash2, Wallet, X } from 'lucide-react';
+import { CheckCircle2, Edit3, Plus, Trash2, Wallet, X } from 'lucide-react';
 import { FormEvent, useEffect, useMemo, useState } from 'react';
 import { toast } from 'sonner';
 
@@ -70,6 +70,12 @@ const PAYMENT_ORDER_OPTIONS: { value: PaymentOrderKey; label: string }[] = [
 ];
 
 const statusRank: Record<FeeChargeItem['status'], number> = { unpaid: 0, partial: 1, paid: 2 };
+const controlInputClass = 'min-h-9 rounded-xl border border-slate-200 bg-white px-3 py-1 text-xs font-bold text-slate-900 dark:border-slate-700 dark:bg-slate-950 dark:text-slate-100';
+const primaryButtonClass = 'inline-flex min-h-9 items-center justify-center gap-1.5 rounded-xl bg-blue-600 px-3 py-2 text-xs font-black text-white shadow-[0_12px_24px_rgba(37,99,235,0.22)] transition hover:bg-blue-500';
+const ghostButtonClass = 'inline-flex min-h-11 items-center justify-center gap-1.5 rounded-xl bg-slate-100 px-3 py-2 text-sm font-black text-slate-500 transition hover:bg-slate-200 dark:bg-slate-950 dark:text-slate-300 dark:hover:bg-slate-900';
+const mobileCardClass = 'rounded-[22px] border border-slate-200/80 bg-white/95 p-3 shadow-[0_14px_34px_rgba(15,23,42,0.07)] dark:border-slate-700 dark:bg-slate-800/90';
+const fieldInputClass = 'min-h-12 w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm font-bold text-slate-900 outline-none transition placeholder:text-slate-400 focus:border-blue-400 focus:ring-2 focus:ring-blue-500/15 dark:border-slate-700 dark:bg-slate-950 dark:text-slate-100';
+const desktopTableClass = 'hidden min-w-full border-collapse text-left md:table [&_td]:px-3 [&_td]:py-3 [&_th]:border-b [&_th]:border-slate-200 [&_th]:px-3 [&_th]:py-3 [&_th]:text-[10px] [&_th]:font-black [&_th]:uppercase [&_th]:tracking-[0.08em] [&_th]:text-slate-400 dark:[&_th]:border-slate-700';
 
 function sortCharges(list: FeeChargeItem[], order: ChargeOrderKey): FeeChargeItem[] {
     return [...list].sort((a, b) => {
@@ -148,7 +154,6 @@ export default function FeePage({ charges, payments, summary }: FeePageProps) {
                 || charge.className.toLowerCase().includes(query)
                 || charge.billingMonth.includes(chargeSearch)
                 || charge.status.toLowerCase().includes(query);
-
             return matchesFilter && matchesSearch;
         });
         return sortCharges(base, chargeOrderBy);
@@ -171,19 +176,16 @@ export default function FeePage({ charges, payments, summary }: FeePageProps) {
             || payment.billingMonth.includes(paymentSearch)
             || payment.reference.toLowerCase().includes(query)
         );
-
         return sortPayments(base, paymentOrderBy);
     }, [payments, paymentOrderBy, paymentSearch]);
+
     const paginatedPayments = useMemo(
         () => sortedPayments.slice((paymentPage - 1) * paymentPerPage, paymentPage * paymentPerPage),
         [sortedPayments, paymentPage, paymentPerPage],
     );
 
     const openPayment = (charge: FeeChargeItem) => {
-        if (!canRecordPayment) {
-            return;
-        }
-
+        if (!canRecordPayment) return;
         const balance = Math.max(0, charge.amount - charge.discountAmount - charge.paidAmount);
         setPayTarget(charge);
         paymentForm.setData({
@@ -204,7 +206,6 @@ export default function FeePage({ charges, payments, summary }: FeePageProps) {
             setPayTarget(null);
             return;
         }
-
         paymentForm.post(recordPayment.url((payTarget.routeKey ?? payTarget.id) as never), {
             preserveScroll: true,
             onSuccess: () => {
@@ -221,7 +222,6 @@ export default function FeePage({ charges, payments, summary }: FeePageProps) {
             setDeleteTarget(null);
             return;
         }
-
         router.delete(destroy.url((deleteTarget.routeKey ?? deleteTarget.id) as never), {
             preserveScroll: true,
             onSuccess: () => {
@@ -233,100 +233,99 @@ export default function FeePage({ charges, payments, summary }: FeePageProps) {
 
     return (
         <AdminShell>
-            <div className="fade-in" style={{ padding: 24, display: 'flex', flexDirection: 'column', gap: 16 }}>
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 12, flexWrap: 'wrap' }}>
+            <div className="fade-in flex flex-col gap-3 bg-slate-50 p-4 dark:bg-slate-950 max-md:bg-[radial-gradient(circle_at_100%_0,rgba(37,99,235,0.12),transparent_34%),linear-gradient(180deg,#f7f9fc_0%,#eef3f8_100%)] max-md:px-2.5 max-md:py-3 max-md:pb-[calc(104px+env(safe-area-inset-bottom))] dark:max-md:bg-[radial-gradient(circle_at_100%_0,rgba(96,165,250,0.14),transparent_34%),linear-gradient(180deg,#0f172a_0%,#111827_100%)]">
+                <div className="hidden items-center justify-between gap-3 md:flex md:flex-wrap">
                     <div>
-                        <div style={{ fontWeight: 800, fontSize: 18, color: '#1e293b' }}>Fee Management</div>
-                        <div style={{ fontSize: 12, color: '#94a3b8', marginTop: 2 }}>Track monthly fee charges and payments</div>
+                        <div className="text-lg font-black text-slate-900 dark:text-slate-50">Fee Management</div>
+                        <div className="mt-0.5 text-xs font-bold text-slate-400">Track monthly fee charges and payments</div>
                     </div>
-                    {canCreate && <Link href={createFee.url()} className="admin-btn admin-btn-primary">
-                        + New Fee Charge
-                    </Link>}
+                    {canCreate && <Link href={createFee.url()} className={primaryButtonClass}><Plus size={15} /> New Fee Charge</Link>}
                 </div>
 
-                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill,minmax(160px,1fr))', gap: 12 }}>
+                <section className="flex items-center justify-between gap-3 rounded-[24px] border border-slate-200 bg-white p-4 shadow-[0_14px_36px_rgba(15,23,42,0.07)] dark:border-slate-700 dark:bg-slate-800/90">
+                    <div>
+                        <span className="block text-xs font-black text-slate-400">Fee management</span>
+                        <strong className="mt-1 block text-2xl font-black text-slate-900 dark:text-slate-50">${Number(summary.collected).toFixed(2)}</strong>
+                        <p className="mt-1 text-xs font-extrabold text-slate-400">Collected - ${Number(summary.outstanding).toFixed(2)} outstanding</p>
+                    </div>
+                    {canCreate && (
+                        <Link href={createFee.url()} className="inline-flex h-11 w-11 items-center justify-center rounded-2xl bg-blue-600 text-white shadow-[0_14px_26px_rgba(37,99,235,0.28)] transition hover:bg-blue-500" aria-label="New fee charge">
+                            <Plus size={18} />
+                        </Link>
+                    )}
+                </section>
+
+                <div className="grid grid-cols-2 gap-2 md:grid-cols-4">
                     {[
-                        { l: 'Collected', v: `$${Number(summary.collected).toFixed(2)}`, c: '#10b981', bg: '#f0fdf4' },
-                        { l: 'Outstanding', v: `$${Number(summary.outstanding).toFixed(2)}`, c: '#f59e0b', bg: '#fffbeb' },
-                        { l: 'Paid Count', v: summary.paidCount, c: '#3b82f6', bg: '#eff6ff' },
-                        { l: 'Unpaid Count', v: summary.unpaidCount, c: '#ef4444', bg: '#fff1f2' },
+                        { l: 'Collected', v: `$${Number(summary.collected).toFixed(2)}`, className: 'border-emerald-500/25 bg-emerald-500/10 text-emerald-500' },
+                        { l: 'Outstanding', v: `$${Number(summary.outstanding).toFixed(2)}`, className: 'border-amber-500/25 bg-amber-500/10 text-amber-500' },
+                        { l: 'Paid Count', v: summary.paidCount, className: 'border-blue-500/25 bg-blue-500/10 text-blue-500' },
+                        { l: 'Unpaid Count', v: summary.unpaidCount, className: 'border-red-500/25 bg-red-500/10 text-red-500' },
                     ].map(item => (
-                        <div key={item.l} style={{ background: item.bg, borderRadius: 14, padding: 16, border: `1px solid ${item.c}30` }}>
-                            <div style={{ fontSize: 24, fontWeight: 800, color: item.c, marginBottom: 2 }}>{item.v}</div>
-                            <div style={{ fontSize: 11, color: item.c, opacity: 0.7 }}>{item.l}</div>
+                        <div key={item.l} className={`rounded-[18px] border p-3 ${item.className}`}>
+                            <div className="text-2xl font-black leading-none">{item.v}</div>
+                            <div className="mt-1 text-[11px] font-black opacity-70">{item.l}</div>
                         </div>
                     ))}
                 </div>
 
-                <div className="card">
-                    <div style={{ padding: '16px 20px 0', display: 'flex', gap: 8, flexWrap: 'wrap', marginBottom: 4 }}>
+                <section className="overflow-visible rounded-[24px] border-0 bg-transparent shadow-none md:overflow-x-auto md:rounded-2xl md:border md:border-slate-200 md:bg-white md:shadow-sm dark:md:border-slate-700 dark:md:bg-slate-800/90">
+                    <div className="mb-3 flex flex-wrap gap-2 rounded-[22px] border border-slate-200 bg-white/90 p-3 shadow-[0_12px_32px_rgba(15,23,42,0.07)] dark:border-slate-700 dark:bg-slate-800/90 md:mb-0 md:border-x-0 md:border-t-0 md:shadow-none">
                         {([
                             { id: 'all', l: 'All' },
                             { id: 'paid', l: 'Paid' },
                             { id: 'unpaid', l: 'Unpaid' },
                             { id: 'partial', l: 'Partial' },
                         ] as { id: FeeFilter; l: string }[]).map(item => (
-                            <button key={item.id} onClick={() => setFilter(item.id)} style={{ padding: '6px 14px', borderRadius: 8, border: '1.5px solid', cursor: 'pointer', fontSize: 12, fontWeight: 700, borderColor: filter === item.id ? '#3b82f6' : '#e2e8f0', background: filter === item.id ? '#eff6ff' : 'white', color: filter === item.id ? '#2563eb' : '#64748b' }}>
+                            <button key={item.id} onClick={() => setFilter(item.id)} className={`min-h-9 rounded-xl border px-3 py-2 text-xs font-black transition ${filter === item.id ? 'border-blue-500 bg-blue-500/10 text-blue-600 dark:text-blue-300' : 'border-slate-200 bg-white text-slate-500 dark:border-slate-700 dark:bg-slate-950 dark:text-slate-300'}`}>
                                 {item.l}
                             </button>
                         ))}
                     </div>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '12px 16px', borderBottom: '1px solid #f1f5f9', flexWrap: 'wrap' }}>
-                        <span style={{ fontSize: 11, fontWeight: 700, color: '#94a3b8', whiteSpace: 'nowrap' }}>Sort by</span>
-                        <AdminSelect
-                            value={chargeOrderBy}
-                            onChange={value => setChargeOrderBy(value as ChargeOrderKey)}
-                            options={CHARGE_ORDER_OPTIONS}
-                            style={{ minWidth: 150 }}
-                            triggerClassName="f-input h-9 min-h-9 px-3 py-1 text-xs font-bold"
-                        />
-                        <AdminSelect
-                            value={chargePerPage.toString()}
-                            onChange={value => setChargePerPage(Number(value))}
-                            options={[5, 10, 25, 50].map(size => ({ value: size.toString(), label: `${size} per page` }))}
-                            style={{ minWidth: 130 }}
-                            triggerClassName="f-input h-9 min-h-9 px-3 py-1 text-xs font-bold"
-                        />
-                        <span style={{ fontSize: 11, color: '#94a3b8', marginLeft: 4 }}>{filteredCharges.length} charge{filteredCharges.length !== 1 ? 's' : ''}</span>
-                        <input value={chargeSearch} onChange={event => setChargeSearch(event.target.value)} className="f-input" style={{ width: 260, maxWidth: '100%', marginLeft: 'auto' }} placeholder="Search fee charges..." />
+                    <div className="sticky top-0 z-10 mb-3 grid grid-cols-2 gap-2 rounded-[22px] border border-slate-200 bg-white/90 p-3 shadow-[0_12px_32px_rgba(15,23,42,0.07)] backdrop-blur dark:border-slate-700 dark:bg-slate-800/90 md:mb-0 md:flex md:flex-wrap md:items-center md:border-x-0 md:border-t-0 md:shadow-none">
+                        <span className="hidden whitespace-nowrap text-[11px] font-bold text-slate-400 md:inline">Sort by</span>
+                        <AdminSelect value={chargeOrderBy} onChange={value => setChargeOrderBy(value as ChargeOrderKey)} options={CHARGE_ORDER_OPTIONS} className="min-w-0 md:min-w-[150px]" triggerClassName={controlInputClass} />
+                        <AdminSelect value={chargePerPage.toString()} onChange={value => setChargePerPage(Number(value))} options={[5, 10, 25, 50].map(size => ({ value: size.toString(), label: `${size} per page` }))} className="min-w-0 md:min-w-[130px]" triggerClassName={controlInputClass} />
+                        <span className="hidden text-[11px] font-bold text-slate-400 md:inline">{filteredCharges.length} charge{filteredCharges.length !== 1 ? 's' : ''}</span>
+                        <input value={chargeSearch} onChange={event => setChargeSearch(event.target.value)} className={`${controlInputClass} col-span-2 w-full md:ml-auto md:w-[260px]`} placeholder="Search fee charges..." />
                     </div>
-                    <div style={{ overflowX: 'auto' }}>
-                        <table className="data-table">
-                            <thead>
+
+                    <table className={desktopTableClass}>
+                        <thead>
+                            <tr>
+                                <th>Student</th>
+                                <th>Level</th>
+                                <th>Month</th>
+                                <th>Amount</th>
+                                <th>Paid</th>
+                                <th>Status</th>
+                                {canManageFee && <th>Actions</th>}
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {paginatedCharges.length === 0 ? (
                                 <tr>
-                                    <th>Student</th>
-                                    <th>Level</th>
-                                    <th>Month</th>
-                                    <th>Amount</th>
-                                    <th>Paid</th>
-                                    <th>Status</th>
-                                    {canManageFee && <th>Actions</th>}
+                                    <td colSpan={canManageFee ? 7 : 6} className="px-6 py-9 text-center text-sm font-bold text-slate-500 dark:text-slate-400">
+                                        {chargeSearch ? <>No fee charges found for <strong>"{chargeSearch}"</strong></> : 'Data not found'}
+                                    </td>
                                 </tr>
-                            </thead>
-                            <tbody>
-                                {paginatedCharges.length === 0 ? (
-                                    <tr>
-                                        <td colSpan={canManageFee ? 7 : 6} style={{ padding: '34px 24px', textAlign: 'center', color: '#64748b', fontSize: 14, fontWeight: 700 }}>
-                                            {chargeSearch ? <>No fee charges found for <strong>"{chargeSearch}"</strong></> : 'Data not found'}
-                                        </td>
-                                    </tr>
-                                ) : paginatedCharges.map(charge => (
-                                    <tr key={charge.id}>
-                                        <td>
-                                            <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-                                                <Avatar name={charge.studentNameEn} size={32} />
-                                                <div>
-                                                    <KH style={{ fontWeight: 700, fontSize: 13, display: 'block' }}>{charge.studentNameKh}</KH>
-                                                    <div style={{ fontSize: 11, color: '#94a3b8' }}>{charge.studentNameEn}</div>
-                                                </div>
+                            ) : paginatedCharges.map(charge => (
+                                <tr key={charge.id} className="border-b border-slate-50 hover:bg-slate-50 dark:border-slate-800 dark:hover:bg-slate-900/60">
+                                    <td>
+                                        <div className="flex items-center gap-2.5">
+                                            <Avatar name={charge.studentNameEn} size={32} />
+                                            <div>
+                                                <KH className="block text-[13px] font-black text-slate-900 dark:text-slate-50">{charge.studentNameKh}</KH>
+                                                <div className="text-[11px] font-bold text-slate-400">{charge.studentNameEn}</div>
                                             </div>
-                                        </td>
-                                        <td><Badge type="blue">{charge.level || charge.className}</Badge></td>
-                                        <td style={{ fontSize: 12, color: '#64748b' }}>{charge.billingMonth}</td>
-                                        <td style={{ fontWeight: 700 }}>${charge.amount.toFixed(2)}</td>
-                                        <td style={{ fontWeight: 700 }}>${charge.paidAmount.toFixed(2)}</td>
-                                        <td><FeeStatusBadge status={charge.status} /></td>
-                                        {canManageFee && (
+                                        </div>
+                                    </td>
+                                    <td><Badge type="blue">{charge.level || charge.className}</Badge></td>
+                                    <td className="text-xs font-bold text-slate-500 dark:text-slate-300">{charge.billingMonth}</td>
+                                    <td className="text-xs font-black text-slate-900 dark:text-slate-50">${charge.amount.toFixed(2)}</td>
+                                    <td className="text-xs font-black text-slate-900 dark:text-slate-50">${charge.paidAmount.toFixed(2)}</td>
+                                    <td><FeeStatusBadge status={charge.status} /></td>
+                                    {canManageFee && (
                                         <td>
                                             <RowActions
                                                 ariaLabel={`Actions for ${charge.studentNameEn}`}
@@ -337,64 +336,117 @@ export default function FeePage({ charges, payments, summary }: FeePageProps) {
                                                 ]}
                                             />
                                         </td>
-                                        )}
-                                    </tr>
-                                ))}
-                            </tbody>
-                        </table>
-                    </div>
-                    {filteredCharges.length > 0 && <Pagination total={filteredCharges.length} page={chargePage} perPage={chargePerPage} onPageChange={setChargePage} onPerPageChange={setChargePerPage} showPerPage={false} />}
-                </div>
-
-                <div className="card" style={{ overflowX: 'auto' }}>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '12px 16px', borderBottom: '1px solid #f1f5f9', flexWrap: 'wrap' }}>
-                        <span style={{ fontSize: 11, fontWeight: 700, color: '#94a3b8', whiteSpace: 'nowrap' }}>Payments</span>
-                        <AdminSelect
-                            value={paymentOrderBy}
-                            onChange={value => setPaymentOrderBy(value as PaymentOrderKey)}
-                            options={PAYMENT_ORDER_OPTIONS}
-                            style={{ minWidth: 150 }}
-                            triggerClassName="f-input h-9 min-h-9 px-3 py-1 text-xs font-bold"
-                        />
-                        <AdminSelect
-                            value={paymentPerPage.toString()}
-                            onChange={value => setPaymentPerPage(Number(value))}
-                            options={[5, 10, 25, 50].map(size => ({ value: size.toString(), label: `${size} per page` }))}
-                            style={{ minWidth: 130 }}
-                            triggerClassName="f-input h-9 min-h-9 px-3 py-1 text-xs font-bold"
-                        />
-                        <span style={{ fontSize: 11, color: '#94a3b8', marginLeft: 4 }}>{sortedPayments.length} result{sortedPayments.length !== 1 ? 's' : ''}</span>
-                        <input value={paymentSearch} onChange={event => setPaymentSearch(event.target.value)} className="f-input" style={{ width: 260, maxWidth: '100%', marginLeft: 'auto' }} placeholder="Search payments..." />
-                    </div>
-                    <table className="data-table">
-                        <thead><tr><th>Student</th><th>Amount</th><th>Method</th><th>Status</th><th>Paid On</th><th>Month</th></tr></thead>
-                        <tbody>
-                            {paginatedPayments.length === 0 ? (
-                                <tr><td colSpan={6} style={{ padding: '34px 24px', textAlign: 'center', color: '#64748b', fontSize: 14, fontWeight: 700 }}>{paymentSearch ? <>No payments found for <strong>"{paymentSearch}"</strong></> : 'Data not found'}</td></tr>
-                            ) : paginatedPayments.map(payment => (
-                                <tr key={payment.id}>
-                                    <td>{payment.studentNameEn}</td>
-                                    <td style={{ fontWeight: 700 }}>${payment.amount.toFixed(2)}</td>
-                                    <td>{payment.method}</td>
-                                    <td><Badge type={payment.status === 'verified' || payment.status === 'paid' ? 'green' : 'amber'}>{payment.status}</Badge></td>
-                                    <td>{payment.paidOn}</td>
-                                    <td>{payment.billingMonth}</td>
+                                    )}
                                 </tr>
                             ))}
                         </tbody>
                     </table>
+
+                    <div className="grid gap-3 md:hidden">
+                        {paginatedCharges.length === 0 ? (
+                            <div className="rounded-[22px] border border-dashed border-slate-300 bg-white/80 px-4 py-8 text-center text-sm font-bold text-slate-500 dark:border-slate-700 dark:bg-slate-800/80 dark:text-slate-400">
+                                {chargeSearch ? <>No fee charges found for <strong>"{chargeSearch}"</strong></> : 'Data not found'}
+                            </div>
+                        ) : paginatedCharges.map(charge => {
+                            const balance = Math.max(0, charge.amount - charge.discountAmount - charge.paidAmount);
+                            return (
+                                <article key={charge.id} className={mobileCardClass}>
+                                    <div className="mb-3 flex items-start justify-between gap-3">
+                                        <div className="flex min-w-0 items-center gap-2.5">
+                                            <Avatar name={charge.studentNameEn} size={36} />
+                                            <div className="min-w-0">
+                                                <KH className="block truncate text-sm font-black text-slate-900 dark:text-slate-50">{charge.studentNameKh}</KH>
+                                                <p className="mt-0.5 truncate text-[11px] font-bold text-slate-400">{charge.studentNameEn}</p>
+                                            </div>
+                                        </div>
+                                        <div className="flex shrink-0 items-center gap-2">
+                                            <FeeStatusBadge status={charge.status} />
+                                            {canManageFee && (
+                                                <RowActions
+                                                    ariaLabel={`Actions for ${charge.studentNameEn}`}
+                                                    actions={[
+                                                        { key: 'pay', label: 'Pay', icon: Wallet, onSelect: () => openPayment(charge), hidden: !(canRecordPayment && charge.status !== 'paid') },
+                                                        { key: 'edit', label: 'Edit', icon: Edit3, href: editFee.url((charge.routeKey ?? charge.id) as never), hidden: !canUpdate },
+                                                        { key: 'delete', label: 'Delete', icon: Trash2, onSelect: () => setDeleteTarget(charge), variant: 'destructive', separatorBefore: true, hidden: !canDelete },
+                                                    ]}
+                                                />
+                                            )}
+                                        </div>
+                                    </div>
+                                    <div className="grid grid-cols-3 gap-2">
+                                        <div className="rounded-2xl bg-slate-100 px-2 py-2 dark:bg-slate-950"><span className="block text-[9px] font-black uppercase text-slate-400">Month</span><strong className="mt-1 block truncate text-xs font-black text-slate-900 dark:text-slate-50">{charge.billingMonth}</strong></div>
+                                        <div className="rounded-2xl bg-slate-100 px-2 py-2 dark:bg-slate-950"><span className="block text-[9px] font-black uppercase text-slate-400">Amount</span><strong className="mt-1 block text-xs font-black text-slate-900 dark:text-slate-50">${charge.amount.toFixed(2)}</strong></div>
+                                        <div className="rounded-2xl bg-slate-100 px-2 py-2 dark:bg-slate-950"><span className="block text-[9px] font-black uppercase text-slate-400">Paid</span><strong className="mt-1 block text-xs font-black text-emerald-500">${charge.paidAmount.toFixed(2)}</strong></div>
+                                    </div>
+                                    <div className="mt-3 flex items-center justify-between rounded-2xl bg-slate-100 px-3 py-2 text-xs font-black dark:bg-slate-950">
+                                        <span className="text-slate-400">{charge.level || charge.className}</span>
+                                        <span className={balance > 0 ? 'text-red-500' : 'text-emerald-500'}>${balance.toFixed(2)} due</span>
+                                    </div>
+                                </article>
+                            );
+                        })}
+                    </div>
+                    {filteredCharges.length > 0 && <Pagination total={filteredCharges.length} page={chargePage} perPage={chargePerPage} onPageChange={setChargePage} onPerPageChange={setChargePerPage} showPerPage={false} />}
+                </section>
+
+                <section className="overflow-visible rounded-[24px] border-0 bg-transparent shadow-none md:overflow-x-auto md:rounded-2xl md:border md:border-slate-200 md:bg-white md:shadow-sm dark:md:border-slate-700 dark:md:bg-slate-800/90">
+                    <div className="sticky top-0 z-10 mb-3 grid grid-cols-2 gap-2 rounded-[22px] border border-slate-200 bg-white/90 p-3 shadow-[0_12px_32px_rgba(15,23,42,0.07)] backdrop-blur dark:border-slate-700 dark:bg-slate-800/90 md:mb-0 md:flex md:flex-wrap md:items-center md:border-x-0 md:border-t-0 md:shadow-none">
+                        <span className="hidden whitespace-nowrap text-[11px] font-bold text-slate-400 md:inline">Payments</span>
+                        <AdminSelect value={paymentOrderBy} onChange={value => setPaymentOrderBy(value as PaymentOrderKey)} options={PAYMENT_ORDER_OPTIONS} className="min-w-0 md:min-w-[150px]" triggerClassName={controlInputClass} />
+                        <AdminSelect value={paymentPerPage.toString()} onChange={value => setPaymentPerPage(Number(value))} options={[5, 10, 25, 50].map(size => ({ value: size.toString(), label: `${size} per page` }))} className="min-w-0 md:min-w-[130px]" triggerClassName={controlInputClass} />
+                        <span className="hidden text-[11px] font-bold text-slate-400 md:inline">{sortedPayments.length} result{sortedPayments.length !== 1 ? 's' : ''}</span>
+                        <input value={paymentSearch} onChange={event => setPaymentSearch(event.target.value)} className={`${controlInputClass} col-span-2 w-full md:ml-auto md:w-[260px]`} placeholder="Search payments..." />
+                    </div>
+                    <table className={desktopTableClass}>
+                        <thead><tr><th>Student</th><th>Amount</th><th>Method</th><th>Status</th><th>Paid On</th><th>Month</th></tr></thead>
+                        <tbody>
+                            {paginatedPayments.length === 0 ? (
+                                <tr><td colSpan={6} className="px-6 py-9 text-center text-sm font-bold text-slate-500 dark:text-slate-400">{paymentSearch ? <>No payments found for <strong>"{paymentSearch}"</strong></> : 'Data not found'}</td></tr>
+                            ) : paginatedPayments.map(payment => (
+                                <tr key={payment.id} className="border-b border-slate-50 hover:bg-slate-50 dark:border-slate-800 dark:hover:bg-slate-900/60">
+                                    <td className="text-xs font-bold text-slate-700 dark:text-slate-200">{payment.studentNameEn}</td>
+                                    <td className="text-xs font-black text-slate-900 dark:text-slate-50">${payment.amount.toFixed(2)}</td>
+                                    <td className="text-xs font-bold text-slate-500 dark:text-slate-300">{payment.method}</td>
+                                    <td><Badge type={payment.status === 'verified' || payment.status === 'paid' ? 'green' : 'amber'}>{payment.status}</Badge></td>
+                                    <td className="text-xs font-bold text-slate-500 dark:text-slate-300">{payment.paidOn}</td>
+                                    <td className="text-xs font-bold text-slate-500 dark:text-slate-300">{payment.billingMonth}</td>
+                                </tr>
+                            ))}
+                        </tbody>
+                    </table>
+                    <div className="grid gap-3 md:hidden">
+                        {paginatedPayments.length === 0 ? (
+                            <div className="rounded-[22px] border border-dashed border-slate-300 bg-white/80 px-4 py-8 text-center text-sm font-bold text-slate-500 dark:border-slate-700 dark:bg-slate-800/80 dark:text-slate-400">
+                                {paymentSearch ? <>No payments found for <strong>"{paymentSearch}"</strong></> : 'Data not found'}
+                            </div>
+                        ) : paginatedPayments.map(payment => (
+                            <article key={payment.id} className={mobileCardClass}>
+                                <div className="flex items-start justify-between gap-3">
+                                    <div>
+                                        <strong className="block text-sm font-black text-slate-900 dark:text-slate-50">{payment.studentNameEn}</strong>
+                                        <span className="text-[11px] font-bold text-slate-400">{payment.paidOn} - {payment.billingMonth}</span>
+                                    </div>
+                                    <Badge type={payment.status === 'verified' || payment.status === 'paid' ? 'green' : 'amber'}>{payment.status}</Badge>
+                                </div>
+                                <div className="mt-3 grid grid-cols-2 gap-2">
+                                    <div className="rounded-2xl bg-slate-100 px-2 py-2 dark:bg-slate-950"><span className="block text-[9px] font-black uppercase text-slate-400">Amount</span><strong className="mt-1 block text-xs font-black text-emerald-500">${payment.amount.toFixed(2)}</strong></div>
+                                    <div className="rounded-2xl bg-slate-100 px-2 py-2 dark:bg-slate-950"><span className="block text-[9px] font-black uppercase text-slate-400">Method</span><strong className="mt-1 block text-xs font-black text-slate-900 dark:text-slate-50">{payment.method}</strong></div>
+                                </div>
+                            </article>
+                        ))}
+                    </div>
                     {sortedPayments.length > 0 && <Pagination total={sortedPayments.length} page={paymentPage} perPage={paymentPerPage} onPageChange={setPaymentPage} onPerPageChange={setPaymentPerPage} showPerPage={false} />}
-                </div>
+                </section>
             </div>
 
             {payTarget && (
-                <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.45)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 200, padding: 16 }} onClick={event => { if (event.target === event.currentTarget) setPayTarget(null); }}>
-                    <form onSubmit={submitPayment} style={{ background: 'white', borderRadius: 20, padding: 28, maxWidth: 440, width: '100%', boxShadow: '0 24px 60px rgba(0,0,0,0.15)', display: 'flex', flexDirection: 'column', gap: 14 }}>
+                <div className="fixed inset-0 z-[200] flex items-center justify-center bg-black/45 p-4" onClick={event => { if (event.target === event.currentTarget) setPayTarget(null); }}>
+                    <form onSubmit={submitPayment} className="grid w-full max-w-[440px] gap-3 rounded-[24px] border border-slate-200 bg-white p-5 shadow-[0_24px_60px_rgba(0,0,0,0.18)] dark:border-slate-700 dark:bg-slate-800">
                         <div>
-                            <div style={{ fontSize: 18, fontWeight: 800, color: '#1e293b' }}>Record Payment</div>
-                            <div style={{ fontSize: 12, color: '#94a3b8', marginTop: 2 }}>{payTarget.studentNameEn} - {payTarget.billingMonth}</div>
+                            <div className="text-lg font-black text-slate-900 dark:text-slate-50">Record Payment</div>
+                            <div className="mt-0.5 text-xs font-bold text-slate-400">{payTarget.studentNameEn} - {payTarget.billingMonth}</div>
                         </div>
-                        <input type="number" step="0.01" className="f-input" value={paymentForm.data.amount} onChange={event => paymentForm.setData('amount', event.target.value)} />
+                        <input type="number" step="0.01" className={fieldInputClass} value={paymentForm.data.amount} onChange={event => paymentForm.setData('amount', event.target.value)} />
                         <AdminSelect
                             value={paymentForm.data.method}
                             onChange={value => paymentForm.setData('method', value)}
@@ -405,27 +457,28 @@ export default function FeePage({ charges, payments, summary }: FeePageProps) {
                                 { value: 'cash', label: 'Cash' },
                                 { value: 'bank', label: 'Bank' },
                             ]}
+                            triggerClassName={fieldInputClass}
                         />
-                        <DatePicker value={paymentForm.data.paid_on} onChange={value => paymentForm.setData('paid_on', value)} className="f-input min-h-[42px]" />
-                        <input className="f-input" placeholder="Reference" value={paymentForm.data.reference} onChange={event => paymentForm.setData('reference', event.target.value)} />
-                        <div style={{ display: 'flex', gap: 10 }}>
-                            <button type="button" onClick={() => setPayTarget(null)} style={{ flex: 1, background: '#f1f5f9', color: '#64748b', border: 'none', borderRadius: 10, padding: '11px', fontWeight: 700, cursor: 'pointer', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: 6 }}><X size={15} /> Cancel</button>
-                            <button disabled={paymentForm.processing} type="submit" style={{ flex: 2, background: paymentForm.processing ? '#93c5fd' : '#10b981', color: 'white', border: 'none', borderRadius: 10, padding: '11px', fontWeight: 700, cursor: paymentForm.processing ? 'default' : 'pointer', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: 6 }}><CheckCircle2 size={15} /> Confirm Payment</button>
+                        <DatePicker value={paymentForm.data.paid_on} onChange={value => paymentForm.setData('paid_on', value)} className={fieldInputClass} />
+                        <input className={fieldInputClass} placeholder="Reference" value={paymentForm.data.reference} onChange={event => paymentForm.setData('reference', event.target.value)} />
+                        <div className="grid grid-cols-[1fr_2fr] gap-2">
+                            <button type="button" onClick={() => setPayTarget(null)} className={ghostButtonClass}><X size={15} /> Cancel</button>
+                            <button disabled={paymentForm.processing} type="submit" className="inline-flex min-h-11 items-center justify-center gap-1.5 rounded-xl bg-emerald-500 px-3 py-2 text-sm font-black text-white transition hover:bg-emerald-600 disabled:cursor-default disabled:bg-emerald-300"><CheckCircle2 size={15} /> Confirm Payment</button>
                         </div>
                     </form>
                 </div>
             )}
 
             {deleteTarget && (
-                <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.45)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 200, padding: 16 }}>
-                    <div style={{ background: 'white', borderRadius: 20, padding: 32, maxWidth: 420, width: '100%', boxShadow: '0 24px 60px rgba(0,0,0,0.15)' }}>
-                        <div style={{ textAlign: 'center', marginBottom: 20 }}>
-                            <div style={{ fontSize: 18, fontWeight: 800, color: '#1e293b', marginBottom: 6 }}>Delete Fee Charge?</div>
-                            <div style={{ fontSize: 13, color: '#64748b', lineHeight: 1.5 }}>Are you sure you want to remove this fee charge?</div>
+                <div className="fixed inset-0 z-[200] flex items-center justify-center bg-black/45 p-4">
+                    <div className="w-full max-w-[420px] rounded-[24px] border border-slate-200 bg-white p-6 shadow-[0_24px_60px_rgba(0,0,0,0.18)] dark:border-slate-700 dark:bg-slate-800">
+                        <div className="mb-5 text-center">
+                            <div className="mb-1.5 text-lg font-black text-slate-900 dark:text-slate-50">Delete Fee Charge?</div>
+                            <div className="text-sm font-medium leading-6 text-slate-500 dark:text-slate-300">Are you sure you want to remove this fee charge?</div>
                         </div>
-                        <div style={{ display: 'flex', gap: 10 }}>
-                            <button onClick={() => setDeleteTarget(null)} style={{ flex: 1, background: '#f1f5f9', color: '#64748b', border: 'none', borderRadius: 10, padding: '11px', fontWeight: 700, cursor: 'pointer', fontSize: 14, display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: 6 }}><X size={15} /> Cancel</button>
-                            <button onClick={confirmDelete} style={{ flex: 1, background: '#ef4444', color: 'white', border: 'none', borderRadius: 10, padding: '11px', fontWeight: 700, cursor: 'pointer', fontSize: 14, display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: 6 }}><Trash2 size={15} /> Delete</button>
+                        <div className="grid grid-cols-2 gap-2.5">
+                            <button onClick={() => setDeleteTarget(null)} className={ghostButtonClass}><X size={15} /> Cancel</button>
+                            <button onClick={confirmDelete} className="inline-flex min-h-11 items-center justify-center gap-1.5 rounded-xl bg-red-500 px-3 py-2 text-sm font-black text-white transition hover:bg-red-600"><Trash2 size={15} /> Delete</button>
                         </div>
                     </div>
                 </div>
@@ -433,6 +486,3 @@ export default function FeePage({ charges, payments, summary }: FeePageProps) {
         </AdminShell>
     );
 }
-
-
-

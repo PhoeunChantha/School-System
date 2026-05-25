@@ -127,26 +127,14 @@ function sortRecords(list: GradeRecordItem[], order: OrderKey): GradeRecordItem[
     });
 }
 
-const drawerFieldStyle = {
-    width: '100%',
-    minHeight: 42,
-    background: '#f8fafc',
-    border: '1.5px solid #e2e8f0',
-    borderRadius: 10,
-    padding: '10px 14px',
-    fontSize: 14,
-    fontFamily: 'inherit',
-    outline: 'none',
-    color: '#1e293b',
-};
-
-const drawerLabelStyle = {
-    display: 'block',
-    fontSize: 12,
-    fontWeight: 700,
-    color: '#64748b',
-    marginBottom: 6,
-};
+const controlInputClass = 'min-h-9 rounded-xl border border-slate-200 bg-white px-3 py-1 text-xs font-bold text-slate-900 dark:border-slate-700 dark:bg-slate-950 dark:text-slate-100';
+const ghostButtonClass = 'inline-flex min-h-9 items-center justify-center gap-1.5 rounded-xl border border-slate-200 bg-white px-3 py-2 text-xs font-black text-slate-700 shadow-sm transition hover:bg-slate-50 dark:border-slate-700 dark:bg-slate-950 dark:text-slate-200 dark:hover:bg-slate-900';
+const primaryButtonClass = 'inline-flex min-h-9 items-center justify-center gap-1.5 rounded-xl bg-blue-600 px-3 py-2 text-xs font-black text-white shadow-[0_12px_24px_rgba(37,99,235,0.22)] transition hover:bg-blue-500';
+const mobileCardClass = 'rounded-[22px] border border-slate-200/80 bg-white/95 p-3 shadow-[0_14px_34px_rgba(15,23,42,0.07)] dark:border-slate-700 dark:bg-slate-800/90';
+const fieldGroupClass = 'grid gap-1.5';
+const fieldLabelClass = 'text-[11px] font-black uppercase text-slate-500 dark:text-slate-400';
+const fieldInputClass = 'min-h-12 w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm font-bold text-slate-900 outline-none transition focus:border-blue-400 focus:ring-2 focus:ring-blue-500/15 disabled:opacity-70 dark:border-slate-700 dark:bg-slate-950 dark:text-slate-100';
+const errorTextClass = 'mt-1 text-[11px] font-bold text-red-500';
 
 export default function GradesPage({ records, periods, students, classes, summary }: GradesPageProps) {
     const { can, canAny } = useAdminPermissions();
@@ -364,30 +352,30 @@ export default function GradesPage({ records, periods, students, classes, summar
 
     return (
         <AdminShell>
-            <div className="fade-in grades-page" style={{ padding: 24, display: 'flex', flexDirection: 'column', gap: 16 }}>
-                <div className="grades-header" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12, flexWrap: 'wrap' }}>
+            <div className="fade-in flex flex-col gap-3 bg-slate-50 p-4 dark:bg-slate-950 max-md:bg-[radial-gradient(circle_at_100%_0,rgba(37,99,235,0.12),transparent_34%),linear-gradient(180deg,#f7f9fc_0%,#eef3f8_100%)] max-md:px-2.5 max-md:py-3 max-md:pb-[calc(104px+env(safe-area-inset-bottom))] dark:max-md:bg-[radial-gradient(circle_at_100%_0,rgba(96,165,250,0.14),transparent_34%),linear-gradient(180deg,#0f172a_0%,#111827_100%)]">
+                <div className="hidden items-center justify-between gap-3 md:flex md:flex-wrap">
                     <div>
-                        <KH style={{ fontWeight: 800, fontSize: 18, color: '#1e293b', display: 'block' }}>Grade Book</KH>
-                        <div style={{ fontSize: 12, color: '#94a3b8', marginTop: 2 }}>Manage speaking, listening, reading, and writing scores</div>
+                        <KH className="block text-lg font-black text-slate-900 dark:text-slate-50">Grade Book</KH>
+                        <div className="mt-0.5 text-xs font-bold text-slate-400">Manage speaking, listening, reading, and writing scores</div>
                     </div>
-                    <div className="grades-header-actions" style={{ display: 'flex', gap: 8, flexWrap: 'wrap', alignItems: 'center' }}>
+                    <div className="flex flex-wrap items-center gap-2">
                         {canDownloadLayout && (
-                            <a href={downloadLayout.url()} className="admin-btn admin-btn-ghost">
+                            <a href={downloadLayout.url()} className={ghostButtonClass}>
                                 <Download size={14} /> Layout
                             </a>
                         )}
                         {canImport && (
-                            <button type="button" onClick={() => importInputRef.current?.click()} className="admin-btn admin-btn-ghost">
+                            <button type="button" onClick={() => importInputRef.current?.click()} className={ghostButtonClass}>
                                 <Upload size={14} /> Import
                             </button>
                         )}
                         {canExport && (
-                            <a href={exportMethod.url()} className="admin-btn admin-btn-ghost">
+                            <a href={exportMethod.url()} className={ghostButtonClass}>
                                 <FileDown size={14} /> Export
                             </a>
                         )}
                         {canCreate && (
-                            <button onClick={openCreateDrawer} className="admin-btn admin-btn-primary">
+                            <button onClick={openCreateDrawer} className={primaryButtonClass}>
                                 + Add Grade
                             </button>
                         )}
@@ -395,61 +383,61 @@ export default function GradesPage({ records, periods, students, classes, summar
                             ref={importInputRef}
                             type="file"
                             accept=".csv,text/csv,text/plain"
-                            style={{ display: 'none' }}
+                            className="hidden"
                             onChange={event => importFile(event.target.files?.[0] ?? null)}
                         />
                     </div>
                 </div>
 
-                <div className="grades-mobile-hero">
+                <div className="flex items-center justify-between gap-3 rounded-[24px] border border-slate-200 bg-white p-4 shadow-[0_14px_36px_rgba(15,23,42,0.07)] dark:border-slate-700 dark:bg-slate-800/90">
                     <div>
-                        <span>Grade book</span>
-                        <strong>{filtered.length} records</strong>
-                        <p>{visibleAverage} average - {filtered.filter(record => record.average < 50).length} need work</p>
+                        <span className="block text-xs font-black text-slate-400">Grade book</span>
+                        <strong className="mt-1 block text-2xl font-black text-slate-900 dark:text-slate-50">{filtered.length} records</strong>
+                        <p className="mt-1 text-xs font-extrabold text-slate-400">{visibleAverage} average - {filtered.filter(record => record.average < 50).length} need work</p>
                     </div>
                     {canCreate && (
-                        <button type="button" onClick={openCreateDrawer} aria-label="Add grade">
+                        <button type="button" onClick={openCreateDrawer} aria-label="Add grade" className="inline-flex h-11 w-11 items-center justify-center rounded-2xl bg-blue-600 text-xl font-black text-white shadow-[0_14px_26px_rgba(37,99,235,0.28)] transition hover:bg-blue-500">
                             +
                         </button>
                     )}
                 </div>
 
-                <div className="grades-summary-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill,minmax(150px,1fr))', gap: 12 }}>
+                <div className="grid grid-cols-2 gap-2 md:grid-cols-4">
                     {[
-                        { label: 'Records', value: filtered.length, color: '#3b82f6', bg: '#eff6ff' },
-                        { label: 'Average', value: visibleAverage, color: '#10b981', bg: '#f0fdf4' },
-                        { label: 'Passing', value: filtered.filter(record => record.average >= 50).length, color: '#6366f1', bg: '#eef2ff' },
-                        { label: 'Needs Work', value: filtered.filter(record => record.average < 50).length, color: '#ef4444', bg: '#fff1f2' },
+                        { label: 'Records', value: filtered.length, className: 'border-blue-500/25 bg-blue-500/10 text-blue-500' },
+                        { label: 'Average', value: visibleAverage, className: 'border-emerald-500/25 bg-emerald-500/10 text-emerald-500' },
+                        { label: 'Passing', value: filtered.filter(record => record.average >= 50).length, className: 'border-indigo-500/25 bg-indigo-500/10 text-indigo-500' },
+                        { label: 'Needs Work', value: filtered.filter(record => record.average < 50).length, className: 'border-red-500/25 bg-red-500/10 text-red-500' },
                     ].map(card => (
-                        <div className="grades-summary-card" key={card.label} style={{ background: card.bg, border: `1px solid ${card.color}30`, borderRadius: 14, padding: 16 }}>
-                            <div style={{ color: card.color, fontSize: 24, fontWeight: 900 }}>{card.value}</div>
-                            <div style={{ color: card.color, opacity: 0.7, fontSize: 11 }}>{card.label}</div>
+                        <div key={card.label} className={`rounded-[18px] border p-3 ${card.className}`}>
+                            <div className="text-2xl font-black leading-none">{card.value}</div>
+                            <div className="mt-1 text-[11px] font-black opacity-70">{card.label}</div>
                         </div>
                     ))}
                 </div>
 
-                <div className="card grades-list-card" style={{ overflowX: 'auto' }}>
-                    <div className="grades-controls" style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '12px 16px', borderBottom: '1px solid #f1f5f9', flexWrap: 'wrap' }}>
+                <div className="overflow-visible rounded-[24px] border-0 bg-transparent shadow-none md:overflow-x-auto md:rounded-2xl md:border md:border-slate-200 md:bg-white md:shadow-sm dark:md:border-slate-700 dark:md:bg-slate-800/90">
+                    <div className="sticky top-0 z-10 mb-3 grid grid-cols-2 gap-2 rounded-[22px] border border-slate-200 bg-white/90 p-3 shadow-[0_12px_32px_rgba(15,23,42,0.07)] backdrop-blur dark:border-slate-700 dark:bg-slate-800/90 md:mb-0 md:flex md:flex-wrap md:items-center md:border-x-0 md:border-t-0 md:shadow-none">
                         <AdminSelect
                             value={perPage.toString()}
                             onChange={value => setPerPage(Number(value))}
                             options={[5, 10, 25, 50].map(size => ({ value: size.toString(), label: `${size} per page` }))}
-                            style={{ minWidth: 130 }}
-                            triggerClassName="f-input h-9 min-h-9 px-3 py-1 text-xs font-bold"
+                            className="min-w-0 md:min-w-[130px]"
+                            triggerClassName={controlInputClass}
                         />
                         <AdminSelect
                             value={String(selectedPeriod)}
                             onChange={value => setSelectedPeriod(value === 'all' ? 'all' : Number(value))}
                             options={[{ value: 'all', label: 'All periods' }, ...periods.map(period => ({ value: String(period.id), label: period.name }))]}
-                            style={{ minWidth: 150 }}
-                            triggerClassName="f-input h-9 min-h-9 px-3 py-1 text-xs font-bold"
+                            className="min-w-0 md:min-w-[150px]"
+                            triggerClassName={controlInputClass}
                         />
                         <AdminSelect
                             value={String(selectedClass)}
                             onChange={value => setSelectedClass(value === 'all' ? 'all' : Number(value))}
                             options={[{ value: 'all', label: 'All classes' }, ...classes.map(schoolClass => ({ value: String(schoolClass.id), label: schoolClass.name }))]}
-                            style={{ minWidth: 150 }}
-                            triggerClassName="f-input h-9 min-h-9 px-3 py-1 text-xs font-bold"
+                            className="min-w-0 md:min-w-[150px]"
+                            triggerClassName={controlInputClass}
                         />
                         <AdminSelect
                             value={performanceFilter}
@@ -461,28 +449,27 @@ export default function GradesPage({ records, periods, students, classes, summar
                                 { value: 'average', label: 'Average' },
                                 { value: 'poor', label: 'Needs Work' },
                             ]}
-                            style={{ minWidth: 160 }}
-                            triggerClassName="f-input h-9 min-h-9 px-3 py-1 text-xs font-bold"
+                            className="min-w-0 md:min-w-[160px]"
+                            triggerClassName={controlInputClass}
                         />
                         <AdminSelect
                             value={orderBy}
                             onChange={value => setOrderBy(value as OrderKey)}
                             options={ORDER_OPTIONS}
-                            style={{ minWidth: 160 }}
-                            triggerClassName="f-input h-9 min-h-9 px-3 py-1 text-xs font-bold"
+                            className="col-span-2 min-w-0 md:col-span-1 md:min-w-[160px]"
+                            triggerClassName={controlInputClass}
                         />
-                        <span style={{ fontSize: 11, color: '#94a3b8' }}>{filtered.length} result{filtered.length !== 1 ? 's' : ''}</span>
+                        <span className="hidden text-[11px] font-bold text-slate-400 md:inline">{filtered.length} result{filtered.length !== 1 ? 's' : ''}</span>
                         <input
                             value={search}
                             onChange={event => setSearch(event.target.value)}
-                            className="f-input"
-                            style={{ width: 260, maxWidth: '100%', marginLeft: 'auto' }}
+                            className={`${controlInputClass} col-span-2 w-full md:ml-auto md:w-[260px]`}
                             placeholder="Search grades..."
                             data-role="grades-search"
                         />
                     </div>
 
-                    <table className="data-table">
+                    <table className="data-table hidden md:table">
                         <thead>
                             <tr>
                                 <th>Student</th>
@@ -499,32 +486,32 @@ export default function GradesPage({ records, periods, students, classes, summar
                         <tbody>
                             {paginated.length === 0 ? (
                                 <tr>
-                                    <td colSpan={canManageRecords ? 9 : 8} style={{ padding: '34px 24px', textAlign: 'center', color: '#64748b', fontSize: 14, fontWeight: 700 }}>
+                                    <td colSpan={canManageRecords ? 9 : 8} className="px-6 py-9 text-center text-sm font-bold text-slate-500 dark:text-slate-400">
                                         {search ? <>No grades found for <strong>"{search}"</strong></> : 'Data not found'}
                                     </td>
                                 </tr>
                             ) : paginated.map(record => {
                                 const perf = performanceLabel(record.average);
                                 return (
-                                    <tr key={record.id}>
+                                    <tr key={record.id} className="border-b border-slate-50 hover:bg-slate-50 dark:border-slate-800 dark:hover:bg-slate-900/60">
                                         <td>
-                                            <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                                            <div className="flex items-center gap-2.5">
                                                 <Avatar name={record.studentNameEn} size={32} />
                                                 <div>
-                                                    <KH style={{ fontWeight: 700, fontSize: 13, display: 'block' }}>{record.studentNameKh}</KH>
-                                                    <div style={{ fontSize: 11, color: '#94a3b8' }}>{record.studentNameEn}</div>
+                                                    <KH className="block text-[13px] font-black text-slate-900 dark:text-slate-50">{record.studentNameKh}</KH>
+                                                    <div className="text-[11px] font-bold text-slate-400">{record.studentNameEn}</div>
                                                 </div>
                                             </div>
                                         </td>
-                                        <td style={{ fontSize: 12, color: '#64748b' }}>{record.className || record.level}</td>
+                                        <td className="text-xs font-bold text-slate-500 dark:text-slate-300">{record.className || record.level}</td>
                                         <td><ScoreChip score={record.speaking} /></td>
                                         <td><ScoreChip score={record.listening} /></td>
                                         <td><ScoreChip score={record.reading} /></td>
                                         <td><ScoreChip score={record.writing} /></td>
                                         <td>
-                                            <div style={{ display: 'flex', alignItems: 'center', gap: 8, minWidth: 110 }}>
+                                            <div className="flex min-w-[110px] items-center gap-2">
                                                 <PBar value={record.average} color={record.average >= 75 ? 'green' : record.average >= 50 ? 'blue' : 'red'} />
-                                                <span style={{ fontSize: 12, fontWeight: 800, color: record.average >= 75 ? '#10b981' : record.average >= 50 ? '#3b82f6' : '#ef4444', width: 42 }}>{record.average}</span>
+                                                <span className={`w-11 text-xs font-black ${record.average >= 75 ? 'text-emerald-500' : record.average >= 50 ? 'text-blue-500' : 'text-red-500'}`}>{record.average}</span>
                                             </div>
                                         </td>
                                         <td><Badge type={perf.type}>{perf.label}</Badge></td>
@@ -545,22 +532,22 @@ export default function GradesPage({ records, periods, students, classes, summar
                         </tbody>
                     </table>
 
-                    <div className="grades-mobile-list">
+                    <div className="grid gap-3 md:hidden">
                         {paginated.length === 0 ? (
-                            <div className="grades-mobile-empty">
+                            <div className="rounded-[22px] border border-dashed border-slate-300 bg-white/80 px-4 py-8 text-center text-sm font-bold text-slate-500 dark:border-slate-700 dark:bg-slate-800/80 dark:text-slate-400">
                                 {search ? <>No grades found for <strong>"{search}"</strong></> : 'Data not found'}
                             </div>
                         ) : paginated.map(record => {
                             const perf = performanceLabel(record.average);
 
                             return (
-                                <div className="grades-mobile-card" key={record.id}>
-                                    <div className="grades-mobile-card-head">
-                                        <div style={{ display: 'flex', minWidth: 0, alignItems: 'center', gap: 10 }}>
+                                <div className={mobileCardClass} key={record.id}>
+                                    <div className="mb-3 flex items-start justify-between gap-3">
+                                        <div className="flex min-w-0 items-center gap-2.5">
                                             <Avatar name={record.studentNameEn} size={36} />
-                                            <div style={{ minWidth: 0 }}>
-                                                <KH style={{ fontWeight: 900, fontSize: 14, display: 'block' }}>{record.studentNameKh}</KH>
-                                                <p>{record.studentNameEn} - {record.className || record.level}</p>
+                                            <div className="min-w-0">
+                                                <KH className="block truncate text-sm font-black text-slate-900 dark:text-slate-50">{record.studentNameKh}</KH>
+                                                <p className="mt-0.5 truncate text-[11px] font-bold text-slate-400">{record.studentNameEn} - {record.className || record.level}</p>
                                             </div>
                                         </div>
                                         {canManageRecords && (
@@ -573,23 +560,23 @@ export default function GradesPage({ records, periods, students, classes, summar
                                             />
                                         )}
                                     </div>
-                                    <div className="grades-mobile-average">
+                                    <div className="mb-3 grid grid-cols-[auto_1fr_auto] items-center gap-3 rounded-2xl bg-slate-100 p-2.5 dark:bg-slate-950">
                                         <div>
-                                            <span>Average</span>
-                                            <strong>{record.average}</strong>
+                                            <span className="block text-[9px] font-black uppercase text-slate-400">Average</span>
+                                            <strong className="mt-0.5 block text-lg font-black leading-none text-slate-900 dark:text-slate-50">{record.average}</strong>
                                         </div>
                                         <PBar value={record.average} color={record.average >= 75 ? 'green' : record.average >= 50 ? 'blue' : 'red'} />
                                         <Badge type={perf.type}>{perf.label}</Badge>
                                     </div>
-                                    <div className="grades-mobile-scores">
-                                        <div><span>Speak</span><ScoreChip score={record.speaking} /></div>
-                                        <div><span>Listen</span><ScoreChip score={record.listening} /></div>
-                                        <div><span>Read</span><ScoreChip score={record.reading} /></div>
-                                        <div><span>Write</span><ScoreChip score={record.writing} /></div>
+                                    <div className="grid grid-cols-4 gap-2">
+                                        <div className="rounded-2xl bg-slate-100 px-2 py-2 text-center dark:bg-slate-950"><span className="mb-1 block text-[9px] font-black uppercase text-slate-400">Speak</span><ScoreChip score={record.speaking} /></div>
+                                        <div className="rounded-2xl bg-slate-100 px-2 py-2 text-center dark:bg-slate-950"><span className="mb-1 block text-[9px] font-black uppercase text-slate-400">Listen</span><ScoreChip score={record.listening} /></div>
+                                        <div className="rounded-2xl bg-slate-100 px-2 py-2 text-center dark:bg-slate-950"><span className="mb-1 block text-[9px] font-black uppercase text-slate-400">Read</span><ScoreChip score={record.reading} /></div>
+                                        <div className="rounded-2xl bg-slate-100 px-2 py-2 text-center dark:bg-slate-950"><span className="mb-1 block text-[9px] font-black uppercase text-slate-400">Write</span><ScoreChip score={record.writing} /></div>
                                     </div>
-                                    <div className="grades-mobile-foot">
+                                    <div className="mt-3 flex items-center justify-between gap-2 text-[11px] font-black text-slate-400">
                                         <span>{record.periodName}</span>
-                                        <strong>{record.gradedAt}</strong>
+                                        <strong className="text-slate-600 dark:text-slate-300">{record.gradedAt}</strong>
                                     </div>
                                 </div>
                             );
@@ -607,30 +594,30 @@ export default function GradesPage({ records, periods, students, classes, summar
                     }
                 }}
             >
-                <SheetContent side="right" className="grade-drawer-sheet w-full gap-0 overflow-y-auto p-0 sm:max-w-[520px]">
+                <SheetContent side="right" className="w-full gap-0 overflow-y-auto border-slate-200 bg-white p-0 dark:border-slate-700 dark:bg-slate-900 sm:max-w-[520px]">
                     {drawerMode && (
-                        <form onSubmit={submitGrade} className="grade-drawer-form flex min-h-full flex-col bg-white">
-                            <SheetHeader className="grade-drawer-header border-b border-slate-200 px-6 py-5 text-left">
-                                <SheetTitle className="text-lg font-black text-slate-800">
+                        <form onSubmit={submitGrade} className="flex min-h-full flex-col bg-slate-50 dark:bg-slate-950">
+                            <SheetHeader className="border-b border-slate-200 bg-white px-5 py-4 text-left dark:border-slate-700 dark:bg-slate-800">
+                                <SheetTitle className="text-lg font-black text-slate-900 dark:text-slate-50">
                                     {drawerMode === 'create' ? 'Add Grade' : 'Edit Grade'}
                                 </SheetTitle>
-                                <SheetDescription>
+                                <SheetDescription className="text-xs font-bold text-slate-400">
                                     {drawerMode === 'create' ? 'Create a student score record' : editingRecord?.studentNameEn}
                                 </SheetDescription>
                             </SheetHeader>
 
-                            <div className="grade-drawer-body" style={{ padding: 24, display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16 }}>
-                            <div className="grade-drawer-score-summary">
+                            <div className="grid grid-cols-2 gap-3 p-3 md:p-5">
+                            <div className="col-span-2 flex items-center justify-between rounded-[22px] bg-gradient-to-r from-blue-600 to-teal-600 p-3 text-white shadow-[0_14px_30px_rgba(37,99,235,0.18)]">
                                 <div>
-                                    <span>Live average</span>
-                                    <strong>{selectedAverage}</strong>
+                                    <span className="block text-[10px] font-black uppercase text-white/70">Live average</span>
+                                    <strong className="mt-1 block text-3xl font-black leading-none">{selectedAverage}</strong>
                                 </div>
                                 <Badge type={selectedPerformance.type}>{selectedPerformance.label}</Badge>
                             </div>
-                            <div className="grade-drawer-field grade-drawer-field-full" style={{ gridColumn: '1 / -1' }}>
-                                <label style={drawerLabelStyle}>Period *</label>
+                            <div className={`${fieldGroupClass} col-span-2`}>
+                                <label className={fieldLabelClass}>Period *</label>
                                 <Select value={data.grade_period_id ? String(data.grade_period_id) : ''} onValueChange={value => setData('grade_period_id', Number(value) || null)}>
-                                    <SelectTrigger className="f-input" style={{ minHeight: 42 }}>
+                                    <SelectTrigger className={fieldInputClass}>
                                         <SelectValue placeholder="Select period" />
                                     </SelectTrigger>
                                     <SelectContent>
@@ -641,38 +628,37 @@ export default function GradesPage({ records, periods, students, classes, summar
                                         ))}
                                     </SelectContent>
                                 </Select>
-                                {errors.grade_period_id && <div className="field-error">{errors.grade_period_id}</div>}
+                                {errors.grade_period_id && <div className={errorTextClass}>{errors.grade_period_id}</div>}
                             </div>
-                            <div className="grade-drawer-field grade-drawer-field-full" style={{ gridColumn: '1 / -1' }}>
-                                <label style={drawerLabelStyle}>Student *</label>
+                            <div className={`${fieldGroupClass} col-span-2`}>
+                                <label className={fieldLabelClass}>Student *</label>
                                 <Popover open={studentPickerOpen} onOpenChange={open => { if (drawerMode !== 'edit') setStudentPickerOpen(open); }}>
                                     <PopoverTrigger asChild>
                                         <button
                                             type="button"
                                             disabled={drawerMode === 'edit'}
-                                            className="f-input"
-                                            style={{ minHeight: 42, display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 10, textAlign: 'left', opacity: drawerMode === 'edit' ? 0.7 : 1, cursor: drawerMode === 'edit' ? 'default' : 'pointer' }}
+                                            className={`${fieldInputClass} flex items-center justify-between gap-2 text-left`}
                                         >
-                                            <span style={{ minWidth: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                                            <span className="min-w-0 truncate">
                                                 {selectedStudent ? `${selectedStudent.nameEn} - ${selectedStudent.className || selectedStudent.level}` : 'Select student'}
                                             </span>
-                                            <ChevronsUpDown size={16} style={{ color: '#94a3b8', flexShrink: 0 }} />
+                                            <ChevronsUpDown size={16} className="shrink-0 text-slate-400" />
                                         </button>
                                     </PopoverTrigger>
-                                    <PopoverContent align="start" className="w-[var(--radix-popover-trigger-width)] p-0">
-                                        <div style={{ padding: 10, borderBottom: '1px solid #e2e8f0', display: 'flex', alignItems: 'center', gap: 8 }}>
-                                            <Search size={15} style={{ color: '#94a3b8', flexShrink: 0 }} />
+                                    <PopoverContent align="start" className="w-[var(--radix-popover-trigger-width)] overflow-hidden border-slate-200 bg-white p-0 dark:border-slate-700 dark:bg-slate-900">
+                                        <div className="flex items-center gap-2 border-b border-slate-200 p-2.5 dark:border-slate-700">
+                                            <Search size={15} className="shrink-0 text-slate-400" />
                                             <input
                                                 value={studentSearch}
                                                 onChange={event => setStudentSearch(event.target.value)}
                                                 placeholder="Search students..."
                                                 autoFocus
-                                                style={{ border: 'none', outline: 'none', width: '100%', fontSize: 13, background: 'transparent', color: '#1e293b' }}
+                                                className="w-full border-0 bg-transparent text-[13px] font-bold text-slate-900 outline-none placeholder:text-slate-400 dark:text-slate-100"
                                             />
                                         </div>
-                                        <div style={{ maxHeight: 260, overflowY: 'auto', padding: 6 }}>
+                                        <div className="max-h-[260px] overflow-y-auto p-1.5">
                                             {searchableStudents.length === 0 ? (
-                                                <div style={{ padding: '18px 10px', textAlign: 'center', color: '#94a3b8', fontSize: 13, fontWeight: 700 }}>
+                                                <div className="px-2.5 py-5 text-center text-[13px] font-bold text-slate-400">
                                                     No students found
                                                 </div>
                                             ) : searchableStudents.map(student => {
@@ -683,12 +669,12 @@ export default function GradesPage({ records, periods, students, classes, summar
                                                         key={student.id}
                                                         type="button"
                                                         onClick={() => selectStudent(student.id)}
-                                                        style={{ width: '100%', border: 'none', background: selected ? '#eff6ff' : 'transparent', color: '#1e293b', borderRadius: 8, padding: '9px 10px', display: 'flex', alignItems: 'center', gap: 10, cursor: 'pointer', textAlign: 'left' }}
+                                                        className={`flex w-full items-center gap-2.5 rounded-xl px-2.5 py-2.5 text-left transition ${selected ? 'bg-blue-50 text-slate-900 dark:bg-blue-500/15 dark:text-slate-50' : 'text-slate-900 hover:bg-slate-50 dark:text-slate-100 dark:hover:bg-slate-800'}`}
                                                     >
-                                                        <Check size={15} style={{ color: selected ? '#2563eb' : 'transparent', flexShrink: 0 }} />
-                                                        <span style={{ minWidth: 0 }}>
-                                                            <span style={{ display: 'block', fontSize: 13, fontWeight: 800, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{student.nameEn}</span>
-                                                            <span style={{ display: 'block', fontSize: 11, color: '#94a3b8', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{student.nameKh} - {student.className || student.level}</span>
+                                                        <Check size={15} className={`shrink-0 ${selected ? 'text-blue-600' : 'text-transparent'}`} />
+                                                        <span className="min-w-0">
+                                                            <span className="block truncate text-[13px] font-black">{student.nameEn}</span>
+                                                            <span className="block truncate text-[11px] font-bold text-slate-400">{student.nameKh} - {student.className || student.level}</span>
                                                         </span>
                                                     </button>
                                                 );
@@ -696,20 +682,20 @@ export default function GradesPage({ records, periods, students, classes, summar
                                         </div>
                                     </PopoverContent>
                                 </Popover>
-                                {errors.student_id && <div className="field-error">{errors.student_id}</div>}
+                                {errors.student_id && <div className={errorTextClass}>{errors.student_id}</div>}
                             </div>
                             {(['speaking', 'listening', 'reading', 'writing'] as const).map(skill => (
-                                <div className="grade-score-field" key={skill}>
-                                    <label style={drawerLabelStyle}>{skill.charAt(0).toUpperCase() + skill.slice(1)} *</label>
-                                    <input type="number" min={0} max={100} style={drawerFieldStyle} value={data[skill]} onChange={event => setData(skill, Math.min(100, Math.max(0, Number(event.target.value))))} />
-                                    {errors[skill] && <div className="field-error">{errors[skill]}</div>}
+                                <div className={fieldGroupClass} key={skill}>
+                                    <label className={fieldLabelClass}>{skill.charAt(0).toUpperCase() + skill.slice(1)} *</label>
+                                    <input type="number" min={0} max={100} className={`${fieldInputClass} text-center text-xl`} value={data[skill]} onChange={event => setData(skill, Math.min(100, Math.max(0, Number(event.target.value))))} />
+                                    {errors[skill] && <div className={errorTextClass}>{errors[skill]}</div>}
                                 </div>
                             ))}
                             </div>
 
-                        <div className="grade-drawer-actions" style={{ marginTop: 'auto', padding: 24, borderTop: '1px solid #e2e8f0', display: 'flex', gap: 10 }}>
-                            <button type="button" onClick={closeDrawer} style={{ flex: 1, background: '#f1f5f9', color: '#64748b', border: 'none', borderRadius: 10, padding: '12px', fontWeight: 800, cursor: 'pointer', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: 6 }}><X size={16} /> Cancel</button>
-                            <button disabled={processing} type="submit" style={{ flex: 2, background: processing ? '#93c5fd' : '#2563eb', color: 'white', border: 'none', borderRadius: 10, padding: '12px', fontWeight: 800, cursor: processing ? 'default' : 'pointer', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: 6 }}>
+                        <div className="mt-auto grid grid-cols-[1fr_2fr] gap-2 border-t border-slate-200 bg-white p-3 dark:border-slate-700 dark:bg-slate-800 md:p-5">
+                            <button type="button" onClick={closeDrawer} className="inline-flex min-h-12 items-center justify-center gap-1.5 rounded-2xl bg-slate-100 px-4 py-3 text-sm font-black text-slate-600 transition hover:bg-slate-200 dark:bg-slate-950 dark:text-slate-300 dark:hover:bg-slate-900"><X size={16} /> Cancel</button>
+                            <button disabled={processing} type="submit" className="inline-flex min-h-12 items-center justify-center gap-1.5 rounded-2xl bg-blue-600 px-4 py-3 text-sm font-black text-white shadow-[0_14px_28px_rgba(37,99,235,0.22)] transition hover:bg-blue-500 disabled:cursor-default disabled:bg-blue-300 disabled:shadow-none dark:disabled:bg-blue-900">
                                 <Save size={16} /> {drawerMode === 'create' ? 'Save Grade' : 'Save Changes'}
                             </button>
                         </div>
@@ -719,15 +705,15 @@ export default function GradesPage({ records, periods, students, classes, summar
             </Sheet>
 
             {deleteTarget && (
-                <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.45)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 230, padding: 16 }}>
-                    <div style={{ background: 'white', borderRadius: 20, padding: 32, maxWidth: 420, width: '100%', boxShadow: '0 24px 60px rgba(0,0,0,0.15)' }}>
-                        <div style={{ textAlign: 'center', marginBottom: 20 }}>
-                            <div style={{ fontSize: 18, fontWeight: 800, color: '#1e293b', marginBottom: 6 }}>Delete Grade?</div>
-                            <div style={{ fontSize: 13, color: '#64748b', lineHeight: 1.5 }}>Remove grade record for <strong>{deleteTarget.studentNameEn}</strong>?</div>
+                <div className="fixed inset-0 z-[230] flex items-center justify-center bg-black/45 p-4">
+                    <div className="w-full max-w-[420px] rounded-[24px] border border-slate-200 bg-white p-6 shadow-[0_24px_60px_rgba(0,0,0,0.18)] dark:border-slate-700 dark:bg-slate-800">
+                        <div className="mb-5 text-center">
+                            <div className="mb-1.5 text-lg font-black text-slate-900 dark:text-slate-50">Delete Grade?</div>
+                            <div className="text-sm font-medium leading-6 text-slate-500 dark:text-slate-300">Remove grade record for <strong>{deleteTarget.studentNameEn}</strong>?</div>
                         </div>
-                        <div style={{ display: 'flex', gap: 10 }}>
-                            <button onClick={() => setDeleteTarget(null)} style={{ flex: 1, background: '#f1f5f9', color: '#64748b', border: 'none', borderRadius: 10, padding: '11px', fontWeight: 700, cursor: 'pointer', fontSize: 14, display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: 6 }}><X size={15} /> Cancel</button>
-                            <button onClick={confirmDelete} style={{ flex: 1, background: '#ef4444', color: 'white', border: 'none', borderRadius: 10, padding: '11px', fontWeight: 700, cursor: 'pointer', fontSize: 14, display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: 6 }}><Trash2 size={15} /> Delete</button>
+                        <div className="grid grid-cols-2 gap-2.5">
+                            <button onClick={() => setDeleteTarget(null)} className="inline-flex min-h-11 items-center justify-center gap-1.5 rounded-xl bg-slate-100 px-3 py-2 text-sm font-black text-slate-500 transition hover:bg-slate-200 dark:bg-slate-950 dark:text-slate-300 dark:hover:bg-slate-900"><X size={15} /> Cancel</button>
+                            <button onClick={confirmDelete} className="inline-flex min-h-11 items-center justify-center gap-1.5 rounded-xl bg-red-500 px-3 py-2 text-sm font-black text-white transition hover:bg-red-600"><Trash2 size={15} /> Delete</button>
                         </div>
                     </div>
                 </div>

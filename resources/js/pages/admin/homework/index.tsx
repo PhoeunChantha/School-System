@@ -39,6 +39,11 @@ const ORDER_OPTIONS: { value: OrderKey; label: string }[] = [
     { value: 'submitted-desc', label: 'Most submitted' },
 ];
 
+const controlInputClass = 'min-h-9 rounded-xl border border-slate-200 bg-white px-3 py-1 text-xs font-bold text-slate-900 dark:border-slate-700 dark:bg-slate-950 dark:text-slate-100';
+const ghostButtonClass = 'inline-flex min-h-9 items-center justify-center gap-1.5 rounded-xl border border-slate-200 bg-white px-3 py-2 text-xs font-black text-slate-700 shadow-sm transition hover:bg-slate-50 dark:border-slate-700 dark:bg-slate-950 dark:text-slate-200 dark:hover:bg-slate-900';
+const primaryButtonClass = 'inline-flex min-h-9 items-center justify-center gap-1.5 rounded-xl bg-blue-600 px-3 py-2 text-xs font-black text-white shadow-[0_12px_24px_rgba(37,99,235,0.22)] transition hover:bg-blue-500';
+const mobileCardClass = 'rounded-[22px] border border-slate-200/80 bg-white/95 p-3 shadow-[0_14px_34px_rgba(15,23,42,0.07)] dark:border-slate-700 dark:bg-slate-800/90';
+
 const statusBadge = (status: HomeworkItem['status']) => {
     if (status === 'assigned') return <Badge type="blue">Assigned</Badge>;
     if (status === 'closed') return <Badge type="gray">Closed</Badge>;
@@ -117,34 +122,58 @@ export default function HomeworkPage({ homework }: HomeworkPageProps) {
 
     return (
         <AdminShell>
-            <div className="fade-in" style={{ padding: 24, display: 'flex', flexDirection: 'column', gap: 16 }}>
-                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12, flexWrap: 'wrap' }}>
+            <div className="fade-in flex flex-col gap-3 bg-slate-50 p-4 dark:bg-slate-950 max-md:bg-[radial-gradient(circle_at_100%_0,rgba(37,99,235,0.12),transparent_34%),linear-gradient(180deg,#f7f9fc_0%,#eef3f8_100%)] max-md:px-2.5 max-md:py-3 max-md:pb-[calc(104px+env(safe-area-inset-bottom))] dark:max-md:bg-[radial-gradient(circle_at_100%_0,rgba(96,165,250,0.14),transparent_34%),linear-gradient(180deg,#0f172a_0%,#111827_100%)]">
+                <div className="hidden items-center justify-between gap-3 md:flex md:flex-wrap">
                     <div>
-                        <div style={{ fontWeight: 800, fontSize: 18, color: '#1e293b' }}>Homework List</div>
-                        <div style={{ fontSize: 12, color: '#94a3b8', marginTop: 2 }}>
+                        <div className="text-lg font-black text-slate-900 dark:text-slate-50">Homework List</div>
+                        <div className="mt-0.5 text-xs font-bold text-slate-400">
                             {totalAssigned} assigned - {totalSubmissions} submissions received
                         </div>
                     </div>
 
-                    <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+                    <div className="flex flex-wrap gap-2">
                         {canSubmitHomework && (
-                            <Link href={createHomeworkSubmission.url()} className="admin-btn admin-btn-ghost">
+                            <Link href={createHomeworkSubmission.url()} className={ghostButtonClass}>
                                 <Upload size={15} /> Student Submit
                             </Link>
                         )}
                         {canCreate && (
-                            <Link href={createHomework.url()} className="admin-btn admin-btn-primary">
+                            <Link href={createHomework.url()} className={primaryButtonClass}>
                                 <Plus size={15} /> Assign New
                             </Link>
                         )}
                     </div>
                 </div>
 
-                <div className="card" style={{ overflow: 'hidden' }}>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '12px 16px', borderBottom: '1px solid #f1f5f9', flexWrap: 'wrap' }}>
-                        <input value={search} onChange={event => setSearch(event.target.value)} className="f-input" style={{ maxWidth: 240 }} placeholder="Search homework..." />
+                <section className="flex items-center justify-between gap-3 rounded-[24px] border border-slate-200 bg-white p-4 shadow-[0_14px_36px_rgba(15,23,42,0.07)] dark:border-slate-700 dark:bg-slate-800/90">
+                    <div>
+                        <span className="block text-xs font-black text-slate-400">Homework list</span>
+                        <strong className="mt-1 block text-2xl font-black text-slate-900 dark:text-slate-50">{totalAssigned} assigned</strong>
+                        <p className="mt-1 text-xs font-extrabold text-slate-400">{totalSubmissions} submissions received</p>
+                    </div>
+                    {canCreate && (
+                        <Link href={createHomework.url()} className="inline-flex h-11 w-11 items-center justify-center rounded-2xl bg-blue-600 text-white shadow-[0_14px_26px_rgba(37,99,235,0.28)] transition hover:bg-blue-500" aria-label="Assign homework">
+                            <Plus size={18} />
+                        </Link>
+                    )}
+                </section>
+
+                <div className="grid grid-cols-2 gap-2">
+                    <div className="rounded-[18px] border border-blue-500/25 bg-blue-500/10 p-3 text-blue-500">
+                        <div className="text-2xl font-black leading-none">{filtered.length}</div>
+                        <div className="mt-1 text-[11px] font-black opacity-70">Results</div>
+                    </div>
+                    <div className="rounded-[18px] border border-emerald-500/25 bg-emerald-500/10 p-3 text-emerald-500">
+                        <div className="text-2xl font-black leading-none">{totalSubmissions}</div>
+                        <div className="mt-1 text-[11px] font-black opacity-70">Submissions</div>
+                    </div>
+                </div>
+
+                <div className="overflow-visible rounded-[24px] border-0 bg-transparent shadow-none md:overflow-hidden md:rounded-2xl md:border md:border-slate-200 md:bg-white md:shadow-sm dark:md:border-slate-700 dark:md:bg-slate-800/90">
+                    <div className="sticky top-0 z-10 mb-3 grid grid-cols-2 gap-2 rounded-[22px] border border-slate-200 bg-white/90 p-3 shadow-[0_12px_32px_rgba(15,23,42,0.07)] backdrop-blur dark:border-slate-700 dark:bg-slate-800/90 md:mb-0 md:flex md:flex-wrap md:items-center md:border-x-0 md:border-t-0 md:shadow-none">
+                        <input value={search} onChange={event => setSearch(event.target.value)} className={`${controlInputClass} col-span-2 w-full md:w-[240px]`} placeholder="Search homework..." />
                         <Select value={status} onValueChange={(val) => setStatus(val)}>
-                            <SelectTrigger className="f-input" style={{ width: 'auto', minWidth: 140 }}>
+                            <SelectTrigger className={controlInputClass}>
                                 <SelectValue />
                             </SelectTrigger>
                             <SelectContent>
@@ -155,7 +184,7 @@ export default function HomeworkPage({ homework }: HomeworkPageProps) {
                             </SelectContent>
                         </Select>
                         <Select value={orderBy} onValueChange={(val) => setOrderBy(val as OrderKey)}>
-                            <SelectTrigger className="f-input" style={{ width: 'auto', minWidth: 160 }}>
+                            <SelectTrigger className={controlInputClass}>
                                 <SelectValue />
                             </SelectTrigger>
                             <SelectContent>
@@ -165,17 +194,22 @@ export default function HomeworkPage({ homework }: HomeworkPageProps) {
                             </SelectContent>
                         </Select>
                         <Select value={String(perPage)} onValueChange={(val) => setPerPage(Number(val))}>
-                            <SelectTrigger className="f-input" style={{ width: 'auto', minWidth: 120 }}>
+                            <SelectTrigger className={controlInputClass}>
                                 <SelectValue />
                             </SelectTrigger>
                             <SelectContent>
                                 {[5, 10, 25, 50].map(size => <SelectItem key={size} value={String(size)}>{size} per page</SelectItem>)}
                             </SelectContent>
                         </Select>
-                        <span style={{ fontSize: 11, color: '#94a3b8' }}>{filtered.length} result{filtered.length !== 1 ? 's' : ''}</span>
+                        {canSubmitHomework && (
+                            <Link href={createHomeworkSubmission.url()} className={`${ghostButtonClass} md:hidden`}>
+                                <Upload size={14} /> Submit
+                            </Link>
+                        )}
+                        <span className="hidden text-[11px] font-bold text-slate-400 md:inline">{filtered.length} result{filtered.length !== 1 ? 's' : ''}</span>
                     </div>
 
-                    <table className="data-table">
+                    <table className="data-table hidden md:table">
                         <thead>
                             <tr>
                                 <th>Homework</th>
@@ -190,7 +224,7 @@ export default function HomeworkPage({ homework }: HomeworkPageProps) {
                         <tbody>
                             {paginated.length === 0 ? (
                                 <tr>
-                                    <td colSpan={canManageHomework ? 7 : 6} style={{ padding: '34px 24px', textAlign: 'center', color: '#64748b', fontSize: 14, fontWeight: 700 }}>
+                                    <td colSpan={canManageHomework ? 7 : 6} className="px-6 py-9 text-center text-sm font-bold text-slate-500 dark:text-slate-400">
                                         Data not found
                                     </td>
                                 </tr>
@@ -198,23 +232,23 @@ export default function HomeworkPage({ homework }: HomeworkPageProps) {
                                 const completion = item.total > 0 ? Math.round((item.submitted / item.total) * 100) : 0;
 
                                 return (
-                                    <tr key={item.id}>
+                                    <tr key={item.id} className="border-b border-slate-50 hover:bg-slate-50 dark:border-slate-800 dark:hover:bg-slate-900/60">
                                         <td>
-                                            <KH style={{ fontWeight: 700, fontSize: 13, display: 'block' }}>{item.titleKh}</KH>
-                                            <div style={{ fontSize: 11, color: '#94a3b8' }}>{item.titleEn || 'Untitled homework'}</div>
+                                            <KH className="block text-[13px] font-black text-slate-900 dark:text-slate-50">{item.titleKh}</KH>
+                                            <div className="text-[11px] font-bold text-slate-400">{item.titleEn || 'Untitled homework'}</div>
                                             {item.attachmentUrl && (
-                                                <a href={item.attachmentUrl} target="_blank" rel="noreferrer" style={{ display: 'inline-flex', alignItems: 'center', gap: 4, marginTop: 5, color: '#2563eb', fontSize: 11, fontWeight: 800, textDecoration: 'none' }}>
+                                                <a href={item.attachmentUrl} target="_blank" rel="noreferrer" className="mt-1.5 inline-flex items-center gap-1 text-[11px] font-black text-blue-600 dark:text-blue-300">
                                                     <FileText size={12} /> {item.attachmentName || 'Homework file'}
                                                 </a>
                                             )}
                                         </td>
-                                        <td style={{ fontSize: 12, color: '#64748b' }}>{item.className}</td>
-                                        <td style={{ fontSize: 12, color: '#64748b' }}>{item.dueOn}</td>
-                                        <td style={{ fontSize: 12, fontWeight: 800, color: '#1e293b' }}>{item.points}</td>
+                                        <td className="text-xs font-bold text-slate-500 dark:text-slate-300">{item.className}</td>
+                                        <td className="text-xs font-bold text-slate-500 dark:text-slate-300">{item.dueOn}</td>
+                                        <td className="text-xs font-black text-slate-900 dark:text-slate-50">{item.points}</td>
                                         <td>
-                                            <div style={{ display: 'flex', alignItems: 'center', gap: 8, minWidth: 150 }}>
+                                            <div className="flex min-w-[150px] items-center gap-2">
                                                 <PBar value={item.submitted} max={Math.max(1, item.total)} color={completion >= 80 ? 'green' : 'blue'} height={8} />
-                                                <span style={{ fontSize: 12, fontWeight: 700, color: '#64748b', whiteSpace: 'nowrap' }}>{item.submitted}/{item.total}</span>
+                                                <span className="whitespace-nowrap text-xs font-bold text-slate-500 dark:text-slate-300">{item.submitted}/{item.total}</span>
                                             </div>
                                         </td>
                                         <td>{statusBadge(item.status)}</td>
@@ -235,6 +269,68 @@ export default function HomeworkPage({ homework }: HomeworkPageProps) {
                         </tbody>
                     </table>
 
+                    <div className="grid gap-3 md:hidden">
+                        {paginated.length === 0 ? (
+                            <div className="rounded-[22px] border border-dashed border-slate-300 bg-white/80 px-4 py-8 text-center text-sm font-bold text-slate-500 dark:border-slate-700 dark:bg-slate-800/80 dark:text-slate-400">
+                                Data not found
+                            </div>
+                        ) : paginated.map(item => {
+                            const completion = item.total > 0 ? Math.round((item.submitted / item.total) * 100) : 0;
+
+                            return (
+                                <article key={item.id} className={mobileCardClass}>
+                                    <div className="mb-3 flex items-start justify-between gap-3">
+                                        <div className="min-w-0">
+                                            <KH className="block truncate text-sm font-black text-slate-900 dark:text-slate-50">{item.titleKh}</KH>
+                                            <p className="mt-0.5 truncate text-[11px] font-bold text-slate-400">{item.titleEn || 'Untitled homework'}</p>
+                                        </div>
+                                        <div className="flex shrink-0 items-center gap-2">
+                                            {statusBadge(item.status)}
+                                            {canManageHomework && (
+                                                <RowActions
+                                                    ariaLabel={`Actions for ${item.titleEn || item.titleKh}`}
+                                                    actions={[
+                                                        { key: 'edit', label: 'Edit', icon: Edit3, href: editHomework.url((item.routeKey ?? item.id) as never), hidden: !canUpdate },
+                                                        { key: 'delete', label: 'Delete', icon: Trash2, onSelect: () => setDeleteTarget(item), variant: 'destructive', separatorBefore: true, hidden: !canDelete },
+                                                    ]}
+                                                />
+                                            )}
+                                        </div>
+                                    </div>
+
+                                    <div className="grid grid-cols-3 gap-2">
+                                        <div className="rounded-2xl bg-slate-100 px-2 py-2 dark:bg-slate-950">
+                                            <span className="block text-[9px] font-black uppercase text-slate-400">Class</span>
+                                            <strong className="mt-1 block truncate text-xs font-black text-slate-900 dark:text-slate-50">{item.className}</strong>
+                                        </div>
+                                        <div className="rounded-2xl bg-slate-100 px-2 py-2 dark:bg-slate-950">
+                                            <span className="block text-[9px] font-black uppercase text-slate-400">Due</span>
+                                            <strong className="mt-1 block truncate text-xs font-black text-slate-900 dark:text-slate-50">{item.dueOn}</strong>
+                                        </div>
+                                        <div className="rounded-2xl bg-slate-100 px-2 py-2 dark:bg-slate-950">
+                                            <span className="block text-[9px] font-black uppercase text-slate-400">Points</span>
+                                            <strong className="mt-1 block text-xs font-black text-slate-900 dark:text-slate-50">{item.points}</strong>
+                                        </div>
+                                    </div>
+
+                                    <div className="mt-3 rounded-2xl bg-slate-100 p-2.5 dark:bg-slate-950">
+                                        <div className="mb-2 flex items-center justify-between text-[11px] font-black">
+                                            <span className="text-slate-400">Submitted</span>
+                                            <span className={completion >= 80 ? 'text-emerald-500' : 'text-blue-500'}>{item.submitted}/{item.total}</span>
+                                        </div>
+                                        <PBar value={item.submitted} max={Math.max(1, item.total)} color={completion >= 80 ? 'green' : 'blue'} height={8} />
+                                    </div>
+
+                                    {item.attachmentUrl && (
+                                        <a href={item.attachmentUrl} target="_blank" rel="noreferrer" className="mt-3 inline-flex max-w-full items-center gap-1 rounded-xl bg-blue-500/10 px-2.5 py-2 text-[11px] font-black text-blue-600 dark:text-blue-300">
+                                            <FileText size={12} /> <span className="truncate">{item.attachmentName || 'Homework file'}</span>
+                                        </a>
+                                    )}
+                                </article>
+                            );
+                        })}
+                    </div>
+
                     {filtered.length > 0 && (
                         <Pagination total={filtered.length} page={page} perPage={perPage} onPageChange={setPage} onPerPageChange={setPerPage} showPerPage={false} />
                     )}
@@ -242,15 +338,15 @@ export default function HomeworkPage({ homework }: HomeworkPageProps) {
             </div>
 
             {deleteTarget && (
-                <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.45)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 200, padding: 16 }} onClick={event => { if (event.target === event.currentTarget) setDeleteTarget(null); }}>
-                    <div style={{ background: 'white', borderRadius: 20, padding: 32, maxWidth: 420, width: '100%', boxShadow: '0 24px 60px rgba(0,0,0,0.15)' }}>
-                        <div style={{ textAlign: 'center', marginBottom: 20 }}>
-                            <div style={{ fontSize: 18, fontWeight: 800, color: '#1e293b', marginBottom: 6 }}>Delete Homework?</div>
-                            <div style={{ fontSize: 13, color: '#64748b', lineHeight: 1.5 }}>Are you sure you want to remove <strong>{deleteTarget.titleEn || deleteTarget.titleKh}</strong>?</div>
+                <div className="fixed inset-0 z-[200] flex items-center justify-center bg-black/45 p-4" onClick={event => { if (event.target === event.currentTarget) setDeleteTarget(null); }}>
+                    <div className="w-full max-w-[420px] rounded-[24px] border border-slate-200 bg-white p-6 shadow-[0_24px_60px_rgba(0,0,0,0.18)] dark:border-slate-700 dark:bg-slate-800">
+                        <div className="mb-5 text-center">
+                            <div className="mb-1.5 text-lg font-black text-slate-900 dark:text-slate-50">Delete Homework?</div>
+                            <div className="text-sm font-medium leading-6 text-slate-500 dark:text-slate-300">Are you sure you want to remove <strong>{deleteTarget.titleEn || deleteTarget.titleKh}</strong>?</div>
                         </div>
-                        <div style={{ display: 'flex', gap: 10 }}>
-                            <button onClick={() => setDeleteTarget(null)} style={{ flex: 1, background: '#f1f5f9', color: '#64748b', border: 'none', borderRadius: 10, padding: '11px', fontWeight: 700, cursor: 'pointer', fontSize: 14, display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: 6 }}><X size={15} /> Cancel</button>
-                            <button onClick={confirmDelete} style={{ flex: 1, background: '#ef4444', color: 'white', border: 'none', borderRadius: 10, padding: '11px', fontWeight: 700, cursor: 'pointer', fontSize: 14, display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: 6 }}><Trash2 size={15} /> Delete</button>
+                        <div className="grid grid-cols-2 gap-2.5">
+                            <button onClick={() => setDeleteTarget(null)} className="inline-flex min-h-11 items-center justify-center gap-1.5 rounded-xl bg-slate-100 px-3 py-2 text-sm font-black text-slate-500 transition hover:bg-slate-200 dark:bg-slate-950 dark:text-slate-300 dark:hover:bg-slate-900"><X size={15} /> Cancel</button>
+                            <button onClick={confirmDelete} className="inline-flex min-h-11 items-center justify-center gap-1.5 rounded-xl bg-red-500 px-3 py-2 text-sm font-black text-white transition hover:bg-red-600"><Trash2 size={15} /> Delete</button>
                         </div>
                     </div>
                 </div>
@@ -258,6 +354,3 @@ export default function HomeworkPage({ homework }: HomeworkPageProps) {
         </AdminShell>
     );
 }
-
-
-

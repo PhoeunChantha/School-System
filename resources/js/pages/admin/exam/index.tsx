@@ -13,7 +13,7 @@ import { TextStyle } from '@tiptap/extension-text-style';
 import Underline from '@tiptap/extension-underline';
 import { EditorContent, useEditor } from '@tiptap/react';
 import StarterKit from '@tiptap/starter-kit';
-import { ArrowLeft, Edit3, FileText, Paperclip, Plus, Printer, Save, Trash2, Upload } from 'lucide-react';
+import { ArrowLeft, Edit3, FileText, Paperclip, Plus, Printer, Save, Trash2, Upload, X } from 'lucide-react';
 import { FormEvent, useEffect, useMemo, useRef, useState } from 'react';
 import { toast } from 'sonner';
 
@@ -108,6 +108,13 @@ const ORDER_OPTIONS: { value: OrderKey; label: string }[] = [
     { value: 'title-desc', label: 'Title Z-A' },
     { value: 'status-asc', label: 'Status A-Z' },
 ];
+
+const listPageClass = 'fade-in flex flex-col gap-3 bg-slate-50 p-4 dark:bg-slate-950 max-md:bg-[radial-gradient(circle_at_100%_0,rgba(37,99,235,0.12),transparent_34%),linear-gradient(180deg,#f7f9fc_0%,#eef3f8_100%)] max-md:px-2.5 max-md:py-3 max-md:pb-[calc(104px+env(safe-area-inset-bottom))] dark:max-md:bg-[radial-gradient(circle_at_100%_0,rgba(96,165,250,0.14),transparent_34%),linear-gradient(180deg,#0f172a_0%,#111827_100%)]';
+const listPanelClass = 'rounded-[24px] border border-slate-200 bg-white p-3 shadow-[0_14px_36px_rgba(15,23,42,0.07)] dark:border-slate-700 dark:bg-slate-800/90';
+const controlInputClass = 'min-h-9 rounded-xl border border-slate-200 bg-white px-3 py-1 text-xs font-bold text-slate-900 dark:border-slate-700 dark:bg-slate-950 dark:text-slate-100';
+const mobileCardClass = 'rounded-[22px] border border-slate-200/80 bg-white/95 p-3 shadow-[0_14px_34px_rgba(15,23,42,0.07)] dark:border-slate-700 dark:bg-slate-800/90';
+const desktopTableClass = 'hidden min-w-full border-collapse text-left md:table [&_td]:px-3 [&_td]:py-3 [&_th]:border-b [&_th]:border-slate-200 [&_th]:px-3 [&_th]:py-3 [&_th]:text-[10px] [&_th]:font-black [&_th]:uppercase [&_th]:tracking-[0.08em] [&_th]:text-slate-400 dark:[&_th]:border-slate-700';
+const builderInputClass = 'min-h-11 w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm font-bold text-slate-900 outline-none transition placeholder:text-slate-400 focus:border-blue-400 focus:ring-2 focus:ring-blue-500/15 dark:border-slate-700 dark:bg-slate-950 dark:text-slate-100';
 
 function isPdfFile(fileName: string): boolean {
     return fileName.toLowerCase().endsWith('.pdf');
@@ -368,39 +375,39 @@ export default function ExamPage({ exams, classes, summary }: ExamPageProps) {
 
     return (
         <AdminShell>
-            <div className="fade-in" style={{ padding: 24, display: 'flex', flexDirection: 'column', gap: 16 }}>
-                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 12 }}>
-                    <div>
-                        <div style={{ fontWeight: 800, fontSize: 18, color: '#1e293b' }}>Exam Management</div>
-                        <div style={{ fontSize: 12, color: '#94a3b8' }}>Create, save, edit, print, and archive exam papers</div>
+            <div className={listPageClass}>
+                <section className="flex items-center justify-between gap-3 rounded-[24px] border border-slate-200 bg-white p-4 shadow-[0_14px_36px_rgba(15,23,42,0.07)] dark:border-slate-700 dark:bg-slate-800/90">
+                    <div className="min-w-0">
+                        <span className="block text-xs font-black text-slate-400">Exam management</span>
+                        <strong className="mt-1 block text-2xl font-black text-slate-900 dark:text-slate-50">{summary.examCount} exams</strong>
+                        <p className="mt-1 truncate text-xs font-extrabold text-slate-400">{summary.publishedCount} published - {summary.draftCount} drafts</p>
                     </div>
                     {canCreate && (
-                        <button onClick={openCreate} className="admin-btn admin-btn-primary">
-                            <Plus size={16} />
-                            Create Exam
+                        <button onClick={openCreate} className="inline-flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-blue-600 text-white shadow-[0_14px_26px_rgba(37,99,235,0.28)] transition hover:bg-blue-500" aria-label="Create exam">
+                            <Plus size={18} />
                         </button>
                     )}
-                </div>
+                </section>
 
-                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill,minmax(150px,1fr))', gap: 12 }}>
+                <div className="grid grid-cols-2 gap-2 md:grid-cols-4">
                     {[
-                        { label: 'Exams', value: summary.examCount, color: '#3b82f6', bg: '#eff6ff' },
-                        { label: 'Drafts', value: summary.draftCount, color: '#f59e0b', bg: '#fffbeb' },
-                        { label: 'Published', value: summary.publishedCount, color: '#10b981', bg: '#f0fdf4' },
-                        { label: 'Archived', value: summary.archivedCount, color: '#64748b', bg: '#f8fafc' },
+                        { label: 'Exams', value: summary.examCount, className: 'border-blue-500/25 bg-blue-500/10 text-blue-500' },
+                        { label: 'Drafts', value: summary.draftCount, className: 'border-amber-500/25 bg-amber-500/10 text-amber-500' },
+                        { label: 'Published', value: summary.publishedCount, className: 'border-emerald-500/25 bg-emerald-500/10 text-emerald-500' },
+                        { label: 'Archived', value: summary.archivedCount, className: 'border-slate-400/25 bg-slate-400/10 text-slate-500 dark:text-slate-300' },
                     ].map(card => (
-                        <div key={card.label} style={{ background: card.bg, border: `1px solid ${card.color}30`, borderRadius: 14, padding: 16 }}>
-                            <div style={{ color: card.color, fontSize: 24, fontWeight: 900 }}>{card.value}</div>
-                            <div style={{ color: card.color, opacity: 0.72, fontSize: 11 }}>{card.label}</div>
+                        <div key={card.label} className={`rounded-[18px] border p-3 ${card.className}`}>
+                            <div className="text-2xl font-black leading-none">{card.value}</div>
+                            <div className="mt-1 text-[11px] font-black opacity-70">{card.label}</div>
                         </div>
                     ))}
                 </div>
 
-                <div className="card" style={{ overflowX: 'auto' }}>
-                    <div style={{ display: 'flex', alignItems: 'center', flexWrap: 'wrap', gap: 8, padding: '12px 16px', borderBottom: '1px solid #f1f5f9' }}>
-                        <span style={{ fontSize: 11, fontWeight: 700, color: '#94a3b8', whiteSpace: 'nowrap' }}>Sort by</span>
+                <section className="overflow-visible rounded-[24px] border-0 bg-transparent shadow-none md:overflow-x-auto md:rounded-2xl md:border md:border-slate-200 md:bg-white md:shadow-sm dark:md:border-slate-700 dark:md:bg-slate-800/90">
+                    <div className="sticky top-0 z-10 mb-3 grid grid-cols-2 gap-2 rounded-[22px] border border-slate-200 bg-white/90 p-3 shadow-[0_12px_32px_rgba(15,23,42,0.07)] backdrop-blur dark:border-slate-700 dark:bg-slate-800/90 md:mb-0 md:flex md:flex-wrap md:items-center md:border-x-0 md:border-t-0 md:shadow-none">
+                        <span className="hidden whitespace-nowrap text-[11px] font-bold text-slate-400 md:inline">Sort by</span>
                         <Select value={orderBy} onValueChange={value => setOrderBy(value as OrderKey)}>
-                            <SelectTrigger style={{ width: 'auto', minWidth: 150, padding: '5px 10px', fontSize: 12, height: 'auto' }}>
+                            <SelectTrigger className={`${controlInputClass} min-w-0 md:min-w-[150px]`}>
                                 <SelectValue />
                             </SelectTrigger>
                             <SelectContent>
@@ -410,10 +417,8 @@ export default function ExamPage({ exams, classes, summary }: ExamPageProps) {
                             </SelectContent>
                         </Select>
 
-                        <div style={{ width: 1, height: 18, background: '#e2e8f0', margin: '0 2px' }} />
-
                         <Select value={perPage.toString()} onValueChange={value => { setPerPage(Number(value)); setPage(1); }}>
-                            <SelectTrigger style={{ width: 'auto', minWidth: 120, padding: '5px 10px', fontSize: 12, height: 'auto' }}>
+                            <SelectTrigger className={`${controlInputClass} min-w-0 md:min-w-[120px]`}>
                                 <SelectValue />
                             </SelectTrigger>
                             <SelectContent>
@@ -423,20 +428,19 @@ export default function ExamPage({ exams, classes, summary }: ExamPageProps) {
                             </SelectContent>
                         </Select>
 
-                        <span style={{ fontSize: 11, color: '#94a3b8', marginLeft: 4 }}>
+                        <span className="hidden text-[11px] font-bold text-slate-400 md:inline">
                             {filteredExams.length} result{filteredExams.length !== 1 ? 's' : ''}
                         </span>
 
                         <input
                             value={search}
                             onChange={event => setSearch(event.target.value)}
-                            className="f-input"
-                            style={{ width: 260, maxWidth: '100%', marginLeft: 'auto' }}
+                            className={`${controlInputClass} col-span-2 w-full md:ml-auto md:w-[260px]`}
                             placeholder="Search exams..."
                         />
                     </div>
 
-                    <table className="data-table">
+                    <table className={desktopTableClass}>
                         <thead>
                             <tr>
                                 <th>Title</th>
@@ -452,35 +456,35 @@ export default function ExamPage({ exams, classes, summary }: ExamPageProps) {
                         <tbody>
                             {paginatedExams.length === 0 ? (
                                 <tr>
-                                    <td colSpan={8} style={{ padding: '42px 24px', textAlign: 'center', color: '#64748b', fontSize: 14, fontWeight: 700 }}>
+                                    <td colSpan={8} className="px-6 py-9 text-center text-sm font-bold text-slate-500 dark:text-slate-400">
                                         {search ? <>No exams found for <strong>"{search}"</strong></> : 'No exams found'}
                                     </td>
                                 </tr>
                             ) : paginatedExams.map(exam => (
-                                <tr key={exam.id}>
+                                <tr key={exam.id} className="border-b border-slate-50 hover:bg-slate-50 dark:border-slate-800 dark:hover:bg-slate-900/60">
                                     <td>
-                                        <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-                                            <div style={{ width: 34, height: 34, borderRadius: 10, background: '#eff6ff', color: '#2563eb', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                                        <div className="flex items-center gap-2.5">
+                                            <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-2xl bg-blue-500/10 text-blue-500">
                                                 <FileText size={17} />
                                             </div>
-                                            <div>
-                                                <div style={{ fontWeight: 800, fontSize: 13, color: '#1e293b' }}>{exam.title}</div>
-                                                <div style={{ fontSize: 11, color: '#94a3b8' }}>Created {exam.createdAt || '-'}</div>
+                                            <div className="min-w-0">
+                                                <div className="max-w-[220px] truncate text-xs font-black text-slate-900 dark:text-slate-50">{exam.title}</div>
+                                                <div className="text-[11px] font-bold text-slate-400">Created {exam.createdAt || '-'}</div>
                                             </div>
                                         </div>
                                     </td>
-                                    <td style={{ fontSize: 12, color: '#64748b' }}>{exam.subject || '-'}</td>
-                                    <td style={{ fontSize: 12, color: '#64748b' }}>{exam.className || 'All classes'}</td>
-                                    <td style={{ fontSize: 12, color: '#64748b' }}>{exam.examDate || '-'}</td>
-                                    <td style={{ fontSize: 12, color: '#64748b' }}>{exam.durationMinutes ? `${exam.durationMinutes} min` : '-'}</td>
+                                    <td className="text-xs font-bold text-slate-500 dark:text-slate-300">{exam.subject || '-'}</td>
+                                    <td className="text-xs font-bold text-slate-500 dark:text-slate-300">{exam.className || 'All classes'}</td>
+                                    <td className="text-xs font-bold text-slate-500 dark:text-slate-300">{exam.examDate || '-'}</td>
+                                    <td className="text-xs font-bold text-slate-500 dark:text-slate-300">{exam.durationMinutes ? `${exam.durationMinutes} min` : '-'}</td>
                                     <td>
                                         {exam.attachmentUrl ? (
-                                            <a href={exam.attachmentUrl} target="_blank" rel="noreferrer" style={{ color: '#2563eb', fontSize: 12, fontWeight: 800, textDecoration: 'none', display: 'inline-flex', alignItems: 'center', gap: 5 }}>
+                                            <a href={exam.attachmentUrl} target="_blank" rel="noreferrer" className="inline-flex items-center gap-1.5 text-xs font-black text-blue-600 no-underline dark:text-blue-300">
                                                 <Paperclip size={13} />
                                                 Exam file
                                             </a>
                                         ) : (
-                                            <span style={{ color: '#94a3b8', fontSize: 12 }}>-</span>
+                                            <span className="text-xs font-bold text-slate-400">-</span>
                                         )}
                                     </td>
                                     <td><Badge type={statusType[exam.status]}>{exam.status}</Badge></td>
@@ -492,6 +496,52 @@ export default function ExamPage({ exams, classes, summary }: ExamPageProps) {
                         </tbody>
                     </table>
 
+                    <div className="grid gap-3 md:hidden">
+                        {paginatedExams.length === 0 ? (
+                            <div className="rounded-[22px] border border-dashed border-slate-300 bg-white/80 px-4 py-9 text-center text-sm font-bold text-slate-500 dark:border-slate-700 dark:bg-slate-800/80 dark:text-slate-400">
+                                <div className="mx-auto mb-3 flex h-12 w-12 items-center justify-center rounded-2xl bg-slate-100 text-slate-400 dark:bg-slate-950"><FileText size={30} /></div>
+                                {search ? <>No exams found for <strong>"{search}"</strong></> : 'No exams found'}
+                            </div>
+                        ) : paginatedExams.map(exam => (
+                            <article key={exam.id} className={mobileCardClass}>
+                                <div className="flex items-start justify-between gap-3">
+                                    <div className="flex min-w-0 items-start gap-2.5">
+                                        <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl bg-blue-500/10 text-blue-500">
+                                            <FileText size={18} />
+                                        </div>
+                                        <div className="min-w-0">
+                                            <h3 className="line-clamp-2 text-sm font-black leading-5 text-slate-900 dark:text-slate-50">{exam.title}</h3>
+                                            <p className="mt-1 text-[11px] font-bold text-slate-400">{exam.subject || 'No subject'} - {exam.className || 'All classes'}</p>
+                                        </div>
+                                    </div>
+                                    <RowActions ariaLabel={`Actions for ${exam.title}`} actions={examActions(exam)} />
+                                </div>
+                                <div className="mt-3 grid grid-cols-3 gap-2">
+                                    <div className="rounded-2xl bg-slate-100 px-2 py-2 dark:bg-slate-950">
+                                        <span className="block text-[9px] font-black uppercase text-slate-400">Date</span>
+                                        <strong className="mt-1 block truncate text-xs font-black text-slate-900 dark:text-slate-50">{exam.examDate || '-'}</strong>
+                                    </div>
+                                    <div className="rounded-2xl bg-slate-100 px-2 py-2 dark:bg-slate-950">
+                                        <span className="block text-[9px] font-black uppercase text-slate-400">Duration</span>
+                                        <strong className="mt-1 block text-xs font-black text-slate-900 dark:text-slate-50">{exam.durationMinutes ? `${exam.durationMinutes}m` : '-'}</strong>
+                                    </div>
+                                    <div className="rounded-2xl bg-slate-100 px-2 py-2 dark:bg-slate-950">
+                                        <span className="block text-[9px] font-black uppercase text-slate-400">Results</span>
+                                        <strong className="mt-1 block text-xs font-black text-slate-900 dark:text-slate-50">{exam.resultsCount}</strong>
+                                    </div>
+                                </div>
+                                <div className="mt-3 flex items-center justify-between gap-3 rounded-2xl bg-slate-100 px-3 py-2 dark:bg-slate-950">
+                                    <Badge type={statusType[exam.status]}>{exam.status}</Badge>
+                                    {exam.attachmentUrl ? (
+                                        <a href={exam.attachmentUrl} target="_blank" rel="noreferrer" className="inline-flex items-center gap-1 text-xs font-black text-blue-600 dark:text-blue-300">
+                                            <Paperclip size={13} /> File
+                                        </a>
+                                    ) : <span className="text-xs font-black text-slate-400">No file</span>}
+                                </div>
+                            </article>
+                        ))}
+                    </div>
+
                     {filteredExams.length > 0 && (
                         <Pagination
                             total={filteredExams.length}
@@ -502,19 +552,22 @@ export default function ExamPage({ exams, classes, summary }: ExamPageProps) {
                             showPerPage={false}
                         />
                     )}
-                </div>
+                </section>
             </div>
 
             {deleteTarget && (
-                <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.45)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 200, padding: 16 }}>
-                    <div style={{ background: 'white', borderRadius: 18, padding: 28, maxWidth: 400, width: '100%', boxShadow: '0 24px 60px rgba(0,0,0,0.16)' }}>
-                        <div style={{ textAlign: 'center', marginBottom: 20 }}>
-                            <div style={{ fontWeight: 800, fontSize: 17, marginBottom: 8, color: '#1e293b' }}>Delete Exam?</div>
-                            <div style={{ fontSize: 13, color: '#64748b' }}>"{deleteTarget.title}" will be removed.</div>
+                <div className="fixed inset-0 z-[200] flex items-center justify-center bg-black/45 p-4">
+                    <div className="w-full max-w-[420px] rounded-[24px] border border-slate-200 bg-white p-6 shadow-[0_24px_60px_rgba(0,0,0,0.18)] dark:border-slate-700 dark:bg-slate-800">
+                        <div className="mb-5 text-center">
+                            <div className="mx-auto mb-3 flex h-14 w-14 items-center justify-center rounded-full bg-red-500/10 text-red-500">
+                                <Trash2 size={24} />
+                            </div>
+                            <div className="mb-1.5 text-lg font-black text-slate-900 dark:text-slate-50">Delete Exam?</div>
+                            <div className="text-sm font-medium leading-6 text-slate-500 dark:text-slate-300">"{deleteTarget.title}" will be removed.</div>
                         </div>
-                        <div style={{ display: 'flex', gap: 10 }}>
-                            <button onClick={() => setDeleteTarget(null)} style={{ flex: 1, background: '#f1f5f9', color: '#64748b', border: 'none', borderRadius: 10, padding: '11px', fontWeight: 700, cursor: 'pointer' }}>Cancel</button>
-                            <button onClick={confirmDelete} style={{ flex: 1, background: '#ef4444', color: 'white', border: 'none', borderRadius: 10, padding: '11px', fontWeight: 700, cursor: 'pointer' }}>Delete</button>
+                        <div className="grid grid-cols-2 gap-2.5">
+                            <button onClick={() => setDeleteTarget(null)} className="inline-flex min-h-11 items-center justify-center gap-1.5 rounded-xl bg-slate-100 px-3 py-2 text-sm font-black text-slate-500 transition hover:bg-slate-200 dark:bg-slate-950 dark:text-slate-300 dark:hover:bg-slate-900"><X size={15} /> Cancel</button>
+                            <button onClick={confirmDelete} className="inline-flex min-h-11 items-center justify-center gap-1.5 rounded-xl bg-red-500 px-3 py-2 text-sm font-black text-white transition hover:bg-red-600"><Trash2 size={15} /> Delete</button>
                         </div>
                     </div>
                 </div>
@@ -594,15 +647,17 @@ function ExamBuilder({
     }
 
     return (
-        <form onSubmit={submit}>
+        <form onSubmit={submit} className="min-h-dvh bg-slate-100 text-slate-900 dark:bg-slate-950 dark:text-slate-50">
             <style>{`
                 .exam-paper {
                     background: white;
+                    width: min(100%, 794px);
                     max-width: 794px;
                     margin: 0 auto;
                     padding: 56px 68px;
                     box-shadow: 0 2px 16px rgba(0,0,0,0.28);
                     min-height: 1122px;
+                    box-sizing: border-box;
                 }
                 .exam-paper h1{font-size:22px;font-weight:900;margin:0 0 8px}
                 .exam-paper h2{font-size:17px;font-weight:800;margin:20px 0 6px}
@@ -617,28 +672,43 @@ function ExamBuilder({
                 .docx-preview-paper .docx:last-child{margin-bottom:0!important}
                 .toolbar-btn{background:white;border:1px solid #e2e8f0;border-radius:7px;padding:6px 9px;cursor:pointer;font-size:13px;font-weight:700;color:#374151}
                 .toolbar-btn.active{background:#eff6ff;border-color:#bfdbfe;color:#2563eb}
+                @media (max-width: 767px) {
+                    .exam-paper {
+                        width: 100%;
+                        min-height: 720px;
+                        padding: 32px 24px;
+                        box-shadow: 0 14px 32px rgba(15,23,42,.12);
+                    }
+                    .exam-paper h1{font-size:18px;line-height:1.35}
+                    .exam-paper h2{font-size:15px}
+                    .docx-preview-paper,
+                    .docx-preview-paper .docx-wrapper {
+                        width: 100%!important;
+                        min-width: 0!important;
+                    }
+                }
             `}</style>
 
-            <div style={{ position: 'sticky', top: 0, zIndex: 50, background: '#1e293b', padding: '10px 16px', display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap' }}>
-                <button type="button" onClick={onBack} style={topButton('rgba(255,255,255,0.12)')}>
+            <div className="sticky top-0 z-50 grid grid-cols-[auto_1fr_auto] items-center gap-2 border-b border-slate-700 bg-slate-900 px-3 py-2 shadow-lg md:flex md:flex-wrap md:px-4">
+                <button type="button" onClick={onBack} className="inline-flex min-h-10 items-center justify-center gap-1.5 rounded-xl bg-white/10 px-3 py-2 text-xs font-black text-white transition hover:bg-white/15">
                     <ArrowLeft size={15} />
                     Back
                 </button>
-                <input value={meta.title} onChange={event => setMeta(current => ({ ...current, title: event.target.value }))} style={{ minWidth: 220, flex: 1, background: 'rgba(255,255,255,0.12)', border: '1px solid rgba(255,255,255,0.18)', color: 'white', borderRadius: 8, padding: '8px 10px', fontWeight: 800, outline: 'none' }} />
-                <button disabled={processing || (hasFileAttachment && wordPreviewStatus === 'loading')} type="submit" style={topButton(processing || (hasFileAttachment && wordPreviewStatus === 'loading') ? '#93c5fd' : '#10b981')}>
+                <input value={meta.title} onChange={event => setMeta(current => ({ ...current, title: event.target.value }))} className="min-h-10 min-w-0 rounded-xl border border-white/15 bg-white/10 px-3 py-2 text-sm font-black text-white outline-none placeholder:text-white/50 focus:border-blue-300 md:flex-1" />
+                <button disabled={processing || (hasFileAttachment && wordPreviewStatus === 'loading')} type="submit" className="inline-flex min-h-10 items-center justify-center gap-1.5 rounded-xl bg-emerald-500 px-3 py-2 text-xs font-black text-white transition hover:bg-emerald-600 disabled:cursor-default disabled:bg-blue-300">
                     <Save size={15} />
                     {processing ? 'Saving' : hasFileAttachment && wordPreviewStatus === 'loading' ? 'Reading file' : 'Save'}
                 </button>
             </div>
 
-            <div style={{ display: 'grid', gridTemplateColumns: 'minmax(260px,320px) 1fr', minHeight: 'calc(100vh - 54px)' }}>
-                <aside style={{ background: 'white', borderRight: '1px solid #e2e8f0', padding: 18, display: 'flex', flexDirection: 'column', gap: 14 }}>
+            <div className="grid min-h-[calc(100dvh-58px)] grid-cols-1 md:grid-cols-[minmax(260px,320px)_minmax(0,1fr)]">
+                <aside className="grid gap-3 border-b border-slate-200 bg-white p-3 dark:border-slate-700 dark:bg-slate-900 md:border-b-0 md:border-r md:p-4">
                     <Field label="Subject" error={errors.subject}>
-                        <input value={meta.subject} onChange={event => setMeta(current => ({ ...current, subject: event.target.value }))} style={fieldStyle} />
+                        <input value={meta.subject} onChange={event => setMeta(current => ({ ...current, subject: event.target.value }))} className={builderInputClass} />
                     </Field>
                     <Field label="Class" error={errors.school_class_id}>
                         <Select value={meta.school_class_id ? String(meta.school_class_id) : 'all'} onValueChange={value => setMeta(current => ({ ...current, school_class_id: value === 'all' ? null : Number(value) }))}>
-                            <SelectTrigger className="f-input" style={{ minHeight: 40 }}>
+                            <SelectTrigger className={builderInputClass}>
                                 <SelectValue />
                             </SelectTrigger>
                             <SelectContent>
@@ -648,17 +718,17 @@ function ExamBuilder({
                         </Select>
                     </Field>
                     <Field label="Exam Date" error={errors.exam_date}>
-                        <DatePicker value={meta.exam_date} onChange={value => setMeta(current => ({ ...current, exam_date: value }))} placeholder="Pick exam date" className="f-input min-h-10" />
+                        <DatePicker value={meta.exam_date} onChange={value => setMeta(current => ({ ...current, exam_date: value }))} placeholder="Pick exam date" className={builderInputClass} />
                     </Field>
                     <Field label="Duration" error={errors.duration_minutes}>
-                        <input type="number" min={1} max={1000} value={meta.duration_minutes ?? ''} onChange={event => setMeta(current => ({ ...current, duration_minutes: Number(event.target.value) || null }))} style={fieldStyle} />
+                        <input type="number" min={1} max={1000} value={meta.duration_minutes ?? ''} onChange={event => setMeta(current => ({ ...current, duration_minutes: Number(event.target.value) || null }))} className={builderInputClass} />
                     </Field>
                     <Field label="Academic Year" error={errors.academic_year}>
-                        <input value={meta.academic_year} onChange={event => setMeta(current => ({ ...current, academic_year: event.target.value }))} style={fieldStyle} />
+                        <input value={meta.academic_year} onChange={event => setMeta(current => ({ ...current, academic_year: event.target.value }))} className={builderInputClass} />
                     </Field>
                     <Field label="Status" error={errors.status}>
                         <Select value={meta.status} onValueChange={value => setMeta(current => ({ ...current, status: value as ExamFormData['status'] }))}>
-                            <SelectTrigger className="f-input" style={{ minHeight: 40 }}>
+                            <SelectTrigger className={builderInputClass}>
                                 <SelectValue />
                             </SelectTrigger>
                             <SelectContent>
@@ -682,27 +752,27 @@ function ExamBuilder({
                         <button
                             type="button"
                             onClick={() => attachmentInputRef.current?.click()}
-                            style={{ ...fieldStyle, display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 10, cursor: 'pointer', textAlign: 'left' }}
+                            className={`${builderInputClass} flex items-center justify-between gap-2 text-left`}
                         >
-                            <span style={{ minWidth: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                            <span className="min-w-0 truncate">
                                 {meta.attachment?.name || editingExam?.attachmentName || 'Upload .doc, .docx, or .pdf file'}
                             </span>
-                            <Upload size={16} color="#64748b" />
+                            <Upload size={16} className="shrink-0 text-slate-500" />
                         </button>
                         {editingExam?.attachmentUrl && !meta.attachment && (
-                            <a href={editingExam.attachmentUrl} target="_blank" rel="noreferrer" style={{ color: '#2563eb', fontSize: 12, fontWeight: 800, textDecoration: 'none', display: 'inline-flex', alignItems: 'center', gap: 5, marginTop: 6 }}>
+                            <a href={editingExam.attachmentUrl} target="_blank" rel="noreferrer" className="mt-1 inline-flex items-center gap-1.5 text-xs font-black text-blue-600 dark:text-blue-300">
                                 <Paperclip size={13} /> Open current exam file
                             </a>
                         )}
-                        <div style={{ fontSize: 11, color: '#94a3b8', marginTop: 5 }}>Use PDF for exact Word shapes/icons. Accepted: .doc, .docx, .pdf up to 10 MB.</div>
+                        <div className="mt-1 text-[11px] font-bold leading-4 text-slate-400">Use PDF for exact Word shapes/icons. Accepted: .doc, .docx, .pdf up to 10 MB.</div>
                     </Field>
-                    {errors.title && <div className="field-error">{errors.title}</div>}
-                    {errors.content && <div className="field-error">{errors.content}</div>}
+                    {errors.title && <div className="text-xs font-bold text-red-500">{errors.title}</div>}
+                    {errors.content && <div className="text-xs font-bold text-red-500">{errors.content}</div>}
                 </aside>
 
-                <main style={{ background: '#cbd5e1', minWidth: 0 }}>
+                <main className="min-w-0 bg-slate-200 dark:bg-slate-950">
                     {!hasFileAttachment && (
-                        <div style={{ background: '#f8fafc', borderBottom: '1px solid #e2e8f0', padding: '8px 12px', display: 'flex', alignItems: 'center', gap: 6, flexWrap: 'wrap' }}>
+                        <div className="sticky top-[58px] z-30 flex flex-wrap items-center gap-1.5 border-b border-slate-200 bg-white/95 p-2 shadow-sm backdrop-blur dark:border-slate-700 dark:bg-slate-900/95 md:top-[57px]">
                             <button type="button" className={`toolbar-btn${editor.isActive('bold') ? ' active' : ''}`} onClick={() => editor.chain().focus().toggleBold().run()}><strong>B</strong></button>
                             <button type="button" className={`toolbar-btn${editor.isActive('italic') ? ' active' : ''}`} onClick={() => editor.chain().focus().toggleItalic().run()}><em>I</em></button>
                             <button type="button" className={`toolbar-btn${editor.isActive('underline') ? ' active' : ''}`} onClick={() => editor.chain().focus().toggleUnderline().run()}><u>U</u></button>
@@ -714,7 +784,7 @@ function ExamBuilder({
                             <input ref={imageInputRef} type="file" accept="image/*" style={{ display: 'none' }} onChange={insertImage} />
                         </div>
                     )}
-                    <div style={{ padding: '30px 16px 60px', overflowX: 'auto' }}>
+                    <div className="overflow-x-auto px-3 py-4 pb-24 md:px-4 md:py-8">
                         {hasFileAttachment ? (
                             <ExamFilePreview
                                 file={meta.attachment}
@@ -977,6 +1047,3 @@ const fieldStyle: React.CSSProperties = {
     color: '#1e293b',
     outline: 'none',
 };
-
-
-
