@@ -1,6 +1,6 @@
 import { useAdminTranslation } from '@/hooks/use-admin-translation';
 import AdminShell from '@/pages/admin/shell';
-import { Avatar, Badge, KH, PBar, ScoreChip } from '@/pages/admin/ui';
+import { Avatar, Badge, KH, Pagination, PBar, ScoreChip } from '@/pages/admin/ui';
 import {
     ChartNoAxesColumn,
     CheckCircle2,
@@ -103,6 +103,7 @@ const panelClass = 'rounded-[24px] border border-slate-200 bg-white p-3 shadow-[
 const mobileCardClass = 'rounded-[22px] border border-slate-200/80 bg-white/95 p-3 shadow-[0_14px_34px_rgba(15,23,42,0.07)] dark:border-slate-700 dark:bg-slate-800/90';
 const desktopTableClass = 'hidden min-w-full border-collapse text-left md:table [&_td]:px-3 [&_td]:py-3 [&_th]:border-b [&_th]:border-slate-200 [&_th]:px-3 [&_th]:py-3 [&_th]:text-[10px] [&_th]:font-black [&_th]:uppercase [&_th]:tracking-[0.08em] [&_th]:text-slate-400 dark:[&_th]:border-slate-700';
 const actionButtonClass = 'inline-flex min-h-10 items-center justify-center gap-1.5 rounded-xl px-3 py-2 text-xs font-black transition';
+const reportPageSize = 5;
 
 function badgeIcon(Icon: LucideIcon, label: string) {
     return (
@@ -154,7 +155,9 @@ function downloadCsv(filename: string, rows: Record<string, string | number>[]):
 export default function ReportsPage({ reportDate, summary, attendance, grades, fees }: ReportsPageProps) {
     const { lang } = useAdminTranslation();
     const [tab, setTab] = useState<ReportTab>('attendance');
+    const [classAttendancePage, setClassAttendancePage] = useState(1);
     const isKh = lang === 'kh';
+    const paginatedClassAttendance = attendance.classes.slice((classAttendancePage - 1) * reportPageSize, classAttendancePage * reportPageSize);
 
     const handleExport = () => {
         if (tab === 'attendance') {
@@ -247,7 +250,7 @@ export default function ReportsPage({ reportDate, summary, attendance, grades, f
                     <div className="grid gap-3">
                         <SectionTitle title={label(isKh, 'Class attendance', 'Class attendance')} />
                         <div className="grid gap-3 md:grid-cols-2">
-                            {attendance.classes.map(row => {
+                            {paginatedClassAttendance.map(row => {
                                 const type = attendanceColor(row.attendance);
 
                                 return (
@@ -264,6 +267,9 @@ export default function ReportsPage({ reportDate, summary, attendance, grades, f
                                 );
                             })}
                         </div>
+                        {attendance.classes.length > reportPageSize && (
+                            <Pagination total={attendance.classes.length} page={classAttendancePage} perPage={reportPageSize} onPageChange={setClassAttendancePage} onPerPageChange={() => setClassAttendancePage(1)} showPerPage={false} />
+                        )}
 
                         <SectionTitle title="Student attendance" />
                         <ResponsiveStudentAttendance students={attendance.students} isKh={isKh} />
@@ -310,6 +316,9 @@ export default function ReportsPage({ reportDate, summary, attendance, grades, f
 }
 
 function ResponsiveStudentAttendance({ students, isKh }: { students: StudentReportRow[]; isKh: boolean }) {
+    const [page, setPage] = useState(1);
+    const paginatedStudents = students.slice((page - 1) * reportPageSize, page * reportPageSize);
+
     return (
         <section className="overflow-visible rounded-[24px] border-0 bg-transparent shadow-none md:overflow-x-auto md:rounded-2xl md:border md:border-slate-200 md:bg-white md:shadow-sm dark:md:border-slate-700 dark:md:bg-slate-800/90">
             <table className={desktopTableClass}>
@@ -317,7 +326,7 @@ function ResponsiveStudentAttendance({ students, isKh }: { students: StudentRepo
                     <tr><th>Student</th><th>Class</th><th>Attendance</th><th>Fee</th></tr>
                 </thead>
                 <tbody>
-                    {students.map(student => (
+                    {paginatedStudents.map(student => (
                         <tr key={student.id} className="border-b border-slate-50 hover:bg-slate-50 dark:border-slate-800 dark:hover:bg-slate-900/60">
                             <td><StudentName student={student} isKh={isKh} /></td>
                             <td><Badge type="blue">{student.className || student.level}</Badge></td>
@@ -328,7 +337,7 @@ function ResponsiveStudentAttendance({ students, isKh }: { students: StudentRepo
                 </tbody>
             </table>
             <div className="grid gap-3 md:hidden">
-                {students.map(student => (
+                {paginatedStudents.map(student => (
                     <article key={student.id} className={mobileCardClass}>
                         <div className="flex items-center justify-between gap-3">
                             <StudentName student={student} isKh={isKh} />
@@ -344,11 +353,17 @@ function ResponsiveStudentAttendance({ students, isKh }: { students: StudentRepo
                     </article>
                 ))}
             </div>
+            {students.length > reportPageSize && (
+                <Pagination total={students.length} page={page} perPage={reportPageSize} onPageChange={setPage} onPerPageChange={() => setPage(1)} showPerPage={false} />
+            )}
         </section>
     );
 }
 
 function ResponsiveGradeRows({ students, isKh }: { students: StudentReportRow[]; isKh: boolean }) {
+    const [page, setPage] = useState(1);
+    const paginatedStudents = students.slice((page - 1) * reportPageSize, page * reportPageSize);
+
     return (
         <section className="overflow-visible rounded-[24px] border-0 bg-transparent shadow-none md:overflow-x-auto md:rounded-2xl md:border md:border-slate-200 md:bg-white md:shadow-sm dark:md:border-slate-700 dark:md:bg-slate-800/90">
             <table className={desktopTableClass}>
@@ -356,7 +371,7 @@ function ResponsiveGradeRows({ students, isKh }: { students: StudentReportRow[];
                     <tr><th>Student</th><th>Level</th><th>Speak</th><th>Listen</th><th>Read</th><th>Write</th><th>Average</th></tr>
                 </thead>
                 <tbody>
-                    {students.map(student => (
+                    {paginatedStudents.map(student => (
                         <tr key={student.id} className="border-b border-slate-50 hover:bg-slate-50 dark:border-slate-800 dark:hover:bg-slate-900/60">
                             <td><StudentName student={student} isKh={isKh} /></td>
                             <td><Badge type="blue">{student.level}</Badge></td>
@@ -370,7 +385,7 @@ function ResponsiveGradeRows({ students, isKh }: { students: StudentReportRow[];
                 </tbody>
             </table>
             <div className="grid gap-3 md:hidden">
-                {students.map(student => (
+                {paginatedStudents.map(student => (
                     <article key={student.id} className={mobileCardClass}>
                         <div className="flex items-center justify-between gap-3">
                             <StudentName student={student} isKh={isKh} />
@@ -385,11 +400,17 @@ function ResponsiveGradeRows({ students, isKh }: { students: StudentReportRow[];
                     </article>
                 ))}
             </div>
+            {students.length > reportPageSize && (
+                <Pagination total={students.length} page={page} perPage={reportPageSize} onPageChange={setPage} onPerPageChange={() => setPage(1)} showPerPage={false} />
+            )}
         </section>
     );
 }
 
 function ResponsivePaymentRows({ payments, isKh }: { payments: PaymentRow[]; isKh: boolean }) {
+    const [page, setPage] = useState(1);
+    const paginatedPayments = payments.slice((page - 1) * reportPageSize, page * reportPageSize);
+
     return (
         <section className="overflow-visible rounded-[24px] border-0 bg-transparent shadow-none md:overflow-x-auto md:rounded-2xl md:border md:border-slate-200 md:bg-white md:shadow-sm dark:md:border-slate-700 dark:md:bg-slate-800/90">
             <table className={desktopTableClass}>
@@ -397,7 +418,7 @@ function ResponsivePaymentRows({ payments, isKh }: { payments: PaymentRow[]; isK
                     <tr><th>Student</th><th>Amount</th><th>Method</th><th>Date</th><th>Status</th></tr>
                 </thead>
                 <tbody>
-                    {payments.map(payment => (
+                    {paginatedPayments.map(payment => (
                         <tr key={payment.id} className="border-b border-slate-50 hover:bg-slate-50 dark:border-slate-800 dark:hover:bg-slate-900/60">
                             <td><PersonName isKh={isKh} kh={payment.studentNameKh} en={payment.studentNameEn} /></td>
                             <td><strong className="text-xs font-black text-slate-900 dark:text-slate-50">{money(payment.amount)}</strong></td>
@@ -409,7 +430,7 @@ function ResponsivePaymentRows({ payments, isKh }: { payments: PaymentRow[]; isK
                 </tbody>
             </table>
             <div className="grid gap-3 md:hidden">
-                {payments.map(payment => (
+                {paginatedPayments.map(payment => (
                     <article key={payment.id} className={mobileCardClass}>
                         <div className="flex items-start justify-between gap-3">
                             <PersonName isKh={isKh} kh={payment.studentNameKh} en={payment.studentNameEn} />
@@ -425,11 +446,17 @@ function ResponsivePaymentRows({ payments, isKh }: { payments: PaymentRow[]; isK
                     </article>
                 ))}
             </div>
+            {payments.length > reportPageSize && (
+                <Pagination total={payments.length} page={page} perPage={reportPageSize} onPageChange={setPage} onPerPageChange={() => setPage(1)} showPerPage={false} />
+            )}
         </section>
     );
 }
 
 function ResponsiveFeeRows({ students, isKh }: { students: FeeStudentRow[]; isKh: boolean }) {
+    const [page, setPage] = useState(1);
+    const paginatedStudents = students.slice((page - 1) * reportPageSize, page * reportPageSize);
+
     return (
         <section className="overflow-visible rounded-[24px] border-0 bg-transparent shadow-none md:overflow-x-auto md:rounded-2xl md:border md:border-slate-200 md:bg-white md:shadow-sm dark:md:border-slate-700 dark:md:bg-slate-800/90">
             <table className={desktopTableClass}>
@@ -437,7 +464,7 @@ function ResponsiveFeeRows({ students, isKh }: { students: FeeStudentRow[]; isKh
                     <tr><th>Student</th><th>Level</th><th>Amount</th><th>Status</th></tr>
                 </thead>
                 <tbody>
-                    {students.map(student => (
+                    {paginatedStudents.map(student => (
                         <tr key={student.id} className="border-b border-slate-50 hover:bg-slate-50 dark:border-slate-800 dark:hover:bg-slate-900/60">
                             <td><StudentName student={student} isKh={isKh} /></td>
                             <td><Badge type="blue">{student.level}</Badge></td>
@@ -448,7 +475,7 @@ function ResponsiveFeeRows({ students, isKh }: { students: FeeStudentRow[]; isKh
                 </tbody>
             </table>
             <div className="grid gap-3 md:hidden">
-                {students.map(student => (
+                {paginatedStudents.map(student => (
                     <article key={student.id} className={mobileCardClass}>
                         <div className="flex items-center justify-between gap-3">
                             <StudentName student={student} isKh={isKh} />
@@ -461,6 +488,9 @@ function ResponsiveFeeRows({ students, isKh }: { students: FeeStudentRow[]; isKh
                     </article>
                 ))}
             </div>
+            {students.length > reportPageSize && (
+                <Pagination total={students.length} page={page} perPage={reportPageSize} onPageChange={setPage} onPerPageChange={() => setPage(1)} showPerPage={false} />
+            )}
         </section>
     );
 }

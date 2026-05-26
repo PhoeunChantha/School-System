@@ -2,10 +2,10 @@ import { destroy, markAllRead, markRead, store, update } from '@/actions/App/Htt
 import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle } from '@/components/ui/sheet';
 import { useAdminPermissions } from '@/hooks/use-admin-permissions';
 import AdminShell from '@/pages/admin/shell';
-import { AdminSelect, Badge, KH, RowActions } from '@/pages/admin/ui';
+import { AdminSelect, Badge, KH, Pagination, RowActions } from '@/pages/admin/ui';
 import { router, useForm } from '@inertiajs/react';
 import { Bell, Check, CheckCircle2, Edit3, Plus, Trash2, X } from 'lucide-react';
-import { FormEvent, ReactNode, useMemo, useState } from 'react';
+import { FormEvent, ReactNode, useEffect, useMemo, useState } from 'react';
 import { toast } from 'sonner';
 
 type NotificationCategory = 'attendance' | 'fees' | 'homework' | 'system';
@@ -105,7 +105,7 @@ const emptyForm: NotificationFormData = {
     is_read: false,
 };
 
-const pageClass = 'fade-in flex flex-col gap-3 bg-slate-50 p-4 dark:bg-slate-950 max-md:bg-[radial-gradient(circle_at_100%_0,rgba(37,99,235,0.12),transparent_34%),linear-gradient(180deg,#f7f9fc_0%,#eef3f8_100%)] max-md:px-2.5 max-md:py-3 max-md:pb-[calc(104px+env(safe-area-inset-bottom))] dark:max-md:bg-[radial-gradient(circle_at_100%_0,rgba(96,165,250,0.14),transparent_34%),linear-gradient(180deg,#0f172a_0%,#111827_100%)]';
+const pageClass = 'fade-in mx-auto flex w-full max-w-[1280px] flex-col gap-3 bg-slate-50 p-4 dark:bg-slate-950 max-md:bg-[radial-gradient(circle_at_100%_0,rgba(37,99,235,0.12),transparent_34%),linear-gradient(180deg,#f7f9fc_0%,#eef3f8_100%)] max-md:px-2.5 max-md:py-3 max-md:pb-[calc(104px+env(safe-area-inset-bottom))] dark:max-md:bg-[radial-gradient(circle_at_100%_0,rgba(96,165,250,0.14),transparent_34%),linear-gradient(180deg,#0f172a_0%,#111827_100%)] md:gap-5 md:p-6';
 const panelClass = 'rounded-[24px] border border-slate-200 bg-white p-3 shadow-[0_14px_36px_rgba(15,23,42,0.07)] dark:border-slate-700 dark:bg-slate-800/90';
 const inputClass = 'min-h-12 w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm font-bold text-slate-900 outline-none transition placeholder:text-slate-400 focus:border-blue-400 focus:ring-2 focus:ring-blue-500/15 dark:border-slate-700 dark:bg-slate-950 dark:text-slate-100';
 const mobileCardClass = 'rounded-[22px] border p-3 shadow-[0_14px_34px_rgba(15,23,42,0.07)]';
@@ -119,6 +119,8 @@ export default function NotificationsPage({ notifications, students, users, summ
     const canMarkRead = can('notifications.mark-read');
     const canMarkAllRead = can('notifications.mark-all-read');
     const [category, setCategory] = useState<CategoryFilter>('all');
+    const [page, setPage] = useState(1);
+    const [perPage, setPerPage] = useState(5);
     const [drawerMode, setDrawerMode] = useState<DrawerMode | null>(null);
     const [editingNotification, setEditingNotification] = useState<NotificationItem | null>(null);
     const [deleteTarget, setDeleteTarget] = useState<NotificationItem | null>(null);
@@ -129,6 +131,14 @@ export default function NotificationsPage({ notifications, students, users, summ
         () => category === 'all' ? notifications : notifications.filter(notification => notification.category === category),
         [category, notifications],
     );
+    const paginatedDisplayed = useMemo(
+        () => displayed.slice((page - 1) * perPage, page * perPage),
+        [displayed, page, perPage],
+    );
+
+    useEffect(() => {
+        setPage(1);
+    }, [category, perPage]);
 
     const categories: { id: CategoryFilter; label: string }[] = [
         { id: 'all', label: `All (${notifications.length})` },
@@ -293,7 +303,7 @@ export default function NotificationsPage({ notifications, students, users, summ
                             No notifications
                         </div>
                     )}
-                    {displayed.map(notification => {
+                    {paginatedDisplayed.map(notification => {
                         const cat = getCategoryMeta(notification.category);
                         const isUnread = !notification.read;
 
@@ -327,6 +337,9 @@ export default function NotificationsPage({ notifications, students, users, summ
                             </article>
                         );
                     })}
+                    {displayed.length > 0 && (
+                        <Pagination total={displayed.length} page={page} perPage={perPage} onPageChange={setPage} onPerPageChange={setPerPage} showPerPage={false} />
+                    )}
                 </section>
             </div>
 

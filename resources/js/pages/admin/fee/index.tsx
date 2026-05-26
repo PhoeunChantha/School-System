@@ -71,7 +71,6 @@ const PAYMENT_ORDER_OPTIONS: { value: PaymentOrderKey; label: string }[] = [
 
 const statusRank: Record<FeeChargeItem['status'], number> = { unpaid: 0, partial: 1, paid: 2 };
 const controlInputClass = 'min-h-9 rounded-xl border border-slate-200 bg-white px-3 py-1 text-xs font-bold text-slate-900 dark:border-slate-700 dark:bg-slate-950 dark:text-slate-100';
-const primaryButtonClass = 'inline-flex min-h-9 items-center justify-center gap-1.5 rounded-xl bg-blue-600 px-3 py-2 text-xs font-black text-white shadow-[0_12px_24px_rgba(37,99,235,0.22)] transition hover:bg-blue-500';
 const ghostButtonClass = 'inline-flex min-h-11 items-center justify-center gap-1.5 rounded-xl bg-slate-100 px-3 py-2 text-sm font-black text-slate-500 transition hover:bg-slate-200 dark:bg-slate-950 dark:text-slate-300 dark:hover:bg-slate-900';
 const mobileCardClass = 'rounded-[22px] border border-slate-200/80 bg-white/95 p-3 shadow-[0_14px_34px_rgba(15,23,42,0.07)] dark:border-slate-700 dark:bg-slate-800/90';
 const fieldInputClass = 'min-h-12 w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm font-bold text-slate-900 outline-none transition placeholder:text-slate-400 focus:border-blue-400 focus:ring-2 focus:ring-blue-500/15 dark:border-slate-700 dark:bg-slate-950 dark:text-slate-100';
@@ -233,13 +232,12 @@ export default function FeePage({ charges, payments, summary }: FeePageProps) {
 
     return (
         <AdminShell>
-            <div className="fade-in flex flex-col gap-3 bg-slate-50 p-4 dark:bg-slate-950 max-md:bg-[radial-gradient(circle_at_100%_0,rgba(37,99,235,0.12),transparent_34%),linear-gradient(180deg,#f7f9fc_0%,#eef3f8_100%)] max-md:px-2.5 max-md:py-3 max-md:pb-[calc(104px+env(safe-area-inset-bottom))] dark:max-md:bg-[radial-gradient(circle_at_100%_0,rgba(96,165,250,0.14),transparent_34%),linear-gradient(180deg,#0f172a_0%,#111827_100%)]">
+            <div className="fade-in mx-auto flex w-full max-w-[1280px] flex-col gap-3 bg-slate-50 p-4 dark:bg-slate-950 max-md:bg-[radial-gradient(circle_at_100%_0,rgba(37,99,235,0.12),transparent_34%),linear-gradient(180deg,#f7f9fc_0%,#eef3f8_100%)] max-md:px-2.5 max-md:py-3 max-md:pb-[calc(104px+env(safe-area-inset-bottom))] dark:max-md:bg-[radial-gradient(circle_at_100%_0,rgba(96,165,250,0.14),transparent_34%),linear-gradient(180deg,#0f172a_0%,#111827_100%)] md:gap-5 md:p-6">
                 <div className="hidden items-center justify-between gap-3 md:flex md:flex-wrap">
                     <div>
                         <div className="text-lg font-black text-slate-900 dark:text-slate-50">Fee Management</div>
                         <div className="mt-0.5 text-xs font-bold text-slate-400">Track monthly fee charges and payments</div>
                     </div>
-                    {canCreate && <Link href={createFee.url()} className={primaryButtonClass}><Plus size={15} /> New Fee Charge</Link>}
                 </div>
 
                 <section className="flex items-center justify-between gap-3 rounded-[24px] border border-slate-200 bg-white p-4 shadow-[0_14px_36px_rgba(15,23,42,0.07)] dark:border-slate-700 dark:bg-slate-800/90">
@@ -282,15 +280,17 @@ export default function FeePage({ charges, payments, summary }: FeePageProps) {
                             </button>
                         ))}
                     </div>
-                    <div className="sticky top-0 z-10 mb-3 grid grid-cols-2 gap-2 rounded-[22px] border border-slate-200 bg-white/90 p-3 shadow-[0_12px_32px_rgba(15,23,42,0.07)] backdrop-blur dark:border-slate-700 dark:bg-slate-800/90 md:mb-0 md:flex md:flex-wrap md:items-center md:border-x-0 md:border-t-0 md:shadow-none">
-                        <span className="hidden whitespace-nowrap text-[11px] font-bold text-slate-400 md:inline">Sort by</span>
-                        <AdminSelect value={chargeOrderBy} onChange={value => setChargeOrderBy(value as ChargeOrderKey)} options={CHARGE_ORDER_OPTIONS} className="min-w-0 md:min-w-[150px]" triggerClassName={controlInputClass} />
-                        <AdminSelect value={chargePerPage.toString()} onChange={value => setChargePerPage(Number(value))} options={[5, 10, 25, 50].map(size => ({ value: size.toString(), label: `${size} per page` }))} className="min-w-0 md:min-w-[130px]" triggerClassName={controlInputClass} />
-                        <span className="hidden text-[11px] font-bold text-slate-400 md:inline">{filteredCharges.length} charge{filteredCharges.length !== 1 ? 's' : ''}</span>
-                        <input value={chargeSearch} onChange={event => setChargeSearch(event.target.value)} className={`${controlInputClass} col-span-2 w-full md:ml-auto md:w-[260px]`} placeholder="Search fee charges..." />
+                    <div className="sticky top-0 z-10 mb-3 grid grid-cols-2 gap-2 rounded-[22px] border border-slate-200 bg-white/90 p-3 shadow-[0_12px_32px_rgba(15,23,42,0.07)] backdrop-blur dark:border-slate-700 dark:bg-slate-800/90 md:static md:mb-0 md:grid-cols-[auto_1fr_320px] md:items-center md:gap-3 md:border-x-0 md:border-t-0 md:shadow-none">
+                        <div className="contents md:flex md:items-center md:gap-2">
+                            <span className="hidden whitespace-nowrap text-[11px] font-bold text-slate-400 md:inline">Sort by</span>
+                            <AdminSelect value={chargeOrderBy} onChange={value => setChargeOrderBy(value as ChargeOrderKey)} options={CHARGE_ORDER_OPTIONS} className="min-w-0 md:w-[170px]" triggerClassName={controlInputClass} />
+                            <AdminSelect value={chargePerPage.toString()} onChange={value => setChargePerPage(Number(value))} options={[5, 10, 25, 50].map(size => ({ value: size.toString(), label: `${size} per page` }))} className="min-w-0 md:w-[130px]" triggerClassName={controlInputClass} />
+                            <span className="hidden text-[11px] font-bold text-slate-400 md:inline">{filteredCharges.length} charge{filteredCharges.length !== 1 ? 's' : ''}</span>
+                        </div>
+                        <input value={chargeSearch} onChange={event => setChargeSearch(event.target.value)} className={`${controlInputClass} col-span-2 w-full md:col-start-3 md:w-full`} placeholder="Search fee charges..." />
                     </div>
 
-                    <table className={desktopTableClass}>
+                    <table className={`${desktopTableClass} w-full md:min-w-full`}>
                         <thead>
                             <tr>
                                 <th>Student</th>
@@ -390,14 +390,16 @@ export default function FeePage({ charges, payments, summary }: FeePageProps) {
                 </section>
 
                 <section className="overflow-visible rounded-[24px] border-0 bg-transparent shadow-none md:overflow-x-auto md:rounded-2xl md:border md:border-slate-200 md:bg-white md:shadow-sm dark:md:border-slate-700 dark:md:bg-slate-800/90">
-                    <div className="sticky top-0 z-10 mb-3 grid grid-cols-2 gap-2 rounded-[22px] border border-slate-200 bg-white/90 p-3 shadow-[0_12px_32px_rgba(15,23,42,0.07)] backdrop-blur dark:border-slate-700 dark:bg-slate-800/90 md:mb-0 md:flex md:flex-wrap md:items-center md:border-x-0 md:border-t-0 md:shadow-none">
-                        <span className="hidden whitespace-nowrap text-[11px] font-bold text-slate-400 md:inline">Payments</span>
-                        <AdminSelect value={paymentOrderBy} onChange={value => setPaymentOrderBy(value as PaymentOrderKey)} options={PAYMENT_ORDER_OPTIONS} className="min-w-0 md:min-w-[150px]" triggerClassName={controlInputClass} />
-                        <AdminSelect value={paymentPerPage.toString()} onChange={value => setPaymentPerPage(Number(value))} options={[5, 10, 25, 50].map(size => ({ value: size.toString(), label: `${size} per page` }))} className="min-w-0 md:min-w-[130px]" triggerClassName={controlInputClass} />
-                        <span className="hidden text-[11px] font-bold text-slate-400 md:inline">{sortedPayments.length} result{sortedPayments.length !== 1 ? 's' : ''}</span>
-                        <input value={paymentSearch} onChange={event => setPaymentSearch(event.target.value)} className={`${controlInputClass} col-span-2 w-full md:ml-auto md:w-[260px]`} placeholder="Search payments..." />
+                    <div className="sticky top-0 z-10 mb-3 grid grid-cols-2 gap-2 rounded-[22px] border border-slate-200 bg-white/90 p-3 shadow-[0_12px_32px_rgba(15,23,42,0.07)] backdrop-blur dark:border-slate-700 dark:bg-slate-800/90 md:static md:mb-0 md:grid-cols-[auto_1fr_320px] md:items-center md:gap-3 md:border-x-0 md:border-t-0 md:shadow-none">
+                        <div className="contents md:flex md:items-center md:gap-2">
+                            <span className="hidden whitespace-nowrap text-[11px] font-bold text-slate-400 md:inline">Payments</span>
+                            <AdminSelect value={paymentOrderBy} onChange={value => setPaymentOrderBy(value as PaymentOrderKey)} options={PAYMENT_ORDER_OPTIONS} className="min-w-0 md:w-[170px]" triggerClassName={controlInputClass} />
+                            <AdminSelect value={paymentPerPage.toString()} onChange={value => setPaymentPerPage(Number(value))} options={[5, 10, 25, 50].map(size => ({ value: size.toString(), label: `${size} per page` }))} className="min-w-0 md:w-[130px]" triggerClassName={controlInputClass} />
+                            <span className="hidden text-[11px] font-bold text-slate-400 md:inline">{sortedPayments.length} result{sortedPayments.length !== 1 ? 's' : ''}</span>
+                        </div>
+                        <input value={paymentSearch} onChange={event => setPaymentSearch(event.target.value)} className={`${controlInputClass} col-span-2 w-full md:col-start-3 md:w-full`} placeholder="Search payments..." />
                     </div>
-                    <table className={desktopTableClass}>
+                    <table className={`${desktopTableClass} w-full md:min-w-full`}>
                         <thead><tr><th>Student</th><th>Amount</th><th>Method</th><th>Status</th><th>Paid On</th><th>Month</th></tr></thead>
                         <tbody>
                             {paginatedPayments.length === 0 ? (

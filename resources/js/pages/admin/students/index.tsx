@@ -222,7 +222,7 @@ export default function StudentsPage({ students }: StudentsPageProps) {
 
     return (
         <AdminShell>
-            <div className="fade-in flex flex-col gap-3 bg-slate-50 p-4 dark:bg-slate-950 max-md:bg-[radial-gradient(circle_at_100%_0,rgba(37,99,235,0.12),transparent_34%),linear-gradient(180deg,#f7f9fc_0%,#eef3f8_100%)] max-md:px-2.5 max-md:py-3 max-md:pb-[calc(104px+env(safe-area-inset-bottom))] dark:max-md:bg-[radial-gradient(circle_at_100%_0,rgba(96,165,250,0.14),transparent_34%),linear-gradient(180deg,#0f172a_0%,#111827_100%)]">
+            <div className="fade-in mx-auto flex w-full max-w-[1280px] flex-col gap-3 bg-slate-50 p-4 dark:bg-slate-950 md:gap-5 md:p-6 max-md:bg-[radial-gradient(circle_at_100%_0,rgba(37,99,235,0.12),transparent_34%),linear-gradient(180deg,#f7f9fc_0%,#eef3f8_100%)] max-md:px-2.5 max-md:py-3 max-md:pb-[calc(104px+env(safe-area-inset-bottom))] dark:max-md:bg-[radial-gradient(circle_at_100%_0,rgba(96,165,250,0.14),transparent_34%),linear-gradient(180deg,#0f172a_0%,#111827_100%)]">
 
                 <section className="hidden items-center justify-between gap-3 rounded-[24px] border border-slate-200 bg-white p-4 shadow-[0_14px_36px_rgba(15,23,42,0.07)] dark:border-slate-700 dark:bg-slate-800/90 max-md:flex">
                     <div>
@@ -281,17 +281,17 @@ export default function StudentsPage({ students }: StudentsPageProps) {
                     </div>
                 </div>
 
-                <div className="overflow-visible rounded-[24px] border-0 bg-transparent shadow-none md:card md:overflow-x-auto">
+                <div className="overflow-visible rounded-[24px] border-0 bg-transparent shadow-none md:overflow-x-auto md:rounded-[24px] md:border md:border-slate-200 md:bg-white md:shadow-sm dark:md:border-slate-700 dark:md:bg-slate-800/90">
 
-                    <div className="sticky top-0 z-10 mb-3 grid grid-cols-2 gap-2 rounded-[22px] border border-slate-200 bg-white/90 p-3 shadow-[0_12px_32px_rgba(15,23,42,0.07)] backdrop-blur dark:border-slate-700 dark:bg-slate-800/90 md:flex md:flex-wrap md:items-center md:border-b md:shadow-none">
+                    <div className="sticky top-0 z-10 mb-3 grid grid-cols-2 gap-2 rounded-[22px] border border-slate-200 bg-white/90 p-3 shadow-[0_12px_32px_rgba(15,23,42,0.07)] backdrop-blur dark:border-slate-700 dark:bg-slate-800/90 md:static md:mb-0 md:grid md:grid-cols-[auto_1fr_320px] md:items-center md:gap-3 md:border-0 md:border-b md:border-slate-200 md:bg-white md:p-4 md:shadow-none md:backdrop-blur-none dark:md:border-slate-700 dark:md:bg-slate-800/90">
 
-                        <div className="contents md:flex md:flex-wrap md:items-center md:gap-2">
+                        <div className="contents md:flex md:items-center md:gap-2">
                             <span className="hidden text-[11px] font-black text-slate-400 md:inline">Sort by</span>
                             <AdminSelect
                                 value={orderBy}
                                 onChange={value => setOrderBy(value as OrderKey)}
                                 options={ORDER_OPTIONS}
-                                className="min-w-[150px]"
+                                className="min-w-[150px] md:w-[180px]"
                                 triggerClassName={controlInputClass}
                             />
                             <div className="hidden h-5 w-px bg-slate-200 md:block" />
@@ -299,13 +299,13 @@ export default function StudentsPage({ students }: StudentsPageProps) {
                                 value={perPage.toString()}
                                 onChange={value => { setPerPage(Number(value)); setPage(1); }}
                                 options={[5, 10, 25, 50].map(size => ({ value: size.toString(), label: `${size} / page` }))}
-                                className="min-w-[120px]"
+                                className="min-w-[120px] md:w-[140px]"
                                 triggerClassName={controlInputClass}
                             />
                             <span className="hidden text-[11px] font-extrabold text-slate-400 md:inline">{filtered.length} result{filtered.length !== 1 ? 's' : ''}</span>
                         </div>
 
-                        <div className="col-span-2 flex flex-wrap gap-1.5 md:contents">
+                        <div className="col-span-2 flex flex-wrap gap-1.5 md:order-3 md:col-span-3 md:border-t md:border-slate-200 md:pt-3 dark:md:border-slate-700">
                             {FILTER_OPTIONS.map(item => (
                                 <button
                                     key={item.id}
@@ -321,7 +321,7 @@ export default function StudentsPage({ students }: StudentsPageProps) {
                         <input
                             value={search}
                             onChange={e => setSearch(e.target.value)}
-                            className={`${controlInputClass} col-span-2 w-full md:ml-auto md:max-w-[260px]`}
+                            className={`${controlInputClass} col-span-2 w-full md:order-2 md:col-span-1 md:col-start-3 md:ml-0 md:max-w-none`}
                             placeholder="Search students..."
                         />
                     </div>

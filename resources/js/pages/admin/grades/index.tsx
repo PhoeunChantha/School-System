@@ -352,7 +352,7 @@ export default function GradesPage({ records, periods, students, classes, summar
 
     return (
         <AdminShell>
-            <div className="fade-in flex flex-col gap-3 bg-slate-50 p-4 dark:bg-slate-950 max-md:bg-[radial-gradient(circle_at_100%_0,rgba(37,99,235,0.12),transparent_34%),linear-gradient(180deg,#f7f9fc_0%,#eef3f8_100%)] max-md:px-2.5 max-md:py-3 max-md:pb-[calc(104px+env(safe-area-inset-bottom))] dark:max-md:bg-[radial-gradient(circle_at_100%_0,rgba(96,165,250,0.14),transparent_34%),linear-gradient(180deg,#0f172a_0%,#111827_100%)]">
+            <div className="fade-in mx-auto flex w-full max-w-[1280px] flex-col gap-3 bg-slate-50 p-4 dark:bg-slate-950 md:gap-5 md:p-6 max-md:bg-[radial-gradient(circle_at_100%_0,rgba(37,99,235,0.12),transparent_34%),linear-gradient(180deg,#f7f9fc_0%,#eef3f8_100%)] max-md:px-2.5 max-md:py-3 max-md:pb-[calc(104px+env(safe-area-inset-bottom))] dark:max-md:bg-[radial-gradient(circle_at_100%_0,rgba(96,165,250,0.14),transparent_34%),linear-gradient(180deg,#0f172a_0%,#111827_100%)]">
                 <div className="hidden items-center justify-between gap-3 md:flex md:flex-wrap">
                     <div>
                         <KH className="block text-lg font-black text-slate-900 dark:text-slate-50">Grade Book</KH>
@@ -373,11 +373,6 @@ export default function GradesPage({ records, periods, students, classes, summar
                             <a href={exportMethod.url()} className={ghostButtonClass}>
                                 <FileDown size={14} /> Export
                             </a>
-                        )}
-                        {canCreate && (
-                            <button onClick={openCreateDrawer} className={primaryButtonClass}>
-                                + Add Grade
-                            </button>
                         )}
                         <input
                             ref={importInputRef}

@@ -96,7 +96,6 @@ const ORDER_OPTIONS: { value: OrderKey; label: string }[] = [
 
 const controlInputClass = 'min-h-9 rounded-xl border border-slate-200 bg-white px-3 py-1 text-xs font-bold text-slate-900 dark:border-slate-700 dark:bg-slate-950 dark:text-slate-100';
 const ghostButtonClass = 'inline-flex min-h-9 items-center justify-center gap-1.5 rounded-xl border border-slate-200 bg-white px-3 py-2 text-xs font-black text-slate-700 shadow-sm transition hover:bg-slate-50 dark:border-slate-700 dark:bg-slate-950 dark:text-slate-200 dark:hover:bg-slate-900';
-const primaryButtonClass = 'inline-flex min-h-9 items-center justify-center gap-1.5 rounded-xl bg-blue-600 px-3 py-2 text-xs font-black text-white shadow-[0_12px_24px_rgba(37,99,235,0.22)] transition hover:bg-blue-500';
 const mobileCardClass = 'rounded-[22px] border border-slate-200/80 bg-white/95 p-3 shadow-[0_14px_34px_rgba(15,23,42,0.07)] dark:border-slate-700 dark:bg-slate-800/90';
 const fieldGroupClass = 'grid gap-1.5';
 const fieldLabelClass = 'text-[11px] font-black uppercase text-slate-500 dark:text-slate-400';
@@ -309,14 +308,13 @@ export default function HomeworkSubmissionsPage({ submissions, assignments, stud
 
     return (
         <AdminShell>
-            <div className="fade-in flex flex-col gap-3 bg-slate-50 p-4 dark:bg-slate-950 max-md:bg-[radial-gradient(circle_at_100%_0,rgba(37,99,235,0.12),transparent_34%),linear-gradient(180deg,#f7f9fc_0%,#eef3f8_100%)] max-md:px-2.5 max-md:py-3 max-md:pb-[calc(104px+env(safe-area-inset-bottom))] dark:max-md:bg-[radial-gradient(circle_at_100%_0,rgba(96,165,250,0.14),transparent_34%),linear-gradient(180deg,#0f172a_0%,#111827_100%)]">
+            <div className="fade-in mx-auto flex w-full max-w-[1280px] flex-col gap-3 bg-slate-50 p-4 dark:bg-slate-950 max-md:bg-[radial-gradient(circle_at_100%_0,rgba(37,99,235,0.12),transparent_34%),linear-gradient(180deg,#f7f9fc_0%,#eef3f8_100%)] max-md:px-2.5 max-md:py-3 max-md:pb-[calc(104px+env(safe-area-inset-bottom))] dark:max-md:bg-[radial-gradient(circle_at_100%_0,rgba(96,165,250,0.14),transparent_34%),linear-gradient(180deg,#0f172a_0%,#111827_100%)] md:gap-5 md:p-6">
                 <div className="hidden items-center justify-between gap-3 md:flex md:flex-wrap">
                     <div>
                         <div className="text-lg font-black text-slate-900 dark:text-slate-50">Homework Submissions</div>
                         <KH className="block text-xs font-bold text-slate-400">Track submitted work, grades, and feedback</KH>
                     </div>
                     <div className="flex gap-2">
-                        {canCreate && <button onClick={openCreateDrawer} className={primaryButtonClass}><Plus size={16} /> Add Submission</button>}
                         {canCreate && <button onClick={() => router.visit(createSubmission.url())} className={ghostButtonClass}><Upload size={16} /> Student Submit</button>}
                     </div>
                 </div>
@@ -349,34 +347,36 @@ export default function HomeworkSubmissionsPage({ submissions, assignments, stud
                 </div>
 
                 <div className="overflow-visible rounded-[24px] border-0 bg-transparent shadow-none md:overflow-x-auto md:rounded-2xl md:border md:border-slate-200 md:bg-white md:shadow-sm dark:md:border-slate-700 dark:md:bg-slate-800/90">
-                    <div className="sticky top-0 z-10 mb-3 grid grid-cols-2 gap-2 rounded-[22px] border border-slate-200 bg-white/90 p-3 shadow-[0_12px_32px_rgba(15,23,42,0.07)] backdrop-blur dark:border-slate-700 dark:bg-slate-800/90 md:mb-0 md:flex md:flex-wrap md:items-center md:border-x-0 md:border-t-0 md:shadow-none">
-                        <span className="hidden whitespace-nowrap text-[11px] font-bold text-slate-400 md:inline">Sort by</span>
-                        <Select value={orderBy} onValueChange={value => setOrderBy(value as OrderKey)}>
-                            <SelectTrigger className={controlInputClass}><SelectValue /></SelectTrigger>
-                            <SelectContent>{ORDER_OPTIONS.map(option => <SelectItem key={option.value} value={option.value}>{option.label}</SelectItem>)}</SelectContent>
-                        </Select>
-                        <Select value={perPage.toString()} onValueChange={value => { setPerPage(Number(value)); setPage(1); }}>
-                            <SelectTrigger className={controlInputClass}><SelectValue /></SelectTrigger>
-                            <SelectContent>{[5, 10, 25, 50].map(size => <SelectItem key={size} value={size.toString()}>{size} per page</SelectItem>)}</SelectContent>
-                        </Select>
-                        <Select value={selectedAssignment} onValueChange={value => setSelectedAssignment(value as AssignmentFilter)}>
-                            <SelectTrigger className={`${controlInputClass} col-span-2 md:min-w-[220px] md:max-w-[320px]`}><SelectValue /></SelectTrigger>
-                            <SelectContent>
-                                <SelectItem value="all">All homework</SelectItem>
-                                {assignmentOptions.map(title => <SelectItem key={title} value={`title:${title}`}>{title}</SelectItem>)}
-                            </SelectContent>
-                        </Select>
-                        <DatePicker value={submittedDate} onChange={setSubmittedDate} placeholder="Submitted date" className={`${controlInputClass} h-9`} />
-                        {submittedDate && (
-                            <button type="button" onClick={() => setSubmittedDate('')} className={ghostButtonClass}>
-                                <X size={13} /> Clear
-                            </button>
-                        )}
-                        <span className="hidden text-[11px] font-bold text-slate-400 md:inline">{filtered.length} submission{filtered.length !== 1 ? 's' : ''}</span>
-                        <input value={search} onChange={event => setSearch(event.target.value)} className={`${controlInputClass} col-span-2 w-full md:ml-auto md:w-[260px]`} placeholder="Search submissions..." />
+                    <div className="sticky top-0 z-10 mb-3 grid grid-cols-2 gap-2 rounded-[22px] border border-slate-200 bg-white/90 p-3 shadow-[0_12px_32px_rgba(15,23,42,0.07)] backdrop-blur dark:border-slate-700 dark:bg-slate-800/90 md:static md:mb-0 md:grid-cols-[auto_1fr_320px] md:items-center md:gap-3 md:border-x-0 md:border-t-0 md:shadow-none">
+                        <div className="contents md:flex md:flex-wrap md:items-center md:gap-2">
+                            <span className="hidden whitespace-nowrap text-[11px] font-bold text-slate-400 md:inline">Sort by</span>
+                            <Select value={orderBy} onValueChange={value => setOrderBy(value as OrderKey)}>
+                                <SelectTrigger className={`${controlInputClass} md:w-[170px]`}><SelectValue /></SelectTrigger>
+                                <SelectContent>{ORDER_OPTIONS.map(option => <SelectItem key={option.value} value={option.value}>{option.label}</SelectItem>)}</SelectContent>
+                            </Select>
+                            <Select value={perPage.toString()} onValueChange={value => { setPerPage(Number(value)); setPage(1); }}>
+                                <SelectTrigger className={`${controlInputClass} md:w-[128px]`}><SelectValue /></SelectTrigger>
+                                <SelectContent>{[5, 10, 25, 50].map(size => <SelectItem key={size} value={size.toString()}>{size} per page</SelectItem>)}</SelectContent>
+                            </Select>
+                            <Select value={selectedAssignment} onValueChange={value => setSelectedAssignment(value as AssignmentFilter)}>
+                                <SelectTrigger className={`${controlInputClass} col-span-2 md:w-[210px]`}><SelectValue /></SelectTrigger>
+                                <SelectContent>
+                                    <SelectItem value="all">All homework</SelectItem>
+                                    {assignmentOptions.map(title => <SelectItem key={title} value={`title:${title}`}>{title}</SelectItem>)}
+                                </SelectContent>
+                            </Select>
+                            <DatePicker value={submittedDate} onChange={setSubmittedDate} placeholder="Submitted date" className={`${controlInputClass} h-9 md:w-[170px]`} />
+                            {submittedDate && (
+                                <button type="button" onClick={() => setSubmittedDate('')} className={`${ghostButtonClass} md:w-auto`}>
+                                    <X size={13} /> Clear
+                                </button>
+                            )}
+                            <span className="hidden text-[11px] font-bold text-slate-400 md:inline">{filtered.length} submission{filtered.length !== 1 ? 's' : ''}</span>
+                        </div>
+                        <input value={search} onChange={event => setSearch(event.target.value)} className={`${controlInputClass} col-span-2 w-full md:col-start-3 md:w-full`} placeholder="Search submissions..." />
                     </div>
 
-                    <table className="data-table hidden md:table">
+                    <table className="data-table hidden md:table md:min-w-[980px]">
                         <thead>
                             <tr>
                                 <th>Student</th>

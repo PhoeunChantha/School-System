@@ -102,7 +102,6 @@ const ORDER_OPTIONS: { value: OrderKey; label: string }[] = [
 ];
 
 const controlInputClass = 'min-h-9 rounded-xl border border-slate-200 bg-white px-3 py-1 text-xs font-bold text-slate-900 dark:border-slate-700 dark:bg-slate-950 dark:text-slate-100';
-const primaryButtonClass = 'inline-flex min-h-9 items-center justify-center gap-1.5 rounded-xl bg-blue-600 px-3 py-2 text-xs font-black text-white shadow-[0_12px_24px_rgba(37,99,235,0.22)] transition hover:bg-blue-500';
 const mobileCardClass = 'rounded-[22px] border border-slate-200/80 bg-white/95 p-3 shadow-[0_14px_34px_rgba(15,23,42,0.07)] dark:border-slate-700 dark:bg-slate-800/90';
 const fieldGroupClass = 'grid gap-1.5';
 const fieldLabelClass = 'text-[11px] font-black uppercase text-slate-500 dark:text-slate-400';
@@ -173,7 +172,7 @@ export default function LessonPlansPage({ lessonPlans, teachers, classes, today,
     return (
         <AdminShell>
             {view === 'list' && (
-                <div className="fade-in flex flex-col gap-3 bg-slate-50 p-4 dark:bg-slate-950 max-md:bg-[radial-gradient(circle_at_100%_0,rgba(37,99,235,0.12),transparent_34%),linear-gradient(180deg,#f7f9fc_0%,#eef3f8_100%)] max-md:px-2.5 max-md:py-3 max-md:pb-[calc(104px+env(safe-area-inset-bottom))] dark:max-md:bg-[radial-gradient(circle_at_100%_0,rgba(96,165,250,0.14),transparent_34%),linear-gradient(180deg,#0f172a_0%,#111827_100%)]">
+                <div className="fade-in mx-auto flex w-full max-w-[1280px] flex-col gap-3 bg-slate-50 p-4 dark:bg-slate-950 max-md:bg-[radial-gradient(circle_at_100%_0,rgba(37,99,235,0.12),transparent_34%),linear-gradient(180deg,#f7f9fc_0%,#eef3f8_100%)] max-md:px-2.5 max-md:py-3 max-md:pb-[calc(104px+env(safe-area-inset-bottom))] dark:max-md:bg-[radial-gradient(circle_at_100%_0,rgba(96,165,250,0.14),transparent_34%),linear-gradient(180deg,#0f172a_0%,#111827_100%)] md:gap-5 md:p-6">
                     <section className="flex items-center justify-between gap-3 rounded-[24px] border border-slate-200 bg-white p-4 shadow-[0_14px_36px_rgba(15,23,42,0.07)] dark:border-slate-700 dark:bg-slate-800/90">
                         <div>
                             <span className="block text-xs font-black text-slate-400">Lesson plans</span>
@@ -199,47 +198,43 @@ export default function LessonPlansPage({ lessonPlans, teachers, classes, today,
                         ))}
                     </div>
 
-                    <div className="hidden justify-end md:flex">
-                        <Link href="/admin/lesson-plans/create" className={primaryButtonClass}>
-                            <Plus size={15} /> Add Lesson
-                        </Link>
-                    </div>
-
                     <div className="overflow-visible rounded-[24px] border-0 bg-transparent shadow-none md:overflow-x-auto md:rounded-2xl md:border md:border-slate-200 md:bg-white md:shadow-sm dark:md:border-slate-700 dark:md:bg-slate-800/90">
-                        <div className="sticky top-0 z-10 mb-3 grid grid-cols-2 gap-2 rounded-[22px] border border-slate-200 bg-white/90 p-3 shadow-[0_12px_32px_rgba(15,23,42,0.07)] backdrop-blur dark:border-slate-700 dark:bg-slate-800/90 md:mb-0 md:flex md:flex-wrap md:items-center md:border-x-0 md:border-t-0 md:shadow-none">
-                            <span className="hidden whitespace-nowrap text-[11px] font-bold text-slate-400 md:inline">Sort by</span>
-                            <Select value={orderBy} onValueChange={value => setOrderBy(value as OrderKey)}>
-                                <SelectTrigger className={controlInputClass}>
-                                    <SelectValue />
-                                </SelectTrigger>
-                                <SelectContent>
-                                    {ORDER_OPTIONS.map(option => <SelectItem key={option.value} value={option.value}>{option.label}</SelectItem>)}
-                                </SelectContent>
-                            </Select>
-                            <Select value={perPage.toString()} onValueChange={value => setPerPage(Number(value))}>
-                                <SelectTrigger className={controlInputClass}>
-                                    <SelectValue />
-                                </SelectTrigger>
-                                <SelectContent>
-                                    {[5, 10, 25, 50].map(size => <SelectItem key={size} value={size.toString()}>{size} per page</SelectItem>)}
-                                </SelectContent>
-                            </Select>
-                            <Select value={filter} onValueChange={value => setFilter(value as FilterKey)}>
-                                <SelectTrigger className={controlInputClass}>
-                                    <SelectValue />
-                                </SelectTrigger>
-                                <SelectContent>
-                                    <SelectItem value="today">Today</SelectItem>
-                                    <SelectItem value="tomorrow">Tomorrow</SelectItem>
-                                    <SelectItem value="upcoming">Upcoming</SelectItem>
-                                    <SelectItem value="all">All</SelectItem>
-                                </SelectContent>
-                            </Select>
-                            <span className="hidden text-[11px] font-bold text-slate-400 md:inline">{filtered.length} result{filtered.length !== 1 ? 's' : ''}</span>
-                            <input value={search} onChange={event => setSearch(event.target.value)} className={`${controlInputClass} col-span-2 w-full md:ml-auto md:w-[260px]`} placeholder="Search lesson plans..." />
+                        <div className="sticky top-0 z-10 mb-3 grid grid-cols-2 gap-2 rounded-[22px] border border-slate-200 bg-white/90 p-3 shadow-[0_12px_32px_rgba(15,23,42,0.07)] backdrop-blur dark:border-slate-700 dark:bg-slate-800/90 md:static md:mb-0 md:grid-cols-[auto_1fr_320px] md:items-center md:gap-3 md:border-x-0 md:border-t-0 md:shadow-none">
+                            <div className="contents md:flex md:items-center md:gap-2">
+                                <span className="hidden whitespace-nowrap text-[11px] font-bold text-slate-400 md:inline">Sort by</span>
+                                <Select value={orderBy} onValueChange={value => setOrderBy(value as OrderKey)}>
+                                    <SelectTrigger className={`${controlInputClass} md:w-[180px]`}>
+                                        <SelectValue />
+                                    </SelectTrigger>
+                                    <SelectContent>
+                                        {ORDER_OPTIONS.map(option => <SelectItem key={option.value} value={option.value}>{option.label}</SelectItem>)}
+                                    </SelectContent>
+                                </Select>
+                                <Select value={perPage.toString()} onValueChange={value => setPerPage(Number(value))}>
+                                    <SelectTrigger className={`${controlInputClass} md:w-[136px]`}>
+                                        <SelectValue />
+                                    </SelectTrigger>
+                                    <SelectContent>
+                                        {[5, 10, 25, 50].map(size => <SelectItem key={size} value={size.toString()}>{size} per page</SelectItem>)}
+                                    </SelectContent>
+                                </Select>
+                                <Select value={filter} onValueChange={value => setFilter(value as FilterKey)}>
+                                    <SelectTrigger className={`${controlInputClass} md:w-[136px]`}>
+                                        <SelectValue />
+                                    </SelectTrigger>
+                                    <SelectContent>
+                                        <SelectItem value="today">Today</SelectItem>
+                                        <SelectItem value="tomorrow">Tomorrow</SelectItem>
+                                        <SelectItem value="upcoming">Upcoming</SelectItem>
+                                        <SelectItem value="all">All</SelectItem>
+                                    </SelectContent>
+                                </Select>
+                                <span className="hidden text-[11px] font-bold text-slate-400 md:inline">{filtered.length} result{filtered.length !== 1 ? 's' : ''}</span>
+                            </div>
+                            <input value={search} onChange={event => setSearch(event.target.value)} className={`${controlInputClass} col-span-2 w-full md:col-start-3 md:w-full`} placeholder="Search lesson plans..." />
                         </div>
 
-                        <table className="data-table hidden md:table">
+                        <table className="data-table hidden md:table md:min-w-[920px]">
                             <thead>
                                 <tr>
                                     <th>Date</th>

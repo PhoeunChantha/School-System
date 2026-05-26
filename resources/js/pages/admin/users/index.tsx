@@ -49,7 +49,7 @@ interface UserFormData {
 
 type Mode = 'create' | 'edit';
 
-const pageClass = 'fade-in flex flex-col gap-3 bg-slate-50 p-4 dark:bg-slate-950 max-md:bg-[radial-gradient(circle_at_100%_0,rgba(37,99,235,0.12),transparent_34%),linear-gradient(180deg,#f7f9fc_0%,#eef3f8_100%)] max-md:px-2.5 max-md:py-3 max-md:pb-[calc(104px+env(safe-area-inset-bottom))] dark:max-md:bg-[radial-gradient(circle_at_100%_0,rgba(96,165,250,0.14),transparent_34%),linear-gradient(180deg,#0f172a_0%,#111827_100%)]';
+const pageClass = 'fade-in mx-auto flex w-full max-w-[1280px] flex-col gap-3 bg-slate-50 p-4 dark:bg-slate-950 max-md:bg-[radial-gradient(circle_at_100%_0,rgba(37,99,235,0.12),transparent_34%),linear-gradient(180deg,#f7f9fc_0%,#eef3f8_100%)] max-md:px-2.5 max-md:py-3 max-md:pb-[calc(104px+env(safe-area-inset-bottom))] dark:max-md:bg-[radial-gradient(circle_at_100%_0,rgba(96,165,250,0.14),transparent_34%),linear-gradient(180deg,#0f172a_0%,#111827_100%)] md:gap-5 md:p-6';
 const panelClass = 'rounded-[24px] border border-slate-200 bg-white p-3 shadow-[0_14px_36px_rgba(15,23,42,0.07)] dark:border-slate-700 dark:bg-slate-800/90';
 const inputClass = 'min-h-12 w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm font-bold text-slate-900 outline-none transition placeholder:text-slate-400 focus:border-blue-400 focus:ring-2 focus:ring-blue-500/15 dark:border-slate-700 dark:bg-slate-950 dark:text-slate-100';
 const footerButtonClass = 'inline-flex min-h-11 items-center justify-center gap-1.5 rounded-xl px-3 py-2 text-sm font-black transition';
@@ -208,7 +208,7 @@ export default function UsersPage({ users, roles, summary }: UsersPageProps) {
                 </div>
 
                 {showForm && (
-                    <form onSubmit={submit} className={panelClass}>
+                    <form onSubmit={submit} className={`${panelClass} md:mx-auto md:w-full md:max-w-[900px] md:p-5`}>
                         <div className="mb-4 flex items-center justify-between gap-3">
                             <div>
                                 <h2 className="text-base font-black text-slate-900 dark:text-slate-50">{mode === 'edit' ? `Edit ${editing?.name}` : 'Create User'}</h2>
@@ -221,36 +221,37 @@ export default function UsersPage({ users, roles, summary }: UsersPageProps) {
                             )}
                         </div>
 
-                        <div className="mb-4 flex flex-col items-center gap-2">
-                            <button type="button" onClick={() => fileInputRef.current?.click()} className="relative flex h-24 w-24 items-center justify-center overflow-hidden rounded-full border-2 border-dashed border-slate-300 bg-slate-50 text-slate-400 dark:border-slate-700 dark:bg-slate-950">
-                                {avatarPreview ? <img src={avatarPreview} alt="User avatar preview" className="h-full w-full object-cover" /> : <UserRound size={34} />}
-                                <span className="absolute right-1 bottom-1 flex h-7 w-7 items-center justify-center rounded-full bg-blue-600 text-white shadow-lg">
-                                    <Camera size={13} />
-                                </span>
-                            </button>
-                            <p className="max-w-full truncate text-xs font-bold text-slate-400">{form.data.avatar ? form.data.avatar.name : 'Upload profile photo'}</p>
-                            <input
-                                ref={fileInputRef}
-                                type="file"
-                                accept="image/jpeg,image/png,image/jpg,image/webp"
-                                className="hidden"
-                                onChange={event => {
-                                    const file = event.target.files?.[0] ?? null;
-                                    form.setData('avatar', file);
-                                    setAvatarPreview(file ? URL.createObjectURL(file) : (editing?.avatar ?? null));
-                                }}
-                            />
-                            <FieldError message={form.errors.avatar as string | undefined} />
-                        </div>
+                        <div className="grid gap-5 md:grid-cols-[220px_1fr] md:items-start">
+                            <div className="flex flex-col items-center gap-2 rounded-[22px] border border-slate-200 bg-slate-50 p-5 dark:border-slate-700 dark:bg-slate-950">
+                                <button type="button" onClick={() => fileInputRef.current?.click()} className="relative flex h-24 w-24 items-center justify-center overflow-hidden rounded-full border-2 border-dashed border-slate-300 bg-white text-slate-400 dark:border-slate-700 dark:bg-slate-900">
+                                    {avatarPreview ? <img src={avatarPreview} alt="User avatar preview" className="h-full w-full object-cover" /> : <UserRound size={34} />}
+                                    <span className="absolute right-1 bottom-1 flex h-7 w-7 items-center justify-center rounded-full bg-blue-600 text-white shadow-lg">
+                                        <Camera size={13} />
+                                    </span>
+                                </button>
+                                <p className="max-w-full truncate text-center text-xs font-bold text-slate-400">{form.data.avatar ? form.data.avatar.name : 'Upload profile photo'}</p>
+                                <input
+                                    ref={fileInputRef}
+                                    type="file"
+                                    accept="image/jpeg,image/png,image/jpg,image/webp"
+                                    className="hidden"
+                                    onChange={event => {
+                                        const file = event.target.files?.[0] ?? null;
+                                        form.setData('avatar', file);
+                                        setAvatarPreview(file ? URL.createObjectURL(file) : (editing?.avatar ?? null));
+                                    }}
+                                />
+                                <FieldError message={form.errors.avatar as string | undefined} />
+                            </div>
 
-                        <div className="grid gap-3">
+                            <div className="grid gap-3">
                             <Field label="Name" error={form.errors.name}>
                                 <input className={inputClass} value={form.data.name} onChange={event => form.setData('name', event.target.value)} />
                             </Field>
                             <Field label="Email" error={form.errors.email}>
                                 <input className={inputClass} type="email" value={form.data.email} onChange={event => form.setData('email', event.target.value)} />
                             </Field>
-                            <div className="grid grid-cols-2 gap-2">
+                            <div className="grid gap-2 md:grid-cols-2">
                                 <Field label={mode === 'edit' ? 'New Password' : 'Password'} error={form.errors.password}>
                                     <input className={inputClass} type="password" value={form.data.password} onChange={event => form.setData('password', event.target.value)} />
                                 </Field>
@@ -273,6 +274,7 @@ export default function UsersPage({ users, roles, summary }: UsersPageProps) {
                                 <input type="checkbox" checked={form.data.email_verified} onChange={event => form.setData('email_verified', event.target.checked)} />
                                 Email verified
                             </label>
+                            </div>
                         </div>
 
                         <div className="mt-4 grid grid-cols-[1fr_2fr] gap-2">
@@ -306,7 +308,7 @@ export default function UsersPage({ users, roles, summary }: UsersPageProps) {
                         <input placeholder="Search users..." value={search} onChange={event => setSearch(event.target.value)} className="min-w-0 flex-1 bg-transparent text-sm font-bold text-slate-900 outline-none placeholder:text-slate-400 dark:text-slate-100" />
                     </div>
 
-                    <div className="grid gap-3">
+                    <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-3">
                         {filteredUsers.length === 0 && (
                             <div className="rounded-[22px] border border-dashed border-slate-300 px-4 py-10 text-center text-sm font-bold text-slate-500 dark:border-slate-700 dark:text-slate-400">
                                 No users found

@@ -87,7 +87,7 @@ const ORDER_OPTIONS: { value: OrderKey; label: string }[] = [
     { value: 'exam-asc', label: 'Exam A-Z' },
 ];
 
-const pageClass = 'fade-in flex flex-col gap-3 bg-slate-50 p-4 dark:bg-slate-950 max-md:bg-[radial-gradient(circle_at_100%_0,rgba(37,99,235,0.12),transparent_34%),linear-gradient(180deg,#f7f9fc_0%,#eef3f8_100%)] max-md:px-2.5 max-md:py-3 max-md:pb-[calc(104px+env(safe-area-inset-bottom))] dark:max-md:bg-[radial-gradient(circle_at_100%_0,rgba(96,165,250,0.14),transparent_34%),linear-gradient(180deg,#0f172a_0%,#111827_100%)]';
+const pageClass = 'fade-in mx-auto flex w-full max-w-[1280px] flex-col gap-3 bg-slate-50 p-4 dark:bg-slate-950 max-md:bg-[radial-gradient(circle_at_100%_0,rgba(37,99,235,0.12),transparent_34%),linear-gradient(180deg,#f7f9fc_0%,#eef3f8_100%)] max-md:px-2.5 max-md:py-3 max-md:pb-[calc(104px+env(safe-area-inset-bottom))] dark:max-md:bg-[radial-gradient(circle_at_100%_0,rgba(96,165,250,0.14),transparent_34%),linear-gradient(180deg,#0f172a_0%,#111827_100%)] md:gap-5 md:p-6';
 const panelClass = 'rounded-[24px] border border-slate-200 bg-white p-3 shadow-[0_14px_36px_rgba(15,23,42,0.07)] dark:border-slate-700 dark:bg-slate-800/90';
 const controlInputClass = 'min-h-9 rounded-xl border border-slate-200 bg-white px-3 py-1 text-xs font-bold text-slate-900 dark:border-slate-700 dark:bg-slate-950 dark:text-slate-100';
 const inputClass = 'min-h-12 w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm font-bold text-slate-900 outline-none transition placeholder:text-slate-400 focus:border-blue-400 focus:ring-2 focus:ring-blue-500/15 dark:border-slate-700 dark:bg-slate-950 dark:text-slate-100';
@@ -271,35 +271,37 @@ export default function ExamResultsPage({ results, exams, students, summary }: E
                 </div>
 
                 <section className="overflow-visible rounded-[24px] border-0 bg-transparent shadow-none md:overflow-x-auto md:rounded-2xl md:border md:border-slate-200 md:bg-white md:shadow-sm dark:md:border-slate-700 dark:md:bg-slate-800/90">
-                    <div className="sticky top-0 z-10 mb-3 grid grid-cols-2 gap-2 rounded-[22px] border border-slate-200 bg-white/90 p-3 shadow-[0_12px_32px_rgba(15,23,42,0.07)] backdrop-blur dark:border-slate-700 dark:bg-slate-800/90 md:mb-0 md:flex md:flex-wrap md:items-center md:border-x-0 md:border-t-0 md:shadow-none">
-                        <span className="hidden whitespace-nowrap text-[11px] font-bold text-slate-400 md:inline">Sort by</span>
-                        <Select value={orderBy} onValueChange={value => setOrderBy(value as OrderKey)}>
-                            <SelectTrigger className={`${controlInputClass} min-w-0 md:min-w-[150px]`}>
-                                <SelectValue />
-                            </SelectTrigger>
-                            <SelectContent>
-                                {ORDER_OPTIONS.map(option => <SelectItem key={option.value} value={option.value}>{option.label}</SelectItem>)}
-                            </SelectContent>
-                        </Select>
-                        <Select value={perPage.toString()} onValueChange={value => { setPerPage(Number(value)); setPage(1); }}>
-                            <SelectTrigger className={`${controlInputClass} min-w-0 md:min-w-[120px]`}>
-                                <SelectValue />
-                            </SelectTrigger>
-                            <SelectContent>
-                                {[5, 10, 25, 50].map(size => <SelectItem key={size} value={size.toString()}>{size} per page</SelectItem>)}
-                            </SelectContent>
-                        </Select>
-                        <Select value={String(selectedExam)} onValueChange={value => setSelectedExam(value === 'all' ? 'all' : Number(value))}>
-                            <SelectTrigger className={`${controlInputClass} col-span-2 w-full md:w-[220px]`}>
-                                <SelectValue />
-                            </SelectTrigger>
-                            <SelectContent>
-                                <SelectItem value="all">All exams</SelectItem>
-                                {exams.map(exam => <SelectItem key={exam.id} value={String(exam.id)}>{exam.title}</SelectItem>)}
-                            </SelectContent>
-                        </Select>
-                        <span className="hidden text-[11px] font-bold text-slate-400 md:inline">{filtered.length} result{filtered.length !== 1 ? 's' : ''}</span>
-                        <input value={search} onChange={event => setSearch(event.target.value)} className={`${controlInputClass} col-span-2 w-full md:ml-auto md:w-[260px]`} placeholder="Search exam results..." />
+                    <div className="sticky top-0 z-10 mb-3 grid grid-cols-2 gap-2 rounded-[22px] border border-slate-200 bg-white/90 p-3 shadow-[0_12px_32px_rgba(15,23,42,0.07)] backdrop-blur dark:border-slate-700 dark:bg-slate-800/90 md:static md:mb-0 md:grid-cols-[auto_1fr_320px] md:items-center md:gap-3 md:border-x-0 md:border-t-0 md:shadow-none">
+                        <div className="contents md:flex md:items-center md:gap-2">
+                            <span className="hidden whitespace-nowrap text-[11px] font-bold text-slate-400 md:inline">Sort by</span>
+                            <Select value={orderBy} onValueChange={value => setOrderBy(value as OrderKey)}>
+                                <SelectTrigger className={`${controlInputClass} min-w-0 md:w-[160px]`}>
+                                    <SelectValue />
+                                </SelectTrigger>
+                                <SelectContent>
+                                    {ORDER_OPTIONS.map(option => <SelectItem key={option.value} value={option.value}>{option.label}</SelectItem>)}
+                                </SelectContent>
+                            </Select>
+                            <Select value={perPage.toString()} onValueChange={value => { setPerPage(Number(value)); setPage(1); }}>
+                                <SelectTrigger className={`${controlInputClass} min-w-0 md:w-[128px]`}>
+                                    <SelectValue />
+                                </SelectTrigger>
+                                <SelectContent>
+                                    {[5, 10, 25, 50].map(size => <SelectItem key={size} value={size.toString()}>{size} per page</SelectItem>)}
+                                </SelectContent>
+                            </Select>
+                            <Select value={String(selectedExam)} onValueChange={value => setSelectedExam(value === 'all' ? 'all' : Number(value))}>
+                                <SelectTrigger className={`${controlInputClass} col-span-2 w-full md:w-[210px]`}>
+                                    <SelectValue />
+                                </SelectTrigger>
+                                <SelectContent>
+                                    <SelectItem value="all">All exams</SelectItem>
+                                    {exams.map(exam => <SelectItem key={exam.id} value={String(exam.id)}>{exam.title}</SelectItem>)}
+                                </SelectContent>
+                            </Select>
+                            <span className="hidden text-[11px] font-bold text-slate-400 md:inline">{filtered.length} result{filtered.length !== 1 ? 's' : ''}</span>
+                        </div>
+                        <input value={search} onChange={event => setSearch(event.target.value)} className={`${controlInputClass} col-span-2 w-full md:col-start-3 md:w-full`} placeholder="Search exam results..." />
                     </div>
 
                     <table className={desktopTableClass}>

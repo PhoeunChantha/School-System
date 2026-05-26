@@ -61,7 +61,7 @@ const emptyForm: ActivityLogFormData = {
     user_agent: '',
 };
 
-const pageClass = 'fade-in flex flex-col gap-3 bg-slate-50 p-4 dark:bg-slate-950 max-md:bg-[radial-gradient(circle_at_100%_0,rgba(37,99,235,0.12),transparent_34%),linear-gradient(180deg,#f7f9fc_0%,#eef3f8_100%)] max-md:px-2.5 max-md:py-3 max-md:pb-[calc(104px+env(safe-area-inset-bottom))] dark:max-md:bg-[radial-gradient(circle_at_100%_0,rgba(96,165,250,0.14),transparent_34%),linear-gradient(180deg,#0f172a_0%,#111827_100%)]';
+const pageClass = 'fade-in mx-auto flex w-full max-w-[1280px] flex-col gap-3 bg-slate-50 p-4 dark:bg-slate-950 max-md:bg-[radial-gradient(circle_at_100%_0,rgba(37,99,235,0.12),transparent_34%),linear-gradient(180deg,#f7f9fc_0%,#eef3f8_100%)] max-md:px-2.5 max-md:py-3 max-md:pb-[calc(104px+env(safe-area-inset-bottom))] dark:max-md:bg-[radial-gradient(circle_at_100%_0,rgba(96,165,250,0.14),transparent_34%),linear-gradient(180deg,#0f172a_0%,#111827_100%)] md:gap-5 md:p-6';
 const panelClass = 'rounded-[24px] border border-slate-200 bg-white p-3 shadow-[0_14px_36px_rgba(15,23,42,0.07)] dark:border-slate-700 dark:bg-slate-800/90';
 const inputClass = 'min-h-12 w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm font-bold text-slate-900 outline-none transition placeholder:text-slate-400 focus:border-blue-400 focus:ring-2 focus:ring-blue-500/15 dark:border-slate-700 dark:bg-slate-950 dark:text-slate-100';
 const selectClass = 'min-h-11 w-full rounded-2xl border border-slate-200 bg-white px-3 py-2 text-xs font-black text-slate-900 dark:border-slate-700 dark:bg-slate-950 dark:text-slate-100';
@@ -207,15 +207,17 @@ export default function ActivityLogsPage({ logs, users, events, summary }: Activ
                 </div>
 
                 <section className={panelClass}>
-                    <div className="grid grid-cols-2 gap-2">
-                        <AdminSelect value={selectedEvent} onChange={setSelectedEvent} options={[{ value: 'all', label: 'All events' }, ...events.map(event => ({ value: event, label: event }))]} triggerClassName={selectClass} />
-                        <AdminSelect value={String(selectedUser)} onChange={value => setSelectedUser(value === 'all' ? 'all' : Number(value))} options={[{ value: 'all', label: 'All users' }, ...users.map(user => ({ value: String(user.id), label: user.name }))]} triggerClassName={selectClass} />
-                        <AdminSelect value={perPage.toString()} onChange={value => setPerPage(Number(value))} options={[5, 10, 25, 50].map(size => ({ value: size.toString(), label: `${size} per page` }))} triggerClassName={selectClass} />
-                        <div className="flex min-h-11 items-center rounded-2xl border border-slate-200 bg-white px-3 text-xs font-black text-slate-400 dark:border-slate-700 dark:bg-slate-950">
-                            {filtered.length} results
+                    <div className="grid grid-cols-2 gap-2 md:grid-cols-[auto_1fr_320px] md:items-center md:gap-3">
+                        <div className="contents md:flex md:flex-wrap md:items-center md:gap-2">
+                            <AdminSelect value={selectedEvent} onChange={setSelectedEvent} options={[{ value: 'all', label: 'All events' }, ...events.map(event => ({ value: event, label: event }))]} className="min-w-0 md:w-[180px]" triggerClassName={selectClass} />
+                            <AdminSelect value={String(selectedUser)} onChange={value => setSelectedUser(value === 'all' ? 'all' : Number(value))} options={[{ value: 'all', label: 'All users' }, ...users.map(user => ({ value: String(user.id), label: user.name }))]} className="min-w-0 md:w-[180px]" triggerClassName={selectClass} />
+                            <AdminSelect value={perPage.toString()} onChange={value => setPerPage(Number(value))} options={[5, 10, 25, 50].map(size => ({ value: size.toString(), label: `${size} per page` }))} className="min-w-0 md:w-[130px]" triggerClassName={selectClass} />
+                            <div className="flex min-h-11 items-center rounded-2xl border border-slate-200 bg-white px-3 text-xs font-black text-slate-400 dark:border-slate-700 dark:bg-slate-950 md:w-auto md:border-0 md:bg-transparent md:px-0 dark:md:bg-transparent">
+                                {filtered.length} results
+                            </div>
                         </div>
+                        <input value={search} onChange={event => setSearch(event.target.value)} className={`${inputClass} col-span-2 md:col-start-3 md:w-full`} placeholder="Search activity logs..." />
                     </div>
-                    <input value={search} onChange={event => setSearch(event.target.value)} className={`${inputClass} mt-2`} placeholder="Search activity logs..." />
                 </section>
 
                 <section className="grid gap-3">

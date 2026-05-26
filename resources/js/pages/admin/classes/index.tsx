@@ -198,8 +198,8 @@ export default function ClassesPage({
         <AdminShell>
             {/* List view */}
             {view === 'list' && (
-                <div className="fade-in flex flex-col gap-3 bg-slate-50 p-4 dark:bg-slate-950 max-md:bg-[radial-gradient(circle_at_100%_0,rgba(37,99,235,0.12),transparent_34%),linear-gradient(180deg,#f7f9fc_0%,#eef3f8_100%)] max-md:px-2.5 max-md:py-3 max-md:pb-[calc(104px+env(safe-area-inset-bottom))] dark:max-md:bg-[radial-gradient(circle_at_100%_0,rgba(96,165,250,0.14),transparent_34%),linear-gradient(180deg,#0f172a_0%,#111827_100%)]">
-                    <section className="flex items-center justify-between gap-3 rounded-[24px] border border-slate-200 bg-white p-4 shadow-[0_14px_36px_rgba(15,23,42,0.07)] dark:border-slate-700 dark:bg-slate-800/90">
+                <div className="fade-in mx-auto flex w-full max-w-[1280px] flex-col gap-3 bg-slate-50 p-4 dark:bg-slate-950 md:gap-5 md:p-6 max-md:bg-[radial-gradient(circle_at_100%_0,rgba(37,99,235,0.12),transparent_34%),linear-gradient(180deg,#f7f9fc_0%,#eef3f8_100%)] max-md:px-2.5 max-md:py-3 max-md:pb-[calc(104px+env(safe-area-inset-bottom))] dark:max-md:bg-[radial-gradient(circle_at_100%_0,rgba(96,165,250,0.14),transparent_34%),linear-gradient(180deg,#0f172a_0%,#111827_100%)]">
+                    <section className="flex items-center justify-between gap-3 rounded-[24px] border border-slate-200 bg-white p-4 shadow-[0_14px_36px_rgba(15,23,42,0.07)] dark:border-slate-700 dark:bg-slate-800/90 md:rounded-[28px] md:p-5">
                         <div>
                             <span className="block text-xs font-black text-slate-400">Class directory</span>
                             <strong className="mt-1 block text-2xl font-black text-slate-900 dark:text-slate-50">{classes.length} classes</strong>
@@ -214,20 +214,11 @@ export default function ClassesPage({
                         </button>
                     </section>
 
-                    {/* Toolbar */}
-                    <div className="hidden flex-wrap items-center justify-end gap-3 md:flex">
-                        <button
-                            onClick={() => setView('add')}
-                            className={`${primaryButtonClass} ml-auto max-md:w-full`}
-                        >
-                            <School size={14} /> {translateText('Add Class')}
-                        </button>
-                    </div>
-
                     {/* Table */}
-                    <div className="overflow-visible rounded-[24px] border-0 bg-transparent shadow-none md:overflow-x-auto md:rounded-2xl md:border md:border-slate-200 md:bg-white md:shadow-sm dark:md:border-slate-700 dark:md:bg-slate-800/90">
+                    <div className="overflow-visible rounded-[24px] border-0 bg-transparent shadow-none md:overflow-x-auto md:rounded-[24px] md:border md:border-slate-200 md:bg-white md:shadow-sm dark:md:border-slate-700 dark:md:bg-slate-800/90">
                         {/* Sort + per-page controls */}
-                        <div className="sticky top-0 z-10 mb-3 grid grid-cols-2 gap-2 rounded-[22px] border border-slate-200 bg-white/90 p-3 shadow-[0_12px_32px_rgba(15,23,42,0.07)] backdrop-blur dark:border-slate-700 dark:bg-slate-800/90 md:mb-0 md:flex md:flex-wrap md:items-center md:border-b md:shadow-none">
+                        <div className="sticky top-0 z-10 mb-3 grid grid-cols-2 gap-2 rounded-[22px] border border-slate-200 bg-white/90 p-3 shadow-[0_12px_32px_rgba(15,23,42,0.07)] backdrop-blur dark:border-slate-700 dark:bg-slate-800/90 md:static md:mb-0 md:grid md:grid-cols-[auto_1fr_320px] md:items-center md:gap-3 md:border-0 md:border-b md:border-slate-200 md:bg-white md:p-4 md:shadow-none md:backdrop-blur-none dark:md:border-slate-700 dark:md:bg-slate-800/90">
+                            <div className="contents md:flex md:items-center md:gap-2">
                             <span className="hidden text-[11px] font-black text-slate-400 md:inline">
                                 {translateText('Sort by')}
                             </span>
@@ -235,7 +226,7 @@ export default function ClassesPage({
                                 value={orderBy}
                                 onValueChange={(e) => setOrderBy(e as OrderKey)}
                             >
-                                <SelectTrigger className={`${controlInputClass} min-w-[150px]`}>
+                                <SelectTrigger className={`${controlInputClass} w-full md:w-[180px]`}>
                                     <SelectValue />
                                 </SelectTrigger>
                                 <SelectContent>
@@ -259,7 +250,7 @@ export default function ClassesPage({
                                     setPage(1);
                                 }}
                             >
-                                <SelectTrigger className={`${controlInputClass} min-w-[120px]`}>
+                                <SelectTrigger className={`${controlInputClass} w-full md:w-[140px]`}>
                                     <SelectValue />
                                 </SelectTrigger>
                                 <SelectContent>
@@ -282,17 +273,18 @@ export default function ClassesPage({
                                         : 'results',
                                 )}
                             </span>
+                            </div>
 
                             <input
                                 value={search}
                                 onChange={(e) => setSearch(e.target.value)}
-                                className={`${controlInputClass} col-span-2 w-full md:ml-auto md:max-w-[260px]`}
+                                className={`${controlInputClass} col-span-2 w-full md:col-span-1 md:col-start-3 md:ml-0 md:max-w-none`}
                                 data-role="classes-search"
                                 placeholder={translateText('Search classes...')}
                             />
                         </div>
 
-                        <table className="data-table hidden md:table">
+                        <table className="data-table hidden md:table md:min-w-[980px]">
                             <thead>
                                 <tr>
                                     <th>{translateText('Class')}</th>

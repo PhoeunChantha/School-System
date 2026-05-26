@@ -673,7 +673,7 @@ export default function HonorRollPage() {
             `}</style>
 
             <div
-                className="fade-in flex flex-col gap-3 bg-slate-50 p-4 dark:bg-slate-950 max-md:bg-[radial-gradient(circle_at_100%_0,rgba(245,158,11,0.13),transparent_34%),linear-gradient(180deg,#f8fafc_0%,#eef3f8_100%)] max-md:px-2.5 max-md:py-3 max-md:pb-[calc(104px+env(safe-area-inset-bottom))] dark:max-md:bg-[radial-gradient(circle_at_100%_0,rgba(251,191,36,0.14),transparent_34%),linear-gradient(180deg,#0f172a_0%,#111827_100%)]"
+                className="fade-in mx-auto flex w-full max-w-[1280px] flex-col gap-3 bg-slate-50 p-4 dark:bg-slate-950 max-md:bg-[radial-gradient(circle_at_100%_0,rgba(245,158,11,0.13),transparent_34%),linear-gradient(180deg,#f8fafc_0%,#eef3f8_100%)] max-md:px-2.5 max-md:py-3 max-md:pb-[calc(104px+env(safe-area-inset-bottom))] dark:max-md:bg-[radial-gradient(circle_at_100%_0,rgba(251,191,36,0.14),transparent_34%),linear-gradient(180deg,#0f172a_0%,#111827_100%)] md:gap-5 md:p-6"
             >
                 {/* â”€â”€ Controls â”€â”€ */}
                 <div
@@ -724,15 +724,16 @@ export default function HonorRollPage() {
                 <div
                     ref={shellRef}
                     id="honor-print-root"
-                    className="overflow-hidden rounded-[24px] border border-slate-200 bg-white p-1 shadow-[0_18px_42px_rgba(15,23,42,0.12)] dark:border-slate-700 dark:bg-slate-900 md:p-3"
+                    className="overflow-hidden rounded-[24px] border border-slate-200 bg-white p-1 shadow-[0_18px_42px_rgba(15,23,42,0.12)] dark:border-slate-700 dark:bg-slate-900 md:flex md:justify-center md:p-3"
                 >
                     <div
                         style={{
                             width: 740,
                             transform: `scale(${posterScale})`,
-                            transformOrigin: 'top left',
+                            transformOrigin: 'top center',
                             height: `${Math.ceil(1040 * posterScale)}px`,
                         }}
+                        className="mx-auto"
                     >
                         <HonorRollPoster
                             className={selClass}
