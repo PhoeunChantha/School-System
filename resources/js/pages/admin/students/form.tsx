@@ -89,8 +89,16 @@ export default function StudentFormPage({
         student?.profile_photo_url ?? null,
     );
     const fileInputRef = useRef<HTMLInputElement>(null);
-    const { data, setData, post, processing, errors, transform, setError, clearErrors } =
-        useForm<StudentFormData>({
+    const {
+        data,
+        setData,
+        post,
+        processing,
+        errors,
+        transform,
+        setError,
+        clearErrors,
+    } = useForm<StudentFormData>({
             level_id: student?.level_id ?? null,
             school_class_id: student?.school_class_id ?? null,
             code: student?.code ?? '',
@@ -117,8 +125,6 @@ export default function StudentFormPage({
     const filteredClasses = data.level_id
         ? classes.filter((schoolClass) => schoolClass.levelId === data.level_id)
         : classes;
-
-    const selectedLevel = levels.find((level) => level.id === data.level_id);
 
     const preventNativeSubmit = (event: FormEvent<HTMLFormElement>) => {
         event.preventDefault();
@@ -509,32 +515,6 @@ export default function StudentFormPage({
                             </div>
                             <div className={fieldGroupClass}>
                                 <label className={fieldLabelClass}>
-                                    {translateText('Monthly Fee')}
-                                </label>
-                                <input
-                                    type="number"
-                                    className={fieldInputClass}
-                                    value={data.monthly_fee}
-                                    min={0}
-                                    onChange={(event) =>
-                                        setData(
-                                            'monthly_fee',
-                                            event.target.value,
-                                        )
-                                    }
-                                />
-                                {selectedLevel && (
-                                    <div
-                                        className="mt-1 text-[11px] font-bold text-slate-400"
-                                    >
-                                        {translateText('Level default')}: $
-                                        {selectedLevel.monthly_fee}
-                                    </div>
-                                )}
-                                {inputError(errors.monthly_fee)}
-                            </div>
-                            <div className={fieldGroupClass}>
-                                <label className={fieldLabelClass}>
                                     {translateText('Scholarship Amount')}
                                 </label>
                                 <input
@@ -550,36 +530,6 @@ export default function StudentFormPage({
                                     }
                                 />
                                 {inputError(errors.scholarship_amount)}
-                            </div>
-                            <div className={fieldGroupClass}>
-                                <label className={fieldLabelClass}>
-                                    {translateText('Fee Status')}
-                                </label>
-                                <Select
-                                    value={data.fee_status}
-                                    onValueChange={(value) =>
-                                        setData(
-                                            'fee_status',
-                                            value as StudentFormData['fee_status'],
-                                        )
-                                    }
-                                >
-                                    <SelectTrigger className={fieldInputClass}>
-                                        <SelectValue />
-                                    </SelectTrigger>
-                                    <SelectContent>
-                                        <SelectItem value="unpaid">
-                                            {translateText('Unpaid')}
-                                        </SelectItem>
-                                        <SelectItem value="partial">
-                                            {translateText('Partial')}
-                                        </SelectItem>
-                                        <SelectItem value="paid">
-                                            {translateText('Paid')}
-                                        </SelectItem>
-                                    </SelectContent>
-                                </Select>
-                                {inputError(errors.fee_status)}
                             </div>
                             <div className={fieldGroupClass}>
                                 <label className={fieldLabelClass}>

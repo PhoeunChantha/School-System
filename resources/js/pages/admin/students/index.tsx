@@ -332,13 +332,13 @@ export default function StudentsPage({ students }: StudentsPageProps) {
                                 <tr>
                                     <th>Student</th><th>Level</th><th>Class</th><th>Attendance</th>
                                     <th>Speaking</th><th>Listening</th><th>Reading</th><th>Writing</th>
-                                    <th>Fee</th><th>Province</th>{canManageStudents && <th>Actions</th>}
+                                    <th>Province</th>{canManageStudents && <th>Actions</th>}
                                 </tr>
                             </thead>
                             <tbody>
                                 {paginated.length === 0 ? (
                                     <tr>
-                                        <td colSpan={canManageStudents ? 11 : 10} className="px-6 py-8 text-center text-sm font-bold text-slate-500">
+                                        <td colSpan={canManageStudents ? 10 : 9} className="px-6 py-8 text-center text-sm font-bold text-slate-500">
                                             Data not found
                                         </td>
                                     </tr>
@@ -365,7 +365,6 @@ export default function StudentsPage({ students }: StudentsPageProps) {
                                         <td><ScoreChip score={student.grade.listening} /></td>
                                         <td><ScoreChip score={student.grade.reading} /></td>
                                         <td><ScoreChip score={student.grade.writing} /></td>
-                                        <td><FeeTag status={student.fees} /></td>
                                         <td className="text-xs text-slate-500">{student.province}</td>
                                         {canManageStudents && (
                                             <td onClick={e => e.stopPropagation()}>

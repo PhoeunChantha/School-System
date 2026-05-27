@@ -524,25 +524,64 @@ function ClassForm({ mode, cls, levels, teachers, onBack }: FormProps) {
     const { translateText } = useAdminTranslation();
     const initialDays = (cls?.days.split(' ').filter(Boolean) ??
         []) as Weekday[];
-    const { data, setData, post, put, processing, errors, transform } = useForm(
-        {
-            level_id: (cls?.levelId ?? null) as number | null,
-            teacher_id: (cls?.teacherId ?? null) as number | null,
-            name: cls?.name ?? '',
-            room: cls?.room ?? '',
-            starts_at: cls?.startsAt?.slice(0, 5) ?? '',
-            ends_at: cls?.endsAt?.slice(0, 5) ?? '',
-            days: initialDays,
-            capacity: cls?.capacity ?? 20,
-            academic_year: String(new Date().getFullYear()),
-            status: cls?.status ?? 'active',
-        },
-    );
+    const {
+        data,
+        setData,
+        post,
+        put,
+        processing,
+        errors,
+        transform,
+        setError,
+        clearErrors,
+    } = useForm({
+        level_id: (cls?.levelId ?? null) as number | null,
+        teacher_id: (cls?.teacherId ?? null) as number | null,
+        name: cls?.name ?? '',
+        room: cls?.room ?? '',
+        starts_at: cls?.startsAt?.slice(0, 5) ?? '',
+        ends_at: cls?.endsAt?.slice(0, 5) ?? '',
+        days: initialDays,
+        capacity: cls?.capacity ?? 20,
+        academic_year: String(new Date().getFullYear()),
+        status: cls?.status ?? 'active',
+    });
 
     const selectedLevel = levels.find((level) => level.id === data.level_id);
 
+    const validateClassForm = () => {
+        clearErrors('level_id', 'name', 'teacher_id', 'room', 'days');
+
+        if (!data.level_id) {
+            setError('level_id', translateText('Please select a level.'));
+        }
+
+        if (!data.teacher_id) {
+            setError('teacher_id', translateText('Please select a teacher.'));
+        }
+
+        if (!data.room.trim()) {
+            setError('room', translateText('Please enter a room.'));
+        }
+
+        if (data.days.length === 0) {
+            setError('days', translateText('Please select at least one day.'));
+        }
+
+        return Boolean(
+            data.level_id &&
+                data.teacher_id &&
+                data.room.trim() &&
+                data.days.length > 0,
+        );
+    };
+
     const submit = (event: FormEvent<HTMLFormElement>) => {
         event.preventDefault();
+
+        if (!validateClassForm()) {
+            return;
+        }
 
         transform((formData) => ({
             ...formData,
@@ -580,6 +619,7 @@ function ClassForm({ mode, cls, levels, teachers, onBack }: FormProps) {
     };
 
     const toggleDay = (day: Weekday) => {
+        clearErrors('days');
         setData(
             'days',
             data.days.includes(day)
@@ -615,11 +655,12 @@ function ClassForm({ mode, cls, levels, teachers, onBack }: FormProps) {
                 <div className="grid grid-cols-2 gap-4 max-md:grid-cols-1">
                     <div className={`${fieldGroupClass} col-span-full`}>
                         <label className={fieldLabelClass}>
-                            {translateText('Class Name')} *
+                            {translateText('Level')} *
                         </label>
                         <Select
                             value={data.level_id?.toString() ?? ''}
                             onValueChange={(e) => {
+                                clearErrors('level_id', 'name');
                                 const level = levels.find(
                                     (item) => item.id === Number(e),
                                 );
@@ -649,9 +690,9 @@ function ClassForm({ mode, cls, levels, teachers, onBack }: FormProps) {
                                 ))}
                             </SelectContent>
                         </Select>
-                        {errors.name && (
+                        {(errors.level_id || errors.name) && (
                             <div className={errorTextClass}>
-                                {errors.name}
+                                {errors.level_id || errors.name}
                             </div>
                         )}
                     </div>
@@ -661,9 +702,10 @@ function ClassForm({ mode, cls, levels, teachers, onBack }: FormProps) {
                         </label>
                         <Select
                             value={data.teacher_id?.toString() ?? ''}
-                            onValueChange={(e) =>
-                                setData('teacher_id', e ? Number(e) : null)
-                            }
+                            onValueChange={(e) => {
+                                clearErrors('teacher_id');
+                                setData('teacher_id', e ? Number(e) : null);
+                            }}
                         >
                             <SelectTrigger className={fieldInputClass}>
                                 <SelectValue
@@ -696,8 +738,12 @@ function ClassForm({ mode, cls, levels, teachers, onBack }: FormProps) {
                         <input
                             className={fieldInputClass}
                             placeholder="e.g. A1"
+                            required
                             value={data.room}
-                            onChange={(e) => setData('room', e.target.value)}
+                            onChange={(e) => {
+                                clearErrors('room');
+                                setData('room', e.target.value);
+                            }}
                         />
                         {errors.room && (
                             <div className={errorTextClass}>

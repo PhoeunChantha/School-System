@@ -62,6 +62,30 @@ class AdminSchoolClassCrudTest extends TestCase
         ]);
     }
 
+    public function test_admin_must_complete_required_class_fields(): void
+    {
+        $this->actingAs(User::factory()->create());
+
+        $this->post(route('admin.classes.store'), [
+            'level_id' => null,
+            'teacher_id' => null,
+            'name' => '',
+            'room' => '',
+            'starts_at' => null,
+            'ends_at' => null,
+            'days' => [],
+            'capacity' => 20,
+            'academic_year' => '2026',
+            'status' => 'active',
+        ])->assertSessionHasErrors([
+            'level_id',
+            'teacher_id',
+            'name',
+            'room',
+            'days',
+        ]);
+    }
+
     public function test_admin_can_update_class(): void
     {
         $user = User::factory()->create();

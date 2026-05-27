@@ -26,7 +26,7 @@ class UpdateTeacherRequest extends FormRequest
         return [
             'name_kh' => ['required', 'string', 'max:255'],
             'name_en' => ['required', 'string', 'max:255'],
-            'subject' => ['nullable', 'string', 'max:255'],
+            'subject' => ['required', 'string', 'max:255'],
             'phone' => ['nullable', 'string', 'max:255'],
             'telegram_username' => ['nullable', 'string', 'max:255'],
             'profile_photo' => ['nullable', 'image', 'mimes:jpeg,png,jpg,webp', 'max:2048'],
