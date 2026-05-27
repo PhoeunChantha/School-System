@@ -1,11 +1,11 @@
 import { FormEvent, useRef } from 'react';
 import { index as homeworkIndex, store, update } from '@/actions/App/Http/Controllers/Backends/HomeworkAssignmentController';
+import { DatePicker } from '@/components/ui/date-picker';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import AdminShell from '@/pages/admin/shell';
 import { Link, useForm } from '@inertiajs/react';
-import { toast } from 'sonner';
-import { Select, SelectTrigger, SelectContent, SelectItem, SelectValue } from '@/components/ui/select';
-import { DatePicker } from '@/components/ui/date-picker';
 import { FileText, Upload } from 'lucide-react';
+import { toast } from 'sonner';
 
 export interface HomeworkClassOption {
     id: number;
@@ -38,26 +38,10 @@ interface HomeworkFormPageProps {
     classes: HomeworkClassOption[];
 }
 
-const fieldStyle = {
-    width: '100%',
-    minHeight: 42,
-    background: '#f8fafc',
-    border: '1.5px solid #e2e8f0',
-    borderRadius: 10,
-    padding: '10px 14px',
-    fontSize: 14,
-    fontFamily: 'inherit',
-    outline: 'none',
-    color: '#1e293b',
-};
-
-const labelStyle = {
-    display: 'block',
-    fontSize: 12,
-    fontWeight: 700,
-    color: '#64748b',
-    marginBottom: 6,
-};
+const fieldGroupClass = 'grid gap-1.5';
+const fieldLabelClass = 'text-[11px] font-black uppercase text-slate-500 dark:text-slate-400';
+const fieldInputClass = 'min-h-12 w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm font-bold text-slate-900 outline-none transition placeholder:text-slate-400 focus:border-blue-400 focus:ring-2 focus:ring-blue-500/15 dark:border-slate-700 dark:bg-slate-950 dark:text-slate-100';
+const errorTextClass = 'mt-1 text-[11px] font-bold text-red-500';
 
 export default function HomeworkFormPage({ mode, homework, classes }: HomeworkFormPageProps) {
     const isEdit = mode === 'edit';
@@ -100,38 +84,49 @@ export default function HomeworkFormPage({ mode, homework, classes }: HomeworkFo
 
     return (
         <AdminShell>
-            <div className="fade-in" style={{ padding: 24, display: 'flex', flexDirection: 'column', gap: 16 }}>
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 12, flexWrap: 'wrap' }}>
+            <div className="fade-in bg-slate-50 p-4 dark:bg-slate-950 max-md:bg-[radial-gradient(circle_at_100%_0,rgba(37,99,235,0.12),transparent_34%),linear-gradient(180deg,#f7f9fc_0%,#eef3f8_100%)] max-md:px-2.5 max-md:py-3 max-md:pb-[calc(104px+env(safe-area-inset-bottom))] dark:max-md:bg-[radial-gradient(circle_at_100%_0,rgba(96,165,250,0.14),transparent_34%),linear-gradient(180deg,#0f172a_0%,#111827_100%)]">
+                <div className="mb-3 hidden items-center justify-between gap-3 md:flex md:flex-wrap">
                     <div>
-                        <div style={{ fontWeight: 800, fontSize: 18, color: '#1e293b' }}>
+                        <div className="text-lg font-black text-slate-900 dark:text-slate-50">
                             {isEdit ? 'Edit Homework' : 'Assign Homework'}
                         </div>
-                        <div style={{ fontSize: 12, color: '#94a3b8', marginTop: 2 }}>
+                        <div className="mt-0.5 text-xs font-bold text-slate-400">
                             {isEdit ? 'Update class assignment details' : 'Create a new class assignment'}
                         </div>
                     </div>
-                    <Link href={homeworkIndex.url()} style={{ background: '#f1f5f9', color: '#64748b', border: 'none', borderRadius: 10, padding: '9px 16px', fontWeight: 700, fontSize: 13, textDecoration: 'none' }}>
+                    <Link href={homeworkIndex.url()} className="inline-flex min-h-9 items-center justify-center rounded-xl bg-slate-100 px-4 py-2 text-xs font-black text-slate-600 transition hover:bg-slate-200 dark:bg-slate-900 dark:text-slate-300 dark:hover:bg-slate-800">
                         Cancel
                     </Link>
                 </div>
 
-                <form onSubmit={submit} className="card" style={{ padding: 24, display: 'grid', gridTemplateColumns: 'repeat(2, minmax(0, 1fr))', gap: 16 }}>
-                    <div style={{ gridColumn: '1 / -1' }}>
-                        <label style={labelStyle}>Title (Khmer) *</label>
-                        <input style={fieldStyle} value={data.title_kh} onChange={event => setData('title_kh', event.target.value)} placeholder="សរសេរចំណងជើងកិច្ចការ" />
-                        {errors.title_kh && <div className="field-error">{errors.title_kh}</div>}
+                <form onSubmit={submit} className="mx-auto flex max-w-5xl flex-col gap-3 rounded-[26px] border border-slate-200 bg-white p-3 shadow-[0_16px_42px_rgba(15,23,42,0.08)] dark:border-slate-700 dark:bg-slate-800/90 md:grid md:grid-cols-2 md:p-6">
+                    <section className="col-span-2 flex items-center justify-between gap-3 rounded-[24px] border border-slate-200 bg-slate-50 p-4 dark:border-slate-700 dark:bg-slate-900/70">
+                        <div>
+                            <span className="block text-xs font-black text-slate-400">{isEdit ? 'Homework editor' : 'Class assignment'}</span>
+                            <strong className="mt-1 block text-2xl font-black text-slate-900 dark:text-slate-50">{isEdit ? 'Edit Homework' : 'Assign Homework'}</strong>
+                            <p className="mt-1 text-xs font-extrabold text-slate-400">{isEdit ? 'Update class assignment details' : 'Create a new class assignment'}</p>
+                        </div>
+                        <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-blue-600 text-white shadow-[0_14px_26px_rgba(37,99,235,0.28)]">
+                            <FileText size={20} />
+                        </div>
+                    </section>
+
+                    <div className={`${fieldGroupClass} col-span-2`}>
+                        <label className={fieldLabelClass}>Title (Khmer) *</label>
+                        <input className={fieldInputClass} value={data.title_kh} onChange={event => setData('title_kh', event.target.value)} placeholder="សរសេរចំណងជើងកិច្ចការ" />
+                        {errors.title_kh && <div className={errorTextClass}>{errors.title_kh}</div>}
                     </div>
 
-                    <div style={{ gridColumn: '1 / -1' }}>
-                        <label style={labelStyle}>Title (English)</label>
-                        <input style={fieldStyle} value={data.title_en} onChange={event => setData('title_en', event.target.value)} placeholder="e.g. Write about family" />
-                        {errors.title_en && <div className="field-error">{errors.title_en}</div>}
+                    <div className={`${fieldGroupClass} col-span-2`}>
+                        <label className={fieldLabelClass}>Title (English)</label>
+                        <input className={fieldInputClass} value={data.title_en} onChange={event => setData('title_en', event.target.value)} placeholder="e.g. Write about family" />
+                        {errors.title_en && <div className={errorTextClass}>{errors.title_en}</div>}
                     </div>
 
-                    <div>
-                        <label style={labelStyle}>Class *</label>
+                    <div className={fieldGroupClass}>
+                        <label className={fieldLabelClass}>Class *</label>
                         <Select value={data.school_class_id ? String(data.school_class_id) : ''} onValueChange={val => setData('school_class_id', val ? Number(val) : null)}>
-                            <SelectTrigger className="f-input">
+                            <SelectTrigger className={fieldInputClass}>
                                 <SelectValue placeholder="Select class" />
                             </SelectTrigger>
                             <SelectContent>
@@ -142,25 +137,25 @@ export default function HomeworkFormPage({ mode, homework, classes }: HomeworkFo
                                 ))}
                             </SelectContent>
                         </Select>
-                        {errors.school_class_id && <div className="field-error">{errors.school_class_id}</div>}
+                        {errors.school_class_id && <div className={errorTextClass}>{errors.school_class_id}</div>}
                     </div>
 
-                    <div>
-                        <label style={labelStyle}>Due Date *</label>
-                        <DatePicker value={data.due_on} onChange={value => setData('due_on', value)} className="f-input" />
-                        {errors.due_on && <div className="field-error">{errors.due_on}</div>}
+                    <div className={fieldGroupClass}>
+                        <label className={fieldLabelClass}>Due Date *</label>
+                        <DatePicker value={data.due_on} onChange={value => setData('due_on', value)} className={fieldInputClass} />
+                        {errors.due_on && <div className={errorTextClass}>{errors.due_on}</div>}
                     </div>
 
-                    <div>
-                        <label style={labelStyle}>Score *</label>
-                        <input type="number" min={1} style={fieldStyle} value={data.points} onChange={event => setData('points', event.target.value)} />
-                        {errors.points && <div className="field-error">{errors.points}</div>}
+                    <div className={fieldGroupClass}>
+                        <label className={fieldLabelClass}>Score *</label>
+                        <input type="number" min={1} className={fieldInputClass} value={data.points} onChange={event => setData('points', event.target.value)} />
+                        {errors.points && <div className={errorTextClass}>{errors.points}</div>}
                     </div>
 
-                    <div>
-                        <label style={labelStyle}>Status *</label>
+                    <div className={fieldGroupClass}>
+                        <label className={fieldLabelClass}>Status *</label>
                         <Select value={data.status} onValueChange={val => setData('status', val as HomeworkFormData['status'])}>
-                            <SelectTrigger className="f-input">
+                            <SelectTrigger className={fieldInputClass}>
                                 <SelectValue />
                             </SelectTrigger>
                             <SelectContent>
@@ -169,36 +164,36 @@ export default function HomeworkFormPage({ mode, homework, classes }: HomeworkFo
                                 <SelectItem value="closed">Closed</SelectItem>
                             </SelectContent>
                         </Select>
-                        {errors.status && <div className="field-error">{errors.status}</div>}
+                        {errors.status && <div className={errorTextClass}>{errors.status}</div>}
                     </div>
 
-                    <div>
-                        <label style={labelStyle}>Academic Year</label>
-                        <input style={fieldStyle} value={data.academic_year} onChange={event => setData('academic_year', event.target.value)} placeholder="2026" />
-                        {errors.academic_year && <div className="field-error">{errors.academic_year}</div>}
+                    <div className={fieldGroupClass}>
+                        <label className={fieldLabelClass}>Academic Year</label>
+                        <input className={fieldInputClass} value={data.academic_year} onChange={event => setData('academic_year', event.target.value)} placeholder="2026" />
+                        {errors.academic_year && <div className={errorTextClass}>{errors.academic_year}</div>}
                     </div>
 
-                    <div style={{ gridColumn: '1 / -1' }}>
-                        <label style={labelStyle}>Instructions</label>
-                        <textarea style={{ ...fieldStyle, minHeight: 130, resize: 'vertical' }} rows={5} value={data.instructions} onChange={event => setData('instructions', event.target.value)} placeholder="Additional instructions..." />
-                        {errors.instructions && <div className="field-error">{errors.instructions}</div>}
+                    <div className={`${fieldGroupClass} col-span-2`}>
+                        <label className={fieldLabelClass}>Instructions</label>
+                        <textarea className={`${fieldInputClass} min-h-32 resize-y`} rows={5} value={data.instructions} onChange={event => setData('instructions', event.target.value)} placeholder="Additional instructions..." />
+                        {errors.instructions && <div className={errorTextClass}>{errors.instructions}</div>}
                     </div>
 
-                    <div style={{ gridColumn: '1 / -1' }}>
-                        <label style={labelStyle}>Homework File</label>
+                    <div className={`${fieldGroupClass} col-span-2`}>
+                        <label className={fieldLabelClass}>Homework File</label>
                         <button
                             type="button"
                             onClick={() => fileInputRef.current?.click()}
-                            style={{ width: '100%', minHeight: 64, background: '#f8fafc', border: '1.5px dashed #cbd5e1', borderRadius: 12, padding: '14px 16px', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 12, textAlign: 'left' }}
+                            className="flex min-h-20 w-full items-center gap-3 rounded-[22px] border border-dashed border-slate-300 bg-slate-50 px-4 py-3 text-left transition hover:border-blue-400 hover:bg-blue-50/40 dark:border-slate-700 dark:bg-slate-950 dark:hover:border-blue-500 dark:hover:bg-blue-500/10"
                         >
-                            <span style={{ width: 38, height: 38, borderRadius: 10, background: '#eff6ff', color: '#2563eb', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                            <span className="inline-flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-blue-500/10 text-blue-600 dark:text-blue-300">
                                 {data.attachment_file || data.attachment_name ? <FileText size={18} /> : <Upload size={18} />}
                             </span>
-                            <span style={{ minWidth: 0, flex: 1 }}>
-                                <span style={{ display: 'block', fontSize: 13, fontWeight: 800, color: '#1e293b', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                            <span className="min-w-0 flex-1">
+                                <span className="block truncate text-sm font-black text-slate-900 dark:text-slate-50">
                                     {data.attachment_file?.name || data.attachment_name || 'Upload homework file'}
                                 </span>
-                                <span style={{ display: 'block', fontSize: 11, color: '#94a3b8', marginTop: 2 }}>
+                                <span className="mt-1 block text-[11px] font-bold text-slate-400">
                                     PDF, Word, Excel, PowerPoint, JPG, or PNG up to 10MB
                                 </span>
                             </span>
@@ -207,22 +202,22 @@ export default function HomeworkFormPage({ mode, homework, classes }: HomeworkFo
                             ref={fileInputRef}
                             type="file"
                             accept=".pdf,.doc,.docx,.xls,.xlsx,.ppt,.pptx,.jpg,.jpeg,.png,application/pdf,application/msword,application/vnd.openxmlformats-officedocument.wordprocessingml.document,image/jpeg,image/png"
-                            style={{ display: 'none' }}
+                            className="hidden"
                             onChange={event => setData('attachment_file', event.target.files?.[0] ?? null)}
                         />
                         {data.attachment_url && !data.attachment_file && (
-                            <a href={data.attachment_url} target="_blank" rel="noreferrer" style={{ display: 'inline-flex', marginTop: 8, fontSize: 12, fontWeight: 700, color: '#2563eb', textDecoration: 'none' }}>
+                            <a href={data.attachment_url} target="_blank" rel="noreferrer" className="mt-2 inline-flex text-xs font-black text-blue-600 dark:text-blue-300">
                                 View current file
                             </a>
                         )}
-                        {errors.attachment_file && <div className="field-error">{errors.attachment_file}</div>}
+                        {errors.attachment_file && <div className={errorTextClass}>{errors.attachment_file}</div>}
                     </div>
 
-                    <div style={{ gridColumn: '1 / -1', display: 'flex', gap: 10, justifyContent: 'flex-end', paddingTop: 8 }}>
-                        <Link href={homeworkIndex.url()} style={{ background: '#f1f5f9', color: '#64748b', border: 'none', borderRadius: 10, padding: '12px 20px', fontWeight: 700, textDecoration: 'none' }}>
+                    <div className="col-span-2 mt-1 grid grid-cols-[1fr_2fr] gap-2 rounded-[22px] border border-slate-200 bg-white p-2 dark:border-slate-700 dark:bg-slate-800 md:border-0 md:bg-transparent md:p-0">
+                        <Link href={homeworkIndex.url()} className="inline-flex min-h-12 items-center justify-center rounded-2xl bg-slate-100 px-4 py-3 text-sm font-black text-slate-600 transition hover:bg-slate-200 dark:bg-slate-950 dark:text-slate-300 dark:hover:bg-slate-900">
                             Cancel
                         </Link>
-                        <button disabled={processing} type="submit" style={{ background: processing ? '#93c5fd' : '#2563eb', color: 'white', border: 'none', borderRadius: 10, padding: '12px 24px', fontWeight: 700, cursor: processing ? 'default' : 'pointer' }}>
+                        <button disabled={processing} type="submit" className="min-h-12 rounded-2xl bg-blue-600 px-4 py-3 text-sm font-black text-white shadow-[0_14px_28px_rgba(37,99,235,0.22)] transition hover:bg-blue-500 disabled:cursor-default disabled:bg-blue-300 disabled:shadow-none dark:disabled:bg-blue-900">
                             {isEdit ? 'Save Changes' : 'Assign Homework'}
                         </button>
                     </div>
@@ -231,6 +226,3 @@ export default function HomeworkFormPage({ mode, homework, classes }: HomeworkFo
         </AdminShell>
     );
 }
-
-
-

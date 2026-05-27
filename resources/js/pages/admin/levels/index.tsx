@@ -42,6 +42,13 @@ const ORDER_OPTIONS: { value: OrderKey; label: string }[] = [
     { value: 'students-desc', label: 'Students Most' },
     { value: 'students-asc', label: 'Students Least' },
 ];
+const controlInputClass = 'min-h-9 rounded-xl border border-slate-200 bg-white px-3 py-1 text-xs font-bold text-slate-900 dark:border-slate-700 dark:bg-slate-950 dark:text-slate-100';
+const primaryButtonClass = 'inline-flex min-h-9 items-center justify-center gap-1.5 rounded-xl bg-blue-600 px-3 py-2 text-xs font-black text-white';
+const mobileCardClass = 'rounded-[22px] border border-slate-200/80 bg-white/95 p-3 shadow-[0_14px_34px_rgba(15,23,42,0.07)] dark:border-slate-700 dark:bg-slate-800/90';
+const fieldGroupClass = 'grid gap-1.5';
+const fieldLabelClass = 'text-[11px] font-black uppercase text-slate-500 dark:text-slate-400';
+const fieldInputClass = 'min-h-12 w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm font-bold text-slate-900 outline-none transition focus:border-blue-400 focus:ring-2 focus:ring-blue-500/15 dark:border-slate-700 dark:bg-slate-950 dark:text-slate-100';
+const errorTextClass = 'mt-1 text-[11px] font-bold text-red-500';
 
 function sortLevels(list: Level[], order: OrderKey): Level[] {
     return [...list].sort((a, b) => {
@@ -150,7 +157,7 @@ export default function LevelsPage({ levels }: LevelsPageProps) {
     };
 
     const inputError = (message?: string) =>
-        message ? <div style={{ color: '#ef4444', fontSize: 11, marginTop: 4 }}>{message}</div> : null;
+        message ? <div className={errorTextClass}>{message}</div> : null;
 
     const levelActions = (level: Level): RowAction[] => [
         { key: 'edit', label: 'Edit', icon: Edit3, onSelect: () => openEdit(level), hidden: !canUpdate },
@@ -180,20 +187,29 @@ export default function LevelsPage({ levels }: LevelsPageProps) {
 
     return (
         <AdminShell>
-            <div className="fade-in" style={{ padding: 24 }}>
+            <div className="fade-in mx-auto flex w-full max-w-[1280px] flex-col gap-3 bg-slate-50 p-4 dark:bg-slate-950 md:gap-5 md:p-6 max-md:bg-[radial-gradient(circle_at_100%_0,rgba(37,99,235,0.12),transparent_34%),linear-gradient(180deg,#f7f9fc_0%,#eef3f8_100%)] max-md:px-2.5 max-md:py-3 max-md:pb-[calc(104px+env(safe-area-inset-bottom))] dark:max-md:bg-[radial-gradient(circle_at_100%_0,rgba(96,165,250,0.14),transparent_34%),linear-gradient(180deg,#0f172a_0%,#111827_100%)]">
 
                 {/* Header */}
-                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 20 }}>
+                <section className="flex items-center justify-between gap-3 rounded-[24px] border border-slate-200 bg-white p-4 shadow-[0_14px_36px_rgba(15,23,42,0.07)] dark:border-slate-700 dark:bg-slate-800/90 md:rounded-[28px] md:p-5">
                     <div>
-                        <div style={{ fontWeight: 800, fontSize: 18, color: '#1e293b' }}>Levels</div>
-                        <div style={{ fontSize: 12, color: '#94a3b8' }}>{levels.length} level{levels.length !== 1 ? 's' : ''} total</div>
+                        <span className="block text-xs font-black text-slate-400">Level directory</span>
+                        <strong className="mt-1 block text-2xl font-black text-slate-900 dark:text-slate-50">{levels.length} levels</strong>
+                        <p className="mt-1 text-xs font-extrabold text-slate-400">
+                            {levels.reduce((total, level) => total + level.studentCount, 0)} students
+                            {' '}·{' '}
+                            {levels.filter((level) => level.isActive).length} active
+                        </p>
                     </div>
-                    {canCreate && <button onClick={openAdd} className="admin-btn admin-btn-primary"><Plus size={15} /> Add Level</button>}
-                </div>
+                    {canCreate && (
+                        <button className="inline-flex h-11 w-11 items-center justify-center rounded-2xl bg-blue-600 text-white shadow-[0_14px_26px_rgba(37,99,235,0.28)]" type="button" onClick={openAdd}>
+                            <Plus size={17} />
+                        </button>
+                    )}
+                </section>
 
                 {/* Modal Dialog */}
                 <Dialog open={isModalOpen} onOpenChange={setIsModalOpen}>
-                    <DialogContent className="sm:max-w-md">
+                    <DialogContent className="rounded-[24px] border-slate-200 bg-white p-6 dark:border-slate-700 dark:bg-slate-800 sm:max-w-md">
                         <DialogHeader>
                             <DialogTitle>{editing ? `Edit - ${editing.name}` : 'Add New Level'}</DialogTitle>
                             <DialogDescription>
@@ -201,34 +217,34 @@ export default function LevelsPage({ levels }: LevelsPageProps) {
                             </DialogDescription>
                         </DialogHeader>
                         <form onSubmit={handleSubmit} className="space-y-4">
-                            <div className="f-group">
-                                <label className="f-label">Level Name *</label>
-                                <input className="f-input" value={data.name} onChange={e => setData('name', e.target.value)} placeholder="e.g. Beginner 1" />
-                                {errors.name && <div style={{ color: '#ef4444', fontSize: 11, marginTop: 4 }}>{errors.name}</div>}
+                            <div className={fieldGroupClass}>
+                                <label className={fieldLabelClass}>Level Name *</label>
+                                <input className={fieldInputClass} value={data.name} onChange={e => setData('name', e.target.value)} placeholder="e.g. Beginner 1" />
+                                {inputError(errors.name)}
                             </div>
-                            <div className="f-group">
-                                <label className="f-label">Monthly Fee ($) *</label>
-                                <input type="number" className="f-input" value={data.monthly_fee} min={0} step="0.01" onChange={e => setData('monthly_fee', e.target.value)} placeholder="0.00" />
-                                {errors.monthly_fee && <div style={{ color: '#ef4444', fontSize: 11, marginTop: 4 }}>{errors.monthly_fee}</div>}
+                            <div className={fieldGroupClass}>
+                                <label className={fieldLabelClass}>Monthly Fee ($) *</label>
+                                <input type="number" className={fieldInputClass} value={data.monthly_fee} min={0} step="0.01" onChange={e => setData('monthly_fee', e.target.value)} placeholder="0.00" />
+                                {inputError(errors.monthly_fee)}
                             </div>
-                            <div className="f-group">
-                                <label className="f-label">Sort Order</label>
-                                <input type="number" className="f-input" value={data.sort_order} min={0} onChange={e => setData('sort_order', e.target.value)} placeholder="0" />
-                                {errors.sort_order && <div style={{ color: '#ef4444', fontSize: 11, marginTop: 4 }}>{errors.sort_order}</div>}
+                            <div className={fieldGroupClass}>
+                                <label className={fieldLabelClass}>Sort Order</label>
+                                <input type="number" className={fieldInputClass} value={data.sort_order} min={0} onChange={e => setData('sort_order', e.target.value)} placeholder="0" />
+                                {inputError(errors.sort_order)}
                             </div>
-                            <div className="f-group" style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                            <div className="flex items-center gap-2.5 rounded-2xl border border-slate-200 bg-slate-50 p-3 dark:border-slate-700 dark:bg-slate-950/70">
                                 <input
                                     type="checkbox"
                                     id="is_active"
                                     checked={data.is_active}
                                     onChange={e => setData('is_active', e.target.checked)}
-                                    style={{ width: 16, height: 16, cursor: 'pointer' }}
+                                    className="h-4 w-4 cursor-pointer accent-blue-600"
                                 />
-                                <label htmlFor="is_active" style={{ fontSize: 13, color: '#374151', fontWeight: 600, cursor: 'pointer' }}>Active (visible in student enrollment)</label>
+                                <label htmlFor="is_active" className="cursor-pointer text-[13px] font-semibold text-slate-700 dark:text-slate-300">Active (visible in student enrollment)</label>
                             </div>
-                            <div style={{ display: 'flex', gap: 10, marginTop: 24 }}>
-                                <button type="button" onClick={closeModal} style={{ flex: 1, background: '#f1f5f9', color: '#64748b', border: 'none', borderRadius: 10, padding: '11px', fontWeight: 700, cursor: 'pointer', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: 6 }}><X size={15} /> Cancel</button>
-                                <button type="submit" disabled={processing} style={{ flex: 2, background: '#2563eb', color: 'white', border: 'none', borderRadius: 10, padding: '11px', fontWeight: 700, fontSize: 13, cursor: 'pointer', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: 6 }}>
+                            <div className="mt-6 flex gap-2.5">
+                                <button type="button" onClick={closeModal} className="inline-flex flex-1 items-center justify-center gap-1.5 rounded-xl bg-slate-100 p-3 text-sm font-bold text-slate-500 dark:bg-slate-950 dark:text-slate-300"><X size={15} /> Cancel</button>
+                                <button type="submit" disabled={processing} className="inline-flex flex-[2] items-center justify-center gap-1.5 rounded-xl bg-blue-600 p-3 text-[13px] font-bold text-white disabled:opacity-70">
                                     <Save size={15} /> {processing ? 'Saving...' : editing ? 'Update Level' : 'Save Level'}
                                 </button>
                             </div>
@@ -238,11 +254,12 @@ export default function LevelsPage({ levels }: LevelsPageProps) {
 
                 {/* List */}
                 <>
-                    <div className="card" style={{ overflowX: 'auto' }}>
-                        <div style={{ display: 'flex', alignItems: 'center', flexWrap: 'wrap', gap: 8, padding: '12px 16px', borderBottom: '1px solid #f1f5f9' }}>
-                            <span style={{ fontSize: 11, fontWeight: 700, color: '#94a3b8', whiteSpace: 'nowrap' }}>Sort by</span>
+                    <div className="overflow-visible rounded-[24px] border-0 bg-transparent shadow-none md:overflow-x-auto md:rounded-[24px] md:border md:border-slate-200 md:bg-white md:shadow-sm dark:md:border-slate-700 dark:md:bg-slate-800/90">
+                        <div className="sticky top-0 z-10 mb-3 grid grid-cols-2 gap-2 rounded-[22px] border border-slate-200 bg-white/90 p-3 shadow-[0_12px_32px_rgba(15,23,42,0.07)] backdrop-blur dark:border-slate-700 dark:bg-slate-800/90 md:static md:mb-0 md:grid md:grid-cols-[auto_1fr_320px] md:items-center md:gap-3 md:border-0 md:border-b md:border-slate-200 md:bg-white md:p-4 md:shadow-none md:backdrop-blur-none dark:md:border-slate-700 dark:md:bg-slate-800/90">
+                            <div className="contents md:flex md:items-center md:gap-2">
+                            <span className="hidden text-[11px] font-black text-slate-400 md:inline">Sort by</span>
                             <Select value={orderBy} onValueChange={e => setOrderBy(e as OrderKey)}>
-                                <SelectTrigger style={{ width: 'auto', minWidth: 150, padding: '5px 10px', fontSize: 12, height: 'auto' }}>
+                                <SelectTrigger className={`${controlInputClass} w-full md:w-[180px]`}>
                                     <SelectValue />
                                 </SelectTrigger>
                                 <SelectContent>
@@ -252,10 +269,10 @@ export default function LevelsPage({ levels }: LevelsPageProps) {
                                 </SelectContent>
                             </Select>
 
-                            <div style={{ width: 1, height: 18, background: '#e2e8f0', margin: '0 2px' }} />
+                            <div className="hidden h-5 w-px bg-slate-200 md:block" />
 
                             <Select value={perPage.toString()} onValueChange={e => { setPerPage(Number(e)); setPage(1); }}>
-                                <SelectTrigger style={{ width: 'auto', minWidth: 120, padding: '5px 10px', fontSize: 12, height: 'auto' }}>
+                                <SelectTrigger className={`${controlInputClass} w-full md:w-[140px]`}>
                                     <SelectValue />
                                 </SelectTrigger>
                                 <SelectContent>
@@ -265,50 +282,49 @@ export default function LevelsPage({ levels }: LevelsPageProps) {
                                 </SelectContent>
                             </Select>
 
-                            <span style={{ fontSize: 11, color: '#94a3b8', marginLeft: 4 }}>
+                            <span className="hidden text-[11px] font-extrabold text-slate-400 md:inline">
                                 {filtered.length} result{filtered.length !== 1 ? 's' : ''}
                             </span>
+                            </div>
 
                             <input
-                                className="f-input"
-                                style={{ width: 260, maxWidth: '100%', marginLeft: 'auto' }}
+                                className={`${controlInputClass} col-span-2 w-full md:col-span-1 md:col-start-3 md:ml-0 md:max-w-none`}
+                                data-role="levels-search"
                                 placeholder="Search levels..."
                                 value={search}
                                 onChange={e => setSearch(e.target.value)}
                             />
                         </div>
 
-                        <table className="data-table">
+                        <table className="data-table hidden md:table md:min-w-[860px]">
                             <thead>
-                                <tr style={{ borderBottom: '1px solid #f1f5f9' }}>
+                                <tr className="border-b border-slate-100 dark:border-slate-700">
                                     {['#', 'Name', 'Students', 'Status', ...(canManageLevels ? ['Actions'] : [])].map((h, i, arr) => (
-                                        <th key={i} style={{ padding: '10px 16px', textAlign: canManageLevels && i === arr.length - 1 ? 'center' : 'left', fontSize: 11, fontWeight: 700, color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '0.05em' }}>{h}</th>
+                                        <th key={i} className={`px-4 py-2.5 text-left text-[11px] font-bold uppercase tracking-[0.05em] text-slate-400 ${canManageLevels && i === arr.length - 1 ? 'text-center' : ''}`}>{h}</th>
                                     ))}
                                 </tr>
                             </thead>
                             <tbody>
                                 {paginated.length === 0 && (
                                     <tr>
-                                        <td colSpan={canManageLevels ? 5 : 4} style={{ padding: '40px 16px', textAlign: 'center', color: '#94a3b8', fontSize: 13 }}>
+                                        <td colSpan={canManageLevels ? 5 : 4} className="px-4 py-10 text-center text-[13px] text-slate-400">
                                             {search ? 'No levels match your search.' : 'No levels yet. Click "+ Add Level" to create one.'}
                                         </td>
                                     </tr>
                                 )}
                                 {paginated.map(level => (
-                                    <tr key={level.id} style={{ borderBottom: '1px solid #f8fafc' }}
-                                        onMouseEnter={e => (e.currentTarget.style.background = '#f8fafc')}
-                                        onMouseLeave={e => (e.currentTarget.style.background = '')}>
-                                        <td style={{ padding: '12px 16px', color: '#94a3b8', fontSize: 12 }}>{level.sortOrder}</td>
-                                        <td style={{ padding: '12px 16px', fontWeight: 700, color: '#1e293b', fontSize: 14 }}>{level.name}</td>
-                                        <td style={{ padding: '12px 16px', color: '#64748b', fontSize: 13 }}>{level.studentCount} student{level.studentCount !== 1 ? 's' : ''}</td>
-                                        <td style={{ padding: '12px 16px' }}>
-                                            <span style={{ display: 'inline-flex', alignItems: 'center', gap: 4, padding: '3px 10px', borderRadius: 20, fontSize: 11, fontWeight: 700, background: level.isActive ? '#f0fdf4' : '#fef2f2', color: level.isActive ? '#16a34a' : '#dc2626' }}>
+                                    <tr key={level.id} className="border-b border-slate-50 hover:bg-slate-50 dark:border-slate-800 dark:hover:bg-slate-950">
+                                        <td className="px-4 py-3 text-xs text-slate-400">{level.sortOrder}</td>
+                                        <td className="px-4 py-3 text-sm font-bold text-slate-900 dark:text-slate-50">{level.name}</td>
+                                        <td className="px-4 py-3 text-[13px] text-slate-500 dark:text-slate-400">{level.studentCount} student{level.studentCount !== 1 ? 's' : ''}</td>
+                                        <td className="px-4 py-3">
+                                            <span className={`inline-flex items-center rounded-full px-2.5 py-1 text-[11px] font-bold ${level.isActive ? 'bg-emerald-50 text-emerald-600 dark:bg-emerald-500/15 dark:text-emerald-300' : 'bg-red-50 text-red-600 dark:bg-red-500/15 dark:text-red-300'}`}>
                                                 {level.isActive ? 'Active' : 'Inactive'}
                                             </span>
                                         </td>
                                         {canManageLevels && (
-                                            <td style={{ padding: '12px 16px', textAlign: 'center' }}>
-                                                <div style={{ display: 'flex', justifyContent: 'center' }}>
+                                            <td className="px-4 py-3 text-center">
+                                                <div className="flex justify-center">
                                                     <RowActions ariaLabel={`Actions for ${level.name}`} actions={levelActions(level)} />
                                                 </div>
                                             </td>
@@ -317,6 +333,43 @@ export default function LevelsPage({ levels }: LevelsPageProps) {
                                 ))}
                             </tbody>
                         </table>
+
+                        <div className="grid gap-3 md:hidden">
+                            {paginated.length === 0 ? (
+                                <div className="py-8 text-center text-sm font-bold text-slate-500">
+                                    {search ? 'No levels match your search.' : 'No levels yet.'}
+                                </div>
+                            ) : (
+                                paginated.map((level) => (
+                                    <article key={level.id} className={mobileCardClass}>
+                                        <div className="mb-3 flex items-start justify-between gap-3">
+                                            <div>
+                                                <span className="block text-[11px] font-black text-blue-500">#{level.sortOrder}</span>
+                                                <strong className="block text-sm font-black text-slate-900 dark:text-slate-50">{level.name}</strong>
+                                            </div>
+                                            <div className="flex items-center gap-2">
+                                                <span className={`rounded-full px-2.5 py-1 text-[11px] font-black ${level.isActive ? 'bg-emerald-50 text-emerald-600 dark:bg-emerald-500/15 dark:text-emerald-300' : 'bg-red-50 text-red-600 dark:bg-red-500/15 dark:text-red-300'}`}>
+                                                    {level.isActive ? 'Active' : 'Inactive'}
+                                                </span>
+                                                {canManageLevels && (
+                                                    <RowActions ariaLabel={`Actions for ${level.name}`} actions={levelActions(level)} />
+                                                )}
+                                            </div>
+                                        </div>
+                                        <div className="grid overflow-hidden rounded-2xl border border-slate-200 bg-slate-950/5 dark:border-slate-700 dark:bg-slate-950/70">
+                                            <div className="flex items-center justify-between border-b border-slate-200 px-3 py-2.5 dark:border-slate-700">
+                                                <span className="text-[10px] font-black uppercase text-slate-400">Students</span>
+                                                <strong className="text-xs font-black text-slate-900 dark:text-slate-50">{level.studentCount}</strong>
+                                            </div>
+                                            <div className="flex items-center justify-between px-3 py-2.5">
+                                                <span className="text-[10px] font-black uppercase text-slate-400">Monthly fee</span>
+                                                <strong className="text-xs font-black text-slate-900 dark:text-slate-50">${level.monthlyFee}</strong>
+                                            </div>
+                                        </div>
+                                    </article>
+                                ))
+                            )}
+                        </div>
 
                         {filtered.length > 0 && (
                             <Pagination
@@ -353,4 +406,3 @@ export default function LevelsPage({ levels }: LevelsPageProps) {
         </AdminShell>
     );
 }
-

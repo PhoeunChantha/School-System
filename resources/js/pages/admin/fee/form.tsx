@@ -1,9 +1,10 @@
-import { FormEvent } from 'react';
 import { index as feeIndex, store, update } from '@/actions/App/Http/Controllers/Backends/FeeChargeController';
 import { DatePicker } from '@/components/ui/date-picker';
 import AdminShell from '@/pages/admin/shell';
 import { AdminSelect } from '@/pages/admin/ui';
 import { Link, useForm } from '@inertiajs/react';
+import { ArrowLeft, CheckCircle2, ReceiptText, WalletCards } from 'lucide-react';
+import { FormEvent, useMemo } from 'react';
 import { toast } from 'sonner';
 
 export interface FeeStudentOption {
@@ -37,20 +38,12 @@ interface FeeChargeFormPageProps {
     students: FeeStudentOption[];
 }
 
-const fieldStyle = {
-    width: '100%',
-    minHeight: 42,
-    background: '#f8fafc',
-    border: '1.5px solid #e2e8f0',
-    borderRadius: 10,
-    padding: '10px 14px',
-    fontSize: 14,
-    fontFamily: 'inherit',
-    outline: 'none',
-    color: '#1e293b',
-};
-
-const labelStyle = { display: 'block', fontSize: 12, fontWeight: 700, color: '#64748b', marginBottom: 6 };
+const pageClass = 'fade-in flex min-h-full flex-col gap-3 bg-slate-50 p-4 dark:bg-slate-950 max-md:bg-[radial-gradient(circle_at_100%_0,rgba(37,99,235,0.12),transparent_34%),linear-gradient(180deg,#f7f9fc_0%,#eef3f8_100%)] max-md:px-2.5 max-md:py-3 max-md:pb-[calc(104px+env(safe-area-inset-bottom))] dark:max-md:bg-[radial-gradient(circle_at_100%_0,rgba(96,165,250,0.14),transparent_34%),linear-gradient(180deg,#0f172a_0%,#111827_100%)]';
+const panelClass = 'rounded-[24px] border border-slate-200 bg-white p-4 shadow-[0_14px_36px_rgba(15,23,42,0.07)] dark:border-slate-700 dark:bg-slate-800/90';
+const labelClass = 'mb-1.5 block text-[11px] font-black uppercase tracking-wide text-slate-400';
+const inputClass = 'min-h-12 w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm font-bold text-slate-900 outline-none transition placeholder:text-slate-400 focus:border-blue-400 focus:ring-2 focus:ring-blue-500/15 dark:border-slate-700 dark:bg-slate-950 dark:text-slate-100';
+const errorClass = 'mt-1.5 text-xs font-bold text-red-500';
+const footerButtonClass = 'inline-flex min-h-12 items-center justify-center gap-2 rounded-2xl px-4 py-3 text-sm font-black transition';
 
 export default function FeeChargeFormPage({ mode, charge, students }: FeeChargeFormPageProps) {
     const isEdit = mode === 'edit';
@@ -91,55 +84,84 @@ export default function FeeChargeFormPage({ mode, charge, students }: FeeChargeF
         }));
     };
 
+    const selectedStudent = useMemo(() => students.find(student => student.id === data.student_id), [data.student_id, students]);
+    const balance = Math.max(0, Number(data.amount || 0) - Number(data.discount_amount || 0) - Number(data.paid_amount || 0));
+
     return (
         <AdminShell>
-            <div className="fade-in" style={{ padding: 24, display: 'flex', flexDirection: 'column', gap: 16 }}>
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 12, flexWrap: 'wrap' }}>
-                    <div>
-                        <div style={{ fontWeight: 800, fontSize: 18, color: '#1e293b' }}>{isEdit ? 'Edit Fee Charge' : 'New Fee Charge'}</div>
-                        <div style={{ fontSize: 12, color: '#94a3b8', marginTop: 2 }}>{isEdit ? 'Update billing details' : 'Create a monthly student fee charge'}</div>
+            <div className={pageClass}>
+                <section className={panelClass}>
+                    <div className="flex items-start justify-between gap-3">
+                        <div className="flex min-w-0 items-start gap-3">
+                            <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-blue-600/10 text-blue-600 dark:bg-blue-500/15 dark:text-blue-300">
+                                <ReceiptText size={20} />
+                            </div>
+                            <div className="min-w-0">
+                                <span className="text-xs font-black text-slate-400">Student billing</span>
+                                <h1 className="mt-1 text-xl font-black leading-tight text-slate-900 dark:text-slate-50">{isEdit ? 'Edit fee charge' : 'New fee charge'}</h1>
+                                <p className="mt-1 text-xs font-bold text-slate-500 dark:text-slate-400">{selectedStudent ? `${selectedStudent.nameEn} - ${selectedStudent.level || selectedStudent.className}` : 'Create a monthly student fee charge'}</p>
+                            </div>
+                        </div>
+                        <Link href={feeIndex.url()} className="inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl border border-slate-200 bg-white text-slate-500 shadow-sm transition hover:bg-slate-50 dark:border-slate-700 dark:bg-slate-950 dark:text-slate-300 dark:hover:bg-slate-900" aria-label="Back to fees">
+                            <ArrowLeft size={18} />
+                        </Link>
                     </div>
-                    <Link href={feeIndex.url()} style={{ background: '#f1f5f9', color: '#64748b', border: 'none', borderRadius: 10, padding: '9px 16px', fontWeight: 700, fontSize: 13, textDecoration: 'none' }}>Cancel</Link>
-                </div>
+                </section>
 
-                <form onSubmit={submit} className="card" style={{ padding: 24, display: 'grid', gridTemplateColumns: 'repeat(2, minmax(0, 1fr))', gap: 16 }}>
-                    <div style={{ gridColumn: '1 / -1' }}>
-                        <label style={labelStyle}>Student *</label>
+                <section className="grid grid-cols-3 gap-2 rounded-[22px] border border-slate-200 bg-white/90 p-3 shadow-[0_12px_32px_rgba(15,23,42,0.07)] dark:border-slate-700 dark:bg-slate-800/90">
+                    <div className="rounded-2xl bg-blue-500/10 p-3 text-blue-500">
+                        <span className="block text-[10px] font-black uppercase opacity-75">Amount</span>
+                        <strong className="mt-1 block text-lg font-black">${Number(data.amount || 0).toFixed(2)}</strong>
+                    </div>
+                    <div className="rounded-2xl bg-emerald-500/10 p-3 text-emerald-500">
+                        <span className="block text-[10px] font-black uppercase opacity-75">Paid</span>
+                        <strong className="mt-1 block text-lg font-black">${Number(data.paid_amount || 0).toFixed(2)}</strong>
+                    </div>
+                    <div className="rounded-2xl bg-amber-500/10 p-3 text-amber-500">
+                        <span className="block text-[10px] font-black uppercase opacity-75">Balance</span>
+                        <strong className="mt-1 block text-lg font-black">${balance.toFixed(2)}</strong>
+                    </div>
+                </section>
+
+                <form onSubmit={submit} className={`${panelClass} grid flex-1 grid-cols-1 gap-3 md:grid-cols-2`}>
+                    <div className="md:col-span-2">
+                        <label className={labelClass}>Student *</label>
                         <AdminSelect
                             value={data.student_id ? String(data.student_id) : ''}
                             onChange={value => selectStudent(Number(value))}
                             options={students.map(student => ({ value: String(student.id), label: `${student.nameEn} - ${student.level}` }))}
                             placeholder="Select student"
+                            triggerClassName={inputClass}
                         />
-                        {errors.student_id && <div className="field-error">{errors.student_id}</div>}
+                        {errors.student_id && <div className={errorClass}>{errors.student_id}</div>}
                     </div>
                     <div>
-                        <label style={labelStyle}>Billing Month *</label>
-                        <DatePicker value={data.billing_month} onChange={value => setData('billing_month', value)} className="f-input min-h-[42px]" />
-                        {errors.billing_month && <div className="field-error">{errors.billing_month}</div>}
+                        <label className={labelClass}>Billing Month *</label>
+                        <DatePicker value={data.billing_month} onChange={value => setData('billing_month', value)} className={inputClass} />
+                        {errors.billing_month && <div className={errorClass}>{errors.billing_month}</div>}
                     </div>
                     <div>
-                        <label style={labelStyle}>Due Date</label>
-                        <DatePicker value={data.due_on} onChange={value => setData('due_on', value)} placeholder="Pick due date" className="f-input min-h-[42px]" />
-                        {errors.due_on && <div className="field-error">{errors.due_on}</div>}
+                        <label className={labelClass}>Due Date</label>
+                        <DatePicker value={data.due_on} onChange={value => setData('due_on', value)} placeholder="Pick due date" className={inputClass} />
+                        {errors.due_on && <div className={errorClass}>{errors.due_on}</div>}
                     </div>
                     <div>
-                        <label style={labelStyle}>Amount *</label>
-                        <input type="number" step="0.01" style={fieldStyle} value={data.amount} onChange={event => setData('amount', event.target.value)} />
-                        {errors.amount && <div className="field-error">{errors.amount}</div>}
+                        <label className={labelClass}>Amount *</label>
+                        <input type="number" step="0.01" className={inputClass} value={data.amount} onChange={event => setData('amount', event.target.value)} />
+                        {errors.amount && <div className={errorClass}>{errors.amount}</div>}
                     </div>
                     <div>
-                        <label style={labelStyle}>Discount</label>
-                        <input type="number" step="0.01" style={fieldStyle} value={data.discount_amount} onChange={event => setData('discount_amount', event.target.value)} />
-                        {errors.discount_amount && <div className="field-error">{errors.discount_amount}</div>}
+                        <label className={labelClass}>Discount</label>
+                        <input type="number" step="0.01" className={inputClass} value={data.discount_amount} onChange={event => setData('discount_amount', event.target.value)} />
+                        {errors.discount_amount && <div className={errorClass}>{errors.discount_amount}</div>}
                     </div>
                     <div>
-                        <label style={labelStyle}>Paid Amount</label>
-                        <input type="number" step="0.01" style={fieldStyle} value={data.paid_amount} onChange={event => setData('paid_amount', event.target.value)} />
-                        {errors.paid_amount && <div className="field-error">{errors.paid_amount}</div>}
+                        <label className={labelClass}>Paid Amount</label>
+                        <input type="number" step="0.01" className={inputClass} value={data.paid_amount} onChange={event => setData('paid_amount', event.target.value)} />
+                        {errors.paid_amount && <div className={errorClass}>{errors.paid_amount}</div>}
                     </div>
                     <div>
-                        <label style={labelStyle}>Status *</label>
+                        <label className={labelClass}>Status *</label>
                         <AdminSelect
                             value={data.status}
                             onChange={value => setData('status', value as FeeChargeFormData['status'])}
@@ -148,17 +170,23 @@ export default function FeeChargeFormPage({ mode, charge, students }: FeeChargeF
                                 { value: 'partial', label: 'Partial' },
                                 { value: 'paid', label: 'Paid' },
                             ]}
+                            triggerClassName={inputClass}
                         />
-                        {errors.status && <div className="field-error">{errors.status}</div>}
+                        {errors.status && <div className={errorClass}>{errors.status}</div>}
                     </div>
                     <div>
-                        <label style={labelStyle}>Academic Year</label>
-                        <input style={fieldStyle} value={data.academic_year} onChange={event => setData('academic_year', event.target.value)} />
-                        {errors.academic_year && <div className="field-error">{errors.academic_year}</div>}
+                        <label className={labelClass}>Academic Year</label>
+                        <input className={inputClass} value={data.academic_year} onChange={event => setData('academic_year', event.target.value)} />
+                        {errors.academic_year && <div className={errorClass}>{errors.academic_year}</div>}
                     </div>
-                    <div style={{ gridColumn: '1 / -1', display: 'flex', gap: 10, justifyContent: 'flex-end', paddingTop: 8 }}>
-                        <Link href={feeIndex.url()} style={{ background: '#f1f5f9', color: '#64748b', border: 'none', borderRadius: 10, padding: '12px 20px', fontWeight: 700, textDecoration: 'none' }}>Cancel</Link>
-                        <button disabled={processing} type="submit" style={{ background: processing ? '#93c5fd' : '#2563eb', color: 'white', border: 'none', borderRadius: 10, padding: '12px 24px', fontWeight: 700, cursor: processing ? 'default' : 'pointer' }}>{isEdit ? 'Save Changes' : 'Create Fee Charge'}</button>
+                    <div className="mt-auto grid grid-cols-[1fr_2fr] gap-2 border-t border-slate-200 pt-3 dark:border-slate-700 md:col-span-2">
+                        <Link href={feeIndex.url()} className={`${footerButtonClass} bg-slate-100 text-slate-500 hover:bg-slate-200 dark:bg-slate-950 dark:text-slate-300 dark:hover:bg-slate-900`}>
+                            <ArrowLeft size={16} /> Cancel
+                        </Link>
+                        <button disabled={processing} type="submit" className={`${footerButtonClass} bg-blue-600 text-white shadow-[0_12px_24px_rgba(37,99,235,0.22)] hover:bg-blue-500 disabled:cursor-default disabled:bg-blue-300`}>
+                            {isEdit ? <CheckCircle2 size={16} /> : <WalletCards size={16} />}
+                            {isEdit ? 'Save Changes' : 'Create Fee Charge'}
+                        </button>
                     </div>
                 </form>
             </div>

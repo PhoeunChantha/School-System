@@ -18,8 +18,7 @@ import {
 import { useAdminPermissions } from '@/hooks/use-admin-permissions';
 import { useAdminTranslation } from '@/hooks/use-admin-translation';
 import AdminShell from '@/pages/admin/shell';
-import { Avatar, Badge, KH, Pagination, RowActions, renderRowActionItems, type RowAction } from '@/pages/admin/ui';
-import { AdminMobileCard } from '@/pages/admin/ui/mobile-card';
+import { Avatar, Badge, KH, Pagination, RowActions, type RowAction } from '@/pages/admin/ui';
 import { lessonPlans as lessonPlanIndex } from '@/routes/admin';
 import { create as createTeacherLessonPlan } from '@/routes/admin/teachers/lesson-plans';
 import { Link, router, useForm } from '@inertiajs/react';
@@ -33,6 +32,7 @@ import {
     FileDown,
     GraduationCap,
     Phone,
+    Plus,
     Save,
     School,
     Trash2,
@@ -103,6 +103,15 @@ const ORDER_OPTIONS: { value: OrderKey; label: string }[] = [
     { value: 'students-desc', label: 'Students Most' },
     { value: 'status-asc', label: 'Status' },
 ];
+
+const controlInputClass = 'min-h-9 rounded-xl border border-slate-200 bg-white px-3 py-1 text-xs font-bold text-slate-900 dark:border-slate-700 dark:bg-slate-950 dark:text-slate-100';
+const ghostButtonClass = 'inline-flex min-h-9 items-center justify-center gap-1.5 rounded-xl border border-slate-200 bg-white px-3 py-2 text-xs font-black text-slate-600 dark:border-slate-700 dark:bg-slate-950 dark:text-slate-300';
+const primaryButtonClass = 'inline-flex min-h-9 items-center justify-center gap-1.5 rounded-xl bg-blue-600 px-3 py-2 text-xs font-black text-white';
+const mobileCardClass = 'rounded-[22px] border border-slate-200/80 bg-white/95 p-3 shadow-[0_14px_34px_rgba(15,23,42,0.07)] dark:border-slate-700 dark:bg-slate-800/90';
+const softTileClass = 'rounded-2xl bg-slate-50 p-2 dark:bg-slate-950/70';
+const fieldGroupClass = 'grid gap-1.5';
+const fieldLabelClass = 'text-[11px] font-black uppercase text-slate-500 dark:text-slate-400';
+const fieldInputClass = 'min-h-12 w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm font-bold text-slate-900 outline-none transition focus:border-blue-400 focus:ring-2 focus:ring-blue-500/15 dark:border-slate-700 dark:bg-slate-950 dark:text-slate-100';
 
 function sortTeachers(list: Teacher[], order: OrderKey): Teacher[] {
     return [...list].sort((a, b) => {
@@ -253,61 +262,51 @@ export default function TeachersPage({ teachers }: TeachersPageProps) {
         <AdminShell>
             {/* List view */}
             {view === 'list' && (
-                <div
-                    className="admin-teachers-page fade-in"
-                    style={{
-                        display: 'flex',
-                        flexDirection: 'column',
-                        gap: 16,
-                    }}
-                >
-                    <div
-                        style={{
-                            display: 'flex',
-                            alignItems: 'center',
-                            flexWrap: 'wrap',
-                            gap: 8,
-                        }}
-                    >
-                        <div
-                            style={{
-                                marginLeft: 'auto',
-                                display: 'flex',
-                                gap: 8,
-                                flexWrap: 'wrap',
-                                alignItems: 'center',
-                            }}
-                        >
+                <div className="fade-in mx-auto flex w-full max-w-[1280px] flex-col gap-3 bg-slate-50 p-4 dark:bg-slate-950 md:gap-5 md:p-6 max-md:bg-[radial-gradient(circle_at_100%_0,rgba(37,99,235,0.12),transparent_34%),linear-gradient(180deg,#f7f9fc_0%,#eef3f8_100%)] max-md:px-2.5 max-md:py-3 max-md:pb-[calc(104px+env(safe-area-inset-bottom))] dark:max-md:bg-[radial-gradient(circle_at_100%_0,rgba(96,165,250,0.14),transparent_34%),linear-gradient(180deg,#0f172a_0%,#111827_100%)]">
+                    <section className="flex items-center justify-between gap-3 rounded-[24px] border border-slate-200 bg-white p-4 shadow-[0_14px_36px_rgba(15,23,42,0.07)] dark:border-slate-700 dark:bg-slate-800/90 md:rounded-[28px] md:p-5">
+                        <div>
+                            <span className="block text-xs font-black text-slate-400">Teacher directory</span>
+                            <strong className="mt-1 block text-2xl font-black text-slate-900 dark:text-slate-50">{teachers.length} teachers</strong>
+                            <p className="mt-1 text-xs font-extrabold text-slate-400">
+                                {teachers.filter((teacher) => teacher.status === 'active').length} active
+                                {' '}·{' '}
+                                {teachers.reduce((total, teacher) => total + teacher.students, 0)} students
+                            </p>
+                        </div>
+                        {canCreate && (
+                            <button className="inline-flex h-11 w-11 items-center justify-center rounded-2xl bg-blue-600 text-white shadow-[0_14px_26px_rgba(37,99,235,0.28)]" type="button" onClick={() => setView('add')}>
+                                <Plus size={17} />
+                            </button>
+                        )}
+                    </section>
+
+                    <div className="flex flex-wrap items-center gap-2 md:-mt-2">
+                        <div className="ml-auto flex flex-wrap items-center gap-2 max-md:w-full max-md:[&>*]:flex-1 max-md:[&>*]:justify-center">
                             {canDownloadLayout && <a
                                 href={downloadTeacherLayout.url()}
-                                className="admin-btn admin-btn-ghost"
+                                className={ghostButtonClass}
                             >
                                 <Download size={14} /> Layout
                             </a>}
                             {canImport && <button
                                 type="button"
                                 onClick={() => importInputRef.current?.click()}
-                                className="admin-btn admin-btn-ghost"
+                                className={ghostButtonClass}
                             >
                                 <Upload size={14} /> Import
                             </button>}
                             {canExport && <a
                                 href={exportTeachers.url()}
-                                className="admin-btn admin-btn-ghost"
+                                className={ghostButtonClass}
                             >
                                 <FileDown size={14} /> Export
                             </a>}
-                            {canCreate && <button
-                                onClick={() => setView('add')}
-                                className="admin-btn admin-btn-primary"
-                            >
-                                <GraduationCap size={14} /> {translateText('Add Teacher')}
-                            </button>}
+                          
                             <input
                                 ref={importInputRef}
                                 type="file"
                                 accept=".csv,text/csv,text/plain"
-                                style={{ display: 'none' }}
+                                className="hidden"
                                 onChange={(event) =>
                                     importFile(event.target.files?.[0] ?? null)
                                 }
@@ -315,26 +314,9 @@ export default function TeachersPage({ teachers }: TeachersPageProps) {
                         </div>
                     </div>
 
-                    <div className="card admin-teachers-card">
-                        <div
-                            className="admin-teachers-controls"
-                            style={{
-                                display: 'flex',
-                                alignItems: 'center',
-                                flexWrap: 'wrap',
-                                gap: 8,
-                                padding: '12px 16px',
-                                borderBottom: '1px solid #f1f5f9',
-                            }}
-                        >
-                            <span
-                                style={{
-                                    fontSize: 11,
-                                    fontWeight: 700,
-                                    color: '#94a3b8',
-                                    whiteSpace: 'nowrap',
-                                }}
-                            >
+                    <div className="overflow-visible rounded-[24px] border-0 bg-transparent shadow-none md:overflow-x-auto md:rounded-[24px] md:border md:border-slate-200 md:bg-white md:shadow-sm dark:md:border-slate-700 dark:md:bg-slate-800/90">
+                        <div className="sticky top-0 z-10 mb-3 grid grid-cols-2 gap-2 rounded-[22px] border border-slate-200 bg-white/90 p-3 shadow-[0_12px_32px_rgba(15,23,42,0.07)] backdrop-blur dark:border-slate-700 dark:bg-slate-800/90 md:mb-0 md:flex md:flex-nowrap md:items-center md:gap-3 md:border-0 md:border-b md:border-slate-200 md:bg-white md:p-4 md:shadow-none md:backdrop-blur-none dark:md:border-slate-700 dark:md:bg-slate-800/90">
+                            <span className="hidden text-[11px] font-black text-slate-400 md:inline">
                                 Sort by
                             </span>
                             <Select
@@ -343,15 +325,7 @@ export default function TeachersPage({ teachers }: TeachersPageProps) {
                                     setOrderBy(value as OrderKey)
                                 }
                             >
-                                <SelectTrigger
-                                    style={{
-                                        width: 'auto',
-                                        minWidth: 150,
-                                        padding: '5px 10px',
-                                        fontSize: 12,
-                                        height: 'auto',
-                                    }}
-                                >
+                                <SelectTrigger className={`${controlInputClass} w-full md:w-[180px]`}>
                                     <SelectValue />
                                 </SelectTrigger>
                                 <SelectContent>
@@ -371,15 +345,7 @@ export default function TeachersPage({ teachers }: TeachersPageProps) {
                                     setPerPage(Number(value))
                                 }
                             >
-                                <SelectTrigger
-                                    style={{
-                                        width: 'auto',
-                                        minWidth: 120,
-                                        padding: '5px 10px',
-                                        fontSize: 12,
-                                        height: 'auto',
-                                    }}
-                                >
+                                <SelectTrigger className={`${controlInputClass} w-full md:w-[140px]`}>
                                     <SelectValue />
                                 </SelectTrigger>
                                 <SelectContent>
@@ -393,13 +359,7 @@ export default function TeachersPage({ teachers }: TeachersPageProps) {
                                     ))}
                                 </SelectContent>
                             </Select>
-                            <span
-                                style={{
-                                    fontSize: 11,
-                                    color: '#94a3b8',
-                                    marginLeft: 4,
-                                }}
-                            >
+                            <span className="hidden text-[11px] font-extrabold text-slate-400 md:inline">
                                 {filtered.length} result
                                 {filtered.length !== 1 ? 's' : ''}
                             </span>
@@ -408,18 +368,13 @@ export default function TeachersPage({ teachers }: TeachersPageProps) {
                                 onChange={(event) =>
                                     setSearch(event.target.value)
                                 }
-                                className="f-input"
+                                className={`${controlInputClass} col-span-2 w-full md:ml-auto md:w-[300px] md:max-w-none`}
                                 data-role="teachers-search"
-                                style={{
-                                    width: 260,
-                                    maxWidth: '100%',
-                                    marginLeft: 'auto',
-                                }}
                                 placeholder="Search teachers..."
                             />
                         </div>
 
-                        <table className="data-table admin-teachers-table">
+                        <table className="data-table hidden md:table md:min-w-[960px]">
                             <thead>
                                 <tr>
                                     <th>Teacher</th>
@@ -437,12 +392,7 @@ export default function TeachersPage({ teachers }: TeachersPageProps) {
                                     <tr>
                                         <td
                                             colSpan={8}
-                                            style={{
-                                                padding: '44px 16px',
-                                                textAlign: 'center',
-                                                color: '#94a3b8',
-                                                fontSize: 14,
-                                            }}
+                                            className="px-4 py-11 text-center text-sm text-slate-400"
                                         >
                                             {search ? (
                                                 <>
@@ -458,78 +408,41 @@ export default function TeachersPage({ teachers }: TeachersPageProps) {
                                     paginated.map((t) => (
                                         <tr key={t.id}>
                                             <td>
-                                                <div
-                                                    style={{
-                                                        display: 'flex',
-                                                        alignItems: 'center',
-                                                        gap: 10,
-                                                    }}
-                                                >
+                                                <div className="flex items-center gap-2.5">
                                                     <Avatar
                                                         name={t.nameEn}
                                                         src={t.photo}
                                                         size={34}
                                                     />
-                                                    <div
-                                                        style={{ minWidth: 0 }}
-                                                    >
+                                                    <div className="min-w-0">
                                                         <KH
-                                                            style={{
-                                                                fontWeight: 800,
-                                                                fontSize: 13,
-                                                                display:
-                                                                    'block',
-                                                            }}
+                                                            className="block text-[13px] font-black"
                                                         >
                                                             {t.nameKh}
                                                         </KH>
-                                                        <div
-                                                            style={{
-                                                                fontSize: 11,
-                                                                color: '#94a3b8',
-                                                            }}
-                                                        >
+                                                        <div className="text-[11px] text-slate-400">
                                                             {t.nameEn}
                                                         </div>
                                                     </div>
                                                 </div>
                                             </td>
                                             <td
-                                                style={{
-                                                    fontSize: 12,
-                                                    color: '#64748b',
-                                                    fontWeight: 700,
-                                                }}
+                                                className="text-xs font-bold text-slate-500"
                                             >
                                                 {t.subject}
                                             </td>
                                             <td
-                                                style={{
-                                                    fontWeight: 900,
-                                                    color: '#2563eb',
-                                                }}
+                                                className="font-black text-blue-600"
                                             >
                                                 {t.classes}
                                             </td>
                                             <td
-                                                style={{
-                                                    fontWeight: 900,
-                                                    color: '#334155',
-                                                }}
+                                                className="font-black text-slate-700 dark:text-slate-200"
                                             >
                                                 {t.students}
                                             </td>
                                             <td>
-                                                <span
-                                                    style={{
-                                                        display: 'inline-flex',
-                                                        alignItems: 'center',
-                                                        gap: 6,
-                                                        color: '#374151',
-                                                        fontSize: 12,
-                                                        fontWeight: 700,
-                                                    }}
-                                                >
+                                                <span className="inline-flex items-center gap-1.5 text-xs font-bold text-slate-700 dark:text-slate-300">
                                                     <Phone
                                                         size={14}
                                                         color="#64748b"
@@ -537,34 +450,18 @@ export default function TeachersPage({ teachers }: TeachersPageProps) {
                                                     {t.phone || '-'}
                                                 </span>
                                             </td>
-                                            <td style={{ minWidth: 180 }}>
+                                            <td className="min-w-[180px]">
                                                 {t.lessons.length === 0 ? (
-                                                    <span
-                                                        style={{
-                                                            color: '#94a3b8',
-                                                            fontSize: 12,
-                                                        }}
-                                                    >
+                                                    <span className="text-xs text-slate-400">
                                                         No lessons
                                                     </span>
                                                 ) : (
                                                     <Link
                                                         href={lessonPlanIndex.url()}
-                                                        style={{
-                                                            color: '#2563eb',
-                                                            fontSize: 12,
-                                                            fontWeight: 800,
-                                                            textDecoration:
-                                                                'none',
-                                                        }}
+                                                        className="text-xs font-black text-blue-600 no-underline dark:text-blue-300"
                                                     >
                                                         {t.lessons[0].title}
-                                                        <span
-                                                            style={{
-                                                                color: '#94a3b8',
-                                                                fontWeight: 700,
-                                                            }}
-                                                        >
+                                                        <span className="font-bold text-slate-400">
                                                             {' '}
                                                             - {t.lessons[0].day}
                                                         </span>
@@ -595,9 +492,9 @@ export default function TeachersPage({ teachers }: TeachersPageProps) {
                                 )}
                             </tbody>
                         </table>
-                        <div className="admin-teachers-mobile-list">
+                        <div className="grid gap-3 md:hidden">
                             {paginated.length === 0 ? (
-                                <div className="admin-teachers-empty">
+                                <div className="py-8 text-center text-sm font-bold text-slate-500">
                                     {search ? (
                                         <>
                                             No teachers found for{' '}
@@ -609,65 +506,41 @@ export default function TeachersPage({ teachers }: TeachersPageProps) {
                                 </div>
                             ) : (
                                 paginated.map((t) => (
-                                    <AdminMobileCard
-                                        key={t.id}
-                                        leading={
-                                            <Avatar
-                                                name={t.nameEn}
-                                                src={t.photo}
-                                                size={38}
-                                            />
-                                        }
-                                        title={<KH>{t.nameKh}</KH>}
-                                        subtitle={t.nameEn}
-                                        badge={
-                                            <Badge
-                                                type={
-                                                    t.status === 'active'
-                                                        ? 'green'
-                                                        : 'gray'
-                                                }
-                                            >
-                                                {t.status}
-                                            </Badge>
-                                        }
-                                        actionLabel={translateText('Actions')}
-                                        actions={canManageTeachers ? renderRowActionItems(teacherActions(t)) : null}
-                                        meta={[
-                                            {
-                                                label: translateText('Subject'),
-                                                value: t.subject || '-',
-                                            },
-                                            {
-                                                label: translateText('Classes'),
-                                                value: t.classes,
-                                            },
-                                            {
-                                                label: translateText(
-                                                    'Students',
-                                                ),
-                                                value: t.students,
-                                            },
-                                            {
-                                                label: translateText('Phone'),
-                                                value: t.phone || '-',
-                                            },
-                                        ]}
-                                        footer={
-                                            t.lessons.length > 0 ? (
-                                                <Link
-                                                    href={lessonPlanIndex.url()}
-                                                    className="admin-teacher-mobile-lesson"
-                                                >
+                                    <article key={t.id} className={mobileCardClass}>
+                                        <div className="mb-3 flex items-start gap-3">
+                                            <Avatar name={t.nameEn} src={t.photo} size={42} />
+                                            <div className="min-w-0 flex-1">
+                                                <KH className="block truncate text-sm font-black text-slate-900 dark:text-slate-50">{t.nameKh}</KH>
+                                                <span className="block truncate text-xs font-extrabold text-slate-400">{t.nameEn}</span>
+                                            </div>
+                                            <Badge type={t.status === 'active' ? 'green' : 'gray'}>{t.status}</Badge>
+                                            {canManageTeachers && (
+                                                <RowActions ariaLabel={`Actions for ${t.nameEn}`} actions={teacherActions(t)} />
+                                            )}
+                                        </div>
+                                        <div className="grid grid-cols-2 gap-2">
+                                            {[
+                                                [translateText('Subject'), t.subject || '-'],
+                                                [translateText('Classes'), t.classes],
+                                                [translateText('Students'), t.students],
+                                                [translateText('Phone'), t.phone || '-'],
+                                            ].map(([label, value]) => (
+                                                <div key={String(label)} className={softTileClass}>
+                                                    <span className="block text-[10px] font-black uppercase text-slate-400">{label}</span>
+                                                    <strong className="mt-1 block truncate text-xs font-black text-slate-900 dark:text-slate-50">{value}</strong>
+                                                </div>
+                                            ))}
+                                        </div>
+                                        <div className="mt-3 border-t border-slate-100 pt-3 dark:border-slate-700">
+                                            {t.lessons.length > 0 ? (
+                                                <Link href={lessonPlanIndex.url()} className="text-xs font-black text-blue-600 no-underline dark:text-blue-300">
                                                     {t.lessons[0].title}
                                                 </Link>
                                             ) : (
-                                                <span className="admin-teacher-mobile-muted">
-                                                    No lessons
-                                                </span>
-                                            )
-                                        }
-                                    />
+                                                <span className="text-xs font-bold text-slate-400">No lessons</span>
+                                            )}
+                                        </div>
+                                    </article>
                                 ))
                             )}
                         </div>
@@ -700,158 +573,60 @@ export default function TeachersPage({ teachers }: TeachersPageProps) {
             {/* Schedule modal */}
             {scheduleTarget && (
                 <div
-                    style={{
-                        position: 'fixed',
-                        inset: 0,
-                        background: 'rgba(0,0,0,0.45)',
-                        display: 'flex',
-                        alignItems: 'center',
-                        justifyContent: 'center',
-                        zIndex: 200,
-                        padding: 16,
-                    }}
+                    className="fixed inset-0 z-[200] flex items-center justify-center bg-black/45 p-4"
                     onClick={(e) => {
                         if (e.target === e.currentTarget)
                             setScheduleTarget(null);
                     }}
                 >
-                    <div
-                        style={{
-                            background: 'white',
-                            borderRadius: 20,
-                            padding: 28,
-                            maxWidth: 480,
-                            width: '100%',
-                            boxShadow: '0 24px 60px rgba(0,0,0,0.15)',
-                        }}
-                    >
-                        <div
-                            style={{
-                                display: 'flex',
-                                alignItems: 'center',
-                                gap: 14,
-                                marginBottom: 20,
-                            }}
-                        >
+                    <div className="w-full max-w-[480px] rounded-[20px] bg-white p-7 shadow-[0_24px_60px_rgba(0,0,0,0.15)] dark:bg-slate-800">
+                        <div className="mb-5 flex items-center gap-3.5">
                             <Avatar
                                 name={scheduleTarget.nameEn}
                                 src={scheduleTarget.photo}
                                 size={48}
                             />
                             <div>
-                                <KH
-                                    style={{
-                                        fontWeight: 800,
-                                        fontSize: 16,
-                                        display: 'block',
-                                    }}
-                                >
+                                <KH className="block text-base font-black text-slate-900 dark:text-slate-50">
                                     {scheduleTarget.nameKh}
                                 </KH>
-                                <div style={{ fontSize: 12, color: '#94a3b8' }}>
+                                <div className="text-xs font-bold text-slate-400">
                                     {scheduleTarget.subject}
                                 </div>
                             </div>
                             <button
                                 onClick={() => setScheduleTarget(null)}
-                                style={{
-                                    marginLeft: 'auto',
-                                    background: '#f1f5f9',
-                                    border: 'none',
-                                    borderRadius: 8,
-                                    width: 32,
-                                    height: 32,
-                                    cursor: 'pointer',
-                                    color: '#64748b',
-                                    display: 'inline-flex',
-                                    alignItems: 'center',
-                                    justifyContent: 'center',
-                                }}
+                                className="ml-auto inline-flex h-8 w-8 items-center justify-center rounded-lg bg-slate-100 text-slate-500 dark:bg-slate-950 dark:text-slate-300"
                             >
                                 <X size={16} />
                             </button>
                         </div>
 
-                        <div style={{ marginBottom: 16 }}>
-                            <div
-                                style={{
-                                    fontSize: 12,
-                                    fontWeight: 700,
-                                    color: '#64748b',
-                                    marginBottom: 10,
-                                }}
-                            >
+                        <div className="mb-4">
+                            <div className="mb-2.5 text-xs font-black text-slate-500 dark:text-slate-400">
                                 CLASS SCHEDULE
                             </div>
                             {scheduleTarget.schedule.map((cls) => (
                                 <div
                                     key={cls.id}
-                                    style={{
-                                        display: 'flex',
-                                        alignItems: 'center',
-                                        gap: 12,
-                                        padding: '10px 14px',
-                                        background: '#f8fafc',
-                                        borderRadius: 10,
-                                        marginBottom: 8,
-                                        border: '1px solid #e8edf5',
-                                    }}
+                                    className="mb-2 flex items-center gap-3 rounded-xl border border-slate-200 bg-slate-50 px-3.5 py-2.5 dark:border-slate-700 dark:bg-slate-950/70"
                                 >
-                                    <div
-                                        style={{
-                                            width: 38,
-                                            height: 38,
-                                            borderRadius: 8,
-                                            background: '#eff6ff',
-                                            color: '#2563eb',
-                                            display: 'flex',
-                                            alignItems: 'center',
-                                            justifyContent: 'center',
-                                            flexShrink: 0,
-                                        }}
-                                    >
+                                    <div className="grid h-9 w-9 shrink-0 place-items-center rounded-lg bg-blue-50 text-blue-600 dark:bg-blue-500/15 dark:text-blue-300">
                                         <School size={17} />
                                     </div>
-                                    <div style={{ flex: 1 }}>
-                                        <div
-                                            style={{
-                                                fontWeight: 700,
-                                                fontSize: 13,
-                                                color: '#1e293b',
-                                            }}
-                                        >
+                                    <div className="flex-1">
+                                        <div className="text-[13px] font-bold text-slate-900 dark:text-slate-50">
                                             {cls.name}
                                         </div>
-                                        <div
-                                            style={{
-                                                fontSize: 11,
-                                                color: '#94a3b8',
-                                            }}
-                                        >
+                                        <div className="text-[11px] text-slate-400">
                                             {cls.days}
                                         </div>
                                     </div>
-                                    <div
-                                        style={{
-                                            textAlign: 'right',
-                                            flexShrink: 0,
-                                        }}
-                                    >
-                                        <div
-                                            style={{
-                                                fontSize: 12,
-                                                fontWeight: 700,
-                                                color: '#3b82f6',
-                                            }}
-                                        >
+                                    <div className="shrink-0 text-right">
+                                        <div className="text-xs font-bold text-blue-500">
                                             {cls.time}
                                         </div>
-                                        <div
-                                            style={{
-                                                fontSize: 11,
-                                                color: '#94a3b8',
-                                            }}
-                                        >
+                                        <div className="text-[11px] text-slate-400">
                                             Room {cls.room} - {cls.count}{' '}
                                             students
                                         </div>
@@ -859,14 +634,7 @@ export default function TeachersPage({ teachers }: TeachersPageProps) {
                                 </div>
                             ))}
                             {scheduleTarget.schedule.length === 0 && (
-                                <div
-                                    style={{
-                                        textAlign: 'center',
-                                        padding: '20px',
-                                        color: '#94a3b8',
-                                        fontSize: 13,
-                                    }}
-                                >
+                                <div className="p-5 text-center text-[13px] text-slate-400">
                                     No classes assigned yet.
                                 </div>
                             )}
@@ -874,16 +642,7 @@ export default function TeachersPage({ teachers }: TeachersPageProps) {
 
                         <button
                             onClick={() => setScheduleTarget(null)}
-                            style={{
-                                width: '100%',
-                                background: '#2563eb',
-                                color: 'white',
-                                border: 'none',
-                                borderRadius: 10,
-                                padding: '11px',
-                                fontWeight: 700,
-                                cursor: 'pointer',
-                            }}
+                            className="w-full rounded-xl bg-blue-600 p-3 font-bold text-white"
                         >
                             Close
                         </button>
@@ -894,69 +653,23 @@ export default function TeachersPage({ teachers }: TeachersPageProps) {
             {/* Delete confirmation modal */}
             {deleteTarget && (
                 <div
-                    style={{
-                        position: 'fixed',
-                        inset: 0,
-                        background: 'rgba(0,0,0,0.45)',
-                        display: 'flex',
-                        alignItems: 'center',
-                        justifyContent: 'center',
-                        zIndex: 200,
-                        padding: 16,
-                    }}
+                    className="fixed inset-0 z-[200] flex items-center justify-center bg-black/45 p-4"
                     onClick={(e) => {
                         if (e.target === e.currentTarget) setDeleteTarget(null);
                     }}
                 >
-                    <div
-                        style={{
-                            background: 'white',
-                            borderRadius: 20,
-                            padding: 32,
-                            maxWidth: 420,
-                            width: '100%',
-                            boxShadow: '0 24px 60px rgba(0,0,0,0.15)',
-                        }}
-                    >
-                        <div style={{ textAlign: 'center', marginBottom: 20 }}>
-                            <div
-                                style={{
-                                    width: 56,
-                                    height: 56,
-                                    borderRadius: '50%',
-                                    background: '#fee2e2',
-                                    color: '#ef4444',
-                                    display: 'flex',
-                                    alignItems: 'center',
-                                    justifyContent: 'center',
-                                    margin: '0 auto 14px',
-                                }}
-                            >
+                    <div className="w-full max-w-[420px] rounded-[20px] bg-white p-8 shadow-[0_24px_60px_rgba(0,0,0,0.15)] dark:bg-slate-800">
+                        <div className="mb-5 text-center">
+                            <div className="mx-auto mb-3.5 grid h-14 w-14 place-items-center rounded-full bg-red-100 text-red-500 dark:bg-red-500/15 dark:text-red-300">
                                 <Trash2 size={26} />
                             </div>
-                            <div
-                                style={{
-                                    fontSize: 18,
-                                    fontWeight: 800,
-                                    color: '#1e293b',
-                                    marginBottom: 6,
-                                }}
-                            >
+                            <div className="mb-1.5 text-lg font-black text-slate-900 dark:text-slate-50">
                                 Remove Teacher?
                             </div>
-                            <div
-                                style={{
-                                    fontSize: 13,
-                                    color: '#64748b',
-                                    lineHeight: 1.5,
-                                }}
-                            >
+                            <div className="text-[13px] font-bold leading-6 text-slate-500 dark:text-slate-400">
                                 Are you sure you want to remove{' '}
                                 <KH
-                                    style={{
-                                        fontWeight: 700,
-                                        color: '#1e293b',
-                                    }}
+                                    className="font-bold text-slate-900 dark:text-slate-50"
                                 >
                                     {deleteTarget.nameKh}
                                 </KH>{' '}
@@ -964,36 +677,16 @@ export default function TeachersPage({ teachers }: TeachersPageProps) {
                                 undone.
                             </div>
                         </div>
-                        <div style={{ display: 'flex', gap: 10 }}>
+                        <div className="flex gap-2.5">
                             <button
                                 onClick={() => setDeleteTarget(null)}
-                                style={{
-                                    flex: 1,
-                                    background: '#f1f5f9',
-                                    color: '#64748b',
-                                    border: 'none',
-                                    borderRadius: 10,
-                                    padding: '11px',
-                                    fontWeight: 700,
-                                    cursor: 'pointer',
-                                    fontSize: 14,
-                                }}
+                                className="flex-1 rounded-xl bg-slate-100 p-3 text-sm font-bold text-slate-500 dark:bg-slate-950 dark:text-slate-300"
                             >
                                 Cancel
                             </button>
                             <button
                                 onClick={confirmDelete}
-                                style={{
-                                    flex: 1,
-                                    background: '#ef4444',
-                                    color: 'white',
-                                    border: 'none',
-                                    borderRadius: 10,
-                                    padding: '11px',
-                                    fontWeight: 700,
-                                    cursor: 'pointer',
-                                    fontSize: 14,
-                                }}
+                                className="flex-1 rounded-xl bg-red-500 p-3 text-sm font-bold text-white"
                             >
                                 Yes, Remove
                             </button>
@@ -1084,39 +777,20 @@ function TeacherForm({ mode, teacher, onBack }: FormProps) {
 
     const inputError = (message?: string) =>
         message ? (
-            <div style={{ color: '#ef4444', fontSize: 11, marginTop: 4 }}>
+            <div className="mt-1 text-[11px] font-bold text-red-500">
                 {message}
             </div>
         ) : null;
 
     return (
-        <div className="fade-in" style={{ padding: 24 }}>
+        <div className="fade-in bg-slate-50 p-6 dark:bg-slate-950 max-md:bg-[radial-gradient(circle_at_100%_0,rgba(37,99,235,0.12),transparent_34%),linear-gradient(180deg,#f7f9fc_0%,#eef3f8_100%)] max-md:px-2.5 max-md:py-3 max-md:pb-[calc(104px+env(safe-area-inset-bottom))] dark:max-md:bg-[radial-gradient(circle_at_100%_0,rgba(96,165,250,0.14),transparent_34%),linear-gradient(180deg,#0f172a_0%,#111827_100%)]">
             <form
-                className="card"
+                className="mx-auto w-full max-w-[600px] rounded-[24px] border border-slate-200 bg-white p-7 shadow-[0_18px_42px_rgba(15,23,42,0.08)] dark:border-slate-700 dark:bg-slate-800/90 max-md:border-0 max-md:bg-transparent max-md:p-0 max-md:shadow-none"
                 onSubmit={submit}
-                style={{ padding: 28, maxWidth: 600, margin: '0 auto' }}
             >
                 {/* Header */}
-                <div
-                    style={{
-                        display: 'flex',
-                        alignItems: 'center',
-                        gap: 12,
-                        marginBottom: 24,
-                    }}
-                >
-                    <div
-                        style={{
-                            width: 40,
-                            height: 40,
-                            borderRadius: 10,
-                            background: '#eff6ff',
-                            color: '#2563eb',
-                            display: 'flex',
-                            alignItems: 'center',
-                            justifyContent: 'center',
-                        }}
-                    >
+                <div className="mb-5 flex items-center gap-3 rounded-[24px] border border-slate-200 bg-white p-4 shadow-[0_14px_36px_rgba(15,23,42,0.07)] dark:border-slate-700 dark:bg-slate-800/90 md:border-0 md:bg-transparent md:p-0 md:shadow-none">
+                    <div className="grid h-11 w-11 shrink-0 place-items-center rounded-2xl bg-blue-50 text-blue-600 dark:bg-blue-500/15 dark:text-blue-300">
                         {isEdit ? (
                             <Edit3 size={20} />
                         ) : (
@@ -1124,96 +798,39 @@ function TeacherForm({ mode, teacher, onBack }: FormProps) {
                         )}
                     </div>
                     <div>
-                        <div
-                            style={{
-                                fontWeight: 800,
-                                fontSize: 16,
-                                color: '#1e293b',
-                            }}
-                        >
+                        <div className="text-lg font-black text-slate-900 dark:text-slate-50">
                             {translateText(
                                 isEdit ? 'Edit Teacher' : 'Add New Teacher',
                             )}
                         </div>
                         {isEdit && teacher && (
-                            <div style={{ fontSize: 12, color: '#94a3b8' }}>
+                            <div className="text-xs font-extrabold text-slate-400">
                                 {teacher.nameEn}
                             </div>
                         )}
                     </div>
                 </div>
 
-                <div
-                    style={{
-                        display: 'grid',
-                        gridTemplateColumns: '1fr 1fr',
-                        gap: 16,
-                    }}
-                >
-                    <div
-                        style={{
-                            gridColumn: '1 / -1',
-                            display: 'flex',
-                            flexDirection: 'column',
-                            alignItems: 'center',
-                            gap: 10,
-                            marginBottom: 4,
-                        }}
-                    >
+                <div className="grid grid-cols-2 gap-4 max-md:grid-cols-1">
+                    <div className="col-span-full mb-1 flex flex-col items-center gap-2.5 rounded-[22px] border border-slate-200 bg-white p-4 dark:border-slate-700 dark:bg-slate-800/90">
                         <div
                             onClick={() => fileInputRef.current?.click()}
-                            style={{
-                                width: 96,
-                                height: 96,
-                                borderRadius: '50%',
-                                background: '#f1f5f9',
-                                border: '2px dashed #cbd5e1',
-                                display: 'flex',
-                                alignItems: 'center',
-                                justifyContent: 'center',
-                                cursor: 'pointer',
-                                overflow: 'hidden',
-                                position: 'relative',
-                                flexShrink: 0,
-                            }}
+                            className="relative grid h-24 w-24 shrink-0 cursor-pointer place-items-center overflow-hidden rounded-full border-2 border-dashed border-slate-300 bg-slate-100 dark:border-slate-600 dark:bg-slate-950"
                         >
                             {photoPreview ? (
                                 <img
                                     src={photoPreview}
                                     alt="Teacher profile preview"
-                                    style={{
-                                        width: '100%',
-                                        height: '100%',
-                                        objectFit: 'cover',
-                                    }}
+                                    className="h-full w-full object-cover"
                                 />
                             ) : (
                                 <User size={36} color="#94a3b8" />
                             )}
-                            <div
-                                style={{
-                                    position: 'absolute',
-                                    bottom: 4,
-                                    right: 4,
-                                    width: 24,
-                                    height: 24,
-                                    borderRadius: '50%',
-                                    background: '#2563eb',
-                                    display: 'flex',
-                                    alignItems: 'center',
-                                    justifyContent: 'center',
-                                }}
-                            >
+                            <div className="absolute bottom-1 right-1 grid h-6 w-6 place-items-center rounded-full bg-blue-600">
                                 <Camera size={12} color="white" />
                             </div>
                         </div>
-                        <div
-                            style={{
-                                fontSize: 12,
-                                color: '#94a3b8',
-                                textAlign: 'center',
-                            }}
-                        >
+                        <div className="text-center text-xs font-extrabold text-slate-400">
                             {data.profile_photo
                                 ? data.profile_photo.name
                                 : translateText(
@@ -1224,7 +841,7 @@ function TeacherForm({ mode, teacher, onBack }: FormProps) {
                             ref={fileInputRef}
                             type="file"
                             accept="image/jpeg,image/png,image/jpg,image/webp"
-                            style={{ display: 'none' }}
+                            className="hidden"
                             onChange={(event) => {
                                 const file = event.target.files?.[0] ?? null;
                                 setData('profile_photo', file);
@@ -1237,39 +854,39 @@ function TeacherForm({ mode, teacher, onBack }: FormProps) {
                         />
                         {inputError(errors.profile_photo as string | undefined)}
                     </div>
-                    <div className="f-group">
-                        <label className="f-label">
+                    <div className={fieldGroupClass}>
+                        <label className={fieldLabelClass}>
                             {translateText('Khmer Name')} *
                         </label>
                         <input
-                            className="f-input"
+                            className={fieldInputClass}
                             placeholder={translateText('e.g. Teacher Vuthy')}
                             value={data.name_kh}
                             onChange={(e) => setData('name_kh', e.target.value)}
                         />
                         {inputError(errors.name_kh)}
                     </div>
-                    <div className="f-group">
-                        <label className="f-label">
+                    <div className={fieldGroupClass}>
+                        <label className={fieldLabelClass}>
                             {translateText('English Name')} *
                         </label>
                         <input
-                            className="f-input"
+                            className={fieldInputClass}
                             placeholder="e.g. Mr. Vuthy"
                             value={data.name_en}
                             onChange={(e) => setData('name_en', e.target.value)}
                         />
                         {inputError(errors.name_en)}
                     </div>
-                    <div className="f-group" style={{ gridColumn: '1/-1' }}>
-                        <label className="f-label">
+                    <div className={`${fieldGroupClass} col-span-full`}>
+                        <label className={fieldLabelClass}>
                             {translateText('Subject')} *
                         </label>
                         <Select
                             value={data.subject}
                             onValueChange={(value) => setData('subject', value)}
                         >
-                            <SelectTrigger className="f-input">
+                            <SelectTrigger className={fieldInputClass}>
                                 <SelectValue
                                     placeholder={translateText(
                                         'Select subject...',
@@ -1293,21 +910,21 @@ function TeacherForm({ mode, teacher, onBack }: FormProps) {
                         </Select>
                         {inputError(errors.subject)}
                     </div>
-                    <div className="f-group">
-                        <label className="f-label">
+                    <div className={fieldGroupClass}>
+                        <label className={fieldLabelClass}>
                             {translateText('Phone')}
                         </label>
                         <input
                             type="tel"
-                            className="f-input"
+                            className={fieldInputClass}
                             placeholder="0xx-xxx-xxx"
                             value={data.phone}
                             onChange={(e) => setData('phone', e.target.value)}
                         />
                         {inputError(errors.phone)}
                     </div>
-                    <div className="f-group">
-                        <label className="f-label">
+                    <div className={fieldGroupClass}>
+                        <label className={fieldLabelClass}>
                             {translateText('Status')}
                         </label>
                         <Select
@@ -1319,7 +936,7 @@ function TeacherForm({ mode, teacher, onBack }: FormProps) {
                                 )
                             }
                         >
-                            <SelectTrigger className="f-input">
+                            <SelectTrigger className={fieldInputClass}>
                                 <SelectValue />
                             </SelectTrigger>
                             <SelectContent>
@@ -1333,12 +950,12 @@ function TeacherForm({ mode, teacher, onBack }: FormProps) {
                         </Select>
                         {inputError(errors.status)}
                     </div>
-                    <div className="f-group" style={{ gridColumn: '1/-1' }}>
-                        <label className="f-label">
+                    <div className={`${fieldGroupClass} col-span-full`}>
+                        <label className={fieldLabelClass}>
                             {translateText('Telegram Username')}
                         </label>
                         <input
-                            className="f-input"
+                            className={fieldInputClass}
                             placeholder="@username"
                             value={data.telegram_username}
                             onChange={(e) =>
@@ -1349,44 +966,18 @@ function TeacherForm({ mode, teacher, onBack }: FormProps) {
                     </div>
                 </div>
 
-                <div style={{ display: 'flex', gap: 12, marginTop: 8 }}>
+                <div className="mt-4 flex gap-3 max-md:sticky max-md:bottom-[74px] max-md:z-10 max-md:rounded-[22px] max-md:border max-md:border-slate-200 max-md:bg-white/90 max-md:p-2 max-md:shadow-[0_18px_42px_rgba(15,23,42,0.14)] max-md:backdrop-blur dark:max-md:border-slate-700 dark:max-md:bg-slate-900/90">
                     <button
                         type="button"
                         onClick={onBack}
-                        style={{
-                            background: '#f1f5f9',
-                            color: '#64748b',
-                            border: 'none',
-                            borderRadius: 10,
-                            padding: '12px 20px',
-                            fontWeight: 700,
-                            cursor: 'pointer',
-                            display: 'inline-flex',
-                            alignItems: 'center',
-                            gap: 6,
-                        }}
+                        className="inline-flex min-h-12 items-center justify-center gap-1.5 rounded-2xl bg-slate-100 px-5 py-3 text-sm font-black text-slate-500 dark:bg-slate-950 dark:text-slate-300 max-md:flex-1"
                     >
                         <ArrowLeft size={14} /> {translateText('Cancel')}
                     </button>
                     <button
                         type="submit"
                         disabled={processing}
-                        style={{
-                            flex: 1,
-                            background: '#2563eb',
-                            color: 'white',
-                            border: 'none',
-                            borderRadius: 10,
-                            padding: '12px',
-                            fontWeight: 700,
-                            fontSize: 14,
-                            cursor: 'pointer',
-                            fontFamily: "'Noto Sans Khmer',sans-serif",
-                            display: 'inline-flex',
-                            alignItems: 'center',
-                            justifyContent: 'center',
-                            gap: 6,
-                        }}
+                        className="inline-flex min-h-12 flex-1 items-center justify-center gap-1.5 rounded-2xl bg-blue-600 p-3 text-sm font-black text-white disabled:opacity-70"
                     >
                         {processing ? (
                             translateText('Saving...')

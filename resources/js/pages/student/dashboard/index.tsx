@@ -94,14 +94,6 @@ const QUICK_LINKS = [
         color: '#009c7f',
     },
     {
-        id: 'fees',
-        label: 'Fees',
-        icon: CreditCard,
-        href: fees(),
-        bg: '#ecfdf8',
-        color: '#009c7f',
-    },
-    {
         id: 'exams',
         label: 'Exams',
         icon: FileText,

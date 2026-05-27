@@ -68,92 +68,11 @@ function sortStudents(list: Student[], order: OrderKey): Student[] {
     });
 }
 
-/* â”€â”€â”€ Responsive styles injected once â”€â”€â”€ */
-const RESPONSIVE_CSS = `
-@media (max-width: 768px) {
-    .students-topbar {
-        flex-direction: column !important;
-        align-items: stretch !important;
-    }
-    .students-stats {
-        display: grid !important;
-        grid-template-columns: repeat(2, 1fr) !important;
-    }
-    .students-add-btn {
-        width: 100% !important;
-        text-align: center !important;
-        margin-left: 0 !important;
-    }
-    .students-top-actions {
-        width: 100% !important;
-        justify-content: stretch !important;
-    }
-    .students-top-actions > * {
-        flex: 1 1 auto !important;
-        justify-content: center !important;
-    }
-    .students-toolbar {
-        flex-direction: column !important;
-        align-items: stretch !important;
-        gap: 10px !important;
-    }
-    .students-toolbar-row1 {
-        display: flex;
-        gap: 8px;
-        flex-wrap: wrap;
-        align-items: center;
-    }
-    .students-search {
-        max-width: 100% !important;
-        margin-left: 0 !important;
-        width: 100% !important;
-    }
-    .students-filters {
-        display: flex;
-        gap: 6px;
-        flex-wrap: wrap;
-    }
-    /* Card layout for mobile instead of table */
-    .students-table-wrap table { display: none !important; }
-    .students-card-list { display: flex !important; }
-    /* Detail panel */
-    .student-detail-header {
-        flex-direction: column !important;
-    }
-    .student-detail-actions {
-        width: 100% !important;
-        justify-content: stretch !important;
-    }
-    .student-detail-actions a,
-    .student-detail-actions button {
-        flex: 1;
-        text-align: center;
-    }
-}
-@media (min-width: 769px) {
-    .students-card-list { display: none !important; }
-    .students-table-wrap table { display: table !important; }
-    .students-toolbar-row1 { display: contents; }
-    .students-filters { display: contents; }
-}
-@media (max-width: 480px) {
-    .students-stats {
-        grid-template-columns: repeat(2, 1fr) !important;
-    }
-}
-`;
-
-function useInjectCSS(css: string) {
-    useEffect(() => {
-        const id = 'students-responsive-css';
-        if (document.getElementById(id)) return;
-        const style = document.createElement('style');
-        style.id = id;
-        style.textContent = css;
-        document.head.appendChild(style);
-        return () => { document.getElementById(id)?.remove(); };
-    }, []);
-}
+const mobileCardClass = 'rounded-[22px] border border-slate-200/80 bg-white/95 p-3 shadow-[0_14px_34px_rgba(15,23,42,0.07)] transition dark:border-slate-700 dark:bg-slate-800/90';
+const softTileClass = 'rounded-2xl bg-slate-50 p-2 dark:bg-slate-950/70';
+const ghostButtonClass = 'inline-flex min-h-9 items-center justify-center gap-1.5 rounded-xl border border-slate-200 bg-white px-3 py-2 text-xs font-black text-slate-600 dark:border-slate-700 dark:bg-slate-950 dark:text-slate-300';
+const primaryButtonClass = 'inline-flex min-h-9 items-center justify-center gap-1.5 rounded-xl bg-blue-600 px-3 py-2 text-xs font-black text-white';
+const controlInputClass = 'min-h-9 rounded-xl border border-slate-200 bg-white px-3 py-1 text-xs font-bold text-slate-900 dark:border-slate-700 dark:bg-slate-950 dark:text-slate-100';
 
 /* â”€â”€â”€ Mobile card for one student â”€â”€â”€ */
 function StudentCard({ student, onSelect, selected, canShow, canUpdate, canDelete, onDelete }: {
@@ -167,67 +86,55 @@ function StudentCard({ student, onSelect, selected, canShow, canUpdate, canDelet
 }) {
     return (
         <div
+            className={`${mobileCardClass} cursor-pointer ${selected ? 'border-blue-300 bg-blue-50/90 dark:border-blue-400/50 dark:bg-blue-500/10' : ''}`}
             onClick={onSelect}
-            style={{
-                background: selected ? '#eff6ff' : 'white',
-                border: `1.5px solid ${selected ? '#bfdbfe' : '#e8edf5'}`,
-                borderRadius: 14,
-                padding: '14px 16px',
-                cursor: 'pointer',
-                transition: 'border-color 0.15s, background 0.15s',
-            }}
         >
-            {/* Top row: avatar + name + fee */}
-            <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 10 }}>
+            <div className="mb-3 flex items-center gap-3">
                 <Avatar name={student.nameEn} src={student.photo} size={42} />
-                <div style={{ flex: 1, minWidth: 0 }}>
-                    <KH style={{ fontWeight: 700, fontSize: 14, display: 'block', lineHeight: 1.3 }}>{student.nameKh}</KH>
-                    <div style={{ fontSize: 12, color: '#94a3b8', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{student.nameEn}</div>
+                <div className="min-w-0 flex-1">
+                    <KH className="block truncate text-sm font-black leading-tight text-slate-900 dark:text-slate-50">{student.nameKh}</KH>
+                    <div className="truncate text-xs font-extrabold text-slate-400">{student.nameEn}</div>
                 </div>
                 <FeeTag status={student.fees} />
+                <div onClick={e => e.stopPropagation()}>
+                    <RowActions
+                        ariaLabel={`Actions for ${student.nameEn}`}
+                        actions={[
+                            { key: 'view', label: 'View', icon: Eye, href: showStudent.url((student.routeKey ?? student.id) as never), hidden: !canShow },
+                            { key: 'edit', label: 'Edit', icon: Edit3, href: editStudent.url((student.routeKey ?? student.id) as never), hidden: !canUpdate },
+                            { key: 'delete', label: 'Delete', icon: Trash2, onSelect: onDelete, variant: 'destructive', separatorBefore: true, hidden: !canDelete },
+                        ]}
+                    />
+                </div>
             </div>
 
-            {/* Badges row */}
-            <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap', marginBottom: 10 }}>
+            <div className="mb-3 flex flex-wrap gap-1.5">
                 <Badge type="blue">{student.level}</Badge>
-                <span style={{ fontSize: 11, color: '#64748b', background: '#f8fafc', border: '1px solid #e2e8f0', borderRadius: 6, padding: '2px 8px' }}>{student.cls}</span>
-                <span style={{ fontSize: 11, color: '#64748b', background: '#f8fafc', border: '1px solid #e2e8f0', borderRadius: 6, padding: '2px 8px' }}>{student.province}</span>
+                <span className="rounded-full border border-slate-200 bg-slate-50 px-2 py-0.5 text-[11px] font-black text-slate-500 dark:border-slate-700 dark:bg-slate-950 dark:text-slate-300">{student.cls}</span>
+                <span className="rounded-full border border-slate-200 bg-slate-50 px-2 py-0.5 text-[11px] font-black text-slate-500 dark:border-slate-700 dark:bg-slate-950 dark:text-slate-300">{student.province}</span>
             </div>
 
-            {/* Attendance */}
-            <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 10 }}>
-                <span style={{ fontSize: 11, color: '#94a3b8', width: 72, flexShrink: 0 }}>Attendance</span>
+            <div className={`${softTileClass} mb-3 flex items-center gap-3`}>
+                <div>
+                    <span className="block text-[10px] font-black uppercase text-slate-400">Attendance</span>
+                    <strong className="block text-base font-black text-slate-900 dark:text-slate-50">{student.attendance}%</strong>
+                </div>
                 <PBar value={student.attendance} color={student.attendance >= 80 ? 'green' : 'red'} />
-                <span style={{ fontSize: 12, fontWeight: 700, color: student.attendance >= 80 ? '#10b981' : '#ef4444', width: 36, flexShrink: 0 }}>{student.attendance}%</span>
             </div>
 
-            {/* Scores grid */}
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 6, marginBottom: 12 }}>
+            <div className="grid grid-cols-4 gap-1.5">
                 {(['speaking', 'listening', 'reading', 'writing'] as const).map(skill => (
-                    <div key={skill} style={{ textAlign: 'center' }}>
-                        <div style={{ fontSize: 10, color: '#94a3b8', marginBottom: 2, textTransform: 'capitalize' }}>{skill.slice(0, 4)}</div>
+                    <div key={skill} className={softTileClass}>
+                        <div className="mb-1 text-center text-[10px] font-black capitalize text-slate-400">{skill.slice(0, 4)}</div>
                         <ScoreChip score={student.grade[skill]} />
                     </div>
                 ))}
-            </div>
-
-            {/* Actions */}
-            <div style={{ display: 'flex', justifyContent: 'flex-end' }} onClick={e => e.stopPropagation()}>
-                <RowActions
-                    ariaLabel={`Actions for ${student.nameEn}`}
-                    actions={[
-                        { key: 'view', label: 'View', icon: Eye, href: showStudent.url((student.routeKey ?? student.id) as never), hidden: !canShow },
-                        { key: 'edit', label: 'Edit', icon: Edit3, href: editStudent.url((student.routeKey ?? student.id) as never), hidden: !canUpdate },
-                        { key: 'delete', label: 'Delete', icon: Trash2, onSelect: onDelete, variant: 'destructive', separatorBefore: true, hidden: !canDelete },
-                    ]}
-                />
             </div>
         </div>
     );
 }
 
 export default function StudentsPage({ students }: StudentsPageProps) {
-    useInjectCSS(RESPONSIVE_CSS);
     const { can, canAny } = useAdminPermissions();
     const canShow = can('students.show');
     const canCreate = can('students.create');
@@ -315,42 +222,52 @@ export default function StudentsPage({ students }: StudentsPageProps) {
 
     return (
         <AdminShell>
-            <div className="fade-in" style={{ padding: '16px', display: 'flex', flexDirection: 'column', gap: 16 }}>
+            <div className="fade-in mx-auto flex w-full max-w-[1280px] flex-col gap-3 bg-slate-50 p-4 dark:bg-slate-950 md:gap-5 md:p-6 max-md:bg-[radial-gradient(circle_at_100%_0,rgba(37,99,235,0.12),transparent_34%),linear-gradient(180deg,#f7f9fc_0%,#eef3f8_100%)] max-md:px-2.5 max-md:py-3 max-md:pb-[calc(104px+env(safe-area-inset-bottom))] dark:max-md:bg-[radial-gradient(circle_at_100%_0,rgba(96,165,250,0.14),transparent_34%),linear-gradient(180deg,#0f172a_0%,#111827_100%)]">
 
-                {/* â”€â”€ Top bar: stats + add button â”€â”€ */}
-                <div className="students-topbar" style={{ display: 'flex', gap: 12, flexWrap: 'wrap', alignItems: 'center' }}>
-                    <div className="students-stats" style={{ display: 'flex', gap: 12, flexWrap: 'wrap' }}>
+                <section className="hidden items-center justify-between gap-3 rounded-[24px] border border-slate-200 bg-white p-4 shadow-[0_14px_36px_rgba(15,23,42,0.07)] dark:border-slate-700 dark:bg-slate-800/90 max-md:flex">
+                    <div>
+                        <span className="block text-xs font-black text-slate-400">Student directory</span>
+                        <strong className="mt-1 block text-2xl font-black text-slate-900 dark:text-slate-50">{students.length} students</strong>
+                    </div>
+                    {canCreate && (
+                        <Link className="inline-flex h-11 w-11 items-center justify-center rounded-2xl bg-blue-600 text-white shadow-[0_14px_26px_rgba(37,99,235,0.28)]" href={createStudent.url()}>
+                            <Plus size={16} />
+                        </Link>
+                    )}
+                </section>
+
+                <div className="flex flex-wrap items-center gap-3 max-md:flex-col max-md:items-stretch">
+                    <div className="flex flex-wrap gap-3 max-md:grid max-md:grid-cols-3 max-md:gap-2">
                         {[
-                            { l: 'Total', v: students.length, c: '#3b82f6' },
-                            { l: 'Paid', v: students.filter(s => s.fees === 'Paid').length, c: '#10b981' },
-                            { l: 'Unpaid', v: students.filter(s => s.fees === 'Unpaid').length, c: '#ef4444' },
-                            { l: 'At-Risk', v: students.filter(s => s.attendance < 70 || s.fees === 'Unpaid').length, c: '#f59e0b' },
+                            { l: 'Paid', v: students.filter(s => s.fees === 'Paid').length, dot: 'bg-emerald-500' },
+                            { l: 'Unpaid', v: students.filter(s => s.fees === 'Unpaid').length, dot: 'bg-red-500' },
+                            { l: 'At-Risk', v: students.filter(s => s.attendance < 70 || s.fees === 'Unpaid').length, dot: 'bg-amber-500' },
                         ].map(stat => (
-                            <div key={stat.l} style={{ background: 'white', borderRadius: 10, padding: '10px 16px', border: '1px solid #e8edf5', display: 'flex', gap: 8, alignItems: 'center', flex: '1 1 auto' }}>
-                                <div style={{ width: 8, height: 8, borderRadius: '50%', background: stat.c, flexShrink: 0 }} />
-                                <span style={{ fontSize: 11, color: '#64748b' }}>{stat.l}</span>
-                                <span style={{ fontWeight: 800, fontSize: 16, color: '#1e293b' }}>{stat.v}</span>
+                            <div key={stat.l} className="flex flex-1 items-center gap-2 rounded-2xl border border-slate-200 bg-white px-4 py-3 dark:border-slate-700 dark:bg-slate-800/90 max-md:block max-md:px-3 max-md:py-2">
+                                <div className={`mb-1 h-2 w-2 shrink-0 rounded-full max-md:mb-2 ${stat.dot}`} />
+                                <span className="block text-[11px] font-extrabold text-slate-500 dark:text-slate-400">{stat.l}</span>
+                                <span className="block text-base font-black text-slate-900 dark:text-slate-50">{stat.v}</span>
                             </div>
                         ))}
                     </div>
-                    <div className="students-top-actions" style={{ marginLeft: 'auto', display: 'flex', gap: 8, flexWrap: 'wrap', alignItems: 'center' }}>
+                    <div className="ml-auto flex flex-wrap items-center gap-2 max-md:w-full max-md:[&>*]:flex-1 max-md:[&>*]:justify-center">
                         {canDownloadLayout && (
-                            <a href={downloadStudentLayout.url()} className="admin-btn admin-btn-ghost">
+                            <a href={downloadStudentLayout.url()} className={ghostButtonClass}>
                                 <Download size={14} /> Layout
                             </a>
                         )}
                         {canImport && (
-                            <button type="button" onClick={() => importInputRef.current?.click()} className="admin-btn admin-btn-ghost">
+                            <button type="button" onClick={() => importInputRef.current?.click()} className={ghostButtonClass}>
                                 <Upload size={14} /> Import
                             </button>
                         )}
                         {canExport && (
-                            <a href={exportStudents.url()} className="admin-btn admin-btn-ghost">
+                            <a href={exportStudents.url()} className={ghostButtonClass}>
                                 <FileDown size={14} /> Export
                             </a>
                         )}
                         {canCreate && (
-                            <Link href={createStudent.url()} className="admin-btn admin-btn-primary students-add-btn">
+                            <Link href={createStudent.url()} className={primaryButtonClass}>
                                 <Plus size={14} /> Add Student
                             </Link>
                         )}
@@ -358,46 +275,42 @@ export default function StudentsPage({ students }: StudentsPageProps) {
                             ref={importInputRef}
                             type="file"
                             accept=".csv,text/csv,text/plain"
-                            style={{ display: 'none' }}
+                            className="hidden"
                             onChange={event => importFile(event.target.files?.[0] ?? null)}
                         />
                     </div>
                 </div>
 
-                {/* â”€â”€ Table card â”€â”€ */}
-                <div className="card" style={{ overflowX: 'auto' }}>
+                <div className="overflow-visible rounded-[24px] border-0 bg-transparent shadow-none md:overflow-x-auto md:rounded-[24px] md:border md:border-slate-200 md:bg-white md:shadow-sm dark:md:border-slate-700 dark:md:bg-slate-800/90">
 
-                    {/* Toolbar */}
-                    <div className="students-toolbar" style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '12px 16px', borderBottom: '1px solid #f1f5f9', flexWrap: 'wrap' }}>
+                    <div className="sticky top-0 z-10 mb-3 grid grid-cols-2 gap-2 rounded-[22px] border border-slate-200 bg-white/90 p-3 shadow-[0_12px_32px_rgba(15,23,42,0.07)] backdrop-blur dark:border-slate-700 dark:bg-slate-800/90 md:static md:mb-0 md:grid md:grid-cols-[auto_1fr_320px] md:items-center md:gap-3 md:border-0 md:border-b md:border-slate-200 md:bg-white md:p-4 md:shadow-none md:backdrop-blur-none dark:md:border-slate-700 dark:md:bg-slate-800/90">
 
-                        {/* Row 1 on mobile: sort + per-page + result count */}
-                        <div className="students-toolbar-row1" style={{ display: 'flex', gap: 8, alignItems: 'center', flexWrap: 'wrap' }}>
-                            <span style={{ fontSize: 11, fontWeight: 700, color: '#94a3b8', whiteSpace: 'nowrap' }}>Sort by</span>
+                        <div className="contents md:flex md:items-center md:gap-2">
+                            <span className="hidden text-[11px] font-black text-slate-400 md:inline">Sort by</span>
                             <AdminSelect
                                 value={orderBy}
                                 onChange={value => setOrderBy(value as OrderKey)}
                                 options={ORDER_OPTIONS}
-                                style={{ minWidth: 150 }}
-                                triggerClassName="f-input h-9 min-h-9 px-3 py-1 text-xs font-bold"
+                                className="min-w-[150px] md:w-[180px]"
+                                triggerClassName={controlInputClass}
                             />
-                            <div style={{ width: 1, height: 18, background: '#e2e8f0', margin: '0 2px' }} />
+                            <div className="hidden h-5 w-px bg-slate-200 md:block" />
                             <AdminSelect
                                 value={perPage.toString()}
                                 onChange={value => { setPerPage(Number(value)); setPage(1); }}
                                 options={[5, 10, 25, 50].map(size => ({ value: size.toString(), label: `${size} / page` }))}
-                                style={{ minWidth: 120 }}
-                                triggerClassName="f-input h-9 min-h-9 px-3 py-1 text-xs font-bold"
+                                className="min-w-[120px] md:w-[140px]"
+                                triggerClassName={controlInputClass}
                             />
-                            <span style={{ fontSize: 11, color: '#94a3b8' }}>{filtered.length} result{filtered.length !== 1 ? 's' : ''}</span>
+                            <span className="hidden text-[11px] font-extrabold text-slate-400 md:inline">{filtered.length} result{filtered.length !== 1 ? 's' : ''}</span>
                         </div>
 
-                        {/* Filters */}
-                        <div className="students-filters" style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
+                        <div className="col-span-2 flex flex-wrap gap-1.5 md:order-3 md:col-span-3 md:border-t md:border-slate-200 md:pt-3 dark:md:border-slate-700">
                             {FILTER_OPTIONS.map(item => (
                                 <button
                                     key={item.id}
                                     onClick={() => setFilter(item.id)}
-                                    style={{ padding: '6px 12px', borderRadius: 8, border: '1.5px solid', cursor: 'pointer', fontSize: 12, fontWeight: 700, whiteSpace: 'nowrap', borderColor: filter === item.id ? '#3b82f6' : '#e2e8f0', background: filter === item.id ? '#eff6ff' : 'white', color: filter === item.id ? '#2563eb' : '#64748b' }}
+                                    className={`rounded-full border px-3 py-1.5 text-xs font-black ${filter === item.id ? 'border-blue-300 bg-blue-50 text-blue-600 dark:border-blue-400/50 dark:bg-blue-500/15 dark:text-blue-300' : 'border-slate-200 bg-white text-slate-500 dark:border-slate-700 dark:bg-slate-950 dark:text-slate-300'}`}
                                 >
                                     {item.l}
                                 </button>
@@ -408,14 +321,12 @@ export default function StudentsPage({ students }: StudentsPageProps) {
                         <input
                             value={search}
                             onChange={e => setSearch(e.target.value)}
-                            className="f-input students-search"
-                            style={{ maxWidth: 260, marginLeft: 'auto' }}
+                            className={`${controlInputClass} col-span-2 w-full md:order-2 md:col-span-1 md:col-start-3 md:ml-0 md:max-w-none`}
                             placeholder="Search students..."
                         />
                     </div>
 
-                    {/* â”€â”€ Desktop table â”€â”€ */}
-                    <div className="students-table-wrap">
+                    <div className="hidden md:block">
                         <table className="data-table">
                             <thead>
                                 <tr>
@@ -427,27 +338,27 @@ export default function StudentsPage({ students }: StudentsPageProps) {
                             <tbody>
                                 {paginated.length === 0 ? (
                                     <tr>
-                                        <td colSpan={canManageStudents ? 11 : 10} style={{ padding: '34px 24px', textAlign: 'center', color: '#64748b', fontSize: 14, fontWeight: 700 }}>
+                                        <td colSpan={canManageStudents ? 11 : 10} className="px-6 py-8 text-center text-sm font-bold text-slate-500">
                                             Data not found
                                         </td>
                                     </tr>
                                 ) : paginated.map(student => (
-                                    <tr key={student.id} style={{ cursor: 'pointer' }} onClick={() => setSelected(student.id === selected?.id ? null : student)}>
+                                    <tr key={student.id} className="cursor-pointer" onClick={() => setSelected(student.id === selected?.id ? null : student)}>
                                         <td>
-                                            <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                                            <div className="flex items-center gap-2.5">
                                                 <Avatar name={student.nameEn} src={student.photo} size={34} />
                                                 <div>
-                                                    <KH style={{ fontWeight: 700, fontSize: 13, display: 'block' }}>{student.nameKh}</KH>
-                                                    <div style={{ fontSize: 11, color: '#94a3b8' }}>{student.nameEn}</div>
+                                                    <KH className="block text-[13px] font-bold">{student.nameKh}</KH>
+                                                    <div className="text-[11px] text-slate-400">{student.nameEn}</div>
                                                 </div>
                                             </div>
                                         </td>
                                         <td><Badge type="blue">{student.level}</Badge></td>
-                                        <td style={{ fontSize: 12, color: '#64748b' }}>{student.cls}</td>
+                                        <td className="text-xs text-slate-500">{student.cls}</td>
                                         <td>
-                                            <div style={{ display: 'flex', alignItems: 'center', gap: 6, minWidth: 100 }}>
+                                            <div className="flex min-w-[100px] items-center gap-1.5">
                                                 <PBar value={student.attendance} color={student.attendance >= 80 ? 'green' : 'red'} />
-                                                <span style={{ fontSize: 12, fontWeight: 700, width: 36, flexShrink: 0, color: student.attendance >= 80 ? '#10b981' : '#ef4444' }}>{student.attendance}%</span>
+                                                <span className={`w-9 shrink-0 text-xs font-bold ${student.attendance >= 80 ? 'text-emerald-500' : 'text-red-500'}`}>{student.attendance}%</span>
                                             </div>
                                         </td>
                                         <td><ScoreChip score={student.grade.speaking} /></td>
@@ -455,7 +366,7 @@ export default function StudentsPage({ students }: StudentsPageProps) {
                                         <td><ScoreChip score={student.grade.reading} /></td>
                                         <td><ScoreChip score={student.grade.writing} /></td>
                                         <td><FeeTag status={student.fees} /></td>
-                                        <td style={{ fontSize: 12, color: '#64748b' }}>{student.province}</td>
+                                        <td className="text-xs text-slate-500">{student.province}</td>
                                         {canManageStudents && (
                                             <td onClick={e => e.stopPropagation()}>
                                                 <RowActions
@@ -474,13 +385,11 @@ export default function StudentsPage({ students }: StudentsPageProps) {
                         </table>
                     </div>
 
-                    {/* â”€â”€ Mobile card list â”€â”€ */}
                     <div
-                        className="students-card-list"
-                        style={{ display: 'none', flexDirection: 'column', gap: 12, padding: '12px 16px' }}
+                        className="grid gap-3 md:hidden"
                     >
                         {paginated.length === 0 ? (
-                            <div style={{ padding: '34px 0', textAlign: 'center', color: '#64748b', fontSize: 14, fontWeight: 700 }}>
+                            <div className="py-8 text-center text-sm font-bold text-slate-500">
                                 Data not found
                             </div>
                         ) : paginated.map(student => (
@@ -511,45 +420,39 @@ export default function StudentsPage({ students }: StudentsPageProps) {
 
                 {/* â”€â”€ Selected student detail panel â”€â”€ */}
                 {selected && (
-                    <div className="card fade-in" style={{ padding: 20 }}>
-                        <div
-                            className="student-detail-header"
-                            style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', flexWrap: 'wrap', gap: 12, marginBottom: 16 }}
-                        >
-                            <div style={{ display: 'flex', alignItems: 'flex-start', gap: 16, flexWrap: 'wrap', flex: 1 }}>
+                    <div className="fade-in rounded-[24px] border border-slate-200 bg-white p-5 dark:border-slate-700 dark:bg-slate-800/90">
+                        <div className="mb-4 flex flex-wrap items-start justify-between gap-3 max-md:flex-col">
+                            <div className="flex flex-1 flex-wrap items-start gap-4">
                                 <Avatar name={selected.nameEn} src={selected.photo} size={56} />
-                                <div style={{ flex: 1, minWidth: 180 }}>
-                                    <KH style={{ fontWeight: 800, fontSize: 20, display: 'block', marginBottom: 2 }}>{selected.nameKh}</KH>
-                                    <div style={{ fontSize: 13, color: '#64748b', marginBottom: 10 }}>{selected.nameEn} / {selected.level}</div>
-                                    <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+                                <div className="min-w-[180px] flex-1">
+                                    <KH className="mb-0.5 block text-xl font-black text-slate-900 dark:text-slate-50">{selected.nameKh}</KH>
+                                    <div className="mb-2.5 text-[13px] font-bold text-slate-500 dark:text-slate-400">{selected.nameEn} / {selected.level}</div>
+                                    <div className="flex flex-wrap gap-2">
                                         <Badge type="blue">{selected.level}</Badge>
                                         <FeeTag status={selected.fees} />
                                         {selected.attendance < 70 && <Badge type="red">Low Attendance</Badge>}
                                     </div>
                                 </div>
                             </div>
-                            <div
-                                className="student-detail-actions"
-                                style={{ display: 'flex', gap: 8, flexShrink: 0 }}
-                            >
-                                {canUpdate && <Link href={editStudent.url((selected.routeKey ?? selected.id) as never)} style={{ background: '#eff6ff', color: '#2563eb', border: '1px solid #bfdbfe', borderRadius: 9, padding: '8px 16px', cursor: 'pointer', fontSize: 13, fontWeight: 700, textDecoration: 'none', textAlign: 'center', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: 6 }}><Edit3 size={14} /> Edit</Link>}
-                                {canDelete && <button onClick={() => setDeleteTarget(selected)} style={{ background: '#fff1f2', color: '#ef4444', border: '1px solid #fecaca', borderRadius: 9, padding: '8px 16px', cursor: 'pointer', fontSize: 13, fontWeight: 700, display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: 6 }}><Trash2 size={14} /> Delete</button>}
+                            <div className="flex shrink-0 gap-2 max-md:w-full max-md:[&>*]:flex-1">
+                                {canUpdate && <Link href={editStudent.url((selected.routeKey ?? selected.id) as never)} className="inline-flex items-center justify-center gap-1.5 rounded-xl border border-blue-200 bg-blue-50 px-4 py-2 text-center text-[13px] font-bold text-blue-600 no-underline dark:border-blue-400/40 dark:bg-blue-500/15 dark:text-blue-300"><Edit3 size={14} /> Edit</Link>}
+                                {canDelete && <button onClick={() => setDeleteTarget(selected)} className="inline-flex items-center justify-center gap-1.5 rounded-xl border border-red-200 bg-red-50 px-4 py-2 text-[13px] font-bold text-red-500 dark:border-red-400/40 dark:bg-red-500/15 dark:text-red-300"><Trash2 size={14} /> Delete</button>}
                             </div>
                         </div>
 
                         {/* Score grid on detail panel */}
-                        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(90px, 1fr))', gap: 10, marginBottom: 12 }}>
+                        <div className="mb-3 grid grid-cols-[repeat(auto-fit,minmax(90px,1fr))] gap-2.5">
                             {(['speaking', 'listening', 'reading', 'writing'] as const).map(skill => (
-                                <div key={skill} style={{ background: '#f8fafc', borderRadius: 10, padding: '10px 12px', textAlign: 'center', border: '1px solid #e8edf5' }}>
-                                    <div style={{ fontSize: 10, color: '#94a3b8', textTransform: 'capitalize', marginBottom: 6 }}>{skill}</div>
+                                <div key={skill} className="rounded-xl border border-slate-200 bg-slate-50 px-3 py-2.5 text-center dark:border-slate-700 dark:bg-slate-950/70">
+                                    <div className="mb-1.5 text-[10px] font-black capitalize text-slate-400">{skill}</div>
                                     <ScoreChip score={selected.grade[skill]} />
                                 </div>
                             ))}
                         </div>
 
-                        <div style={{ padding: '12px 0', borderTop: '1px solid #f1f5f9', display: 'flex', gap: 16, fontSize: 13, color: '#64748b', flexWrap: 'wrap' }}>
+                        <div className="flex flex-wrap gap-4 border-t border-slate-100 py-3 text-[13px] font-bold text-slate-500 dark:border-slate-700 dark:text-slate-400">
                             <span>{selected.village}, {selected.province}</span>
-                            <span>Attendance: <strong style={{ color: selected.attendance >= 80 ? '#10b981' : '#ef4444' }}>{selected.attendance}%</strong></span>
+                            <span>Attendance: <strong className={selected.attendance >= 80 ? 'text-emerald-500' : 'text-red-500'}>{selected.attendance}%</strong></span>
                             <span>Avg Score: <strong>{avg(selected)}</strong></span>
                         </div>
                     </div>
@@ -559,19 +462,19 @@ export default function StudentsPage({ students }: StudentsPageProps) {
             {/* â”€â”€ Delete confirmation modal â”€â”€ */}
             {deleteTarget && (
                 <div
-                    style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.45)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 200, padding: 16 }}
+                    className="fixed inset-0 z-[200] flex items-center justify-center bg-black/45 p-4"
                     onClick={e => { if (e.target === e.currentTarget) setDeleteTarget(null); }}
                 >
-                    <div style={{ background: 'white', borderRadius: 20, padding: '28px 24px', maxWidth: 420, width: '100%', boxShadow: '0 24px 60px rgba(0,0,0,0.15)' }}>
-                        <div style={{ textAlign: 'center', marginBottom: 20 }}>
-                            <div style={{ fontSize: 18, fontWeight: 800, color: '#1e293b', marginBottom: 6 }}>Delete Student?</div>
-                            <div style={{ fontSize: 13, color: '#64748b', lineHeight: 1.6 }}>
+                    <div className="w-full max-w-[420px] rounded-[20px] bg-white px-6 py-7 shadow-[0_24px_60px_rgba(0,0,0,0.15)] dark:bg-slate-800">
+                        <div className="mb-5 text-center">
+                            <div className="mb-1.5 text-lg font-black text-slate-900 dark:text-slate-50">Delete Student?</div>
+                            <div className="text-[13px] font-bold leading-6 text-slate-500 dark:text-slate-400">
                                 Are you sure you want to remove <strong>{deleteTarget.nameEn}</strong>? This action cannot be undone.
                             </div>
                         </div>
-                        <div style={{ display: 'flex', gap: 10 }}>
-                            <button onClick={() => setDeleteTarget(null)} style={{ flex: 1, background: '#f1f5f9', color: '#64748b', border: 'none', borderRadius: 10, padding: '11px', fontWeight: 700, cursor: 'pointer', fontSize: 14, display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: 6 }}><X size={15} /> Cancel</button>
-                            <button onClick={confirmDelete} style={{ flex: 1, background: '#ef4444', color: 'white', border: 'none', borderRadius: 10, padding: '11px', fontWeight: 700, cursor: 'pointer', fontSize: 14, display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: 6 }}><Trash2 size={15} /> Delete</button>
+                        <div className="flex gap-2.5">
+                            <button onClick={() => setDeleteTarget(null)} className="inline-flex flex-1 items-center justify-center gap-1.5 rounded-xl bg-slate-100 p-3 text-sm font-bold text-slate-500 dark:bg-slate-950 dark:text-slate-300"><X size={15} /> Cancel</button>
+                            <button onClick={confirmDelete} className="inline-flex flex-1 items-center justify-center gap-1.5 rounded-xl bg-red-500 p-3 text-sm font-bold text-white"><Trash2 size={15} /> Delete</button>
                         </div>
                     </div>
                 </div>
@@ -579,6 +482,3 @@ export default function StudentsPage({ students }: StudentsPageProps) {
         </AdminShell>
     );
 }
-
-
-

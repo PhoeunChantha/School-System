@@ -1,21 +1,14 @@
-﻿import { create as createSubmission, destroy, store, update } from '@/routes/admin/homework-submissions';
+import { create as createSubmission, destroy, store, update } from '@/routes/admin/homework-submissions';
 import { DatePicker } from '@/components/ui/date-picker';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { useAdminPermissions } from '@/hooks/use-admin-permissions';
-import {
-    Sheet,
-    SheetContent,
-    SheetDescription,
-    SheetHeader,
-    SheetTitle,
-} from '@/components/ui/sheet';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle } from '@/components/ui/sheet';
+import { useAdminPermissions } from '@/hooks/use-admin-permissions';
 import AdminShell from '@/pages/admin/shell';
 import { Avatar, Badge, KH, Pagination, PBar, RowActions } from '@/pages/admin/ui';
 import { router, useForm } from '@inertiajs/react';
 import { Check, ChevronsUpDown, Edit3, FileText, Plus, Save, Search, Trash2, Upload, X } from 'lucide-react';
-import { FormEvent, useEffect, useMemo, useState } from 'react';
-import type { CSSProperties, ReactNode } from 'react';
+import { FormEvent, ReactNode, useEffect, useMemo, useState } from 'react';
 import { toast } from 'sonner';
 
 interface HomeworkAssignmentOption {
@@ -101,6 +94,14 @@ const ORDER_OPTIONS: { value: OrderKey; label: string }[] = [
     { value: 'status-asc', label: 'Status A -> Z' },
 ];
 
+const controlInputClass = 'min-h-9 rounded-xl border border-slate-200 bg-white px-3 py-1 text-xs font-bold text-slate-900 dark:border-slate-700 dark:bg-slate-950 dark:text-slate-100';
+const ghostButtonClass = 'inline-flex min-h-9 items-center justify-center gap-1.5 rounded-xl border border-slate-200 bg-white px-3 py-2 text-xs font-black text-slate-700 shadow-sm transition hover:bg-slate-50 dark:border-slate-700 dark:bg-slate-950 dark:text-slate-200 dark:hover:bg-slate-900';
+const mobileCardClass = 'rounded-[22px] border border-slate-200/80 bg-white/95 p-3 shadow-[0_14px_34px_rgba(15,23,42,0.07)] dark:border-slate-700 dark:bg-slate-800/90';
+const fieldGroupClass = 'grid gap-1.5';
+const fieldLabelClass = 'text-[11px] font-black uppercase text-slate-500 dark:text-slate-400';
+const fieldInputClass = 'min-h-12 w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm font-bold text-slate-900 outline-none transition placeholder:text-slate-400 focus:border-blue-400 focus:ring-2 focus:ring-blue-500/15 dark:border-slate-700 dark:bg-slate-950 dark:text-slate-100';
+const errorTextClass = 'mt-1 text-[11px] font-bold text-red-500';
+
 function assignmentLabel(assignment: HomeworkAssignmentOption): string {
     return assignment.titleEn || assignment.titleKh || `Homework #${assignment.id}`;
 }
@@ -116,34 +117,23 @@ function assignmentFilterTitle(filter: AssignmentFilter): string | null {
 function sortSubmissions(list: SubmissionItem[], order: OrderKey): SubmissionItem[] {
     return [...list].sort((a, b) => {
         switch (order) {
-            case 'student-asc':
-                return a.studentNameEn.localeCompare(b.studentNameEn);
-            case 'homework-asc':
-                return submissionAssignmentLabel(a).localeCompare(submissionAssignmentLabel(b));
-            case 'submitted-desc':
-                return (b.submittedAt || '').localeCompare(a.submittedAt || '');
-            case 'score-desc':
-                return (b.score ?? -1) - (a.score ?? -1);
-            case 'status-asc':
-                return a.status.localeCompare(b.status);
-            default:
-                return 0;
+            case 'student-asc': return a.studentNameEn.localeCompare(b.studentNameEn);
+            case 'homework-asc': return submissionAssignmentLabel(a).localeCompare(submissionAssignmentLabel(b));
+            case 'submitted-desc': return (b.submittedAt || '').localeCompare(a.submittedAt || '');
+            case 'score-desc': return (b.score ?? -1) - (a.score ?? -1);
+            case 'status-asc': return a.status.localeCompare(b.status);
+            default: return 0;
         }
     });
 }
 
 function formatSubmittedAt(value: string): string {
-    if (!value) {
-        return 'Not submitted';
-    }
-
-    return value.replace('T', ' ');
+    return value ? value.replace('T', ' ') : 'Not submitted';
 }
 
 function nowDateTimeValue(): string {
     const now = new Date();
     const offsetDate = new Date(now.getTime() - now.getTimezoneOffset() * 60000);
-
     return offsetDate.toISOString().slice(0, 16);
 }
 
@@ -177,7 +167,6 @@ export default function HomeworkSubmissionsPage({ submissions, assignments, stud
     const [drawerMode, setDrawerMode] = useState<DrawerMode | null>(null);
     const [editingSubmission, setEditingSubmission] = useState<SubmissionItem | null>(null);
     const [deleteTarget, setDeleteTarget] = useState<SubmissionItem | null>(null);
-
     const { data, setData, post, put, processing, errors, reset } = useForm<HomeworkSubmissionFormData>(emptyForm(assignments, students));
 
     const selectedHomework = assignments.find(assignment => assignment.id === data.homework_assignment_id);
@@ -185,19 +174,16 @@ export default function HomeworkSubmissionsPage({ submissions, assignments, stud
 
     const assignmentOptions = useMemo(() => {
         const titles = new Map<string, string>();
-
         assignments.forEach(assignment => {
             const label = assignmentLabel(assignment);
             titles.set(label.toLowerCase(), label);
         });
-
         return [...titles.values()].sort((a, b) => a.localeCompare(b));
     }, [assignments]);
 
     const filtered = useMemo(() => {
         const query = search.toLowerCase();
         const selectedTitle = assignmentFilterTitle(selectedAssignment)?.toLowerCase() ?? null;
-
         const base = submissions.filter(submission => {
             const title = submissionAssignmentLabel(submission);
             const matchesAssignment = !selectedTitle || title.toLowerCase() === selectedTitle;
@@ -208,12 +194,10 @@ export default function HomeworkSubmissionsPage({ submissions, assignments, stud
                 || title.toLowerCase().includes(query)
                 || submission.className.toLowerCase().includes(query)
                 || submission.status.toLowerCase().includes(query);
-
             return matchesAssignment && matchesDate && matchesSearch;
         });
-
         return sortSubmissions(base, orderBy);
-    }, [submissions, selectedAssignment, submittedDate, search, orderBy]);
+    }, [orderBy, search, selectedAssignment, submissions, submittedDate]);
 
     const paginated = useMemo(
         () => filtered.slice((page - 1) * perPage, page * perPage),
@@ -222,41 +206,31 @@ export default function HomeworkSubmissionsPage({ submissions, assignments, stud
 
     const searchableAssignments = useMemo(() => {
         const query = homeworkSearch.toLowerCase();
-
         return assignments.filter(assignment => {
             const label = assignmentLabel(assignment);
-
-            return !query
-                || label.toLowerCase().includes(query)
-                || assignment.className.toLowerCase().includes(query)
-                || assignment.dueOn.toLowerCase().includes(query);
+            return !query || label.toLowerCase().includes(query) || assignment.className.toLowerCase().includes(query) || assignment.dueOn.toLowerCase().includes(query);
         });
     }, [assignments, homeworkSearch]);
 
     const searchableStudents = useMemo(() => {
         const query = studentSearch.toLowerCase();
-
         return students.filter(student => !query
             || student.nameKh.toLowerCase().includes(query)
             || student.nameEn.toLowerCase().includes(query)
             || student.className.toLowerCase().includes(query)
             || student.level.toLowerCase().includes(query));
-    }, [students, studentSearch]);
+    }, [studentSearch, students]);
 
     useEffect(() => {
         setPage(1);
     }, [selectedAssignment, submittedDate, search, orderBy, perPage]);
 
     const openCreateDrawer = () => {
-        if (!canCreate) {
-            return;
-        }
-
+        if (!canCreate) return;
         const selectedTitle = assignmentFilterTitle(selectedAssignment);
         const selectedAssignmentId = selectedTitle
             ? assignments.find(assignment => assignmentLabel(assignment) === selectedTitle)?.id
             : null;
-
         reset();
         setData({
             ...emptyForm(assignments, students),
@@ -269,10 +243,7 @@ export default function HomeworkSubmissionsPage({ submissions, assignments, stud
     };
 
     const openEditDrawer = (submission: SubmissionItem) => {
-        if (!canUpdate) {
-            return;
-        }
-
+        if (!canUpdate) return;
         setData({
             homework_assignment_id: submission.homeworkAssignmentId,
             student_id: submission.studentId,
@@ -294,26 +265,12 @@ export default function HomeworkSubmissionsPage({ submissions, assignments, stud
         setStudentPickerOpen(false);
     };
 
-    const selectHomework = (assignmentId: number) => {
-        setData('homework_assignment_id', assignmentId);
-        setHomeworkPickerOpen(false);
-        setHomeworkSearch('');
-    };
-
-    const selectStudent = (studentId: number) => {
-        setData('student_id', studentId);
-        setStudentPickerOpen(false);
-        setStudentSearch('');
-    };
-
     const submitSubmission = (event: FormEvent<HTMLFormElement>) => {
         event.preventDefault();
-
         if (drawerMode === 'edit' && !canUpdate) {
             closeDrawer();
             return;
         }
-
         if (drawerMode === 'create' && !canCreate) {
             closeDrawer();
             return;
@@ -331,20 +288,15 @@ export default function HomeworkSubmissionsPage({ submissions, assignments, stud
             put(update.url((editingSubmission.routeKey ?? editingSubmission.id) as never), options);
             return;
         }
-
         post(store.url(), options);
     };
 
     const confirmDelete = () => {
-        if (!deleteTarget) {
-            return;
-        }
-
+        if (!deleteTarget) return;
         if (!canDelete) {
             setDeleteTarget(null);
             return;
         }
-
         router.delete(destroy.url((deleteTarget.routeKey ?? deleteTarget.id) as never), {
             preserveScroll: true,
             onSuccess: () => {
@@ -356,106 +308,75 @@ export default function HomeworkSubmissionsPage({ submissions, assignments, stud
 
     return (
         <AdminShell>
-            <div className="fade-in" style={{ padding: 24, display: 'flex', flexDirection: 'column', gap: 16 }}>
-                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 12 }}>
+            <div className="fade-in mx-auto flex w-full max-w-[1280px] flex-col gap-3 bg-slate-50 p-4 dark:bg-slate-950 max-md:bg-[radial-gradient(circle_at_100%_0,rgba(37,99,235,0.12),transparent_34%),linear-gradient(180deg,#f7f9fc_0%,#eef3f8_100%)] max-md:px-2.5 max-md:py-3 max-md:pb-[calc(104px+env(safe-area-inset-bottom))] dark:max-md:bg-[radial-gradient(circle_at_100%_0,rgba(96,165,250,0.14),transparent_34%),linear-gradient(180deg,#0f172a_0%,#111827_100%)] md:gap-5 md:p-6">
+                <div className="hidden items-center justify-between gap-3 md:flex md:flex-wrap">
                     <div>
-                        <div style={{ fontWeight: 800, fontSize: 18, color: '#1e293b' }}>Homework Submissions</div>
-                        <KH style={{ fontSize: 12, color: '#94a3b8', display: 'block' }}>Track submitted work, grades, and feedback</KH>
+                        <div className="text-lg font-black text-slate-900 dark:text-slate-50">Homework Submissions</div>
+                        <KH className="block text-xs font-bold text-slate-400">Track submitted work, grades, and feedback</KH>
                     </div>
-                    {canCreate && (
-                        <button onClick={openCreateDrawer} style={primaryButton}>
-                            <Plus size={16} />
-                            Add Submission
-                        </button>
-                    )}
-                    {canCreate && (
-                        <button onClick={() => router.visit(createSubmission.url())} className="admin-btn admin-btn-ghost">
-                            <Upload size={16} />
-                            Student Submit
-                        </button>
-                    )}
+                    <div className="flex gap-2">
+                        {canCreate && <button onClick={() => router.visit(createSubmission.url())} className={ghostButtonClass}><Upload size={16} /> Student Submit</button>}
+                    </div>
                 </div>
 
-                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill,minmax(150px,1fr))', gap: 12 }}>
+                <section className="flex items-center justify-between gap-3 rounded-[24px] border border-slate-200 bg-white p-4 shadow-[0_14px_36px_rgba(15,23,42,0.07)] dark:border-slate-700 dark:bg-slate-800/90">
+                    <div>
+                        <span className="block text-xs font-black text-slate-400">Homework submissions</span>
+                        <strong className="mt-1 block text-2xl font-black text-slate-900 dark:text-slate-50">{summary.submissionCount} records</strong>
+                        <p className="mt-1 text-xs font-extrabold text-slate-400">{summary.submittedCount} submitted - {summary.missingCount} missing</p>
+                    </div>
+                    {canCreate && (
+                        <button onClick={openCreateDrawer} className="inline-flex h-11 w-11 items-center justify-center rounded-2xl bg-blue-600 text-white shadow-[0_14px_26px_rgba(37,99,235,0.28)] transition hover:bg-blue-500" aria-label="Add submission">
+                            <Plus size={18} />
+                        </button>
+                    )}
+                </section>
+
+                <div className="grid grid-cols-2 gap-2 md:grid-cols-4">
                     {[
-                        { label: 'Submissions', value: summary.submissionCount, color: '#3b82f6', bg: '#eff6ff' },
-                        { label: 'Submitted', value: summary.submittedCount, color: '#10b981', bg: '#f0fdf4' },
-                        { label: 'Graded', value: summary.gradedCount, color: '#6366f1', bg: '#eef2ff' },
-                        { label: 'Missing', value: summary.missingCount, color: '#ef4444', bg: '#fff1f2' },
+                        { label: 'Submissions', value: summary.submissionCount, className: 'border-blue-500/25 bg-blue-500/10 text-blue-500' },
+                        { label: 'Submitted', value: summary.submittedCount, className: 'border-emerald-500/25 bg-emerald-500/10 text-emerald-500' },
+                        { label: 'Graded', value: summary.gradedCount, className: 'border-indigo-500/25 bg-indigo-500/10 text-indigo-500' },
+                        { label: 'Missing', value: summary.missingCount, className: 'border-red-500/25 bg-red-500/10 text-red-500' },
                     ].map(card => (
-                        <div key={card.label} style={{ background: card.bg, border: `1px solid ${card.color}30`, borderRadius: 14, padding: 16 }}>
-                            <div style={{ color: card.color, fontSize: 24, fontWeight: 900 }}>{card.value}</div>
-                            <div style={{ color: card.color, opacity: 0.72, fontSize: 11 }}>{card.label}</div>
+                        <div key={card.label} className={`rounded-[18px] border p-3 ${card.className}`}>
+                            <div className="text-2xl font-black leading-none">{card.value}</div>
+                            <div className="mt-1 text-[11px] font-black opacity-70">{card.label}</div>
                         </div>
                     ))}
                 </div>
 
-                <div className="card" style={{ overflowX: 'auto' }}>
-                    <div style={{ padding: '12px 16px', borderBottom: '1px solid #f1f5f9', display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
-                        <span style={{ fontSize: 11, fontWeight: 700, color: '#94a3b8', whiteSpace: 'nowrap' }}>Sort by</span>
-                        <Select value={orderBy} onValueChange={value => setOrderBy(value as OrderKey)}>
-                            <SelectTrigger style={{ width: 'auto', minWidth: 160, padding: '5px 10px', fontSize: 12, height: 'auto' }}>
-                                <SelectValue />
-                            </SelectTrigger>
-                            <SelectContent>
-                                {ORDER_OPTIONS.map(option => (
-                                    <SelectItem key={option.value} value={option.value}>{option.label}</SelectItem>
-                                ))}
-                            </SelectContent>
-                        </Select>
-
-                        <div style={{ width: 1, height: 18, background: '#e2e8f0', margin: '0 2px' }} />
-
-                        <Select value={perPage.toString()} onValueChange={value => { setPerPage(Number(value)); setPage(1); }}>
-                            <SelectTrigger style={{ width: 'auto', minWidth: 120, padding: '5px 10px', fontSize: 12, height: 'auto' }}>
-                                <SelectValue />
-                            </SelectTrigger>
-                            <SelectContent>
-                                {[5, 10, 25, 50].map(size => (
-                                    <SelectItem key={size} value={size.toString()}>{size} per page</SelectItem>
-                                ))}
-                            </SelectContent>
-                        </Select>
-
-                        <Select value={selectedAssignment} onValueChange={value => setSelectedAssignment(value as AssignmentFilter)}>
-                            <SelectTrigger style={{ width: 'auto', minWidth: 220, maxWidth: 320, padding: '5px 10px', fontSize: 12, height: 'auto' }}>
-                                <SelectValue />
-                            </SelectTrigger>
-                            <SelectContent>
-                                <SelectItem value="all">All homework</SelectItem>
-                                {assignmentOptions.map(title => (
-                                    <SelectItem key={title} value={`title:${title}`}>{title}</SelectItem>
-                                ))}
-                            </SelectContent>
-                        </Select>
-
-                        <DatePicker
-                            value={submittedDate}
-                            onChange={setSubmittedDate}
-                            placeholder="Submitted date"
-                            className="h-auto w-auto min-w-[160px] px-3 py-[7px] text-xs font-bold"
-                        />
-
-                        {submittedDate && (
-                            <button
-                                type="button"
-                                onClick={() => setSubmittedDate('')}
-                                style={{ background: '#f8fafc', color: '#64748b', border: '1px solid #e2e8f0', borderRadius: 8, padding: '6px 10px', fontSize: 12, fontWeight: 800, cursor: 'pointer', display: 'inline-flex', alignItems: 'center', gap: 5 }}
-                            >
-                                <X size={13} /> Clear date
-                            </button>
-                        )}
-
-                        <span style={{ fontSize: 11, color: '#94a3b8' }}>{filtered.length} submission{filtered.length !== 1 ? 's' : ''}</span>
-                        <input
-                            value={search}
-                            onChange={event => setSearch(event.target.value)}
-                            className="f-input"
-                            style={{ width: 260, maxWidth: '100%', marginLeft: 'auto' }}
-                            placeholder="Search submissions..."
-                        />
+                <div className="overflow-visible rounded-[24px] border-0 bg-transparent shadow-none md:overflow-x-auto md:rounded-2xl md:border md:border-slate-200 md:bg-white md:shadow-sm dark:md:border-slate-700 dark:md:bg-slate-800/90">
+                    <div className="sticky top-0 z-10 mb-3 grid grid-cols-2 gap-2 rounded-[22px] border border-slate-200 bg-white/90 p-3 shadow-[0_12px_32px_rgba(15,23,42,0.07)] backdrop-blur dark:border-slate-700 dark:bg-slate-800/90 md:static md:mb-0 md:grid-cols-[auto_1fr_320px] md:items-center md:gap-3 md:border-x-0 md:border-t-0 md:shadow-none">
+                        <div className="contents md:flex md:flex-wrap md:items-center md:gap-2">
+                            <span className="hidden whitespace-nowrap text-[11px] font-bold text-slate-400 md:inline">Sort by</span>
+                            <Select value={orderBy} onValueChange={value => setOrderBy(value as OrderKey)}>
+                                <SelectTrigger className={`${controlInputClass} md:w-[170px]`}><SelectValue /></SelectTrigger>
+                                <SelectContent>{ORDER_OPTIONS.map(option => <SelectItem key={option.value} value={option.value}>{option.label}</SelectItem>)}</SelectContent>
+                            </Select>
+                            <Select value={perPage.toString()} onValueChange={value => { setPerPage(Number(value)); setPage(1); }}>
+                                <SelectTrigger className={`${controlInputClass} md:w-[128px]`}><SelectValue /></SelectTrigger>
+                                <SelectContent>{[5, 10, 25, 50].map(size => <SelectItem key={size} value={size.toString()}>{size} per page</SelectItem>)}</SelectContent>
+                            </Select>
+                            <Select value={selectedAssignment} onValueChange={value => setSelectedAssignment(value as AssignmentFilter)}>
+                                <SelectTrigger className={`${controlInputClass} col-span-2 md:w-[210px]`}><SelectValue /></SelectTrigger>
+                                <SelectContent>
+                                    <SelectItem value="all">All homework</SelectItem>
+                                    {assignmentOptions.map(title => <SelectItem key={title} value={`title:${title}`}>{title}</SelectItem>)}
+                                </SelectContent>
+                            </Select>
+                            <DatePicker value={submittedDate} onChange={setSubmittedDate} placeholder="Submitted date" className={`${controlInputClass} h-9 md:w-[170px]`} />
+                            {submittedDate && (
+                                <button type="button" onClick={() => setSubmittedDate('')} className={`${ghostButtonClass} md:w-auto`}>
+                                    <X size={13} /> Clear
+                                </button>
+                            )}
+                            <span className="hidden text-[11px] font-bold text-slate-400 md:inline">{filtered.length} submission{filtered.length !== 1 ? 's' : ''}</span>
+                        </div>
+                        <input value={search} onChange={event => setSearch(event.target.value)} className={`${controlInputClass} col-span-2 w-full md:col-start-3 md:w-full`} placeholder="Search submissions..." />
                     </div>
-                    <table className="data-table">
+
+                    <table className="data-table hidden md:table md:min-w-[980px]">
                         <thead>
                             <tr>
                                 <th>Student</th>
@@ -470,42 +391,39 @@ export default function HomeworkSubmissionsPage({ submissions, assignments, stud
                         <tbody>
                             {paginated.length === 0 ? (
                                 <tr>
-                                    <td colSpan={canManageSubmissions ? 7 : 6} style={{ padding: '38px 24px', textAlign: 'center', color: '#64748b', fontSize: 14, fontWeight: 700 }}>
+                                    <td colSpan={canManageSubmissions ? 7 : 6} className="px-6 py-9 text-center text-sm font-bold text-slate-500 dark:text-slate-400">
                                         {search ? <>No homework submissions found for <strong>"{search}"</strong></> : 'No homework submissions found'}
                                     </td>
                                 </tr>
                             ) : paginated.map(submission => {
                                 const percent = submission.score === null ? 0 : Math.round((submission.score / Math.max(submission.points, 1)) * 100);
-
                                 return (
-                                    <tr key={submission.id}>
+                                    <tr key={submission.id} className="border-b border-slate-50 hover:bg-slate-50 dark:border-slate-800 dark:hover:bg-slate-900/60">
                                         <td>
-                                            <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                                            <div className="flex items-center gap-2.5">
                                                 <Avatar name={submission.studentNameEn} src={submission.studentPhoto} size={34} />
                                                 <div>
-                                                    <KH style={{ fontWeight: 800, fontSize: 13, display: 'block' }}>{submission.studentNameKh}</KH>
-                                                    <div style={{ fontSize: 11, color: '#94a3b8' }}>{submission.studentNameEn}</div>
+                                                    <KH className="block text-[13px] font-black text-slate-900 dark:text-slate-50">{submission.studentNameKh}</KH>
+                                                    <div className="text-[11px] font-bold text-slate-400">{submission.studentNameEn}</div>
                                                 </div>
                                             </div>
                                         </td>
                                         <td>
-                                            <div style={{ fontWeight: 800, fontSize: 12, color: '#1e293b' }}>{submission.assignmentTitleEn || submission.assignmentTitleKh}</div>
-                                            <div style={{ fontSize: 11, color: '#94a3b8' }}>{submission.className || submission.dueOn}</div>
+                                            <div className="text-xs font-black text-slate-900 dark:text-slate-50">{submissionAssignmentLabel(submission)}</div>
+                                            <div className="text-[11px] font-bold text-slate-400">{submission.className || submission.dueOn}</div>
                                         </td>
-                                        <td style={{ fontSize: 12, fontWeight: 800, color: '#475569' }}>{submission.submittedAt || '-'}</td>
+                                        <td className="text-xs font-black text-slate-600 dark:text-slate-300">{submission.submittedAt || '-'}</td>
                                         <td>
                                             {submission.attachmentUrl ? (
-                                                <a href={submission.attachmentUrl} target="_blank" rel="noreferrer" style={{ color: '#2563eb', fontSize: 12, fontWeight: 800, textDecoration: 'none', display: 'inline-flex', alignItems: 'center', gap: 5 }}>
+                                                <a href={submission.attachmentUrl} target="_blank" rel="noreferrer" className="inline-flex items-center gap-1 text-xs font-black text-blue-600 dark:text-blue-300">
                                                     <FileText size={14} /> {submission.attachmentName || 'File'}
                                                 </a>
-                                            ) : (
-                                                <span style={{ color: '#94a3b8', fontSize: 12 }}>No file</span>
-                                            )}
+                                            ) : <span className="text-xs font-bold text-slate-400">No file</span>}
                                         </td>
                                         <td>
-                                            <div style={{ display: 'flex', alignItems: 'center', gap: 8, minWidth: 140 }}>
+                                            <div className="flex min-w-[140px] items-center gap-2">
                                                 <PBar value={percent} color={percent >= 75 ? 'green' : percent >= 50 ? 'blue' : 'red'} />
-                                                <span style={{ width: 62, fontSize: 12, fontWeight: 800, color: '#1e293b' }}>{submission.score ?? '-'} / {submission.points}</span>
+                                                <span className="w-16 text-xs font-black text-slate-900 dark:text-slate-50">{submission.score ?? '-'} / {submission.points}</span>
                                             </div>
                                         </td>
                                         <td><Badge type={statusType[submission.status]}>{submission.status}</Badge></td>
@@ -525,78 +443,103 @@ export default function HomeworkSubmissionsPage({ submissions, assignments, stud
                             })}
                         </tbody>
                     </table>
-                    {filtered.length > 0 && (
-                        <Pagination
-                            total={filtered.length}
-                            page={page}
-                            perPage={perPage}
-                            onPageChange={setPage}
-                            onPerPageChange={setPerPage}
-                            showPerPage={false}
-                        />
-                    )}
+
+                    <div className="grid gap-3 md:hidden">
+                        {paginated.length === 0 ? (
+                            <div className="rounded-[22px] border border-dashed border-slate-300 bg-white/80 px-4 py-8 text-center text-sm font-bold text-slate-500 dark:border-slate-700 dark:bg-slate-800/80 dark:text-slate-400">
+                                {search ? <>No homework submissions found for <strong>"{search}"</strong></> : 'No homework submissions found'}
+                            </div>
+                        ) : paginated.map(submission => {
+                            const percent = submission.score === null ? 0 : Math.round((submission.score / Math.max(submission.points, 1)) * 100);
+                            return (
+                                <article key={submission.id} className={mobileCardClass}>
+                                    <div className="mb-3 flex items-start justify-between gap-3">
+                                        <div className="flex min-w-0 items-center gap-2.5">
+                                            <Avatar name={submission.studentNameEn} src={submission.studentPhoto} size={36} />
+                                            <div className="min-w-0">
+                                                <KH className="block truncate text-sm font-black text-slate-900 dark:text-slate-50">{submission.studentNameKh}</KH>
+                                                <p className="mt-0.5 truncate text-[11px] font-bold text-slate-400">{submission.studentNameEn} - {submission.className || submission.level}</p>
+                                            </div>
+                                        </div>
+                                        <div className="flex shrink-0 items-center gap-2">
+                                            <Badge type={statusType[submission.status]}>{submission.status}</Badge>
+                                            {canManageSubmissions && (
+                                                <RowActions
+                                                    ariaLabel={`Actions for ${submission.studentNameEn}`}
+                                                    actions={[
+                                                        { key: 'edit', label: 'Edit', icon: Edit3, onSelect: () => openEditDrawer(submission), hidden: !canUpdate },
+                                                        { key: 'delete', label: 'Delete', icon: Trash2, onSelect: () => setDeleteTarget(submission), variant: 'destructive', separatorBefore: true, hidden: !canDelete },
+                                                    ]}
+                                                />
+                                            )}
+                                        </div>
+                                    </div>
+                                    <div className="mb-3 rounded-2xl bg-slate-100 p-2.5 dark:bg-slate-950">
+                                        <span className="block text-[9px] font-black uppercase text-slate-400">Homework</span>
+                                        <strong className="mt-1 block text-xs font-black text-slate-900 dark:text-slate-50">{submissionAssignmentLabel(submission)}</strong>
+                                    </div>
+                                    <div className="grid grid-cols-2 gap-2">
+                                        <div className="rounded-2xl bg-slate-100 px-2 py-2 dark:bg-slate-950">
+                                            <span className="block text-[9px] font-black uppercase text-slate-400">Submitted</span>
+                                            <strong className="mt-1 block truncate text-xs font-black text-slate-900 dark:text-slate-50">{formatSubmittedAt(submission.submittedAt)}</strong>
+                                        </div>
+                                        <div className="rounded-2xl bg-slate-100 px-2 py-2 dark:bg-slate-950">
+                                            <span className="block text-[9px] font-black uppercase text-slate-400">Score</span>
+                                            <strong className="mt-1 block text-xs font-black text-slate-900 dark:text-slate-50">{submission.score ?? '-'} / {submission.points}</strong>
+                                        </div>
+                                    </div>
+                                    <div className="mt-3 rounded-2xl bg-slate-100 p-2.5 dark:bg-slate-950">
+                                        <PBar value={percent} color={percent >= 75 ? 'green' : percent >= 50 ? 'blue' : 'red'} />
+                                    </div>
+                                    {submission.attachmentUrl && (
+                                        <a href={submission.attachmentUrl} target="_blank" rel="noreferrer" className="mt-3 inline-flex max-w-full items-center gap-1 rounded-xl bg-blue-500/10 px-2.5 py-2 text-[11px] font-black text-blue-600 dark:text-blue-300">
+                                            <FileText size={12} /> <span className="truncate">{submission.attachmentName || 'File'}</span>
+                                        </a>
+                                    )}
+                                </article>
+                            );
+                        })}
+                    </div>
+
+                    {filtered.length > 0 && <Pagination total={filtered.length} page={page} perPage={perPage} onPageChange={setPage} onPerPageChange={setPerPage} showPerPage={false} />}
                 </div>
             </div>
 
             <Sheet open={drawerMode !== null} onOpenChange={(open) => { if (!open) closeDrawer(); }}>
-                <SheetContent side="right" className="w-full gap-0 overflow-y-auto p-0 sm:max-w-[520px]">
+                <SheetContent side="right" className="w-full gap-0 overflow-y-auto border-slate-200 bg-white p-0 dark:border-slate-700 dark:bg-slate-900 sm:max-w-[520px]">
                     {drawerMode && (
-                        <form onSubmit={submitSubmission} className="flex min-h-full flex-col bg-white">
-                            <SheetHeader className="border-b border-slate-200 px-6 py-5 text-left">
-                                <SheetTitle className="text-lg font-black text-slate-800">
+                        <form onSubmit={submitSubmission} className="flex min-h-full flex-col bg-slate-50 dark:bg-slate-950">
+                            <SheetHeader className="border-b border-slate-200 bg-white px-5 py-4 text-left dark:border-slate-700 dark:bg-slate-800">
+                                <SheetTitle className="text-lg font-black text-slate-900 dark:text-slate-50">
                                     {drawerMode === 'create' ? 'Add Homework Submission' : 'Edit Homework Submission'}
                                 </SheetTitle>
-                                <SheetDescription>
+                                <SheetDescription className="text-xs font-bold text-slate-400">
                                     {drawerMode === 'create' ? 'Record a student submission' : editingSubmission?.studentNameEn}
                                 </SheetDescription>
                             </SheetHeader>
 
-                            <div style={{ padding: 24, display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16 }}>
+                            <div className="grid grid-cols-2 gap-3 p-3 md:p-5">
                                 <Field label="Homework" error={errors.homework_assignment_id} wide>
-                                    <SearchablePicker
-                                        open={homeworkPickerOpen}
-                                        onOpenChange={setHomeworkPickerOpen}
-                                        search={homeworkSearch}
-                                        onSearchChange={setHomeworkSearch}
-                                        placeholder="Select homework"
-                                        searchPlaceholder="Search homework..."
-                                        selectedLabel={selectedHomework ? assignmentLabel(selectedHomework) : null}
-                                        emptyLabel="No homework found"
-                                    >
+                                    <SearchablePicker open={homeworkPickerOpen} onOpenChange={setHomeworkPickerOpen} search={homeworkSearch} onSearchChange={setHomeworkSearch} placeholder="Select homework" searchPlaceholder="Search homework..." selectedLabel={selectedHomework ? assignmentLabel(selectedHomework) : null} emptyLabel="No homework found">
                                         {searchableAssignments.map(assignment => {
                                             const selected = assignment.id === data.homework_assignment_id;
-
                                             return (
-                                                <PickerOption key={assignment.id} selected={selected} onClick={() => selectHomework(assignment.id)}>
-                                                    <span style={{ display: 'block', fontSize: 13, fontWeight: 800, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{assignmentLabel(assignment)}</span>
-                                                    <span style={{ display: 'block', fontSize: 11, color: '#94a3b8', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                                                        {assignment.className || 'No class'}{assignment.dueOn ? ` - Due ${assignment.dueOn}` : ''}
-                                                    </span>
+                                                <PickerOption key={assignment.id} selected={selected} onClick={() => { setData('homework_assignment_id', assignment.id); setHomeworkPickerOpen(false); setHomeworkSearch(''); }}>
+                                                    <span className="block truncate text-[13px] font-black">{assignmentLabel(assignment)}</span>
+                                                    <span className="block truncate text-[11px] font-bold text-slate-400">{assignment.className || 'No class'}{assignment.dueOn ? ` - Due ${assignment.dueOn}` : ''}</span>
                                                 </PickerOption>
                                             );
                                         })}
                                     </SearchablePicker>
                                 </Field>
                                 <Field label="Student" error={errors.student_id} wide>
-                                    <SearchablePicker
-                                        open={studentPickerOpen}
-                                        onOpenChange={setStudentPickerOpen}
-                                        search={studentSearch}
-                                        onSearchChange={setStudentSearch}
-                                        placeholder="Select student"
-                                        searchPlaceholder="Search students..."
-                                        selectedLabel={selectedStudent ? `${selectedStudent.nameEn} - ${selectedStudent.className || selectedStudent.level}` : null}
-                                        emptyLabel="No students found"
-                                    >
+                                    <SearchablePicker open={studentPickerOpen} onOpenChange={setStudentPickerOpen} search={studentSearch} onSearchChange={setStudentSearch} placeholder="Select student" searchPlaceholder="Search students..." selectedLabel={selectedStudent ? `${selectedStudent.nameEn} - ${selectedStudent.className || selectedStudent.level}` : null} emptyLabel="No students found">
                                         {searchableStudents.map(student => {
                                             const selected = student.id === data.student_id;
-
                                             return (
-                                                <PickerOption key={student.id} selected={selected} onClick={() => selectStudent(student.id)}>
-                                                    <span style={{ display: 'block', fontSize: 13, fontWeight: 800, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{student.nameEn}</span>
-                                                    <span style={{ display: 'block', fontSize: 11, color: '#94a3b8', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                                                        {student.nameKh} - {student.className || student.level}
-                                                    </span>
+                                                <PickerOption key={student.id} selected={selected} onClick={() => { setData('student_id', student.id); setStudentPickerOpen(false); setStudentSearch(''); }}>
+                                                    <span className="block truncate text-[13px] font-black">{student.nameEn}</span>
+                                                    <span className="block truncate text-[11px] font-bold text-slate-400">{student.nameKh} - {student.className || student.level}</span>
                                                 </PickerOption>
                                             );
                                         })}
@@ -604,9 +547,7 @@ export default function HomeworkSubmissionsPage({ submissions, assignments, stud
                                 </Field>
                                 <Field label="Submitted At" error={errors.submitted_at}>
                                     <Select value={data.submitted_at || 'none'} onValueChange={value => setData('submitted_at', value === 'none' ? '' : value === 'now' ? nowDateTimeValue() : value)}>
-                                        <SelectTrigger className="f-input" style={{ minHeight: 42 }}>
-                                            <SelectValue />
-                                        </SelectTrigger>
+                                        <SelectTrigger className={fieldInputClass}><SelectValue /></SelectTrigger>
                                         <SelectContent>
                                             <SelectItem value="none">Not submitted</SelectItem>
                                             <SelectItem value="now">Now</SelectItem>
@@ -615,13 +556,11 @@ export default function HomeworkSubmissionsPage({ submissions, assignments, stud
                                     </Select>
                                 </Field>
                                 <Field label="Score" error={errors.score}>
-                                    <input type="number" min={0} max={1000} style={fieldStyle} value={data.score ?? ''} onChange={event => setData('score', event.target.value === '' ? null : Number(event.target.value))} />
+                                    <input type="number" min={0} max={1000} className={fieldInputClass} value={data.score ?? ''} onChange={event => setData('score', event.target.value === '' ? null : Number(event.target.value))} />
                                 </Field>
                                 <Field label="Status" error={errors.status} wide>
                                     <Select value={data.status} onValueChange={value => setData('status', value as HomeworkSubmissionStatus)}>
-                                        <SelectTrigger className="f-input" style={{ minHeight: 42 }}>
-                                            <SelectValue />
-                                        </SelectTrigger>
+                                        <SelectTrigger className={fieldInputClass}><SelectValue /></SelectTrigger>
                                         <SelectContent>
                                             <SelectItem value="pending">Pending</SelectItem>
                                             <SelectItem value="submitted">Submitted</SelectItem>
@@ -631,13 +570,13 @@ export default function HomeworkSubmissionsPage({ submissions, assignments, stud
                                     </Select>
                                 </Field>
                                 <Field label="Feedback" error={errors.feedback} wide>
-                                    <textarea style={{ ...fieldStyle, minHeight: 110, resize: 'vertical' }} value={data.feedback} onChange={event => setData('feedback', event.target.value)} />
+                                    <textarea className={`${fieldInputClass} min-h-28 resize-y`} value={data.feedback} onChange={event => setData('feedback', event.target.value)} />
                                 </Field>
                             </div>
 
-                            <div style={{ marginTop: 'auto', padding: 24, borderTop: '1px solid #e2e8f0', display: 'flex', gap: 10 }}>
-                                <button type="button" onClick={closeDrawer} style={{ flex: 1, background: '#f1f5f9', color: '#64748b', border: 'none', borderRadius: 10, padding: '12px', fontWeight: 800, cursor: 'pointer', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: 6 }}><X size={16} /> Cancel</button>
-                                <button disabled={processing} type="submit" style={{ flex: 2, background: processing ? '#93c5fd' : '#2563eb', color: 'white', border: 'none', borderRadius: 10, padding: '12px', fontWeight: 800, cursor: processing ? 'default' : 'pointer', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: 6 }}>
+                            <div className="mt-auto grid grid-cols-[1fr_2fr] gap-2 border-t border-slate-200 bg-white p-3 dark:border-slate-700 dark:bg-slate-800 md:p-5">
+                                <button type="button" onClick={closeDrawer} className="inline-flex min-h-12 items-center justify-center gap-1.5 rounded-2xl bg-slate-100 px-4 py-3 text-sm font-black text-slate-600 transition hover:bg-slate-200 dark:bg-slate-950 dark:text-slate-300 dark:hover:bg-slate-900"><X size={16} /> Cancel</button>
+                                <button disabled={processing} type="submit" className="inline-flex min-h-12 items-center justify-center gap-1.5 rounded-2xl bg-blue-600 px-4 py-3 text-sm font-black text-white shadow-[0_14px_28px_rgba(37,99,235,0.22)] transition hover:bg-blue-500 disabled:cursor-default disabled:bg-blue-300 disabled:shadow-none dark:disabled:bg-blue-900">
                                     <Save size={16} /> {drawerMode === 'create' ? 'Save Submission' : 'Save Changes'}
                                 </button>
                             </div>
@@ -647,15 +586,15 @@ export default function HomeworkSubmissionsPage({ submissions, assignments, stud
             </Sheet>
 
             {deleteTarget && (
-                <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.45)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 230, padding: 16 }}>
-                    <div style={{ background: 'white', borderRadius: 20, padding: 30, maxWidth: 420, width: '100%', boxShadow: '0 24px 60px rgba(0,0,0,0.15)' }}>
-                        <div style={{ textAlign: 'center', marginBottom: 20 }}>
-                            <div style={{ fontSize: 18, fontWeight: 800, color: '#1e293b', marginBottom: 6 }}>Delete Homework Submission?</div>
-                            <div style={{ fontSize: 13, color: '#64748b', lineHeight: 1.5 }}>Remove submission for <strong>{deleteTarget.studentNameEn}</strong>?</div>
+                <div className="fixed inset-0 z-[230] flex items-center justify-center bg-black/45 p-4">
+                    <div className="w-full max-w-[420px] rounded-[24px] border border-slate-200 bg-white p-6 shadow-[0_24px_60px_rgba(0,0,0,0.18)] dark:border-slate-700 dark:bg-slate-800">
+                        <div className="mb-5 text-center">
+                            <div className="mb-1.5 text-lg font-black text-slate-900 dark:text-slate-50">Delete Homework Submission?</div>
+                            <div className="text-sm font-medium leading-6 text-slate-500 dark:text-slate-300">Remove submission for <strong>{deleteTarget.studentNameEn}</strong>?</div>
                         </div>
-                        <div style={{ display: 'flex', gap: 10 }}>
-                            <button onClick={() => setDeleteTarget(null)} style={{ flex: 1, background: '#f1f5f9', color: '#64748b', border: 'none', borderRadius: 10, padding: '11px', fontWeight: 700, cursor: 'pointer', fontSize: 14, display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: 6 }}><X size={15} /> Cancel</button>
-                            <button onClick={confirmDelete} style={{ flex: 1, background: '#ef4444', color: 'white', border: 'none', borderRadius: 10, padding: '11px', fontWeight: 700, cursor: 'pointer', fontSize: 14, display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: 6 }}><Trash2 size={15} /> Delete</button>
+                        <div className="grid grid-cols-2 gap-2.5">
+                            <button onClick={() => setDeleteTarget(null)} className="inline-flex min-h-11 items-center justify-center gap-1.5 rounded-xl bg-slate-100 px-3 py-2 text-sm font-black text-slate-500 transition hover:bg-slate-200 dark:bg-slate-950 dark:text-slate-300 dark:hover:bg-slate-900"><X size={15} /> Cancel</button>
+                            <button onClick={confirmDelete} className="inline-flex min-h-11 items-center justify-center gap-1.5 rounded-xl bg-red-500 px-3 py-2 text-sm font-black text-white transition hover:bg-red-600"><Trash2 size={15} /> Delete</button>
                         </div>
                     </div>
                 </div>
@@ -666,10 +605,10 @@ export default function HomeworkSubmissionsPage({ submissions, assignments, stud
 
 function Field({ label, error, children, wide = false }: { label: string; error?: string; children: ReactNode; wide?: boolean }) {
     return (
-        <div style={{ gridColumn: wide ? '1 / -1' : undefined }}>
-            <label style={{ display: 'block', fontSize: 12, fontWeight: 800, color: '#64748b', marginBottom: 6 }}>{label}</label>
+        <div className={`${fieldGroupClass} ${wide ? 'col-span-2' : ''}`}>
+            <label className={fieldLabelClass}>{label}</label>
             {children}
-            {error && <div className="field-error">{error}</div>}
+            {error && <div className={errorTextClass}>{error}</div>}
         </div>
     );
 }
@@ -700,34 +639,18 @@ function SearchablePicker({
     return (
         <Popover open={open} onOpenChange={onOpenChange}>
             <PopoverTrigger asChild>
-                <button
-                    type="button"
-                    className="f-input"
-                    style={{ minHeight: 42, display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 10, textAlign: 'left', cursor: 'pointer' }}
-                >
-                    <span style={{ minWidth: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                        {selectedLabel ?? placeholder}
-                    </span>
-                    <ChevronsUpDown size={16} style={{ color: '#94a3b8', flexShrink: 0 }} />
+                <button type="button" className={`${fieldInputClass} flex items-center justify-between gap-2 text-left`}>
+                    <span className="min-w-0 truncate">{selectedLabel ?? placeholder}</span>
+                    <ChevronsUpDown size={16} className="shrink-0 text-slate-400" />
                 </button>
             </PopoverTrigger>
-            <PopoverContent align="start" className="w-[var(--radix-popover-trigger-width)] p-0">
-                <div style={{ padding: 10, borderBottom: '1px solid #e2e8f0', display: 'flex', alignItems: 'center', gap: 8 }}>
-                    <Search size={15} style={{ color: '#94a3b8', flexShrink: 0 }} />
-                    <input
-                        value={search}
-                        onChange={event => onSearchChange(event.target.value)}
-                        placeholder={searchPlaceholder}
-                        autoFocus
-                        style={{ border: 'none', outline: 'none', width: '100%', fontSize: 13, background: 'transparent', color: '#1e293b' }}
-                    />
+            <PopoverContent align="start" className="w-[var(--radix-popover-trigger-width)] overflow-hidden border-slate-200 bg-white p-0 dark:border-slate-700 dark:bg-slate-900">
+                <div className="flex items-center gap-2 border-b border-slate-200 p-2.5 dark:border-slate-700">
+                    <Search size={15} className="shrink-0 text-slate-400" />
+                    <input value={search} onChange={event => onSearchChange(event.target.value)} placeholder={searchPlaceholder} autoFocus className="w-full border-0 bg-transparent text-[13px] font-bold text-slate-900 outline-none placeholder:text-slate-400 dark:text-slate-100" />
                 </div>
-                <div style={{ maxHeight: 280, overflowY: 'auto', padding: 6 }}>
-                    {hasOptions ? children : (
-                        <div style={{ padding: '18px 10px', textAlign: 'center', color: '#94a3b8', fontSize: 13, fontWeight: 700 }}>
-                            {emptyLabel}
-                        </div>
-                    )}
+                <div className="max-h-[280px] overflow-y-auto p-1.5">
+                    {hasOptions ? children : <div className="px-2.5 py-5 text-center text-[13px] font-bold text-slate-400">{emptyLabel}</div>}
                 </div>
             </PopoverContent>
         </Popover>
@@ -736,42 +659,9 @@ function SearchablePicker({
 
 function PickerOption({ selected, onClick, children }: { selected: boolean; onClick: () => void; children: ReactNode }) {
     return (
-        <button
-            type="button"
-            onClick={onClick}
-            style={{ width: '100%', border: 'none', background: selected ? '#eff6ff' : 'transparent', color: '#1e293b', borderRadius: 8, padding: '9px 10px', display: 'flex', alignItems: 'center', gap: 10, cursor: 'pointer', textAlign: 'left' }}
-        >
-            <Check size={15} style={{ color: selected ? '#2563eb' : 'transparent', flexShrink: 0 }} />
-            <span style={{ minWidth: 0, flex: 1 }}>{children}</span>
+        <button type="button" onClick={onClick} className={`flex w-full items-center gap-2.5 rounded-xl px-2.5 py-2.5 text-left transition ${selected ? 'bg-blue-50 text-slate-900 dark:bg-blue-500/15 dark:text-slate-50' : 'text-slate-900 hover:bg-slate-50 dark:text-slate-100 dark:hover:bg-slate-800'}`}>
+            <Check size={15} className={`shrink-0 ${selected ? 'text-blue-600' : 'text-transparent'}`} />
+            <span className="min-w-0 flex-1">{children}</span>
         </button>
     );
 }
-
-const primaryButton: CSSProperties = {
-    background: '#2563eb',
-    color: 'white',
-    border: 'none',
-    borderRadius: 10,
-    padding: '9px 18px',
-    fontWeight: 800,
-    fontSize: 13,
-    cursor: 'pointer',
-    display: 'inline-flex',
-    alignItems: 'center',
-    gap: 8,
-};
-
-const fieldStyle: CSSProperties = {
-    width: '100%',
-    minHeight: 42,
-    background: '#f8fafc',
-    border: '1.5px solid #e2e8f0',
-    borderRadius: 10,
-    padding: '10px 14px',
-    fontSize: 14,
-    color: '#1e293b',
-    outline: 'none',
-};
-
-
-

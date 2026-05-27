@@ -72,6 +72,10 @@ interface StudentFormPageProps {
     classes: ClassOption[];
 }
 
+const fieldGroupClass = 'grid gap-1.5';
+const fieldLabelClass = 'text-[11px] font-black uppercase text-slate-500 dark:text-slate-400';
+const fieldInputClass = 'min-h-12 w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm font-bold text-slate-900 outline-none transition focus:border-blue-400 focus:ring-2 focus:ring-blue-500/15 dark:border-slate-700 dark:bg-slate-950 dark:text-slate-100';
+
 export default function StudentFormPage({
     mode,
     student,
@@ -171,123 +175,53 @@ export default function StudentFormPage({
 
     const inputError = (message?: string) =>
         message ? (
-            <div style={{ color: '#ef4444', fontSize: 11, marginTop: 4 }}>
+            <div className="mt-1 text-[11px] font-bold text-red-500">
                 {message}
             </div>
         ) : null;
 
     return (
         <AdminShell>
-            <div className="fade-in" style={{ padding: 24 }}>
+            <div className="fade-in bg-slate-50 p-6 dark:bg-slate-950 max-md:bg-[radial-gradient(circle_at_100%_0,rgba(37,99,235,0.12),transparent_34%),linear-gradient(180deg,#f7f9fc_0%,#eef3f8_100%)] max-md:px-2.5 max-md:py-3 max-md:pb-[calc(104px+env(safe-area-inset-bottom))] dark:max-md:bg-[radial-gradient(circle_at_100%_0,rgba(96,165,250,0.14),transparent_34%),linear-gradient(180deg,#0f172a_0%,#111827_100%)]">
                 <form
                     data-no-translate="true"
-                    className="card"
+                    className="mx-auto w-full max-w-[720px] rounded-[24px] border border-slate-200 bg-white p-7 shadow-[0_18px_42px_rgba(15,23,42,0.08)] dark:border-slate-700 dark:bg-slate-800/90 max-md:border-0 max-md:bg-transparent max-md:p-0 max-md:shadow-none"
                     onSubmit={preventNativeSubmit}
-                    style={{
-                        padding: 28,
-                        maxWidth: 720,
-                        width: '100%',
-                        margin: '0 auto',
-                    }}
                 >
-                    <div
-                        style={{
-                            display: 'flex',
-                            alignItems: 'center',
-                            gap: 12,
-                            marginBottom: 24,
-                        }}
-                    >
-                        <div
-                            style={{
-                                width: 40,
-                                height: 40,
-                                borderRadius: 10,
-                                background: isEdit ? '#eff6ff' : '#f0fdf4',
-                                display: 'flex',
-                                alignItems: 'center',
-                                justifyContent: 'center',
-                                fontSize: 20,
-                            }}
-                        >
+                    <div className="mb-5 flex items-center gap-3 rounded-[24px] border border-slate-200 bg-white p-4 shadow-[0_14px_36px_rgba(15,23,42,0.07)] dark:border-slate-700 dark:bg-slate-800/90 md:border-0 md:bg-transparent md:p-0 md:shadow-none">
+                        <div className={`grid h-11 w-11 shrink-0 place-items-center rounded-2xl text-sm font-black ${isEdit ? 'bg-blue-50 text-blue-600 dark:bg-blue-500/15 dark:text-blue-300' : 'bg-emerald-50 text-emerald-600 dark:bg-emerald-500/15 dark:text-emerald-300'}`}>
                             {isEdit
                                 ? translateText('Edit')
                                 : translateText('Add')}
                         </div>
                         <div>
-                            <div
-                                style={{
-                                    fontWeight: 800,
-                                    fontSize: 16,
-                                    color: '#1e293b',
-                                }}
-                            >
+                            <div className="text-lg font-black text-slate-900 dark:text-slate-50">
                                 {isEdit
                                     ? translateText('Edit Student')
                                     : translateText('Add New Student')}
                             </div>
                             {isEdit && (
-                                <div style={{ fontSize: 12, color: '#94a3b8' }}>
+                                <div className="text-xs font-extrabold text-slate-400">
                                     {student?.name_en}
                                 </div>
                             )}
                         </div>
                     </div>
 
-                    <div
-                        style={{
-                            display: 'flex',
-                            alignItems: 'center',
-                            justifyContent: 'space-between',
-                            gap: 8,
-                            marginBottom: 28,
-                            flexWrap: 'wrap',
-                        }}
-                    >
+                    <div className="mb-6 flex items-center justify-between gap-2 rounded-[22px] border border-slate-200 bg-white p-3 dark:border-slate-700 dark:bg-slate-800/90">
                         {[1, 2, 3].map((number, index) => (
                             <div
                                 key={number}
-                                style={{
-                                    display: 'flex',
-                                    alignItems: 'center',
-                                    flex: index < 2 ? 1 : undefined,
-                                    minWidth: 0,
-                                }}
+                                className={`flex min-w-0 items-center ${index < 2 ? 'flex-1' : ''}`}
                             >
                                 <div
-                                    style={{
-                                        width: 36,
-                                        height: 36,
-                                        borderRadius: '50%',
-                                        background:
-                                            step >= number
-                                                ? '#2563eb'
-                                                : '#f1f5f9',
-                                        color:
-                                            step >= number
-                                                ? 'white'
-                                                : '#94a3b8',
-                                        display: 'flex',
-                                        alignItems: 'center',
-                                        justifyContent: 'center',
-                                        fontWeight: 800,
-                                        fontSize: 14,
-                                    }}
+                                    className={`grid h-9 w-9 shrink-0 place-items-center rounded-full text-sm font-black ${step >= number ? 'bg-blue-600 text-white' : 'bg-slate-100 text-slate-400 dark:bg-slate-950 dark:text-slate-500'}`}
                                 >
                                     {number}
                                 </div>
                                 {index < 2 && (
                                     <div
-                                        style={{
-                                            flex: 1,
-                                            minWidth: 20,
-                                            height: 2,
-                                            background:
-                                                step > number
-                                                    ? '#2563eb'
-                                                    : '#f1f5f9',
-                                            margin: '0 8px',
-                                        }}
+                                        className={`mx-2 h-0.5 min-w-5 flex-1 rounded-full ${step > number ? 'bg-blue-600' : 'bg-slate-100 dark:bg-slate-950'}`}
                                     />
                                 )}
                             </div>
@@ -296,78 +230,34 @@ export default function StudentFormPage({
 
                     {step === 1 && (
                         <div
-                            style={{
-                                display: 'grid',
-                                gridTemplateColumns:
-                                    'repeat(auto-fit, minmax(240px, 1fr))',
-                                gap: 16,
-                            }}
+                            className="grid grid-cols-[repeat(auto-fit,minmax(240px,1fr))] gap-4"
                         >
                             <div
-                                style={{
-                                    gridColumn: '1 / -1',
-                                    display: 'flex',
-                                    flexDirection: 'column',
-                                    alignItems: 'center',
-                                    gap: 10,
-                                    marginBottom: 4,
-                                }}
+                                className="col-span-full mb-1 flex flex-col items-center gap-2.5 rounded-[22px] border border-slate-200 bg-white p-4 dark:border-slate-700 dark:bg-slate-800/90"
                             >
                                 <div
                                     onClick={() =>
                                         fileInputRef.current?.click()
                                     }
-                                    style={{
-                                        width: 96,
-                                        height: 96,
-                                        borderRadius: '50%',
-                                        background: '#f1f5f9',
-                                        border: '2px dashed #cbd5e1',
-                                        display: 'flex',
-                                        alignItems: 'center',
-                                        justifyContent: 'center',
-                                        cursor: 'pointer',
-                                        overflow: 'hidden',
-                                        position: 'relative',
-                                        flexShrink: 0,
-                                    }}
+                                    className="relative grid h-24 w-24 shrink-0 cursor-pointer place-items-center overflow-hidden rounded-full border-2 border-dashed border-slate-300 bg-slate-100 dark:border-slate-600 dark:bg-slate-950"
                                 >
                                     {photoPreview ? (
                                         <img
                                             src={photoPreview}
                                             alt="Preview"
-                                            style={{
-                                                width: '100%',
-                                                height: '100%',
-                                                objectFit: 'cover',
-                                            }}
+                                            className="h-full w-full object-cover"
                                         />
                                     ) : (
                                         <User size={36} color="#94a3b8" />
                                     )}
                                     <div
-                                        style={{
-                                            position: 'absolute',
-                                            bottom: 4,
-                                            right: 4,
-                                            width: 24,
-                                            height: 24,
-                                            borderRadius: '50%',
-                                            background: '#2563eb',
-                                            display: 'flex',
-                                            alignItems: 'center',
-                                            justifyContent: 'center',
-                                        }}
+                                        className="absolute bottom-1 right-1 grid h-6 w-6 place-items-center rounded-full bg-blue-600"
                                     >
                                         <Camera size={12} color="white" />
                                     </div>
                                 </div>
                                 <div
-                                    style={{
-                                        fontSize: 12,
-                                        color: '#94a3b8',
-                                        textAlign: 'center',
-                                    }}
+                                    className="text-center text-xs font-extrabold text-slate-400"
                                 >
                                     {data.profile_photo
                                         ? data.profile_photo.name
@@ -379,7 +269,7 @@ export default function StudentFormPage({
                                     ref={fileInputRef}
                                     type="file"
                                     accept="image/jpeg,image/png,image/jpg,image/webp"
-                                    style={{ display: 'none' }}
+                                    className="hidden"
                                     onChange={(event) => {
                                         const file =
                                             event.target.files?.[0] ?? null;
@@ -396,12 +286,12 @@ export default function StudentFormPage({
                                     errors.profile_photo as string | undefined,
                                 )}
                             </div>
-                            <div className="f-group">
-                                <label className="f-label">
+                            <div className={fieldGroupClass}>
+                                <label className={fieldLabelClass}>
                                     {translateText('Student Code')}
                                 </label>
                                 <input
-                                    className="f-input"
+                                    className={fieldInputClass}
                                     value={data.code}
                                     onChange={(event) =>
                                         setData('code', event.target.value)
@@ -409,12 +299,12 @@ export default function StudentFormPage({
                                 />
                                 {inputError(errors.code)}
                             </div>
-                            <div className="f-group">
-                                <label className="f-label">
+                            <div className={fieldGroupClass}>
+                                <label className={fieldLabelClass}>
                                     {translateText('Enrolled On')}
                                 </label>
                                 <DatePicker
-                                    className="f-input flex min-h-[48px] items-center justify-start px-4 py-3"
+                                    className={`${fieldInputClass} flex items-center justify-start`}
                                     value={data.enrolled_on}
                                     onChange={(value) =>
                                         setData('enrolled_on', value)
@@ -422,12 +312,12 @@ export default function StudentFormPage({
                                 />
                                 {inputError(errors.enrolled_on)}
                             </div>
-                            <div className="f-group">
-                                <label className="f-label">
+                            <div className={fieldGroupClass}>
+                                <label className={fieldLabelClass}>
                                     {translateText('Khmer Name')} *
                                 </label>
                                 <input
-                                    className="f-input"
+                                    className={fieldInputClass}
                                     value={data.name_kh}
                                     onChange={(event) =>
                                         setData('name_kh', event.target.value)
@@ -435,12 +325,12 @@ export default function StudentFormPage({
                                 />
                                 {inputError(errors.name_kh)}
                             </div>
-                            <div className="f-group">
-                                <label className="f-label">
+                            <div className={fieldGroupClass}>
+                                <label className={fieldLabelClass}>
                                     {translateText('English Name')} *
                                 </label>
                                 <input
-                                    className="f-input"
+                                    className={fieldInputClass}
                                     value={data.name_en}
                                     onChange={(event) =>
                                         setData('name_en', event.target.value)
@@ -448,12 +338,12 @@ export default function StudentFormPage({
                                 />
                                 {inputError(errors.name_en)}
                             </div>
-                            <div className="f-group">
-                                <label className="f-label">
+                            <div className={fieldGroupClass}>
+                                <label className={fieldLabelClass}>
                                     {translateText('Date of Birth')}
                                 </label>
                                 <DatePicker
-                                    className="f-input flex min-h-[48px] items-center justify-start px-4 py-3"
+                                    className={`${fieldInputClass} flex items-center justify-start`}
                                     value={data.date_of_birth}
                                     onChange={(value) =>
                                         setData('date_of_birth', value)
@@ -464,8 +354,8 @@ export default function StudentFormPage({
                                 />
                                 {inputError(errors.date_of_birth)}
                             </div>
-                            <div className="f-group">
-                                <label className="f-label">
+                            <div className={fieldGroupClass}>
+                                <label className={fieldLabelClass}>
                                     {translateText('Gender')}
                                 </label>
                                 <Select
@@ -477,7 +367,7 @@ export default function StudentFormPage({
                                         )
                                     }
                                 >
-                                    <SelectTrigger className="f-input">
+                                    <SelectTrigger className={fieldInputClass}>
                                         <SelectValue
                                             placeholder={translateText(
                                                 'Select...',
@@ -500,15 +390,10 @@ export default function StudentFormPage({
 
                     {step === 2 && (
                         <div
-                            style={{
-                                display: 'grid',
-                                gridTemplateColumns:
-                                    'repeat(auto-fit, minmax(240px, 1fr))',
-                                gap: 16,
-                            }}
+                            className="grid grid-cols-[repeat(auto-fit,minmax(240px,1fr))] gap-4"
                         >
-                            <div className="f-group">
-                                <label className="f-label">
+                            <div className={fieldGroupClass}>
+                                <label className={fieldLabelClass}>
                                     {translateText('Level')} *
                                 </label>
                                 <Select
@@ -527,7 +412,7 @@ export default function StudentFormPage({
                                         }));
                                     }}
                                 >
-                                    <SelectTrigger className="f-input">
+                                    <SelectTrigger className={fieldInputClass}>
                                         <SelectValue
                                             placeholder={translateText(
                                                 'Select level...',
@@ -547,8 +432,8 @@ export default function StudentFormPage({
                                 </Select>
                                 {inputError(errors.level_id)}
                             </div>
-                            <div className="f-group">
-                                <label className="f-label">
+                            <div className={fieldGroupClass}>
+                                <label className={fieldLabelClass}>
                                     {translateText('Class')} *
                                 </label>
                                 <Select
@@ -562,7 +447,7 @@ export default function StudentFormPage({
                                         )
                                     }
                                 >
-                                    <SelectTrigger className="f-input">
+                                    <SelectTrigger className={fieldInputClass}>
                                         <SelectValue
                                             placeholder={translateText(
                                                 'Select class...',
@@ -585,13 +470,13 @@ export default function StudentFormPage({
                                 </Select>
                                 {inputError(errors.school_class_id)}
                             </div>
-                            <div className="f-group">
-                                <label className="f-label">
+                            <div className={fieldGroupClass}>
+                                <label className={fieldLabelClass}>
                                     {translateText('Monthly Fee')}
                                 </label>
                                 <input
                                     type="number"
-                                    className="f-input"
+                                    className={fieldInputClass}
                                     value={data.monthly_fee}
                                     min={0}
                                     onChange={(event) =>
@@ -603,11 +488,7 @@ export default function StudentFormPage({
                                 />
                                 {selectedLevel && (
                                     <div
-                                        style={{
-                                            fontSize: 11,
-                                            color: '#94a3b8',
-                                            marginTop: 4,
-                                        }}
+                                        className="mt-1 text-[11px] font-bold text-slate-400"
                                     >
                                         {translateText('Level default')}: $
                                         {selectedLevel.monthly_fee}
@@ -615,13 +496,13 @@ export default function StudentFormPage({
                                 )}
                                 {inputError(errors.monthly_fee)}
                             </div>
-                            <div className="f-group">
-                                <label className="f-label">
+                            <div className={fieldGroupClass}>
+                                <label className={fieldLabelClass}>
                                     {translateText('Scholarship Amount')}
                                 </label>
                                 <input
                                     type="number"
-                                    className="f-input"
+                                    className={fieldInputClass}
                                     value={data.scholarship_amount}
                                     min={0}
                                     onChange={(event) =>
@@ -633,8 +514,8 @@ export default function StudentFormPage({
                                 />
                                 {inputError(errors.scholarship_amount)}
                             </div>
-                            <div className="f-group">
-                                <label className="f-label">
+                            <div className={fieldGroupClass}>
+                                <label className={fieldLabelClass}>
                                     {translateText('Fee Status')}
                                 </label>
                                 <Select
@@ -646,7 +527,7 @@ export default function StudentFormPage({
                                         )
                                     }
                                 >
-                                    <SelectTrigger className="f-input">
+                                    <SelectTrigger className={fieldInputClass}>
                                         <SelectValue />
                                     </SelectTrigger>
                                     <SelectContent>
@@ -663,8 +544,8 @@ export default function StudentFormPage({
                                 </Select>
                                 {inputError(errors.fee_status)}
                             </div>
-                            <div className="f-group">
-                                <label className="f-label">
+                            <div className={fieldGroupClass}>
+                                <label className={fieldLabelClass}>
                                     {translateText('Status')}
                                 </label>
                                 <Select
@@ -676,7 +557,7 @@ export default function StudentFormPage({
                                         )
                                     }
                                 >
-                                    <SelectTrigger className="f-input">
+                                    <SelectTrigger className={fieldInputClass}>
                                         <SelectValue />
                                     </SelectTrigger>
                                     <SelectContent>
@@ -695,19 +576,14 @@ export default function StudentFormPage({
 
                     {step === 3 && (
                         <div
-                            style={{
-                                display: 'grid',
-                                gridTemplateColumns:
-                                    'repeat(auto-fit, minmax(240px, 1fr))',
-                                gap: 16,
-                            }}
+                            className="grid grid-cols-[repeat(auto-fit,minmax(240px,1fr))] gap-4"
                         >
-                            <div className="f-group">
-                                <label className="f-label">
+                            <div className={fieldGroupClass}>
+                                <label className={fieldLabelClass}>
                                     {translateText('Province')}
                                 </label>
                                 <input
-                                    className="f-input"
+                                    className={fieldInputClass}
                                     value={data.province}
                                     onChange={(event) =>
                                         setData('province', event.target.value)
@@ -715,12 +591,12 @@ export default function StudentFormPage({
                                 />
                                 {inputError(errors.province)}
                             </div>
-                            <div className="f-group">
-                                <label className="f-label">
+                            <div className={fieldGroupClass}>
+                                <label className={fieldLabelClass}>
                                     {translateText('District')}
                                 </label>
                                 <input
-                                    className="f-input"
+                                    className={fieldInputClass}
                                     value={data.district}
                                     onChange={(event) =>
                                         setData('district', event.target.value)
@@ -728,12 +604,12 @@ export default function StudentFormPage({
                                 />
                                 {inputError(errors.district)}
                             </div>
-                            <div className="f-group">
-                                <label className="f-label">
+                            <div className={fieldGroupClass}>
+                                <label className={fieldLabelClass}>
                                     {translateText('Commune')}
                                 </label>
                                 <input
-                                    className="f-input"
+                                    className={fieldInputClass}
                                     value={data.commune}
                                     onChange={(event) =>
                                         setData('commune', event.target.value)
@@ -741,12 +617,12 @@ export default function StudentFormPage({
                                 />
                                 {inputError(errors.commune)}
                             </div>
-                            <div className="f-group">
-                                <label className="f-label">
+                            <div className={fieldGroupClass}>
+                                <label className={fieldLabelClass}>
                                     {translateText('Village')}
                                 </label>
                                 <input
-                                    className="f-input"
+                                    className={fieldInputClass}
                                     value={data.village}
                                     onChange={(event) =>
                                         setData('village', event.target.value)
@@ -754,12 +630,12 @@ export default function StudentFormPage({
                                 />
                                 {inputError(errors.village)}
                             </div>
-                            <div className="f-group">
-                                <label className="f-label">
+                            <div className={fieldGroupClass}>
+                                <label className={fieldLabelClass}>
                                     {translateText('Parent Phone')}
                                 </label>
                                 <input
-                                    className="f-input"
+                                    className={fieldInputClass}
                                     value={data.parent_phone}
                                     onChange={(event) =>
                                         setData(
@@ -770,12 +646,12 @@ export default function StudentFormPage({
                                 />
                                 {inputError(errors.parent_phone)}
                             </div>
-                            <div className="f-group">
-                                <label className="f-label">
+                            <div className={fieldGroupClass}>
+                                <label className={fieldLabelClass}>
                                     {translateText('Telegram Username')}
                                 </label>
                                 <input
-                                    className="f-input"
+                                    className={fieldInputClass}
                                     value={data.telegram_username}
                                     onChange={(event) =>
                                         setData(
@@ -786,12 +662,12 @@ export default function StudentFormPage({
                                 />
                                 {inputError(errors.telegram_username)}
                             </div>
-                            <div className="f-group">
-                                <label className="f-label">
+                            <div className={fieldGroupClass}>
+                                <label className={fieldLabelClass}>
                                     {translateText('Parent Telegram Chat ID')}
                                 </label>
                                 <input
-                                    className="f-input"
+                                    className={fieldInputClass}
                                     value={data.parent_telegram_id}
                                     onChange={(event) =>
                                         setData(
@@ -802,11 +678,7 @@ export default function StudentFormPage({
                                     placeholder="e.g. 123456789"
                                 />
                                 <div
-                                    style={{
-                                        fontSize: 11,
-                                        color: '#94a3b8',
-                                        marginTop: 4,
-                                    }}
+                                    className="mt-1 text-[11px] font-bold text-slate-400"
                                 >
                                     {translateText(
                                         'Numeric ID from Telegram. Parent must message the school bot first to get their ID.',
@@ -817,32 +689,10 @@ export default function StudentFormPage({
                         </div>
                     )}
 
-                    <div
-                        style={{
-                            display: 'flex',
-                            gap: 12,
-                            marginTop: 16,
-                            flexWrap: 'wrap',
-                        }}
-                    >
+                    <div className="mt-4 flex flex-wrap gap-3 max-md:sticky max-md:bottom-[74px] max-md:z-10 max-md:rounded-[22px] max-md:border max-md:border-slate-200 max-md:bg-white/90 max-md:p-2 max-md:shadow-[0_18px_42px_rgba(15,23,42,0.14)] max-md:backdrop-blur dark:max-md:border-slate-700 dark:max-md:bg-slate-900/90">
                         <Link
                             href={studentIndex.url()}
-                            style={{
-                                flex: '1 1 140px',
-                                textAlign: 'center',
-                                background: '#f1f5f9',
-                                color: '#64748b',
-                                border: 'none',
-                                borderRadius: 10,
-                                padding: '12px 20px',
-                                fontWeight: 700,
-                                cursor: 'pointer',
-                                textDecoration: 'none',
-                                display: 'inline-flex',
-                                alignItems: 'center',
-                                justifyContent: 'center',
-                                gap: 6,
-                            }}
+                            className="inline-flex min-h-12 flex-[1_1_140px] items-center justify-center gap-1.5 rounded-2xl bg-slate-100 px-5 py-3 text-center text-sm font-black text-slate-500 no-underline dark:bg-slate-950 dark:text-slate-300"
                         >
                             <X size={16} /> {translateText('Cancel')}
                         </Link>
@@ -850,20 +700,7 @@ export default function StudentFormPage({
                             <button
                                 type="button"
                                 onClick={() => setStep((value) => value - 1)}
-                                style={{
-                                    flex: '1 1 140px',
-                                    background: '#f1f5f9',
-                                    color: '#64748b',
-                                    border: 'none',
-                                    borderRadius: 10,
-                                    padding: '12px',
-                                    fontWeight: 700,
-                                    cursor: 'pointer',
-                                    display: 'inline-flex',
-                                    alignItems: 'center',
-                                    justifyContent: 'center',
-                                    gap: 6,
-                                }}
+                                className="inline-flex min-h-12 flex-[1_1_140px] items-center justify-center gap-1.5 rounded-2xl bg-slate-100 p-3 text-sm font-black text-slate-500 dark:bg-slate-950 dark:text-slate-300"
                             >
                                 <ArrowLeft size={16} /> {translateText('Back')}
                             </button>
@@ -872,21 +709,7 @@ export default function StudentFormPage({
                             <button
                                 type="button"
                                 onClick={() => setStep((value) => value + 1)}
-                                style={{
-                                    flex: '2 1 180px',
-                                    background: '#2563eb',
-                                    color: 'white',
-                                    border: 'none',
-                                    borderRadius: 10,
-                                    padding: '12px',
-                                    fontWeight: 700,
-                                    fontSize: 14,
-                                    cursor: 'pointer',
-                                    display: 'inline-flex',
-                                    alignItems: 'center',
-                                    justifyContent: 'center',
-                                    gap: 6,
-                                }}
+                                className="inline-flex min-h-12 flex-[2_1_180px] items-center justify-center gap-1.5 rounded-2xl bg-blue-600 p-3 text-sm font-black text-white"
                             >
                                 {translateText('Next')} <ArrowRight size={16} />
                             </button>
@@ -895,21 +718,7 @@ export default function StudentFormPage({
                                 type="button"
                                 onClick={saveStudent}
                                 disabled={processing}
-                                style={{
-                                    flex: '2 1 180px',
-                                    background: isEdit ? '#2563eb' : '#10b981',
-                                    color: 'white',
-                                    border: 'none',
-                                    borderRadius: 10,
-                                    padding: '12px',
-                                    fontWeight: 700,
-                                    fontSize: 14,
-                                    cursor: 'pointer',
-                                    display: 'inline-flex',
-                                    alignItems: 'center',
-                                    justifyContent: 'center',
-                                    gap: 6,
-                                }}
+                                className={`inline-flex min-h-12 flex-[2_1_180px] items-center justify-center gap-1.5 rounded-2xl p-3 text-sm font-black text-white disabled:opacity-70 ${isEdit ? 'bg-blue-600' : 'bg-emerald-600'}`}
                             >
                                 <Save size={16} />{' '}
                                 {processing
@@ -925,3 +734,4 @@ export default function StudentFormPage({
         </AdminShell>
     );
 }
+

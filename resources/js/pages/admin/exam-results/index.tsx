@@ -1,19 +1,12 @@
 import { destroy, store, update } from '@/actions/App/Http/Controllers/Backends/ExamResultController';
-import {
-    Sheet,
-    SheetContent,
-    SheetDescription,
-    SheetHeader,
-    SheetTitle,
-} from '@/components/ui/sheet';
-import { useAdminPermissions } from '@/hooks/use-admin-permissions';
+import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle } from '@/components/ui/sheet';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { useAdminPermissions } from '@/hooks/use-admin-permissions';
 import AdminShell from '@/pages/admin/shell';
 import { Avatar, Badge, KH, Pagination, PBar, RowActions } from '@/pages/admin/ui';
 import { router, useForm } from '@inertiajs/react';
-import { Edit3, Plus, Trash2 } from 'lucide-react';
-import { FormEvent, useEffect, useMemo, useState } from 'react';
-import type { CSSProperties, ReactNode } from 'react';
+import { CheckCircle2, Edit3, Plus, Trash2, X } from 'lucide-react';
+import { FormEvent, ReactNode, useEffect, useMemo, useState } from 'react';
 import { toast } from 'sonner';
 
 interface ExamOption {
@@ -94,28 +87,21 @@ const ORDER_OPTIONS: { value: OrderKey; label: string }[] = [
     { value: 'exam-asc', label: 'Exam A-Z' },
 ];
 
+const pageClass = 'fade-in mx-auto flex w-full max-w-[1280px] flex-col gap-3 bg-slate-50 p-4 dark:bg-slate-950 max-md:bg-[radial-gradient(circle_at_100%_0,rgba(37,99,235,0.12),transparent_34%),linear-gradient(180deg,#f7f9fc_0%,#eef3f8_100%)] max-md:px-2.5 max-md:py-3 max-md:pb-[calc(104px+env(safe-area-inset-bottom))] dark:max-md:bg-[radial-gradient(circle_at_100%_0,rgba(96,165,250,0.14),transparent_34%),linear-gradient(180deg,#0f172a_0%,#111827_100%)] md:gap-5 md:p-6';
+const panelClass = 'rounded-[24px] border border-slate-200 bg-white p-3 shadow-[0_14px_36px_rgba(15,23,42,0.07)] dark:border-slate-700 dark:bg-slate-800/90';
+const controlInputClass = 'min-h-9 rounded-xl border border-slate-200 bg-white px-3 py-1 text-xs font-bold text-slate-900 dark:border-slate-700 dark:bg-slate-950 dark:text-slate-100';
+const inputClass = 'min-h-12 w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm font-bold text-slate-900 outline-none transition placeholder:text-slate-400 focus:border-blue-400 focus:ring-2 focus:ring-blue-500/15 dark:border-slate-700 dark:bg-slate-950 dark:text-slate-100';
+const mobileCardClass = 'rounded-[22px] border border-slate-200/80 bg-white/95 p-3 shadow-[0_14px_34px_rgba(15,23,42,0.07)] dark:border-slate-700 dark:bg-slate-800/90';
+const desktopTableClass = 'hidden min-w-full border-collapse text-left md:table [&_td]:px-3 [&_td]:py-3 [&_th]:border-b [&_th]:border-slate-200 [&_th]:px-3 [&_th]:py-3 [&_th]:text-[10px] [&_th]:font-black [&_th]:uppercase [&_th]:tracking-[0.08em] [&_th]:text-slate-400 dark:[&_th]:border-slate-700';
+const footerButtonClass = 'inline-flex min-h-11 items-center justify-center gap-1.5 rounded-xl px-3 py-2 text-sm font-black transition';
+
 function sortResults(results: ExamResultItem[], orderBy: OrderKey): ExamResultItem[] {
     return [...results].sort((a, b) => {
-        if (orderBy === 'student-desc') {
-            return b.studentNameEn.localeCompare(a.studentNameEn);
-        }
-
-        if (orderBy === 'score-desc') {
-            return (b.percent ?? 0) - (a.percent ?? 0);
-        }
-
-        if (orderBy === 'score-asc') {
-            return (a.percent ?? 0) - (b.percent ?? 0);
-        }
-
-        if (orderBy === 'status-asc') {
-            return a.status.localeCompare(b.status);
-        }
-
-        if (orderBy === 'exam-asc') {
-            return a.examTitle.localeCompare(b.examTitle);
-        }
-
+        if (orderBy === 'student-desc') return b.studentNameEn.localeCompare(a.studentNameEn);
+        if (orderBy === 'score-desc') return (b.percent ?? 0) - (a.percent ?? 0);
+        if (orderBy === 'score-asc') return (a.percent ?? 0) - (b.percent ?? 0);
+        if (orderBy === 'status-asc') return a.status.localeCompare(b.status);
+        if (orderBy === 'exam-asc') return a.examTitle.localeCompare(b.examTitle);
         return a.studentNameEn.localeCompare(b.studentNameEn);
     });
 }
@@ -151,22 +137,22 @@ export default function ExamResultsPage({ results, exams, students, summary }: E
     useEffect(() => { setPage(1); }, [selectedExam, search, orderBy, perPage]);
 
     const filtered = useMemo(() => {
-        const q = search.toLowerCase();
+        const query = search.toLowerCase();
         const byExam = selectedExam === 'all' ? results : results.filter(result => result.examId === selectedExam);
         const bySearch = byExam.filter(result =>
-            !q ||
-            result.studentNameKh.includes(search) ||
-            result.studentNameEn.toLowerCase().includes(q) ||
-            result.examTitle.toLowerCase().includes(q) ||
-            result.examSubject.toLowerCase().includes(q) ||
-            result.className.toLowerCase().includes(q) ||
-            result.level.toLowerCase().includes(q) ||
-            result.status.toLowerCase().includes(q) ||
-            result.examDate.includes(search)
+            !query
+            || result.studentNameKh.includes(search)
+            || result.studentNameEn.toLowerCase().includes(query)
+            || result.examTitle.toLowerCase().includes(query)
+            || result.examSubject.toLowerCase().includes(query)
+            || result.className.toLowerCase().includes(query)
+            || result.level.toLowerCase().includes(query)
+            || result.status.toLowerCase().includes(query)
+            || result.examDate.includes(search),
         );
 
         return sortResults(bySearch, orderBy);
-    }, [results, selectedExam, search, orderBy]);
+    }, [orderBy, results, search, selectedExam]);
 
     const paginated = useMemo(
         () => filtered.slice((page - 1) * perPage, page * perPage),
@@ -174,10 +160,7 @@ export default function ExamResultsPage({ results, exams, students, summary }: E
     );
 
     const openCreateDrawer = () => {
-        if (!canCreate) {
-            return;
-        }
-
+        if (!canCreate) return;
         reset();
         setData({
             ...emptyForm(exams, students),
@@ -188,10 +171,7 @@ export default function ExamResultsPage({ results, exams, students, summary }: E
     };
 
     const openEditDrawer = (result: ExamResultItem) => {
-        if (!canUpdate) {
-            return;
-        }
-
+        if (!canUpdate) return;
         setData({
             exam_id: result.examId,
             student_id: result.studentId,
@@ -239,9 +219,7 @@ export default function ExamResultsPage({ results, exams, students, summary }: E
     };
 
     const confirmDelete = () => {
-        if (!deleteTarget) {
-            return;
-        }
+        if (!deleteTarget) return;
 
         if (!canDelete) {
             setDeleteTarget(null);
@@ -257,84 +235,76 @@ export default function ExamResultsPage({ results, exams, students, summary }: E
         });
     };
 
+    const resultActions = (result: ExamResultItem) => [
+        { key: 'edit', label: 'Edit', icon: Edit3, onSelect: () => openEditDrawer(result), hidden: !canUpdate },
+        { key: 'delete', label: 'Delete', icon: Trash2, onSelect: () => setDeleteTarget(result), variant: 'destructive' as const, separatorBefore: true, hidden: !canDelete },
+    ];
+
     return (
         <AdminShell>
-            <div className="fade-in" style={{ padding: 24, display: 'flex', flexDirection: 'column', gap: 16 }}>
-                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 12 }}>
-                    <div>
-                        <div style={{ fontWeight: 800, fontSize: 18, color: '#1e293b' }}>Exam Results</div>
-                        <KH style={{ fontSize: 12, color: '#94a3b8', display: 'block' }}>លទ្ធផលប្រឡង - Record student exam scores</KH>
+            <div className={pageClass}>
+                <section className="flex items-center justify-between gap-3 rounded-[24px] border border-slate-200 bg-white p-4 shadow-[0_14px_36px_rgba(15,23,42,0.07)] dark:border-slate-700 dark:bg-slate-800/90">
+                    <div className="min-w-0">
+                        <span className="block text-xs font-black text-slate-400">Exam results</span>
+                        <strong className="mt-1 block text-2xl font-black text-slate-900 dark:text-slate-50">{summary.resultCount} results</strong>
+                        <p className="mt-1 truncate text-xs font-extrabold text-slate-400">{summary.averagePercent || 0}% average - {summary.passedCount} passed</p>
                     </div>
                     {canCreate && (
-                        <button onClick={openCreateDrawer} style={primaryButton}>
-                            <Plus size={16} />
-                            Add Result
+                        <button onClick={openCreateDrawer} className="inline-flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-blue-600 text-white shadow-[0_14px_26px_rgba(37,99,235,0.28)] transition hover:bg-blue-500" aria-label="Add result">
+                            <Plus size={18} />
                         </button>
                     )}
-                </div>
+                </section>
 
-                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill,minmax(150px,1fr))', gap: 12 }}>
+                <div className="grid grid-cols-2 gap-2 md:grid-cols-4">
                     {[
-                        { label: 'Results', value: summary.resultCount, color: '#3b82f6', bg: '#eff6ff' },
-                        { label: 'Average', value: `${summary.averagePercent || 0}%`, color: '#10b981', bg: '#f0fdf4' },
-                        { label: 'Passed', value: summary.passedCount, color: '#6366f1', bg: '#eef2ff' },
-                        { label: 'Pending', value: summary.pendingCount, color: '#f59e0b', bg: '#fffbeb' },
+                        { label: 'Results', value: summary.resultCount, className: 'border-blue-500/25 bg-blue-500/10 text-blue-500' },
+                        { label: 'Average', value: `${summary.averagePercent || 0}%`, className: 'border-emerald-500/25 bg-emerald-500/10 text-emerald-500' },
+                        { label: 'Passed', value: summary.passedCount, className: 'border-indigo-500/25 bg-indigo-500/10 text-indigo-500' },
+                        { label: 'Pending', value: summary.pendingCount, className: 'border-amber-500/25 bg-amber-500/10 text-amber-500' },
                     ].map(card => (
-                        <div key={card.label} style={{ background: card.bg, border: `1px solid ${card.color}30`, borderRadius: 14, padding: 16 }}>
-                            <div style={{ color: card.color, fontSize: 24, fontWeight: 900 }}>{card.value}</div>
-                            <div style={{ color: card.color, opacity: 0.72, fontSize: 11 }}>{card.label}</div>
+                        <div key={card.label} className={`rounded-[18px] border p-3 ${card.className}`}>
+                            <div className="text-2xl font-black leading-none">{card.value}</div>
+                            <div className="mt-1 text-[11px] font-black opacity-70">{card.label}</div>
                         </div>
                     ))}
                 </div>
 
-                <div className="card" style={{ overflowX: 'auto' }}>
-                    <div style={{ padding: '12px 16px', borderBottom: '1px solid #f1f5f9', display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap' }}>
-                        <span style={{ fontSize: 11, fontWeight: 700, color: '#94a3b8', whiteSpace: 'nowrap' }}>Sort by</span>
-                        <Select value={orderBy} onValueChange={value => setOrderBy(value as OrderKey)}>
-                            <SelectTrigger style={{ width: 'auto', minWidth: 150, padding: '5px 10px', fontSize: 12, height: 'auto' }}>
-                                <SelectValue />
-                            </SelectTrigger>
-                            <SelectContent>
-                                {ORDER_OPTIONS.map(option => (
-                                    <SelectItem key={option.value} value={option.value}>{option.label}</SelectItem>
-                                ))}
-                            </SelectContent>
-                        </Select>
-
-                        <div style={{ width: 1, height: 18, background: '#e2e8f0', margin: '0 2px' }} />
-
-                        <Select value={perPage.toString()} onValueChange={value => { setPerPage(Number(value)); setPage(1); }}>
-                            <SelectTrigger style={{ width: 'auto', minWidth: 120, padding: '5px 10px', fontSize: 12, height: 'auto' }}>
-                                <SelectValue />
-                            </SelectTrigger>
-                            <SelectContent>
-                                {[5, 10, 25, 50].map(size => (
-                                    <SelectItem key={size} value={size.toString()}>{size} per page</SelectItem>
-                                ))}
-                            </SelectContent>
-                        </Select>
-
-                        <Select value={String(selectedExam)} onValueChange={value => setSelectedExam(value === 'all' ? 'all' : Number(value))}>
-                            <SelectTrigger style={{ width: 'auto', minWidth: 180, maxWidth: 280, padding: '5px 10px', fontSize: 12, height: 'auto' }}>
-                                <SelectValue />
-                            </SelectTrigger>
-                            <SelectContent>
-                                <SelectItem value="all">All exams</SelectItem>
-                                {exams.map(exam => <SelectItem key={exam.id} value={String(exam.id)}>{exam.title}</SelectItem>)}
-                            </SelectContent>
-                        </Select>
-
-                        <span style={{ fontSize: 11, color: '#94a3b8', marginLeft: 4 }}>{filtered.length} result{filtered.length !== 1 ? 's' : ''}</span>
-
-                        <input
-                            value={search}
-                            onChange={event => setSearch(event.target.value)}
-                            className="f-input"
-                            style={{ width: 260, maxWidth: '100%', marginLeft: 'auto' }}
-                            placeholder="Search exam results..."
-                        />
+                <section className="overflow-visible rounded-[24px] border-0 bg-transparent shadow-none md:overflow-x-auto md:rounded-2xl md:border md:border-slate-200 md:bg-white md:shadow-sm dark:md:border-slate-700 dark:md:bg-slate-800/90">
+                    <div className="sticky top-0 z-10 mb-3 grid grid-cols-2 gap-2 rounded-[22px] border border-slate-200 bg-white/90 p-3 shadow-[0_12px_32px_rgba(15,23,42,0.07)] backdrop-blur dark:border-slate-700 dark:bg-slate-800/90 md:static md:mb-0 md:grid-cols-[auto_1fr_320px] md:items-center md:gap-3 md:border-x-0 md:border-t-0 md:shadow-none">
+                        <div className="contents md:flex md:items-center md:gap-2">
+                            <span className="hidden whitespace-nowrap text-[11px] font-bold text-slate-400 md:inline">Sort by</span>
+                            <Select value={orderBy} onValueChange={value => setOrderBy(value as OrderKey)}>
+                                <SelectTrigger className={`${controlInputClass} min-w-0 md:w-[160px]`}>
+                                    <SelectValue />
+                                </SelectTrigger>
+                                <SelectContent>
+                                    {ORDER_OPTIONS.map(option => <SelectItem key={option.value} value={option.value}>{option.label}</SelectItem>)}
+                                </SelectContent>
+                            </Select>
+                            <Select value={perPage.toString()} onValueChange={value => { setPerPage(Number(value)); setPage(1); }}>
+                                <SelectTrigger className={`${controlInputClass} min-w-0 md:w-[128px]`}>
+                                    <SelectValue />
+                                </SelectTrigger>
+                                <SelectContent>
+                                    {[5, 10, 25, 50].map(size => <SelectItem key={size} value={size.toString()}>{size} per page</SelectItem>)}
+                                </SelectContent>
+                            </Select>
+                            <Select value={String(selectedExam)} onValueChange={value => setSelectedExam(value === 'all' ? 'all' : Number(value))}>
+                                <SelectTrigger className={`${controlInputClass} col-span-2 w-full md:w-[210px]`}>
+                                    <SelectValue />
+                                </SelectTrigger>
+                                <SelectContent>
+                                    <SelectItem value="all">All exams</SelectItem>
+                                    {exams.map(exam => <SelectItem key={exam.id} value={String(exam.id)}>{exam.title}</SelectItem>)}
+                                </SelectContent>
+                            </Select>
+                            <span className="hidden text-[11px] font-bold text-slate-400 md:inline">{filtered.length} result{filtered.length !== 1 ? 's' : ''}</span>
+                        </div>
+                        <input value={search} onChange={event => setSearch(event.target.value)} className={`${controlInputClass} col-span-2 w-full md:col-start-3 md:w-full`} placeholder="Search exam results..." />
                     </div>
-                    <table className="data-table">
+
+                    <table className={desktopTableClass}>
                         <thead>
                             <tr>
                                 <th>Student</th>
@@ -348,68 +318,87 @@ export default function ExamResultsPage({ results, exams, students, summary }: E
                         <tbody>
                             {paginated.length === 0 ? (
                                 <tr>
-                                    <td colSpan={canManageResults ? 6 : 5} style={{ padding: '38px 24px', textAlign: 'center', color: '#64748b', fontSize: 14, fontWeight: 700 }}>
+                                    <td colSpan={canManageResults ? 6 : 5} className="px-6 py-9 text-center text-sm font-bold text-slate-500 dark:text-slate-400">
                                         {search ? <>No exam results found for <strong>"{search}"</strong></> : 'No exam results found'}
                                     </td>
                                 </tr>
                             ) : paginated.map(result => (
-                                <tr key={result.id}>
+                                <tr key={result.id} className="border-b border-slate-50 hover:bg-slate-50 dark:border-slate-800 dark:hover:bg-slate-900/60">
                                     <td>
-                                        <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                                        <div className="flex items-center gap-2.5">
                                             <Avatar name={result.studentNameEn} size={34} />
-                                            <div>
-                                                <KH style={{ fontWeight: 800, fontSize: 13, display: 'block' }}>{result.studentNameKh}</KH>
-                                                <div style={{ fontSize: 11, color: '#94a3b8' }}>{result.studentNameEn}</div>
+                                            <div className="min-w-0">
+                                                <KH className="block text-[13px] font-black text-slate-900 dark:text-slate-50">{result.studentNameKh}</KH>
+                                                <div className="text-[11px] font-bold text-slate-400">{result.studentNameEn}</div>
                                             </div>
                                         </div>
                                     </td>
                                     <td>
-                                        <div style={{ fontWeight: 800, fontSize: 12, color: '#1e293b' }}>{result.examTitle}</div>
-                                        <div style={{ fontSize: 11, color: '#94a3b8' }}>{result.examSubject || result.examDate}</div>
+                                        <div className="max-w-[260px] truncate text-xs font-black text-slate-900 dark:text-slate-50">{result.examTitle}</div>
+                                        <div className="text-[11px] font-bold text-slate-400">{result.examSubject || result.examDate}</div>
                                     </td>
-                                    <td style={{ fontSize: 13, fontWeight: 800 }}>{result.score ?? '-'} / {result.maxScore}</td>
+                                    <td className="text-xs font-black text-slate-900 dark:text-slate-50">{result.score ?? '-'} / {result.maxScore}</td>
                                     <td>
-                                        <div style={{ display: 'flex', alignItems: 'center', gap: 8, minWidth: 120 }}>
+                                        <div className="flex min-w-[120px] items-center gap-2">
                                             <PBar value={result.percent} color={result.percent >= 75 ? 'green' : result.percent >= 50 ? 'blue' : 'red'} />
-                                            <span style={{ width: 46, fontSize: 12, fontWeight: 800, color: result.percent >= 75 ? '#10b981' : result.percent >= 50 ? '#2563eb' : '#ef4444' }}>{result.percent}%</span>
+                                            <span className={`w-11 text-xs font-black ${scoreTone(result.percent)}`}>{result.percent}%</span>
                                         </div>
                                     </td>
                                     <td><Badge type={statusType[result.status]}>{result.status}</Badge></td>
-                                    {canManageResults && (
-                                        <td>
-                                            <RowActions
-                                                ariaLabel={`Actions for ${result.studentNameEn}`}
-                                                actions={[
-                                                    { key: 'edit', label: 'Edit', icon: Edit3, onSelect: () => openEditDrawer(result), hidden: !canUpdate },
-                                                    { key: 'delete', label: 'Delete', icon: Trash2, onSelect: () => setDeleteTarget(result), variant: 'destructive', separatorBefore: true, hidden: !canDelete },
-                                                ]}
-                                            />
-                                        </td>
-                                    )}
+                                    {canManageResults && <td><RowActions ariaLabel={`Actions for ${result.studentNameEn}`} actions={resultActions(result)} /></td>}
                                 </tr>
                             ))}
                         </tbody>
                     </table>
 
+                    <div className="grid gap-3 md:hidden">
+                        {paginated.length === 0 ? (
+                            <div className="rounded-[22px] border border-dashed border-slate-300 bg-white/80 px-4 py-9 text-center text-sm font-bold text-slate-500 dark:border-slate-700 dark:bg-slate-800/80 dark:text-slate-400">
+                                {search ? <>No exam results found for <strong>"{search}"</strong></> : 'No exam results found'}
+                            </div>
+                        ) : paginated.map(result => (
+                            <article key={result.id} className={mobileCardClass}>
+                                <div className="flex items-start justify-between gap-3">
+                                    <div className="flex min-w-0 items-center gap-2.5">
+                                        <Avatar name={result.studentNameEn} size={38} />
+                                        <div className="min-w-0">
+                                            <KH className="block truncate text-sm font-black text-slate-900 dark:text-slate-50">{result.studentNameKh}</KH>
+                                            <p className="mt-0.5 truncate text-[11px] font-bold text-slate-400">{result.studentNameEn} - {result.className || result.level}</p>
+                                        </div>
+                                    </div>
+                                    {canManageResults && <RowActions ariaLabel={`Actions for ${result.studentNameEn}`} actions={resultActions(result)} />}
+                                </div>
+                                <div className="mt-3 rounded-2xl bg-slate-100 px-3 py-2 dark:bg-slate-950">
+                                    <div className="line-clamp-2 text-xs font-black text-slate-900 dark:text-slate-50">{result.examTitle}</div>
+                                    <div className="mt-1 text-[11px] font-bold text-slate-400">{result.examSubject || result.examDate}</div>
+                                </div>
+                                <div className="mt-3 grid grid-cols-3 gap-2">
+                                    <MetricTile label="Score" value={`${result.score ?? '-'} / ${result.maxScore}`} />
+                                    <MetricTile label="Percent" value={`${result.percent}%`} tone={result.percent >= 75 ? 'green' : result.percent >= 50 ? 'blue' : 'red'} />
+                                    <div className="rounded-2xl bg-slate-100 px-2 py-2 dark:bg-slate-950">
+                                        <span className="block text-[9px] font-black uppercase text-slate-400">Status</span>
+                                        <div className="mt-1"><Badge type={statusType[result.status]}>{result.status}</Badge></div>
+                                    </div>
+                                </div>
+                                <div className="mt-3">
+                                    <PBar value={result.percent} color={result.percent >= 75 ? 'green' : result.percent >= 50 ? 'blue' : 'red'} />
+                                </div>
+                            </article>
+                        ))}
+                    </div>
+
                     {filtered.length > 0 && (
-                        <Pagination
-                            total={filtered.length}
-                            page={page}
-                            perPage={perPage}
-                            onPageChange={setPage}
-                            onPerPageChange={setPerPage}
-                            showPerPage={false}
-                        />
+                        <Pagination total={filtered.length} page={page} perPage={perPage} onPageChange={setPage} onPerPageChange={setPerPage} showPerPage={false} />
                     )}
-                </div>
+                </section>
             </div>
 
             <Sheet open={drawerMode !== null} onOpenChange={(open) => { if (!open) closeDrawer(); }}>
                 <SheetContent side="right" className="w-full gap-0 overflow-y-auto p-0 sm:max-w-[520px]">
                     {drawerMode && (
-                        <form onSubmit={submitResult} className="flex min-h-full flex-col bg-white">
-                            <SheetHeader className="border-b border-slate-200 px-6 py-5 text-left">
-                                <SheetTitle className="text-lg font-black text-slate-800">
+                        <form onSubmit={submitResult} className="flex min-h-full flex-col bg-white dark:bg-slate-900">
+                            <SheetHeader className="border-b border-slate-200 px-5 py-5 text-left dark:border-slate-700">
+                                <SheetTitle className="text-lg font-black text-slate-900 dark:text-slate-50">
                                     {drawerMode === 'create' ? 'Add Exam Result' : 'Edit Exam Result'}
                                 </SheetTitle>
                                 <SheetDescription>
@@ -417,10 +406,10 @@ export default function ExamResultsPage({ results, exams, students, summary }: E
                                 </SheetDescription>
                             </SheetHeader>
 
-                            <div style={{ padding: 24, display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16 }}>
+                            <div className="grid grid-cols-1 gap-3 p-4 md:grid-cols-2 md:p-5">
                                 <Field label="Exam" error={errors.exam_id} wide>
                                     <Select value={data.exam_id ? String(data.exam_id) : ''} onValueChange={value => setData('exam_id', Number(value) || null)}>
-                                        <SelectTrigger className="f-input" style={{ minHeight: 42 }}>
+                                        <SelectTrigger className={inputClass}>
                                             <SelectValue placeholder="Select exam" />
                                         </SelectTrigger>
                                         <SelectContent>
@@ -430,7 +419,7 @@ export default function ExamResultsPage({ results, exams, students, summary }: E
                                 </Field>
                                 <Field label="Student" error={errors.student_id} wide>
                                     <Select value={data.student_id ? String(data.student_id) : ''} onValueChange={value => setData('student_id', Number(value) || null)}>
-                                        <SelectTrigger className="f-input" style={{ minHeight: 42 }}>
+                                        <SelectTrigger className={inputClass}>
                                             <SelectValue placeholder="Select student" />
                                         </SelectTrigger>
                                         <SelectContent>
@@ -439,14 +428,14 @@ export default function ExamResultsPage({ results, exams, students, summary }: E
                                     </Select>
                                 </Field>
                                 <Field label="Score" error={errors.score}>
-                                    <input type="number" step="0.01" min={0} style={fieldStyle} value={data.score ?? ''} onChange={event => setData('score', event.target.value === '' ? null : Number(event.target.value))} />
+                                    <input type="number" step="0.01" min={0} className={inputClass} value={data.score ?? ''} onChange={event => setData('score', event.target.value === '' ? null : Number(event.target.value))} />
                                 </Field>
                                 <Field label="Max Score" error={errors.max_score}>
-                                    <input type="number" step="0.01" min={1} style={fieldStyle} value={data.max_score} onChange={event => setData('max_score', Number(event.target.value) || 100)} />
+                                    <input type="number" step="0.01" min={1} className={inputClass} value={data.max_score} onChange={event => setData('max_score', Number(event.target.value) || 100)} />
                                 </Field>
                                 <Field label="Status" error={errors.status} wide>
                                     <Select value={data.status} onValueChange={value => setData('status', value as ExamResultStatus)}>
-                                        <SelectTrigger className="f-input" style={{ minHeight: 42 }}>
+                                        <SelectTrigger className={inputClass}>
                                             <SelectValue />
                                         </SelectTrigger>
                                         <SelectContent>
@@ -458,14 +447,16 @@ export default function ExamResultsPage({ results, exams, students, summary }: E
                                     </Select>
                                 </Field>
                                 <Field label="Note" error={errors.note} wide>
-                                    <textarea style={{ ...fieldStyle, minHeight: 110, resize: 'vertical' }} value={data.note} onChange={event => setData('note', event.target.value)} />
+                                    <textarea className={`${inputClass} min-h-28 resize-y`} value={data.note} onChange={event => setData('note', event.target.value)} />
                                 </Field>
                             </div>
 
-                            <div style={{ marginTop: 'auto', padding: 24, borderTop: '1px solid #e2e8f0', display: 'flex', gap: 10 }}>
-                                <button type="button" onClick={closeDrawer} style={{ flex: 1, background: '#f1f5f9', color: '#64748b', border: 'none', borderRadius: 10, padding: '12px', fontWeight: 800, cursor: 'pointer' }}>Cancel</button>
-                                <button disabled={processing} type="submit" style={{ flex: 2, background: processing ? '#93c5fd' : '#2563eb', color: 'white', border: 'none', borderRadius: 10, padding: '12px', fontWeight: 800, cursor: processing ? 'default' : 'pointer' }}>
-                                    {drawerMode === 'create' ? 'Save Result' : 'Save Changes'}
+                            <div className="mt-auto grid grid-cols-[1fr_2fr] gap-2 border-t border-slate-200 p-4 dark:border-slate-700">
+                                <button type="button" onClick={closeDrawer} className={`${footerButtonClass} bg-slate-100 text-slate-500 hover:bg-slate-200 dark:bg-slate-950 dark:text-slate-300 dark:hover:bg-slate-800`}>
+                                    <X size={15} /> Cancel
+                                </button>
+                                <button disabled={processing} type="submit" className={`${footerButtonClass} bg-blue-600 text-white shadow-[0_12px_24px_rgba(37,99,235,0.22)] hover:bg-blue-500 disabled:cursor-default disabled:bg-blue-300`}>
+                                    <CheckCircle2 size={15} /> {drawerMode === 'create' ? 'Save Result' : 'Save Changes'}
                                 </button>
                             </div>
                         </form>
@@ -474,15 +465,22 @@ export default function ExamResultsPage({ results, exams, students, summary }: E
             </Sheet>
 
             {deleteTarget && (
-                <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.45)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 230, padding: 16 }}>
-                    <div style={{ background: 'white', borderRadius: 20, padding: 30, maxWidth: 420, width: '100%', boxShadow: '0 24px 60px rgba(0,0,0,0.15)' }}>
-                        <div style={{ textAlign: 'center', marginBottom: 20 }}>
-                            <div style={{ fontSize: 18, fontWeight: 800, color: '#1e293b', marginBottom: 6 }}>Delete Exam Result?</div>
-                            <div style={{ fontSize: 13, color: '#64748b', lineHeight: 1.5 }}>Remove result for <strong>{deleteTarget.studentNameEn}</strong>?</div>
+                <div className="fixed inset-0 z-[230] flex items-center justify-center bg-black/45 p-4">
+                    <div className="w-full max-w-[420px] rounded-[24px] border border-slate-200 bg-white p-6 shadow-[0_24px_60px_rgba(0,0,0,0.18)] dark:border-slate-700 dark:bg-slate-800">
+                        <div className="mb-5 text-center">
+                            <div className="mx-auto mb-3 flex h-14 w-14 items-center justify-center rounded-full bg-red-500/10 text-red-500">
+                                <Trash2 size={24} />
+                            </div>
+                            <div className="mb-1.5 text-lg font-black text-slate-900 dark:text-slate-50">Delete Exam Result?</div>
+                            <div className="text-sm font-medium leading-6 text-slate-500 dark:text-slate-300">Remove result for <strong>{deleteTarget.studentNameEn}</strong>?</div>
                         </div>
-                        <div style={{ display: 'flex', gap: 10 }}>
-                            <button onClick={() => setDeleteTarget(null)} style={{ flex: 1, background: '#f1f5f9', color: '#64748b', border: 'none', borderRadius: 10, padding: '11px', fontWeight: 700, cursor: 'pointer', fontSize: 14 }}>Cancel</button>
-                            <button onClick={confirmDelete} style={{ flex: 1, background: '#ef4444', color: 'white', border: 'none', borderRadius: 10, padding: '11px', fontWeight: 700, cursor: 'pointer', fontSize: 14 }}>Delete</button>
+                        <div className="grid grid-cols-2 gap-2.5">
+                            <button onClick={() => setDeleteTarget(null)} className={`${footerButtonClass} bg-slate-100 text-slate-500 hover:bg-slate-200 dark:bg-slate-950 dark:text-slate-300 dark:hover:bg-slate-900`}>
+                                <X size={15} /> Cancel
+                            </button>
+                            <button onClick={confirmDelete} className={`${footerButtonClass} bg-red-500 text-white hover:bg-red-600`}>
+                                <Trash2 size={15} /> Delete
+                            </button>
                         </div>
                     </div>
                 </div>
@@ -493,39 +491,32 @@ export default function ExamResultsPage({ results, exams, students, summary }: E
 
 function Field({ label, error, children, wide = false }: { label: string; error?: string; children: ReactNode; wide?: boolean }) {
     return (
-        <div style={{ gridColumn: wide ? '1 / -1' : undefined }}>
-            <label style={{ display: 'block', fontSize: 12, fontWeight: 800, color: '#64748b', marginBottom: 6 }}>{label}</label>
+        <div className={wide ? 'md:col-span-2' : undefined}>
+            <label className="mb-1.5 block text-[11px] font-black uppercase tracking-wide text-slate-400">{label}</label>
             {children}
-            {error && <div className="field-error">{error}</div>}
+            {error && <div className="mt-1.5 text-xs font-bold text-red-500">{error}</div>}
         </div>
     );
 }
 
-const primaryButton: CSSProperties = {
-    background: '#2563eb',
-    color: 'white',
-    border: 'none',
-    borderRadius: 10,
-    padding: '9px 18px',
-    fontWeight: 800,
-    fontSize: 13,
-    cursor: 'pointer',
-    display: 'inline-flex',
-    alignItems: 'center',
-    gap: 8,
-};
+function MetricTile({ label, value, tone = 'slate' }: { label: string; value: string; tone?: 'slate' | 'green' | 'blue' | 'red' }) {
+    return (
+        <div className="rounded-2xl bg-slate-100 px-2 py-2 dark:bg-slate-950">
+            <span className="block text-[9px] font-black uppercase text-slate-400">{label}</span>
+            <strong className={`mt-1 block truncate text-xs font-black ${toneClass(tone)}`}>{value}</strong>
+        </div>
+    );
+}
 
-const fieldStyle: CSSProperties = {
-    width: '100%',
-    minHeight: 42,
-    background: '#f8fafc',
-    border: '1.5px solid #e2e8f0',
-    borderRadius: 10,
-    padding: '10px 14px',
-    fontSize: 14,
-    color: '#1e293b',
-    outline: 'none',
-};
+function scoreTone(percent: number) {
+    if (percent >= 75) return 'text-emerald-500';
+    if (percent >= 50) return 'text-blue-500';
+    return 'text-red-500';
+}
 
-
-
+function toneClass(tone: 'slate' | 'green' | 'blue' | 'red') {
+    if (tone === 'green') return 'text-emerald-500';
+    if (tone === 'blue') return 'text-blue-500';
+    if (tone === 'red') return 'text-red-500';
+    return 'text-slate-900 dark:text-slate-50';
+}

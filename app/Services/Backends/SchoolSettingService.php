@@ -235,16 +235,22 @@ class SchoolSettingService
 
     public function uploadSearchConsoleFile(UploadedFile $file): string
     {
-        $filename = $file->getClientOriginalName();
+        $contents = file_get_contents($file->getPathname()) ?: '';
 
-        if (! preg_match('/^google[a-z0-9]+\.html$/i', $filename)) {
+        if (! preg_match('/google-site-verification:\s*(google[a-z0-9]+\.html)/i', $contents, $matches)) {
             throw new InvalidArgumentException('Invalid Google Search Console verification file.');
         }
+
+        $filename = strtolower($matches[1]);
 
         foreach (glob(public_path('google*.html')) ?: [] as $existingFile) {
             if (basename($existingFile) !== $filename && is_file($existingFile)) {
                 @unlink($existingFile);
             }
+        }
+
+        if (file_exists(public_path($filename))) {
+            @unlink(public_path($filename));
         }
 
         $file->move(public_path(), $filename);

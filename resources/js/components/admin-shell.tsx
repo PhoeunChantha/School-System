@@ -2,7 +2,6 @@ import { AdminFooter } from '@/components/admin-footer';
 import {
     DropdownMenu,
     DropdownMenuContent,
-    DropdownMenuGroup,
     DropdownMenuItem,
     DropdownMenuLabel,
     DropdownMenuSeparator,
@@ -14,7 +13,6 @@ import { cn } from '@/lib/utils';
 import '@/pages/admin/admin.css';
 import { Avatar, KH } from '@/pages/admin/ui';
 import { logout } from '@/routes';
-import { edit as editProfile } from '@/routes/profile';
 import { type BreadcrumbItem, type SharedData } from '@/types';
 import { Head, Link, router, usePage } from '@inertiajs/react';
 import type { LucideIcon } from 'lucide-react';
@@ -35,6 +33,7 @@ import {
     Medal,
     Menu,
     Moon,
+    MoreHorizontal,
     NotebookPen,
     PanelLeftClose,
     PanelLeftOpen,
@@ -374,6 +373,7 @@ export default function AdminShell({ children }: AdminShellProps) {
     const activeMobileNavRef = useRef<HTMLAnchorElement | null>(null);
     const [collapsed, setCollapsed] = useState(false);
     const [mobileOpen, setMobileOpen] = useState(false);
+    const [mobileMoreOpen, setMobileMoreOpen] = useState(false);
     const [dark, setDark] = useState(() => {
         if (typeof window === 'undefined') {
             return false;
@@ -414,6 +414,27 @@ export default function AdminShell({ children }: AdminShellProps) {
     }, [active, visibleMobileNav.length]);
 
     const titleKey = PAGE_TITLE_KEYS[active] ?? PAGE_TITLE_KEYS.dashboard;
+    const primaryMobileNav = visibleMobileNav.slice(0, 4);
+    const secondaryMobileNav = visibleMobileNav.slice(4);
+    const mobileMoreGroups = secondaryMobileNav.reduce<
+        Array<{ group: NavGroup; items: NavItem[] }>
+    >((groups, item) => {
+        const groupIndex = [...NAV]
+            .slice(0, NAV.findIndex((entry) => isItem(entry) && entry.id === item.id))
+            .findLastIndex((entry) => !isItem(entry));
+        const group = NAV[groupIndex] && !isItem(NAV[groupIndex])
+            ? (NAV[groupIndex] as NavGroup)
+            : { groupKey: 'other' };
+        const lastGroup = groups.at(-1);
+
+        if (lastGroup?.group.groupKey === group.groupKey) {
+            lastGroup.items.push(item);
+            return groups;
+        }
+
+        groups.push({ group, items: [item] });
+        return groups;
+    }, []);
 
     return (
         <div
@@ -429,6 +450,13 @@ export default function AdminShell({ children }: AdminShellProps) {
                     className="sidebar-overlay"
                     style={{ display: 'block' }}
                     onClick={() => setMobileOpen(false)}
+                />
+            )}
+
+            {mobileMoreOpen && (
+                <div
+                    className="admin-mobile-more-overlay"
+                    onClick={() => setMobileMoreOpen(false)}
                 />
             )}
 
@@ -679,7 +707,18 @@ export default function AdminShell({ children }: AdminShellProps) {
                         <Menu size={22} />
                     </button>
 
-                    <div style={{ flex: 1 }}>
+                    <div className="admin-topbar-title" style={{ flex: 1 }}>
+                        <div className="admin-mobile-title-profile">
+                            <Avatar
+                                name={user?.name ?? 'Admin'}
+                                src={user?.avatar}
+                                size={40}
+                            />
+                            <div>
+                                <span>Good afternoon</span>
+                                <strong>{user?.name ?? 'Admin'}</strong>
+                            </div>
+                        </div>
                         <KH
                             style={{
                                 fontWeight: 800,
@@ -695,6 +734,7 @@ export default function AdminShell({ children }: AdminShellProps) {
 
                     {/* Lang toggle */}
                     <div
+                        className="admin-lang-toggle"
                         style={{
                             display: 'flex',
                             gap: 2,
@@ -732,6 +772,7 @@ export default function AdminShell({ children }: AdminShellProps) {
 
                     {/* Dark mode toggle */}
                     <button
+                        className="admin-theme-toggle"
                         onClick={() => setDark((d) => !d)}
                         style={{
                             background: 'none',
@@ -750,6 +791,7 @@ export default function AdminShell({ children }: AdminShellProps) {
                     </button>
 
                     <button
+                        className="admin-bell-button"
                         style={{
                             position: 'relative',
                             background: 'none',
@@ -788,6 +830,7 @@ export default function AdminShell({ children }: AdminShellProps) {
                     <DropdownMenu>
                         <DropdownMenuTrigger asChild>
                             <button
+                                className="admin-user-trigger"
                                 style={{
                                     display: 'flex',
                                     alignItems: 'center',
@@ -880,19 +923,6 @@ export default function AdminShell({ children }: AdminShellProps) {
                                 </div>
                             </DropdownMenuLabel>
                             <DropdownMenuSeparator />
-                            <DropdownMenuGroup>
-                                <DropdownMenuItem asChild>
-                                    <Link
-                                        href={editProfile()}
-                                        prefetch
-                                        className="flex w-full cursor-pointer items-center"
-                                    >
-                                        <Settings className="mr-2 h-4 w-4" />
-                                        {t('ui.settings')}
-                                    </Link>
-                                </DropdownMenuItem>
-                            </DropdownMenuGroup>
-                            <DropdownMenuSeparator />
                             <DropdownMenuItem asChild>
                                 <Link
                                     href={logout()}
@@ -935,7 +965,7 @@ export default function AdminShell({ children }: AdminShellProps) {
 
             {/* Mobile bottom nav */}
             <div className="mobile-bottom-nav">
-                {visibleMobileNav.map((item) => {
+                {primaryMobileNav.map((item) => {
                     const Icon = item.icon;
 
                     return (
@@ -974,7 +1004,117 @@ export default function AdminShell({ children }: AdminShellProps) {
                         </Link>
                     );
                 })}
+                <button
+                    type="button"
+                    className={cn('mob-nav-btn', mobileMoreOpen && 'active')}
+                    onClick={() => setMobileMoreOpen((open) => !open)}
+                >
+                    <span
+                        className="mni"
+                        style={{ opacity: mobileMoreOpen ? 1 : 0.45 }}
+                    >
+                        <MoreHorizontal size={22} strokeWidth={2.2} />
+                    </span>
+                    <KH
+                        className="mnl"
+                        style={{ color: mobileMoreOpen ? '#eaf2ff' : '#b8c2d8' }}
+                    >
+                        More
+                    </KH>
+                </button>
             </div>
+
+            <aside
+                className={cn(
+                    'admin-mobile-more-drawer',
+                    mobileMoreOpen && 'open',
+                )}
+            >
+                <div className="admin-mobile-more-handle" />
+                <div className="admin-mobile-more-head">
+                    <div className="admin-mobile-more-user">
+                        <Avatar
+                            name={user?.name ?? 'Admin'}
+                            src={user?.avatar}
+                            size={44}
+                        />
+                        <div>
+                            <strong>{user?.name ?? 'Admin'}</strong>
+                            <span>{user?.email ?? school?.nameEn ?? 'School'}</span>
+                        </div>
+                    </div>
+                    <button
+                        type="button"
+                        onClick={() => setMobileMoreOpen(false)}
+                        aria-label="Close more menu"
+                    >
+                        ×
+                    </button>
+                </div>
+
+                <div className="admin-mobile-preferences">
+                    <div className="admin-mobile-setting-row">
+                        <span>Theme</span>
+                        <button
+                            type="button"
+                            className="admin-mobile-theme"
+                            onClick={() => setDark((value) => !value)}
+                        >
+                            {dark ? <Sun size={15} /> : <Moon size={15} />}
+                            {dark ? 'Light' : 'Dark'}
+                        </button>
+                    </div>
+                    <div className="admin-mobile-setting-row">
+                        <span>Language</span>
+                    <div className="admin-mobile-lang">
+                        {(['kh', 'en'] as const).map((language) => (
+                            <button
+                                key={language}
+                                type="button"
+                                className={lang === language ? 'active' : ''}
+                                onClick={() => setLang(language)}
+                            >
+                                {language === 'kh' ? 'ខ្មែរ' : 'EN'}
+                            </button>
+                        ))}
+                    </div>
+                    </div>
+                </div>
+
+                <div className="admin-mobile-more-list">
+                    {mobileMoreGroups.map(({ group, items }) => (
+                        <section
+                            key={group.groupKey}
+                            className="admin-mobile-more-section"
+                        >
+                            <h3>{t(`nav_groups.${group.groupKey}`)}</h3>
+                            <div>
+                                {items.map((item) => {
+                                    const Icon = item.icon;
+
+                                    return (
+                                        <Link
+                                            key={item.id}
+                                            href={item.href}
+                                            className={cn(
+                                                'admin-mobile-more-item',
+                                                active === item.id && 'active',
+                                            )}
+                                            onClick={() => setMobileMoreOpen(false)}
+                                        >
+                                            <span>
+                                                <Icon size={17} strokeWidth={2.2} />
+                                            </span>
+                                            <KH>{t(`nav_items.${item.labelKey}`)}</KH>
+                                            <i>›</i>
+                                        </Link>
+                                    );
+                                })}
+                            </div>
+                        </section>
+                    ))}
+                </div>
+            </aside>
         </div>
     );
 }

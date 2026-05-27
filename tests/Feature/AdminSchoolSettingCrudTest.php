@@ -212,4 +212,86 @@ class AdminSchoolSettingCrudTest extends TestCase
             }
         }
     }
+
+    public function test_admin_can_upload_duplicated_search_console_download_filename(): void
+    {
+        $this->actingAs(User::factory()->create());
+
+        $filename = 'googleb060d26401f59404.html';
+        $downloadedFilename = 'googleb060d26401f59404 (1).html';
+        $target = public_path($filename);
+        $source = storage_path('framework/testing/'.$downloadedFilename);
+
+        if (! is_dir(dirname($source))) {
+            mkdir(dirname($source), 0755, true);
+        }
+
+        file_put_contents($source, 'google-site-verification: '.$filename);
+
+        try {
+            $this->post(route('admin.settings.search-console-file'), [
+                'verification_file' => new UploadedFile(
+                    $source,
+                    $downloadedFilename,
+                    'text/html',
+                    null,
+                    true,
+                ),
+            ])->assertRedirect();
+
+            $this->assertFileExists($target);
+            $this->assertSame(
+                'google-site-verification: '.$filename,
+                file_get_contents($target),
+            );
+        } finally {
+            if (file_exists($source)) {
+                unlink($source);
+            }
+
+            if (file_exists($target)) {
+                unlink($target);
+            }
+        }
+    }
+
+    public function test_admin_cannot_upload_invalid_search_console_file(): void
+    {
+        $this->actingAs(User::factory()->create());
+
+        $filename = 'googleb060d26401f59404.html';
+        $target = public_path($filename);
+        $source = storage_path('framework/testing/'.$filename);
+
+        if (! is_dir(dirname($source))) {
+            mkdir(dirname($source), 0755, true);
+        }
+
+        file_put_contents($source, '<html>not a google verification file</html>');
+
+        try {
+            $this->from(route('admin.settings'))
+                ->post(route('admin.settings.search-console-file'), [
+                    'verification_file' => new UploadedFile(
+                        $source,
+                        $filename,
+                        'text/html',
+                        null,
+                        true,
+                    ),
+                ])
+                ->assertRedirect(route('admin.settings'))
+                ->assertSessionHasErrors('verification_file');
+
+            $this->assertFileDoesNotExist($target);
+        } finally {
+            if (file_exists($source)) {
+                unlink($source);
+            }
+
+            if (file_exists($target)) {
+                unlink($target);
+            }
+        }
+    }
 }

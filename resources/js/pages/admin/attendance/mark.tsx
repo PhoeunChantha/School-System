@@ -77,33 +77,37 @@ const PERIODS = [
     { value: 'full_day', label: 'Full Day' },
 ];
 
-const STATUS_OPTIONS: { value: AttendanceStatus; label: string; color: string; bg: string; border: string }[] = [
-    { value: 'present', label: 'Present', color: '#16a34a', bg: '#f0fdf4', border: '#bbf7d0' },
-    { value: 'absent', label: 'Absent', color: '#dc2626', bg: '#fff1f2', border: '#fecaca' },
-    { value: 'late', label: 'Late', color: '#d97706', bg: '#fffbeb', border: '#fde68a' },
-    { value: 'excused', label: 'Excused', color: '#2563eb', bg: '#eff6ff', border: '#bfdbfe' },
+const STATUS_OPTIONS: { value: AttendanceStatus; label: string; activeClass: string; idleClass: string }[] = [
+    {
+        value: 'present',
+        label: 'Present',
+        activeClass: 'border-emerald-500/35 bg-emerald-500/15 text-emerald-600 dark:text-emerald-300',
+        idleClass: 'border-slate-200 bg-white text-slate-500 dark:border-slate-700 dark:bg-slate-950 dark:text-slate-300',
+    },
+    {
+        value: 'absent',
+        label: 'Absent',
+        activeClass: 'border-red-500/35 bg-red-500/15 text-red-600 dark:text-red-300',
+        idleClass: 'border-slate-200 bg-white text-slate-500 dark:border-slate-700 dark:bg-slate-950 dark:text-slate-300',
+    },
+    {
+        value: 'late',
+        label: 'Late',
+        activeClass: 'border-amber-500/35 bg-amber-500/15 text-amber-600 dark:text-amber-300',
+        idleClass: 'border-slate-200 bg-white text-slate-500 dark:border-slate-700 dark:bg-slate-950 dark:text-slate-300',
+    },
+    {
+        value: 'excused',
+        label: 'Excused',
+        activeClass: 'border-blue-500/35 bg-blue-500/15 text-blue-600 dark:text-blue-300',
+        idleClass: 'border-slate-200 bg-white text-slate-500 dark:border-slate-700 dark:bg-slate-950 dark:text-slate-300',
+    },
 ];
 
-const fieldStyle = {
-    width: '100%',
-    minHeight: 42,
-    background: '#f8fafc',
-    border: '1.5px solid #e2e8f0',
-    borderRadius: 10,
-    padding: '10px 14px',
-    fontSize: 14,
-    fontFamily: 'inherit',
-    outline: 'none',
-    color: '#1e293b',
-};
-
-const labelStyle = {
-    display: 'block',
-    fontSize: 12,
-    fontWeight: 700,
-    color: '#64748b',
-    marginBottom: 6,
-};
+const fieldGroupClass = 'grid gap-1.5';
+const fieldLabelClass = 'text-[11px] font-black uppercase text-slate-500 dark:text-slate-400';
+const fieldInputClass = 'min-h-11 w-full rounded-2xl border border-slate-200 bg-white px-3 py-2 text-sm font-bold text-slate-900 outline-none transition focus:border-blue-400 focus:ring-2 focus:ring-blue-500/15 disabled:opacity-70 dark:border-slate-700 dark:bg-slate-950 dark:text-slate-100';
+const errorTextClass = 'text-[11px] font-bold text-red-500';
 
 function today(): string {
     return new Date().toISOString().slice(0, 10);
@@ -176,6 +180,7 @@ export default function MarkAttendancePage({ classes, editingSession }: MarkAtte
         ...counts,
         [record.status]: counts[record.status] + 1,
     }), { present: 0, absent: 0, late: 0, excused: 0 });
+    const selectedClassName = classes.find(schoolClass => schoolClass.id === data.school_class_id)?.name ?? 'No class selected';
 
     const submitAttendance = (event: FormEvent<HTMLFormElement>) => {
         event.preventDefault();
@@ -198,25 +203,30 @@ export default function MarkAttendancePage({ classes, editingSession }: MarkAtte
 
     return (
         <AdminShell>
-            <div className="fade-in" style={{ padding: 24 }}>
-                <form onSubmit={submitAttendance} style={{ background: 'white', borderRadius: 16, padding: 24, maxWidth: 1200, margin: '0 auto' }}>
-                    {/* Header */}
-                    <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 24 }}>
-                        <div style={{ width: 40, height: 40, borderRadius: 10, background: isEdit ? '#eff6ff' : '#f0fdf4', color: isEdit ? '#2563eb' : '#16a34a', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                            {isEdit ? <Edit3 size={20} /> : <ClipboardCheck size={20} />}
+            <div className="fade-in bg-slate-50 p-4 dark:bg-slate-950 max-md:bg-[radial-gradient(circle_at_100%_0,rgba(37,99,235,0.12),transparent_34%),linear-gradient(180deg,#f7f9fc_0%,#eef3f8_100%)] max-md:px-2.5 max-md:py-3 max-md:pb-[calc(104px+env(safe-area-inset-bottom))] dark:max-md:bg-[radial-gradient(circle_at_100%_0,rgba(96,165,250,0.14),transparent_34%),linear-gradient(180deg,#0f172a_0%,#111827_100%)]">
+                <form className="mx-auto flex max-w-6xl flex-col gap-3 rounded-[26px] border border-slate-200 bg-white p-3 shadow-[0_16px_42px_rgba(15,23,42,0.08)] dark:border-slate-700 dark:bg-slate-800/90 md:p-6" onSubmit={submitAttendance}>
+                    <div className="flex items-center justify-between gap-3 rounded-[24px] border border-slate-200 bg-slate-50 p-3 dark:border-slate-700 dark:bg-slate-900/70">
+                        <div className="flex min-w-0 items-center gap-3">
+                            <div className={`flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl ${isEdit ? 'bg-blue-500/15 text-blue-500' : 'bg-emerald-500/15 text-emerald-500'}`}>
+                                {isEdit ? <Edit3 size={20} /> : <ClipboardCheck size={20} />}
+                            </div>
+                            <div className="min-w-0">
+                                <span className="block text-[11px] font-black text-slate-400">{isEdit ? 'Edit daily attendance' : 'Daily attendance'}</span>
+                                <strong className="mt-0.5 block truncate text-xl font-black text-slate-900 dark:text-slate-50">{isEdit ? 'Edit Attendance' : 'Mark Attendance'}</strong>
+                                <p className="mt-0.5 truncate text-xs font-extrabold text-slate-500 dark:text-slate-300">{selectedClassName} - {periodLabel(data.period)}</p>
+                            </div>
                         </div>
-                        <div>
-                            <div style={{ fontWeight: 800, fontSize: 16, color: '#1e293b' }}>{isEdit ? 'Edit Attendance' : 'Mark Attendance'}</div>
-                            {isEdit && <div style={{ fontSize: 12, color: '#94a3b8' }}>{editingSession?.className} on {editingSession?.attendanceDate}</div>}
+                        <div className="flex h-14 w-14 shrink-0 flex-col items-center justify-center rounded-2xl bg-blue-600 text-white shadow-[0_14px_26px_rgba(37,99,235,0.28)]">
+                            <span className="text-lg font-black leading-none">{data.records.length}</span>
+                            <p className="text-[9px] font-black leading-none">students</p>
                         </div>
                     </div>
 
-                    {/* Form Controls */}
-                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3,minmax(0,1fr))', gap: 16, marginBottom: 24 }}>
-                        <div>
-                            <label style={labelStyle}>Class *</label>
+                    <div className="grid gap-2 rounded-[22px] border border-slate-200 bg-white p-3 dark:border-slate-700 dark:bg-slate-800/70 md:grid-cols-3">
+                        <div className={fieldGroupClass}>
+                            <label className={fieldLabelClass}>Class *</label>
                             <Select value={data.school_class_id ? String(data.school_class_id) : ''} onValueChange={val => changeClass(Number(val))} disabled={isEdit}>
-                                <SelectTrigger className="f-input" style={{ opacity: isEdit ? 0.7 : 1 }}>
+                                <SelectTrigger className={fieldInputClass}>
                                     <SelectValue placeholder="Select class" />
                                 </SelectTrigger>
                                 <SelectContent>
@@ -225,17 +235,17 @@ export default function MarkAttendancePage({ classes, editingSession }: MarkAtte
                                     ))}
                                 </SelectContent>
                             </Select>
-                            {errors.school_class_id && <div className="field-error">{errors.school_class_id}</div>}
+                            {errors.school_class_id && <div className={errorTextClass}>{errors.school_class_id}</div>}
                         </div>
-                        <div>
-                            <label style={labelStyle}>Date *</label>
-                            <DatePicker value={data.attendance_date} onChange={value => setData('attendance_date', value)} className="f-input" />
-                            {errors.attendance_date && <div className="field-error">{errors.attendance_date}</div>}
+                        <div className={fieldGroupClass}>
+                            <label className={fieldLabelClass}>Date *</label>
+                            <DatePicker value={data.attendance_date} onChange={value => setData('attendance_date', value)} className={fieldInputClass} />
+                            {errors.attendance_date && <div className={errorTextClass}>{errors.attendance_date}</div>}
                         </div>
-                        <div>
-                            <label style={labelStyle}>Period *</label>
+                        <div className={fieldGroupClass}>
+                            <label className={fieldLabelClass}>Period *</label>
                             <Select value={data.period} onValueChange={val => setData('period', val)}>
-                                <SelectTrigger className="f-input">
+                                <SelectTrigger className={fieldInputClass}>
                                     <SelectValue />
                                 </SelectTrigger>
                                 <SelectContent>
@@ -244,58 +254,57 @@ export default function MarkAttendancePage({ classes, editingSession }: MarkAtte
                                     ))}
                                 </SelectContent>
                             </Select>
-                            {errors.period && <div className="field-error">{errors.period}</div>}
+                            {errors.period && <div className={errorTextClass}>{errors.period}</div>}
                         </div>
                     </div>
 
-                    {/* Mark All Controls */}
-                    <div style={{ padding: '16px', background: '#f8fafc', borderRadius: 10, marginBottom: 24, display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
-                        <span style={{ fontSize: 12, fontWeight: 800, color: '#64748b' }}>Mark all</span>
-                        {STATUS_OPTIONS.map(status => (
-                            <button key={status.value} type="button" onClick={() => markAll(status.value)} style={{ background: status.bg, color: status.color, border: `1px solid ${status.border}`, borderRadius: 8, padding: '7px 12px', fontSize: 12, fontWeight: 800, cursor: 'pointer' }}>
-                                {status.label}
-                            </button>
-                        ))}
-                        <span style={{ marginLeft: 'auto', fontSize: 11, color: '#94a3b8' }}>
-                            {modalCounts.present} present / {modalCounts.absent} absent / {modalCounts.late} late
-                        </span>
+                    <div className="grid gap-3 rounded-[22px] border border-slate-200 bg-slate-100/70 p-3 dark:border-slate-700 dark:bg-slate-950/60 md:flex md:items-center md:justify-between">
+                        <div>
+                            <span className="block text-[11px] font-black uppercase text-slate-400">Mark all</span>
+                            <strong className="mt-0.5 block text-xs font-black text-slate-900 dark:text-slate-50">{modalCounts.present} present / {modalCounts.absent} absent / {modalCounts.late} late / {modalCounts.excused} excused</strong>
+                        </div>
+                        <div className="grid grid-cols-4 gap-2 md:flex md:flex-wrap">
+                            {STATUS_OPTIONS.map(status => (
+                                <button className={`min-h-9 rounded-xl border px-2 py-2 text-[11px] font-black transition hover:scale-[1.01] ${status.activeClass}`} key={status.value} type="button" onClick={() => markAll(status.value)}>
+                                    {status.label}
+                                </button>
+                            ))}
+                        </div>
                     </div>
 
-                    {/* Students List */}
-                    <div style={{ border: '1px solid #e2e8f0', borderRadius: 14, overflow: 'hidden', marginBottom: 24 }}>
+                    <div className="grid gap-3 md:overflow-hidden md:rounded-[22px] md:border md:border-slate-200 md:bg-white dark:md:border-slate-700 dark:md:bg-slate-800/70">
                         {selectedClassStudents.length === 0 ? (
-                            <div style={{ padding: 28, textAlign: 'center', color: '#64748b', fontWeight: 700 }}>Data not found</div>
+                            <div className="rounded-[22px] border border-dashed border-slate-300 bg-white/80 px-4 py-8 text-center text-sm font-bold text-slate-500 dark:border-slate-700 dark:bg-slate-800/80 dark:text-slate-400 md:border-0">Data not found</div>
                         ) : selectedClassStudents.map(student => {
                             const record = data.records.find(item => item.student_id === student.id);
                             return (
-                                <div key={student.id} style={{ display: 'grid', gridTemplateColumns: 'minmax(210px,1fr) minmax(280px,1.4fr) minmax(160px,.8fr)', gap: 12, alignItems: 'center', padding: 12, borderBottom: '1px solid #f1f5f9' }}>
-                                    <div style={{ display: 'flex', alignItems: 'center', gap: 10, minWidth: 0 }}>
+                                <div className="grid gap-3 rounded-[22px] border border-slate-200 bg-white p-3 shadow-[0_12px_30px_rgba(15,23,42,0.06)] dark:border-slate-700 dark:bg-slate-800 md:grid-cols-[minmax(210px,1fr)_minmax(280px,1.4fr)_minmax(160px,.8fr)] md:items-center md:rounded-none md:border-x-0 md:border-t-0 md:shadow-none" key={student.id}>
+                                    <div className="flex min-w-0 items-center gap-2.5">
                                         <Avatar name={student.nameEn} size={34} />
-                                        <div style={{ minWidth: 0 }}>
-                                            <KH style={{ fontWeight: 800, fontSize: 13, display: 'block' }}>{student.nameKh}</KH>
-                                            <div style={{ fontSize: 11, color: '#94a3b8', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{student.nameEn}</div>
+                                        <div className="min-w-0">
+                                            <KH className="block truncate text-[13px] font-black text-slate-900 dark:text-slate-50">{student.nameKh}</KH>
+                                            <div className="truncate text-[11px] font-bold text-slate-400">{student.nameEn}</div>
                                         </div>
                                     </div>
-                                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, minmax(0,1fr))', gap: 6 }}>
+                                    <div className="grid grid-cols-2 gap-2 md:grid-cols-4">
                                         {STATUS_OPTIONS.map(status => {
                                             const active = record?.status === status.value;
                                             return (
-                                                <button key={status.value} type="button" onClick={() => setRecordStatus(student.id, status.value)} style={{ minHeight: 34, background: active ? status.bg : 'white', color: active ? status.color : '#64748b', border: `1.5px solid ${active ? status.border : '#e2e8f0'}`, borderRadius: 8, fontSize: 11, fontWeight: 800, cursor: 'pointer' }}>
+                                                <button className={`min-h-10 rounded-xl border px-2 py-2 text-[11px] font-black transition ${active ? status.activeClass : status.idleClass}`} key={status.value} type="button" onClick={() => setRecordStatus(student.id, status.value)}>
                                                     {status.label}
                                                 </button>
                                             );
                                         })}
                                     </div>
-                                    <input placeholder="Note" style={{ ...fieldStyle, minHeight: 36, padding: '8px 10px', fontSize: 12 }} value={record?.note ?? ''} onChange={event => setRecordNote(student.id, event.target.value)} />
+                                    <input className="min-h-10 w-full rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-xs font-bold text-slate-900 outline-none transition placeholder:text-slate-400 focus:border-blue-400 focus:ring-2 focus:ring-blue-500/15 dark:border-slate-700 dark:bg-slate-950 dark:text-slate-100" placeholder="Note" value={record?.note ?? ''} onChange={event => setRecordNote(student.id, event.target.value)} />
                                 </div>
                             );
                         })}
                     </div>
 
-                    {/* Action Buttons */}
-                    <div style={{ display: 'flex', gap: 10 }}>
-                        <button type="button" onClick={() => router.visit('/admin/attendance')} style={{ flex: 1, background: '#f1f5f9', color: '#64748b', border: 'none', borderRadius: 10, padding: '12px', fontWeight: 800, cursor: 'pointer' }}>Cancel</button>
-                        <button disabled={processing || data.records.length === 0} type="submit" style={{ flex: 2, background: processing || data.records.length === 0 ? '#93c5fd' : '#2563eb', color: 'white', border: 'none', borderRadius: 10, padding: '12px', fontWeight: 800, cursor: processing || data.records.length === 0 ? 'default' : 'pointer' }}>
+                    <div className="mt-1 grid grid-cols-[1fr_2fr] gap-2 rounded-[22px] border border-slate-200 bg-white p-2 dark:border-slate-700 dark:bg-slate-800 md:border-0 md:bg-transparent md:p-0">
+                        <button type="button" onClick={() => router.visit('/admin/attendance')} className="min-h-12 rounded-2xl bg-slate-100 px-4 py-3 text-sm font-black text-slate-600 transition hover:bg-slate-200 dark:bg-slate-950 dark:text-slate-300 dark:hover:bg-slate-900">Cancel</button>
+                        <button disabled={processing || data.records.length === 0} type="submit" className="min-h-12 rounded-2xl bg-blue-600 px-4 py-3 text-sm font-black text-white shadow-[0_14px_28px_rgba(37,99,235,0.22)] transition hover:bg-blue-500 disabled:cursor-default disabled:bg-blue-300 disabled:shadow-none dark:disabled:bg-blue-900">
                             {processing ? 'Saving...' : isEdit ? 'Save Changes' : 'Save Attendance'}
                         </button>
                     </div>

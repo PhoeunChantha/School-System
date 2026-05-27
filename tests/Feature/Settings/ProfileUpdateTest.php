@@ -43,6 +43,30 @@ class ProfileUpdateTest extends TestCase
         $this->assertNull($user->email_verified_at);
     }
 
+    public function test_profile_information_can_redirect_back_to_admin_settings()
+    {
+        $user = User::factory()->create();
+
+        $response = $this
+            ->actingAs($user)
+            ->from(route('admin.settings'))
+            ->patch(route('profile.update'), [
+                'name' => 'Admin User',
+                'email' => 'admin-user@example.com',
+                'redirect_to' => 'admin_settings',
+            ]);
+
+        $response
+            ->assertSessionHasNoErrors()
+            ->assertSessionHas('status', 'profile-updated')
+            ->assertRedirect(route('admin.settings'));
+
+        $user->refresh();
+
+        $this->assertSame('Admin User', $user->name);
+        $this->assertSame('admin-user@example.com', $user->email);
+    }
+
     public function test_email_verification_status_is_unchanged_when_the_email_address_is_unchanged()
     {
         $user = User::factory()->create();

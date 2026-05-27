@@ -37,6 +37,10 @@ class ProfileController extends Controller
 
         $request->user()->save();
 
+        if ($request->string('redirect_to')->toString() === 'admin_settings') {
+            return back()->with('status', 'profile-updated');
+        }
+
         return to_route('profile.edit');
     }
 

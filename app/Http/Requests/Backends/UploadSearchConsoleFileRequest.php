@@ -35,10 +35,12 @@ class UploadSearchConsoleFileRequest extends FormRequest
                     return;
                 }
 
-                if (! preg_match('/^google[a-z0-9]+\.html$/i', $file->getClientOriginalName())) {
+                $contents = file_get_contents($file->getPathname()) ?: '';
+
+                if (! preg_match('/google-site-verification:\s*google[a-z0-9]+\.html/i', $contents)) {
                     $validator->errors()->add(
                         'verification_file',
-                        'Upload the exact Google Search Console HTML file, for example googleb060d26401f59404.html.',
+                        'Upload the HTML verification file downloaded from Google Search Console.',
                     );
                 }
             },
