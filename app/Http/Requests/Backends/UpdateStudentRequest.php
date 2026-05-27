@@ -27,8 +27,8 @@ class UpdateStudentRequest extends FormRequest
 
         return [
             'profile_photo' => ['nullable', 'image', 'mimes:jpeg,png,jpg,webp', 'max:2048'],
-            'level_id' => ['nullable', 'integer', Rule::exists('levels', 'id')],
-            'school_class_id' => ['nullable', 'integer', Rule::exists('school_classes', 'id')],
+            'level_id' => ['required', 'integer', Rule::exists('levels', 'id')->whereNull('deleted_at')],
+            'school_class_id' => ['required', 'integer', Rule::exists('school_classes', 'id')->whereNull('deleted_at')],
             'code' => [
                 'nullable',
                 'string',

@@ -26,6 +26,7 @@ class DashboardService
             'atRiskStudents' => $this->atRiskStudents(),
             'recentPayments' => $this->recentPayments(),
             'recentStudents' => $this->recentStudents(),
+            'topStudentScores' => $this->topStudentScores(),
             'classes' => $this->classes(),
         ];
     }
@@ -308,6 +309,34 @@ class DashboardService
                     'province' => $student->province ?? '',
                 ];
             })
+            ->all();
+    }
+
+    private function topStudentScores(): array
+    {
+        return GradeRecord::query()
+            ->with([
+                'gradePeriod:id,name',
+                'student:id,level_id,school_class_id,name_kh,name_en,profile_photo,status',
+                'student.level:id,name',
+                'student.schoolClass:id,name',
+            ])
+            ->whereHas('student', fn ($query) => $query->active())
+            ->orderByDesc('average')
+            ->latest('graded_at')
+            ->take(5)
+            ->get()
+            ->map(fn (GradeRecord $grade): array => [
+                'id' => $grade->id,
+                'studentId' => $grade->student_id,
+                'nameKh' => $grade->student?->name_kh ?? '',
+                'nameEn' => $grade->student?->name_en ?? 'Unknown student',
+                'photo' => $grade->student?->profile_photo ? asset($grade->student->profile_photo) : null,
+                'level' => $grade->student?->level?->name ?? '',
+                'className' => $grade->student?->schoolClass?->name ?? '',
+                'period' => $grade->gradePeriod?->name ?? 'Grade',
+                'score' => round((float) $grade->average, 1),
+            ])
             ->all();
     }
 

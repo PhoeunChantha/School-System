@@ -435,6 +435,10 @@ export default function AdminShell({ children }: AdminShellProps) {
         groups.push({ group, items: [item] });
         return groups;
     }, []);
+    const closeMobileMoreAndFlush = () => {
+        setMobileMoreOpen(false);
+        router.flushAll();
+    };
 
     return (
         <div
@@ -1113,6 +1117,24 @@ export default function AdminShell({ children }: AdminShellProps) {
                             </div>
                         </section>
                     ))}
+                    <section className="admin-mobile-more-section">
+                        <h3>Account</h3>
+                        <div>
+                            <Link
+                                href={logout()}
+                                as="button"
+                                className="admin-mobile-more-item w-full cursor-pointer !text-red-600 dark:!text-red-300 [&>span]:!bg-red-50 [&>span]:!text-red-500 dark:[&>span]:!bg-red-500/10 dark:[&>span]:!text-red-300"
+                                onClick={closeMobileMoreAndFlush}
+                                data-test="mobile-logout-button"
+                            >
+                                <span>
+                                    <LogOut size={17} strokeWidth={2.2} />
+                                </span>
+                                <KH>{t('ui.logout')}</KH>
+                                <i>&gt;</i>
+                            </Link>
+                        </div>
+                    </section>
                 </div>
             </aside>
         </div>

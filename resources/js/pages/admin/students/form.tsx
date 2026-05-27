@@ -89,7 +89,7 @@ export default function StudentFormPage({
         student?.profile_photo_url ?? null,
     );
     const fileInputRef = useRef<HTMLInputElement>(null);
-    const { data, setData, post, processing, errors, transform } =
+    const { data, setData, post, processing, errors, transform, setError, clearErrors } =
         useForm<StudentFormData>({
             level_id: student?.level_id ?? null,
             school_class_id: student?.school_class_id ?? null,
@@ -124,7 +124,39 @@ export default function StudentFormPage({
         event.preventDefault();
     };
 
+    const validateStep = (targetStep: number) => {
+        if (targetStep !== 2) {
+            return true;
+        }
+
+        clearErrors('level_id', 'school_class_id');
+
+        if (!data.level_id) {
+            setError('level_id', translateText('Please select a level.'));
+        }
+
+        if (!data.school_class_id) {
+            setError('school_class_id', translateText('Please select a class.'));
+        }
+
+        return Boolean(data.level_id && data.school_class_id);
+    };
+
+    const goNextStep = () => {
+        if (!validateStep(step)) {
+            return;
+        }
+
+        setStep((value) => value + 1);
+    };
+
     const saveStudent = () => {
+        if (!validateStep(2)) {
+            setStep(2);
+
+            return;
+        }
+
         transform((formData) => ({
             ...formData,
             ...(isEdit ? { _method: 'put' as const } : {}),
@@ -402,6 +434,10 @@ export default function StudentFormPage({
                                         const level = levels.find(
                                             (item) => item.id === Number(event),
                                         );
+                                        clearErrors(
+                                            'level_id',
+                                            'school_class_id',
+                                        );
                                         setData((current) => ({
                                             ...current,
                                             level_id: level?.id ?? null,
@@ -440,12 +476,13 @@ export default function StudentFormPage({
                                     value={
                                         data.school_class_id?.toString() ?? ''
                                     }
-                                    onValueChange={(event) =>
+                                    onValueChange={(event) => {
+                                        clearErrors('school_class_id');
                                         setData(
                                             'school_class_id',
                                             event ? Number(event) : null,
-                                        )
-                                    }
+                                        );
+                                    }}
                                 >
                                     <SelectTrigger className={fieldInputClass}>
                                         <SelectValue
@@ -708,7 +745,7 @@ export default function StudentFormPage({
                         {step < 3 ? (
                             <button
                                 type="button"
-                                onClick={() => setStep((value) => value + 1)}
+                                onClick={goNextStep}
                                 className="inline-flex min-h-12 flex-[2_1_180px] items-center justify-center gap-1.5 rounded-2xl bg-blue-600 p-3 text-sm font-black text-white"
                             >
                                 {translateText('Next')} <ArrowRight size={16} />

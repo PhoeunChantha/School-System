@@ -42,13 +42,21 @@ use App\Models\SchoolSetting;
 use App\Models\Student;
 use App\Models\Teacher;
 use App\Models\User;
+use App\Support\RoleRedirect;
+use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 use Inertia\Inertia;
 use Laravel\Fortify\Features;
 use Spatie\Permission\Models\Permission;
 use Spatie\Permission\Models\Role;
 
-Route::get('/', function () {
+Route::get('/', function (Request $request) {
+    $user = $request->user() ?? auth()->user();
+
+    if ($user) {
+        return redirect()->to(RoleRedirect::defaultPathFor($user));
+    }
+
     return Inertia::render('auth/login', [
         'canRegister' => Features::enabled(Features::registration()),
     ]);

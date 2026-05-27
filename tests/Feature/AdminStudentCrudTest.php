@@ -94,6 +94,20 @@ class AdminStudentCrudTest extends TestCase
         $this->assertTrue($loginUser->hasRole('student'));
     }
 
+    public function test_admin_must_select_level_and_class_when_creating_student(): void
+    {
+        $this->actingAs(User::factory()->create());
+
+        $level = Level::factory()->create();
+        $schoolClass = SchoolClass::factory()->for($level)->create();
+        $payload = $this->validPayload($level->id, $schoolClass->id);
+        $payload['level_id'] = null;
+        $payload['school_class_id'] = null;
+
+        $this->post(route('admin.students.store'), $payload)
+            ->assertSessionHasErrors(['level_id', 'school_class_id']);
+    }
+
     public function test_admin_can_view_edit_student_page(): void
     {
         $this->actingAs(User::factory()->create());

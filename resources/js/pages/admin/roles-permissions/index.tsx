@@ -11,7 +11,7 @@ import { AdminSelect, RowActions as RowActionsMenu } from '@/pages/admin/ui';
 import { type SharedData } from '@/types';
 import { router, useForm, usePage } from '@inertiajs/react';
 import { Edit3, Plus, Search, ShieldCheck, Trash2, X } from 'lucide-react';
-import { FormEvent, ReactNode, useMemo, useState } from 'react';
+import { FormEvent, ReactNode, useEffect, useMemo, useState } from 'react';
 import { toast } from 'sonner';
 
 interface RoleItem {
@@ -88,6 +88,10 @@ export default function RolePermissionPage({ roles, permissions, permissionGroup
     const [editingPermission, setEditingPermission] = useState<PermissionItem | null>(null);
     const [deleteTarget, setDeleteTarget] = useState<DeleteTarget | null>(null);
     const [search, setSearch] = useState('');
+    const [rolePage, setRolePage] = useState(1);
+    const [permissionPage, setPermissionPage] = useState(1);
+    const [rolePerPage, setRolePerPage] = useState(5);
+    const [permissionPerPage, setPermissionPerPage] = useState(5);
     const showRoleForm = roleMode === 'edit' ? canUpdateRole : canCreateRole;
     const showPermissionForm = permissionMode === 'edit' ? canUpdatePermission : canCreatePermission;
 
@@ -111,6 +115,37 @@ export default function RolePermissionPage({ roles, permissions, permissionGroup
         () => permissions.filter(permission => !search || permission.name.toLowerCase().includes(search.toLowerCase())),
         [permissions, search],
     );
+
+    const paginatedRoles = useMemo(
+        () => filteredRoles.slice((rolePage - 1) * rolePerPage, rolePage * rolePerPage),
+        [filteredRoles, rolePage, rolePerPage],
+    );
+
+    const paginatedPermissions = useMemo(
+        () => filteredPermissions.slice((permissionPage - 1) * permissionPerPage, permissionPage * permissionPerPage),
+        [filteredPermissions, permissionPage, permissionPerPage],
+    );
+
+    useEffect(() => {
+        setRolePage(1);
+        setPermissionPage(1);
+    }, [search, tab]);
+
+    useEffect(() => {
+        const maxPage = Math.max(1, Math.ceil(filteredRoles.length / rolePerPage));
+
+        if (rolePage > maxPage) {
+            setRolePage(maxPage);
+        }
+    }, [filteredRoles.length, rolePage, rolePerPage]);
+
+    useEffect(() => {
+        const maxPage = Math.max(1, Math.ceil(filteredPermissions.length / permissionPerPage));
+
+        if (permissionPage > maxPage) {
+            setPermissionPage(maxPage);
+        }
+    }, [filteredPermissions.length, permissionPage, permissionPerPage]);
 
     const openCreateRole = () => {
         roleForm.setData({ name: '', guard_name: 'web', permission_ids: [] });
@@ -264,10 +299,6 @@ export default function RolePermissionPage({ roles, permissions, permissionGroup
                             <TabButton active={tab === 'permissions'} onClick={() => setTab('permissions')}>Permissions</TabButton>
                         </div>
                     </div>
-                    <div className="flex min-h-12 items-center gap-2 rounded-2xl border border-slate-200 bg-white px-3 dark:border-slate-700 dark:bg-slate-950">
-                        <Search size={16} className="shrink-0 text-slate-400" />
-                        <input className="min-w-0 flex-1 bg-transparent text-sm font-bold text-slate-900 outline-none placeholder:text-slate-400 dark:text-slate-100" placeholder={`Search ${tab}...`} value={search} onChange={event => setSearch(event.target.value)} />
-                    </div>
                 </section>
 
                 {tab === 'roles' ? (
@@ -304,8 +335,19 @@ export default function RolePermissionPage({ roles, permissions, permissionGroup
                         )}
 
                         <section className="grid gap-3">
+                            <ListToolbar
+                                resultLabel={`${filteredRoles.length} roles`}
+                                search={search}
+                                searchPlaceholder="Search roles..."
+                                onSearchChange={setSearch}
+                                perPage={rolePerPage}
+                                onPerPageChange={value => {
+                                    setRolePerPage(value);
+                                    setRolePage(1);
+                                }}
+                            />
                             {filteredRoles.length === 0 && <EmptyState>No roles found</EmptyState>}
-                            {filteredRoles.map(role => (
+                            {paginatedRoles.map(role => (
                                 <article key={role.id} className="rounded-[22px] border border-slate-200 bg-white p-3 shadow-[0_14px_34px_rgba(15,23,42,0.07)] dark:border-slate-700 dark:bg-slate-800/90">
                                     <div className="flex items-start justify-between gap-3">
                                         <div className="min-w-0">
@@ -322,6 +364,14 @@ export default function RolePermissionPage({ roles, permissions, permissionGroup
                                     </div>
                                 </article>
                             ))}
+                            {filteredRoles.length > 0 && (
+                                <ListPagination
+                                    total={filteredRoles.length}
+                                    page={rolePage}
+                                    perPage={rolePerPage}
+                                    onPageChange={setRolePage}
+                                />
+                            )}
                         </section>
                     </>
                 ) : (
@@ -349,8 +399,19 @@ export default function RolePermissionPage({ roles, permissions, permissionGroup
                         )}
 
                         <section className="grid gap-3">
+                            <ListToolbar
+                                resultLabel={`${filteredPermissions.length} permissions`}
+                                search={search}
+                                searchPlaceholder="Search permissions..."
+                                onSearchChange={setSearch}
+                                perPage={permissionPerPage}
+                                onPerPageChange={value => {
+                                    setPermissionPerPage(value);
+                                    setPermissionPage(1);
+                                }}
+                            />
                             {filteredPermissions.length === 0 && <EmptyState>No permissions found</EmptyState>}
-                            {filteredPermissions.map(permission => (
+                            {paginatedPermissions.map(permission => (
                                 <article key={permission.id} className="rounded-[22px] border border-slate-200 bg-white p-3 shadow-[0_14px_34px_rgba(15,23,42,0.07)] dark:border-slate-700 dark:bg-slate-800/90">
                                     <div className="flex items-start justify-between gap-3">
                                         <div className="min-w-0">
@@ -364,6 +425,14 @@ export default function RolePermissionPage({ roles, permissions, permissionGroup
                                     </div>
                                 </article>
                             ))}
+                            {filteredPermissions.length > 0 && (
+                                <ListPagination
+                                    total={filteredPermissions.length}
+                                    page={permissionPage}
+                                    perPage={permissionPerPage}
+                                    onPageChange={setPermissionPage}
+                                />
+                            )}
                         </section>
                     </>
                 )}
@@ -469,6 +538,107 @@ function Metric({ label, value, tone }: { label: string; value: number; tone: 'b
 
 function EmptyState({ children }: { children: ReactNode }) {
     return <div className="rounded-[22px] border border-dashed border-slate-300 bg-white/80 px-4 py-10 text-center text-sm font-bold text-slate-500 dark:border-slate-700 dark:bg-slate-800/80 dark:text-slate-400">{children}</div>;
+}
+
+function ListToolbar({ resultLabel, search, searchPlaceholder, onSearchChange, perPage, onPerPageChange }: { resultLabel: string; search: string; searchPlaceholder: string; onSearchChange: (search: string) => void; perPage: number; onPerPageChange: (perPage: number) => void }) {
+    return (
+        <div className="rounded-[22px] border border-slate-200 bg-white p-3 shadow-[0_14px_34px_rgba(15,23,42,0.07)] dark:border-slate-700 dark:bg-slate-800/90">
+            <div className="flex min-w-0 flex-col gap-2 lg:flex-row lg:items-center">
+                <div className="flex min-h-11 w-full items-center gap-2 rounded-xl border border-slate-200 bg-slate-50 px-3 dark:border-slate-700 dark:bg-slate-950 lg:max-w-[360px]">
+                    <Search size={16} className="shrink-0 text-slate-400" />
+                    <input
+                        className="min-w-0 flex-1 bg-transparent text-sm font-bold text-slate-900 outline-none placeholder:text-slate-400 dark:text-slate-100"
+                        placeholder={searchPlaceholder}
+                        value={search}
+                        onChange={event => onSearchChange(event.target.value)}
+                    />
+                </div>
+                <AdminSelect
+                    value={perPage.toString()}
+                    onChange={value => onPerPageChange(Number(value))}
+                    options={[5, 10, 25, 50].map(value => ({ value: value.toString(), label: `${value} per page` }))}
+                    triggerClassName="min-h-11 w-full rounded-xl border border-slate-200 bg-slate-50 px-3 text-xs font-black text-slate-700 dark:border-slate-700 dark:bg-slate-950 dark:text-slate-200 lg:w-[138px]"
+                />
+                <div className="px-1 text-xs font-black text-slate-500 dark:text-slate-300 lg:ml-1">{resultLabel}</div>
+            </div>
+        </div>
+    );
+}
+
+function ListPagination({ total, page, perPage, onPageChange }: { total: number; page: number; perPage: number; onPageChange: (page: number) => void }) {
+    const totalPages = Math.max(1, Math.ceil(total / perPage));
+    const from = total === 0 ? 0 : (page - 1) * perPage + 1;
+    const to = Math.min(total, page * perPage);
+    const pages = paginationPages(page, totalPages);
+
+    return (
+        <div className="flex flex-col gap-3 rounded-[22px] border border-slate-200 bg-white p-3 shadow-[0_14px_34px_rgba(15,23,42,0.07)] dark:border-slate-700 dark:bg-slate-800/90 sm:flex-row sm:items-center sm:justify-between">
+            <div className="text-xs font-black text-slate-500 dark:text-slate-300">
+                Showing <span className="text-slate-900 dark:text-slate-50">{from} - {to}</span> of <span className="text-slate-900 dark:text-slate-50">{total}</span>
+            </div>
+
+            <div className="flex flex-wrap items-center gap-2">
+                <div className="flex items-center gap-1">
+                    <PageButton disabled={page === 1} onClick={() => onPageChange(Math.max(1, page - 1))}>
+                        &lt;
+                    </PageButton>
+                    {pages.map((item, index) => item === '...'
+                        ? <span key={`ellipsis-${index}`} className="flex h-10 min-w-9 items-center justify-center text-xs font-black text-slate-400">...</span>
+                        : (
+                            <PageButton key={item} active={item === page} onClick={() => onPageChange(item)}>
+                                {item}
+                            </PageButton>
+                        ))}
+                    <PageButton disabled={page === totalPages} onClick={() => onPageChange(Math.min(totalPages, page + 1))}>
+                        &gt;
+                    </PageButton>
+                </div>
+            </div>
+        </div>
+    );
+}
+
+function PageButton({ active = false, disabled = false, onClick, children }: { active?: boolean; disabled?: boolean; onClick: () => void; children: ReactNode }) {
+    return (
+        <button
+            type="button"
+            disabled={disabled}
+            onClick={onClick}
+            className={`flex h-10 min-w-10 items-center justify-center rounded-xl border px-3 text-xs font-black transition ${
+                active
+                    ? 'border-blue-600 bg-blue-600 text-white shadow-[0_10px_20px_rgba(37,99,235,0.22)]'
+                    : 'border-slate-200 bg-slate-50 text-slate-600 hover:bg-slate-100 disabled:cursor-default disabled:text-slate-300 dark:border-slate-700 dark:bg-slate-950 dark:text-slate-300 dark:hover:bg-slate-900 dark:disabled:text-slate-600'
+            }`}
+        >
+            {children}
+        </button>
+    );
+}
+
+function paginationPages(page: number, totalPages: number): (number | '...')[] {
+    if (totalPages <= 5) {
+        return Array.from({ length: totalPages }, (_, index) => index + 1);
+    }
+
+    const pages: (number | '...')[] = [1];
+    const start = Math.max(2, page - 1);
+    const end = Math.min(totalPages - 1, page + 1);
+
+    if (start > 2) {
+        pages.push('...');
+    }
+
+    for (let item = start; item <= end; item += 1) {
+        pages.push(item);
+    }
+
+    if (end < totalPages - 1) {
+        pages.push('...');
+    }
+
+    pages.push(totalPages);
+
+    return pages;
 }
 
 function metricClass(tone: 'blue' | 'green' | 'violet' | 'amber') {
