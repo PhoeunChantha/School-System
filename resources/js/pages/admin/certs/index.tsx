@@ -1,4 +1,4 @@
-import { createTemplate, destroy, destroyTemplate, store, storeTemplate, update, updateTemplate } from '@/actions/App/Http/Controllers/Backends/CertificateController';
+import { create as createCertificate, createTemplate, destroy, destroyTemplate, store, storeTemplate, update, updateTemplate } from '@/actions/App/Http/Controllers/Backends/CertificateController';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle } from '@/components/ui/sheet';
@@ -208,11 +208,28 @@ export default function CertificatesPage({ certificates, templates, students, le
     const [templateDeleteTarget, setTemplateDeleteTarget] = useState<CertificateTemplateItem | null>(null);
     const [templatePreviewUrl, setTemplatePreviewUrl] = useState('');
     const [logoPreviewUrl, setLogoPreviewUrl] = useState('');
+    const [printTarget, setPrintTarget] = useState<CertificateItem | null>(null);
 
     const { data, setData, post, processing, errors, reset, transform } = useForm<CertificateFormData>(emptyForm(students, templates));
     const templateForm = useForm<CertificateTemplateFormData>(emptyTemplateForm());
 
     useEffect(() => { setPage(1); }, [filter, search, orderBy, perPage]);
+
+    useEffect(() => {
+        if (!printTarget) {
+            return;
+        }
+
+        const timer = window.setTimeout(() => window.print(), 80);
+        const clearPrintTarget = () => setPrintTarget(null);
+
+        window.addEventListener('afterprint', clearPrintTarget, { once: true });
+
+        return () => {
+            window.clearTimeout(timer);
+            window.removeEventListener('afterprint', clearPrintTarget);
+        };
+    }, [printTarget]);
 
     useEffect(() => {
         if (!templateForm.data.template_image) return;
@@ -473,7 +490,7 @@ export default function CertificatesPage({ certificates, templates, students, le
 
     const actionsFor = (certificate: CertificateItem) => [
         { key: 'preview', label: 'Preview', icon: Eye, onSelect: () => setPreview(certificate) },
-        { key: 'print', label: 'Print', icon: Printer, onSelect: () => window.print() },
+        { key: 'print', label: 'Print', icon: Printer, onSelect: () => setPrintTarget(certificate) },
         { key: 'edit', label: 'Edit', icon: Edit3, onSelect: () => openEditDrawer(certificate), hidden: !canUpdate },
         { key: 'delete', label: 'Delete', icon: Trash2, onSelect: () => setDeleteTarget(certificate), variant: 'destructive' as const, separatorBefore: true, hidden: !canDelete },
     ];
@@ -493,9 +510,9 @@ export default function CertificatesPage({ certificates, templates, students, le
                         <p className="mt-1 truncate text-xs font-extrabold text-slate-400">{summary.issuedCount} issued - {summary.draftCount} drafts</p>
                     </div>
                     {canCreate && (
-                        <button onClick={openCreateDrawer} className="inline-flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-blue-600 text-white shadow-[0_14px_26px_rgba(37,99,235,0.28)] transition hover:bg-blue-500" aria-label="Add certificate">
+                        <Link href={createCertificate.url()} className="inline-flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-blue-600 text-white shadow-[0_14px_26px_rgba(37,99,235,0.28)] transition hover:bg-blue-500" aria-label="Add certificate">
                             <Plus size={18} />
-                        </button>
+                        </Link>
                     )}
                 </section>
 
@@ -896,7 +913,8 @@ export default function CertificatesPage({ certificates, templates, students, le
                 </SheetContent>
             </Sheet>
 
-            {preview && <CertificatePreview certificate={preview} onClose={() => setPreview(null)} />}
+            {preview && <CertificatePreview certificate={preview} onClose={() => setPreview(null)} onPrint={() => setPrintTarget(preview)} />}
+            {printTarget && <CertificatePrintTarget certificate={printTarget} />}
 
             {deleteTarget && (
                 <div className="fixed inset-0 z-[230] flex items-center justify-center bg-black/45 p-4">
@@ -1099,7 +1117,7 @@ function CertificateCanvasPreview({
     );
 }
 
-function CertificatePreview({ certificate, onClose }: { certificate: CertificateItem; onClose: () => void }) {
+function CertificatePreview({ certificate, onClose, onPrint }: { certificate: CertificateItem; onClose: () => void; onPrint: () => void }) {
     const template = certificate.template;
 
     return (
@@ -1119,10 +1137,62 @@ function CertificatePreview({ certificate, onClose }: { certificate: Certificate
                 </div>
                 <div className="grid grid-cols-[1fr_2fr] gap-2 p-4">
                     <button onClick={onClose} className={`${footerButtonClass} bg-slate-100 text-slate-500 hover:bg-slate-200 dark:bg-slate-950 dark:text-slate-300 dark:hover:bg-slate-800`}>Close</button>
-                    <button onClick={() => window.print()} className={`${footerButtonClass} bg-blue-600 text-white hover:bg-blue-500`}><Printer size={15} /> Print Certificate</button>
+                    <button onClick={onPrint} className={`${footerButtonClass} bg-blue-600 text-white hover:bg-blue-500`}><Printer size={15} /> Print Certificate</button>
                 </div>
             </div>
         </div>
+    );
+}
+
+function CertificatePrintTarget({ certificate }: { certificate: CertificateItem }) {
+    const template = certificate.template;
+
+    return (
+        <>
+            <style>{`
+                @media print {
+                    body * { visibility: hidden !important; }
+                    #certificate-print-root,
+                    #certificate-print-root * { visibility: visible !important; }
+                    #certificate-print-root {
+                        position: fixed !important;
+                        inset: 0 !important;
+                        display: flex !important;
+                        align-items: center !important;
+                        justify-content: center !important;
+                        background: white !important;
+                        padding: 0 !important;
+                        z-index: 999999 !important;
+                    }
+                    #certificate-print-root .certificate-print-sheet {
+                        width: 297mm !important;
+                        max-width: 297mm !important;
+                        height: auto !important;
+                        box-shadow: none !important;
+                        border: 0 !important;
+                        padding: 0 !important;
+                    }
+                    @page {
+                        size: A4 landscape;
+                        margin: 8mm;
+                    }
+                }
+            `}</style>
+            <div id="certificate-print-root" className="pointer-events-none fixed inset-0 -z-10 hidden bg-white print:z-[999999] print:flex">
+                <div className="certificate-print-sheet w-[297mm]">
+                    <CertificateCanvasPreview
+                        title={certificate.title}
+                        studentName={certificate.studentNameEn}
+                        levelName={certificate.levelName || certificate.className}
+                        issuedOn={certificate.issuedOn}
+                        certificateNumber={certificate.certificateNumber}
+                        layout={template?.layout ?? defaultLayout}
+                        templateImageUrl={template?.templateImageUrl ?? ''}
+                        logoImageUrl={template?.logoImageUrl ?? ''}
+                    />
+                </div>
+            </div>
+        </>
     );
 }
 

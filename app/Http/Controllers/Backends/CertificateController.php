@@ -32,6 +32,11 @@ class CertificateController extends Controller
         return Inertia::render('admin/certs/index', $this->certificateService->indexData());
     }
 
+    public function create(): Response
+    {
+        return Inertia::render('admin/certs/create', $this->certificateService->formData());
+    }
+
     public function createTemplate(): Response
     {
         return Inertia::render('admin/certs/templates/create');

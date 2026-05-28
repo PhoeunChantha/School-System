@@ -45,6 +45,18 @@ class CertificateService
     }
 
     /**
+     * @return array{templates: mixed, students: mixed, levels: mixed}
+     */
+    public function formData(): array
+    {
+        return [
+            'templates' => $this->templateOptions(),
+            'students' => $this->studentOptions(),
+            'levels' => $this->levelOptions(),
+        ];
+    }
+
+    /**
      * @param  array<string, mixed>  $data
      */
     public function create(array $data, ?int $userId): Certificate

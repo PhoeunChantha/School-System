@@ -58,6 +58,22 @@ class AdminCertificateCrudTest extends TestCase
         ]);
     }
 
+    public function test_admin_can_view_create_certificate_page(): void
+    {
+        $this->actingAs(User::factory()->create());
+
+        CertificateTemplate::factory()->create(['name' => 'Default Template']);
+
+        $this->get(route('admin.certs.create'))
+            ->assertOk()
+            ->assertInertia(fn ($page) => $page
+                ->component('admin/certs/create')
+                ->has('templates', 1)
+                ->has('students')
+                ->has('levels')
+                ->where('templates.0.name', 'Default Template'));
+    }
+
     public function test_admin_can_create_certificate_template(): void
     {
         $user = User::factory()->create();

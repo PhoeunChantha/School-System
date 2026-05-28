@@ -221,6 +221,7 @@ Route::middleware(['auth', 'verified'])->prefix('admin')->name('admin.')->group(
     // Certificates
     Route::prefix('certs')->group(function () {
         Route::get('/', [CertificateController::class, 'index'])->can('view', Certificate::class)->name('certs');
+        Route::get('/create', [CertificateController::class, 'create'])->can('create', Certificate::class)->name('certs.create');
         Route::get('/templates/create', [CertificateController::class, 'createTemplate'])->can('create', Certificate::class)->name('certs.templates.create');
         Route::post('/templates', [CertificateController::class, 'storeTemplate'])->can('create', Certificate::class)->name('certs.templates.store');
         Route::put('/templates/{certificateTemplate}', [CertificateController::class, 'updateTemplate'])->can('update', Certificate::class)->name('certs.templates.update');
