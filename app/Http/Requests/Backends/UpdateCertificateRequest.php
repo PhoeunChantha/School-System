@@ -26,6 +26,7 @@ class UpdateCertificateRequest extends FormRequest
         return [
             'student_id' => ['required', 'integer', Rule::exists('students', 'id')->whereNull('deleted_at')],
             'level_id' => ['nullable', 'integer', Rule::exists('levels', 'id')->whereNull('deleted_at')],
+            'template_id' => ['required', 'integer', Rule::exists('certificate_templates', 'id')],
             'type' => ['required', 'string', Rule::in(['excellence', 'merit', 'completion', 'participation'])],
             'title' => ['required', 'string', 'max:255'],
             'academic_year' => ['nullable', 'string', 'max:20'],

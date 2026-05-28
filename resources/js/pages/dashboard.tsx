@@ -224,13 +224,6 @@ export default function Dashboard({
     const { lang } = useAdminTranslation();
     const isKh = lang === 'kh';
     const userName = props.auth?.user?.name ?? 'Admin';
-    const latestRevenue = revenueTrend.at(-1)?.revenue ?? stats.monthlyRevenue;
-    const previousRevenue = revenueTrend.at(-2)?.revenue ?? 0;
-    const revenueChange =
-        previousRevenue > 0
-            ? Math.round(((latestRevenue - previousRevenue) / previousRevenue) * 100)
-            : 0;
-
     const statCards: StatCard[] = [
         {
             icon: GraduationCap,
@@ -283,7 +276,7 @@ export default function Dashboard({
 
             <div className="min-h-full bg-slate-50 dark:bg-slate-950 md:p-6 max-md:bg-[radial-gradient(circle_at_100%_0,rgba(37,99,235,0.12),transparent_34%),linear-gradient(180deg,#f7f9fc_0%,#eef3f8_100%)] max-md:px-2.5 max-md:py-3 max-md:pb-[calc(104px+env(safe-area-inset-bottom))] dark:max-md:bg-[radial-gradient(circle_at_100%_0,rgba(96,165,250,0.14),transparent_34%),linear-gradient(180deg,#0f172a_0%,#111827_100%)]">
                 <div className="fade-in mx-auto flex max-w-7xl flex-col gap-4 max-md:gap-3">
-                    <section className="grid grid-cols-[minmax(0,1fr)_280px] gap-4 max-lg:grid-cols-1">
+                    <section>
                         <div className="relative overflow-hidden rounded-[28px] border border-slate-200 bg-slate-900 p-7 text-white shadow-[0_18px_42px_rgba(15,23,42,0.16)] max-md:rounded-[22px] max-md:p-4 dark:border-slate-700 dark:bg-slate-800">
                             <span className="mb-5 inline-flex items-center gap-2 rounded-full bg-blue-500/15 px-3 py-1.5 text-xs font-black text-blue-100 max-md:mb-4">
                                 <Sparkles size={14} />
@@ -296,18 +289,6 @@ export default function Dashboard({
                                 Here is today&apos;s school activity, attendance,
                                 payments, and class progress.
                             </p>
-                        </div>
-
-                        <div className={`${panelClass} flex items-center justify-between gap-4 max-lg:hidden`}>
-                            <div>
-                                <span className={mutedTextClass}>Monthly revenue</span>
-                                <strong className="mt-2 block text-3xl font-black text-slate-900 dark:text-slate-50">{formatMoney(latestRevenue)}</strong>
-                            </div>
-                            <Badge type={revenueChange >= 0 ? 'green' : 'red'}>
-                                <TrendingUp size={12} />
-                                {revenueChange >= 0 ? '+' : ''}
-                                {revenueChange}%
-                            </Badge>
                         </div>
                     </section>
 

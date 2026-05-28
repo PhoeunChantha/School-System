@@ -547,8 +547,6 @@ function ClassForm({ mode, cls, levels, teachers, onBack }: FormProps) {
         status: cls?.status ?? 'active',
     });
 
-    const selectedLevel = levels.find((level) => level.id === data.level_id);
-
     const validateClassForm = () => {
         clearErrors('level_id', 'name', 'teacher_id', 'room', 'days');
 
@@ -840,18 +838,6 @@ function ClassForm({ mode, cls, levels, teachers, onBack }: FormProps) {
                                 {errors.capacity}
                             </div>
                         )}
-                    </div>
-                    <div className={fieldGroupClass}>
-                        <label className={fieldLabelClass}>
-                            {translateText('Monthly Fee (USD)')}
-                        </label>
-                        <input
-                            type="number"
-                            className={fieldInputClass}
-                            value={selectedLevel?.monthly_fee ?? ''}
-                            min={0}
-                            readOnly
-                        />
                     </div>
                 </div>
 

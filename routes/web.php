@@ -221,6 +221,10 @@ Route::middleware(['auth', 'verified'])->prefix('admin')->name('admin.')->group(
     // Certificates
     Route::prefix('certs')->group(function () {
         Route::get('/', [CertificateController::class, 'index'])->can('view', Certificate::class)->name('certs');
+        Route::get('/templates/create', [CertificateController::class, 'createTemplate'])->can('create', Certificate::class)->name('certs.templates.create');
+        Route::post('/templates', [CertificateController::class, 'storeTemplate'])->can('create', Certificate::class)->name('certs.templates.store');
+        Route::put('/templates/{certificateTemplate}', [CertificateController::class, 'updateTemplate'])->can('update', Certificate::class)->name('certs.templates.update');
+        Route::delete('/templates/{certificateTemplate}', [CertificateController::class, 'destroyTemplate'])->can('delete', Certificate::class)->name('certs.templates.destroy');
         Route::post('/', [CertificateController::class, 'store'])->can('create', Certificate::class)->name('certs.store');
         Route::put('/{certificate}', [CertificateController::class, 'update'])->can('update', 'certificate')->name('certs.update');
         Route::delete('/{certificate}', [CertificateController::class, 'destroy'])->can('delete', 'certificate')->name('certs.destroy');

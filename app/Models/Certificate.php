@@ -16,6 +16,7 @@ class Certificate extends Model
     protected $fillable = [
         'student_id',
         'level_id',
+        'template_id',
         'type',
         'title',
         'academic_year',
@@ -46,6 +47,11 @@ class Certificate extends Model
     public function level(): BelongsTo
     {
         return $this->belongsTo(Level::class);
+    }
+
+    public function template(): BelongsTo
+    {
+        return $this->belongsTo(CertificateTemplate::class, 'template_id');
     }
 
     public function issuer(): BelongsTo

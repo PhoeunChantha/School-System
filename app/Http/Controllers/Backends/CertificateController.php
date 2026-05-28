@@ -4,8 +4,11 @@ namespace App\Http\Controllers\Backends;
 
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Backends\StoreCertificateRequest;
+use App\Http\Requests\Backends\StoreCertificateTemplateRequest;
 use App\Http\Requests\Backends\UpdateCertificateRequest;
+use App\Http\Requests\Backends\UpdateCertificateTemplateRequest;
 use App\Models\Certificate;
+use App\Models\CertificateTemplate;
 use App\Services\Backends\CertificateService;
 use Illuminate\Http\RedirectResponse;
 use Inertia\Inertia;
@@ -27,6 +30,11 @@ class CertificateController extends Controller
     public function index(): Response
     {
         return Inertia::render('admin/certs/index', $this->certificateService->indexData());
+    }
+
+    public function createTemplate(): Response
+    {
+        return Inertia::render('admin/certs/templates/create');
     }
 
     public function store(StoreCertificateRequest $request): RedirectResponse
@@ -52,6 +60,45 @@ class CertificateController extends Controller
             report($exception);
 
             return back()->with('error', 'Unable to update certificate. Please try again.');
+        }
+    }
+
+    public function storeTemplate(StoreCertificateTemplateRequest $request): RedirectResponse
+    {
+        try {
+            $this->certificateService->createTemplate($request->validated(), $request->user()?->id);
+
+            return to_route('admin.certs')->with('success', 'Certificate template saved successfully.');
+        } catch (Throwable $exception) {
+            report($exception);
+
+            return back()->with('error', 'Unable to save certificate template. Please try again.');
+        }
+    }
+
+    public function updateTemplate(UpdateCertificateTemplateRequest $request, CertificateTemplate $certificateTemplate): RedirectResponse
+    {
+        try {
+            $this->certificateService->updateTemplate($certificateTemplate, $request->validated(), $request->user()?->id);
+
+            return to_route('admin.certs')->with('success', 'Certificate template updated successfully.');
+        } catch (Throwable $exception) {
+            report($exception);
+
+            return back()->with('error', 'Unable to update certificate template. Please try again.');
+        }
+    }
+
+    public function destroyTemplate(CertificateTemplate $certificateTemplate): RedirectResponse
+    {
+        try {
+            $this->certificateService->deleteTemplate($certificateTemplate);
+
+            return to_route('admin.certs')->with('success', 'Certificate template deleted successfully.');
+        } catch (Throwable $exception) {
+            report($exception);
+
+            return back()->with('error', 'Unable to delete certificate template. Please try again.');
         }
     }
 
