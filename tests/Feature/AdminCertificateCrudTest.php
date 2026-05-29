@@ -41,37 +41,36 @@ class AdminCertificateCrudTest extends TestCase
         $user = User::factory()->create();
         $level = Level::factory()->create();
         $student = Student::factory()->for($level)->create();
-        $template = CertificateTemplate::factory()->create();
 
         $this->actingAs($user)
-            ->post(route('admin.certs.store'), $this->validPayload($student->id, $level->id, $template->id))
+            ->post(route('admin.certs.store'), $this->validPayload($student->id, $level->id))
             ->assertRedirect(route('admin.certs'));
+
+        $certificate = Certificate::query()->where('student_id', $student->id)->firstOrFail();
 
         $this->assertDatabaseHas('certificates', [
             'student_id' => $student->id,
             'level_id' => $level->id,
-            'template_id' => $template->id,
+            'template_id' => null,
             'title' => 'Course Completion',
             'certificate_number' => 'CERT-2026-0001',
             'issued_by' => $user->id,
             'updated_by' => $user->id,
         ]);
+        $this->assertStringStartsWith('uploads/certificates/files/', $certificate->certificate_file_path);
+        $this->assertFileExists(public_path($certificate->certificate_file_path));
     }
 
     public function test_admin_can_view_create_certificate_page(): void
     {
         $this->actingAs(User::factory()->create());
 
-        CertificateTemplate::factory()->create(['name' => 'Default Template']);
-
         $this->get(route('admin.certs.create'))
             ->assertOk()
             ->assertInertia(fn ($page) => $page
                 ->component('admin/certs/create')
-                ->has('templates', 1)
                 ->has('students')
-                ->has('levels')
-                ->where('templates.0.name', 'Default Template'));
+                ->has('levels'));
     }
 
     public function test_admin_can_create_certificate_template(): void
@@ -127,7 +126,7 @@ class AdminCertificateCrudTest extends TestCase
             'template_id' => $template->id,
         ]);
 
-        $payload = $this->validPayload($certificate->student_id, $certificate->level_id, $template->id);
+        $payload = $this->validPayload($certificate->student_id, $certificate->level_id, $template->id, false);
         $payload['title'] = 'Academic Excellence';
         $payload['type'] = 'excellence';
         $payload['status'] = 'issued';
@@ -163,9 +162,9 @@ class AdminCertificateCrudTest extends TestCase
     /**
      * @return array<string, mixed>
      */
-    private function validPayload(int $studentId, ?int $levelId, ?int $templateId = null): array
+    private function validPayload(int $studentId, ?int $levelId, ?int $templateId = null, bool $includeFile = true): array
     {
-        return [
+        $payload = [
             'student_id' => $studentId,
             'level_id' => $levelId,
             'template_id' => $templateId,
@@ -176,5 +175,11 @@ class AdminCertificateCrudTest extends TestCase
             'certificate_number' => 'CERT-2026-0001',
             'status' => 'issued',
         ];
+
+        if ($includeFile) {
+            $payload['certificate_file'] = UploadedFile::fake()->image('certificate.png', 1400, 990);
+        }
+
+        return $payload;
     }
 }

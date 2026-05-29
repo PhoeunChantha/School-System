@@ -71,6 +71,7 @@ export function CertificateCanvasPreview({
     layout,
     templateImageUrl,
     logoImageUrl,
+    certificateFileUrl = '',
 }: {
     title: string;
     studentName: string;
@@ -80,11 +81,14 @@ export function CertificateCanvasPreview({
     layout: CertificateLayout;
     templateImageUrl: string;
     logoImageUrl: string;
+    certificateFileUrl?: string;
 }) {
     return (
         <div className="overflow-hidden rounded-[22px] border border-slate-200 bg-slate-100 p-2 dark:border-slate-700 dark:bg-slate-950">
             <div className="relative aspect-[1.414/1] overflow-hidden rounded-[18px] bg-white text-center text-slate-900 shadow-inner">
-                {templateImageUrl ? (
+                {certificateFileUrl ? (
+                    <img src={certificateFileUrl} alt="" className="absolute inset-0 h-full w-full object-contain" />
+                ) : templateImageUrl ? (
                     <img src={templateImageUrl} alt="" className="absolute inset-0 h-full w-full object-cover" />
                 ) : (
                     <div className="absolute inset-0 bg-[linear-gradient(135deg,#f8fafc_0%,#ffffff_48%,#e0f2fe_100%)]">
@@ -94,10 +98,10 @@ export function CertificateCanvasPreview({
                         <div className="absolute bottom-0 right-0 h-16 w-44 -skew-x-12 bg-amber-400/80" />
                     </div>
                 )}
-                <div className="absolute inset-5 border-2 border-slate-300/70" />
-                <div className="absolute inset-8 border border-slate-300/60" />
+                {!certificateFileUrl && <div className="absolute inset-5 border-2 border-slate-300/70" />}
+                {!certificateFileUrl && <div className="absolute inset-8 border border-slate-300/60" />}
 
-                <div className="relative z-10 flex h-full flex-col items-center px-[8%] py-[6%]">
+                {!certificateFileUrl && <div className="relative z-10 flex h-full flex-col items-center px-[8%] py-[6%]">
                     <div className="flex w-full items-center justify-center gap-4">
                         {logoImageUrl && <img src={logoImageUrl} alt="" className="h-14 w-14 object-contain" />}
                         <div className="text-[clamp(16px,3vw,30px)] font-black tracking-tight">Frania Aranh Foundation School</div>
@@ -122,7 +126,7 @@ export function CertificateCanvasPreview({
                         </div>
                     </div>
                     <div className="absolute bottom-3 right-5 text-[9px] font-bold text-slate-400">{certificateNumber} - {levelName}</div>
-                </div>
+                </div>}
             </div>
         </div>
     );

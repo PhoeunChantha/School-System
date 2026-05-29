@@ -1,4 +1,4 @@
-import { create as createCertificate, createTemplate, destroy, destroyTemplate, store, storeTemplate, update, updateTemplate } from '@/actions/App/Http/Controllers/Backends/CertificateController';
+import { create as createCertificate, destroy, destroyTemplate, store, storeTemplate, update, updateTemplate } from '@/actions/App/Http/Controllers/Backends/CertificateController';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle } from '@/components/ui/sheet';
@@ -26,6 +26,7 @@ interface CertificateItem {
     issuedOn: string;
     certificateNumber: string;
     status: CertificateStatus;
+    certificateFileUrl: string;
     template: CertificateTemplateItem | null;
 }
 
@@ -73,6 +74,7 @@ interface CertificateFormData {
     student_id: number | null;
     level_id: number | null;
     template_id: number | null;
+    certificate_file: File | null;
     type: CertificateType;
     title: string;
     academic_year: string;
@@ -155,6 +157,7 @@ function emptyForm(students: StudentOption[], templates: CertificateTemplateItem
         student_id: student?.id ?? null,
         level_id: student?.levelId ?? null,
         template_id: template?.id ?? null,
+        certificate_file: null,
         type: 'completion',
         title: CERT_TYPES.completion.label,
         academic_year: new Date().getFullYear().toString(),
@@ -208,6 +211,7 @@ export default function CertificatesPage({ certificates, templates, students, le
     const [templateDeleteTarget, setTemplateDeleteTarget] = useState<CertificateTemplateItem | null>(null);
     const [templatePreviewUrl, setTemplatePreviewUrl] = useState('');
     const [logoPreviewUrl, setLogoPreviewUrl] = useState('');
+    const [certificatePreviewUrl, setCertificatePreviewUrl] = useState('');
     const [printTarget, setPrintTarget] = useState<CertificateItem | null>(null);
 
     const { data, setData, post, processing, errors, reset, transform } = useForm<CertificateFormData>(emptyForm(students, templates));
@@ -249,6 +253,18 @@ export default function CertificatesPage({ certificates, templates, students, le
         return () => URL.revokeObjectURL(objectUrl);
     }, [templateForm.data.logo_image]);
 
+    useEffect(() => {
+        if (!data.certificate_file) {
+            setCertificatePreviewUrl('');
+            return;
+        }
+
+        const objectUrl = URL.createObjectURL(data.certificate_file);
+        setCertificatePreviewUrl(objectUrl);
+
+        return () => URL.revokeObjectURL(objectUrl);
+    }, [data.certificate_file]);
+
     const filteredCertificates = useMemo(() => {
         const query = search.toLowerCase();
         const base = certificates.filter(certificate => {
@@ -275,11 +291,6 @@ export default function CertificatesPage({ certificates, templates, students, le
     const selectedStudent = useMemo(
         () => students.find(student => student.id === data.student_id) ?? null,
         [students, data.student_id],
-    );
-
-    const selectedTemplate = useMemo(
-        () => templates.find(template => template.id === data.template_id) ?? null,
-        [templates, data.template_id],
     );
 
     const searchableStudents = useMemo(() => {
@@ -310,6 +321,7 @@ export default function CertificatesPage({ certificates, templates, students, le
             student_id: certificate.studentId,
             level_id: certificate.levelId,
             template_id: certificate.templateId,
+            certificate_file: null,
             type: certificate.type,
             title: certificate.title,
             academic_year: certificate.academicYear,
@@ -319,6 +331,7 @@ export default function CertificatesPage({ certificates, templates, students, le
         });
         setStudentSearch('');
         setStudentPickerOpen(false);
+        setCertificatePreviewUrl('');
         setEditingCertificate(certificate);
         setDrawerMode('edit');
     };
@@ -326,6 +339,7 @@ export default function CertificatesPage({ certificates, templates, students, le
     const closeDrawer = () => {
         setStudentSearch('');
         setStudentPickerOpen(false);
+        setCertificatePreviewUrl('');
         setDrawerMode(null);
         setEditingCertificate(null);
     };
@@ -524,71 +538,6 @@ export default function CertificatesPage({ certificates, templates, students, le
                 </div>
 
                 <section className={panelClass}>
-                    <div className="mb-3 flex items-center justify-between gap-3">
-                        <div>
-                            <h2 className="text-base font-black text-slate-900 dark:text-slate-50">Certificate Templates</h2>
-                            <p className="text-xs font-bold text-slate-400">{templates.length} saved template{templates.length !== 1 ? 's' : ''}</p>
-                        </div>
-                        {canCreate && (
-                            <Link href={createTemplate.url()} className="inline-flex min-h-10 items-center justify-center gap-1.5 rounded-xl bg-blue-600 px-3 text-xs font-black text-white shadow-[0_12px_24px_rgba(37,99,235,0.22)] hover:bg-blue-500">
-                                <Plus size={15} /> Add Template
-                            </Link>
-                        )}
-                    </div>
-
-                    <div className="hidden overflow-hidden rounded-2xl border border-slate-200 dark:border-slate-700 md:block">
-                        <table className="min-w-full border-collapse text-left">
-                            <thead className="bg-slate-50 dark:bg-slate-950">
-                                <tr className="text-[10px] font-black uppercase tracking-[0.08em] text-slate-400">
-                                    <th className="px-3 py-3">Template</th>
-                                    <th className="px-3 py-3">Status</th>
-                                    <th className="px-3 py-3">Certificates</th>
-                                    <th className="px-3 py-3">Preview</th>
-                                    <th className="px-3 py-3">Actions</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                {templates.length === 0 ? (
-                                    <tr>
-                                        <td colSpan={5} className="px-4 py-8 text-center text-sm font-bold text-slate-400">No certificate templates yet</td>
-                                    </tr>
-                                ) : templates.map(template => (
-                                    <tr key={template.id} className="border-t border-slate-100 dark:border-slate-700">
-                                        <td className="px-3 py-3 text-sm font-black text-slate-900 dark:text-slate-50">{template.name}</td>
-                                        <td className="px-3 py-3"><Badge type={template.isActive ? 'green' : 'amber'}>{template.isActive ? 'active' : 'inactive'}</Badge></td>
-                                        <td className="px-3 py-3 text-sm font-bold text-slate-500 dark:text-slate-300">{template.certificatesCount}</td>
-                                        <td className="px-3 py-3">
-                                            <img src={template.templateImageUrl} alt="" className="h-12 w-20 rounded-lg border border-slate-200 object-cover dark:border-slate-700" />
-                                        </td>
-                                        <td className="px-3 py-3"><RowActions ariaLabel={`Actions for ${template.name}`} actions={templateActionsFor(template)} /></td>
-                                    </tr>
-                                ))}
-                            </tbody>
-                        </table>
-                    </div>
-
-                    <div className="grid gap-2 md:hidden">
-                        {templates.length === 0 ? (
-                            <div className="rounded-2xl border border-dashed border-slate-300 px-4 py-8 text-center text-sm font-bold text-slate-400 dark:border-slate-700">No certificate templates yet</div>
-                        ) : templates.map(template => (
-                            <article key={template.id} className="rounded-2xl border border-slate-200 bg-slate-50 p-2.5 dark:border-slate-700 dark:bg-slate-950">
-                                <div className="flex items-center gap-3">
-                                    <img src={template.templateImageUrl} alt="" className="h-14 w-20 rounded-xl object-cover" />
-                                    <div className="min-w-0 flex-1">
-                                        <div className="truncate text-sm font-black text-slate-900 dark:text-slate-50">{template.name}</div>
-                                        <div className="mt-1 flex items-center gap-2">
-                                            <Badge type={template.isActive ? 'green' : 'amber'}>{template.isActive ? 'active' : 'inactive'}</Badge>
-                                            <span className="text-xs font-bold text-slate-400">{template.certificatesCount} certs</span>
-                                        </div>
-                                    </div>
-                                    <RowActions ariaLabel={`Actions for ${template.name}`} actions={templateActionsFor(template)} />
-                                </div>
-                            </article>
-                        ))}
-                    </div>
-                </section>
-
-                <section className={panelClass}>
                     <div className="flex gap-2 overflow-x-auto pb-1">
                         {[{ id: 'all' as const, label: `All (${certificates.length})` }, ...Object.entries(CERT_TYPES).map(([id, meta]) => ({ id: id as CertificateType, label: meta.label }))].map(option => (
                             <button
@@ -761,21 +710,13 @@ export default function CertificatesPage({ certificates, templates, students, le
                                     </Select>
                                 </Field>
 
-                                <Field label="Template *" error={errors.template_id}>
-                                    <Select value={data.template_id ? String(data.template_id) : 'none'} onValueChange={value => setData('template_id', value === 'none' ? null : Number(value))}>
-                                        <SelectTrigger className={inputClass}><SelectValue /></SelectTrigger>
-                                        <SelectContent>
-                                            {templates.length === 0 && <SelectItem value="none" disabled>Create template first</SelectItem>}
-                                            {templates
-                                                .filter(template => template.isActive || template.id === data.template_id)
-                                                .map(template => <SelectItem key={template.id} value={String(template.id)}>{template.name}</SelectItem>)}
-                                        </SelectContent>
-                                    </Select>
-                                    {templates.length === 0 && (
-                                        <Link href={createTemplate.url()} className="mt-2 inline-flex text-xs font-black text-blue-600 hover:text-blue-500 dark:text-blue-300">
-                                            Create a certificate template
-                                        </Link>
-                                    )}
+                                <Field label={drawerMode === 'create' ? 'Certificate image *' : 'Certificate image'} error={errors.certificate_file}>
+                                    <FileDrop
+                                        icon={ImagePlus}
+                                        label={certificatePreviewUrl || editingCertificate?.certificateFileUrl ? 'Replace certificate image' : 'Upload finished certificate'}
+                                        description="Upload JPG, PNG, or WebP exported from Photoshop"
+                                        onChange={file => setData('certificate_file', file)}
+                                    />
                                 </Field>
 
                                 <Field label="Academic Year" error={errors.academic_year}>
@@ -797,9 +738,10 @@ export default function CertificatesPage({ certificates, templates, students, le
                                         levelName={levels.find(level => level.id === data.level_id)?.name ?? selectedStudent?.level ?? 'Course level'}
                                         issuedOn={data.issued_on}
                                         certificateNumber={data.certificate_number}
-                                        layout={selectedTemplate?.layout ?? defaultLayout}
-                                        templateImageUrl={selectedTemplate?.templateImageUrl ?? ''}
-                                        logoImageUrl={selectedTemplate?.logoImageUrl ?? ''}
+                                        layout={editingCertificate?.template?.layout ?? defaultLayout}
+                                        templateImageUrl={editingCertificate?.template?.templateImageUrl ?? ''}
+                                        logoImageUrl={editingCertificate?.template?.logoImageUrl ?? ''}
+                                        certificateFileUrl={certificatePreviewUrl || editingCertificate?.certificateFileUrl || ''}
                                     />
                                 </div>
                             </div>
@@ -1060,6 +1002,7 @@ function CertificateCanvasPreview({
     layout,
     templateImageUrl,
     logoImageUrl,
+    certificateFileUrl = '',
 }: {
     title: string;
     studentName: string;
@@ -1069,11 +1012,14 @@ function CertificateCanvasPreview({
     layout: CertificateLayout;
     templateImageUrl: string;
     logoImageUrl: string;
+    certificateFileUrl?: string;
 }) {
     return (
         <div className="overflow-hidden rounded-[22px] border border-slate-200 bg-slate-100 p-2 dark:border-slate-700 dark:bg-slate-950">
             <div className="relative aspect-[1.414/1] overflow-hidden rounded-[18px] bg-white text-center text-slate-900 shadow-inner">
-                {templateImageUrl ? (
+                {certificateFileUrl ? (
+                    <img src={certificateFileUrl} alt="" className="absolute inset-0 h-full w-full object-contain" />
+                ) : templateImageUrl ? (
                     <img src={templateImageUrl} alt="" className="absolute inset-0 h-full w-full object-cover" />
                 ) : (
                     <div className="absolute inset-0 bg-[linear-gradient(135deg,#f8fafc_0%,#ffffff_48%,#e0f2fe_100%)]">
@@ -1083,10 +1029,10 @@ function CertificateCanvasPreview({
                         <div className="absolute bottom-0 right-0 h-16 w-44 -skew-x-12 bg-amber-400/80" />
                     </div>
                 )}
-                <div className="absolute inset-5 border-2 border-slate-300/70" />
-                <div className="absolute inset-8 border border-slate-300/60" />
+                {!certificateFileUrl && <div className="absolute inset-5 border-2 border-slate-300/70" />}
+                {!certificateFileUrl && <div className="absolute inset-8 border border-slate-300/60" />}
 
-                <div className="relative z-10 flex h-full flex-col items-center px-[8%] py-[6%]">
+                {!certificateFileUrl && <div className="relative z-10 flex h-full flex-col items-center px-[8%] py-[6%]">
                     <div className="flex w-full items-center justify-center gap-4">
                         {logoImageUrl && <img src={logoImageUrl} alt="" className="h-14 w-14 object-contain" />}
                         <div className="text-[clamp(16px,3vw,30px)] font-black tracking-tight">Frania Aranh Foundation School</div>
@@ -1111,7 +1057,7 @@ function CertificateCanvasPreview({
                         </div>
                     </div>
                     <div className="absolute bottom-3 right-5 text-[9px] font-bold text-slate-400">{certificateNumber} - {levelName}</div>
-                </div>
+                </div>}
             </div>
         </div>
     );
@@ -1133,6 +1079,7 @@ function CertificatePreview({ certificate, onClose, onPrint }: { certificate: Ce
                         layout={template?.layout ?? defaultLayout}
                         templateImageUrl={template?.templateImageUrl ?? ''}
                         logoImageUrl={template?.logoImageUrl ?? ''}
+                        certificateFileUrl={certificate.certificateFileUrl}
                     />
                 </div>
                 <div className="grid grid-cols-[1fr_2fr] gap-2 p-4">
@@ -1189,6 +1136,7 @@ function CertificatePrintTarget({ certificate }: { certificate: CertificateItem 
                         layout={template?.layout ?? defaultLayout}
                         templateImageUrl={template?.templateImageUrl ?? ''}
                         logoImageUrl={template?.logoImageUrl ?? ''}
+                        certificateFileUrl={certificate.certificateFileUrl}
                     />
                 </div>
             </div>

@@ -17,6 +17,7 @@ class Certificate extends Model
         'student_id',
         'level_id',
         'template_id',
+        'certificate_file_path',
         'type',
         'title',
         'academic_year',

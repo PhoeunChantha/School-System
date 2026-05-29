@@ -63,6 +63,7 @@ class CertificateService
     {
         return DB::transaction(fn (): Certificate => Certificate::create([
             ...$this->normalizedData($data),
+            'certificate_file_path' => $this->storeCertificateFile($data['certificate_file'] ?? null),
             'issued_by' => $userId,
             'updated_by' => $userId,
         ]));
@@ -74,8 +75,16 @@ class CertificateService
     public function update(Certificate $certificate, array $data, ?int $userId): Certificate
     {
         return DB::transaction(function () use ($certificate, $data, $userId): Certificate {
+            $certificateFilePath = $certificate->certificate_file_path;
+
+            if (($data['certificate_file'] ?? null) instanceof UploadedFile) {
+                $this->deleteCertificateFile($certificate->certificate_file_path);
+                $certificateFilePath = $this->storeCertificateFile($data['certificate_file']);
+            }
+
             $certificate->update([
                 ...$this->normalizedData($data),
+                'certificate_file_path' => $certificateFilePath,
                 'updated_by' => $userId,
             ]);
 
@@ -85,7 +94,10 @@ class CertificateService
 
     public function delete(Certificate $certificate): void
     {
-        DB::transaction(fn (): ?bool => $certificate->delete());
+        DB::transaction(function () use ($certificate): void {
+            $this->deleteCertificateFile($certificate->certificate_file_path);
+            $certificate->delete();
+        });
     }
 
     /**
@@ -212,6 +224,7 @@ class CertificateService
             'issuedOn' => $certificate->issued_on?->format('Y-m-d') ?? '',
             'certificateNumber' => $certificate->certificate_number,
             'status' => $certificate->status,
+            'certificateFileUrl' => $certificate->certificate_file_path ? asset($certificate->certificate_file_path) : '',
             'template' => $certificate->template ? $this->templatePayload($certificate->template) : null,
         ];
     }
@@ -244,7 +257,7 @@ class CertificateService
         return [
             'student_id' => $data['student_id'],
             'level_id' => $data['level_id'] ?? $student?->level_id,
-            'template_id' => $data['template_id'],
+            'template_id' => $data['template_id'] ?? null,
             'type' => $data['type'],
             'title' => $data['title'],
             'academic_year' => $data['academic_year'] ?? null,
@@ -279,13 +292,38 @@ class CertificateService
             mkdir($destination, 0755, true);
         }
 
-        $filename = Str::uuid().'.'.$file->getClientOriginalExtension();
+        $filename = Str::uuid().'.'.$file->extension();
         $file->move($destination, $filename);
 
         return 'uploads/certificates/templates/'.$filename;
     }
 
+    private function storeCertificateFile(mixed $file): ?string
+    {
+        if (! $file instanceof UploadedFile) {
+            return null;
+        }
+
+        $destination = public_path('uploads/certificates/files');
+
+        if (! is_dir($destination)) {
+            mkdir($destination, 0755, true);
+        }
+
+        $filename = Str::uuid().'.'.$file->extension();
+        $file->move($destination, $filename);
+
+        return 'uploads/certificates/files/'.$filename;
+    }
+
     private function deleteTemplateImage(?string $path): void
+    {
+        if ($path && file_exists(public_path($path))) {
+            unlink(public_path($path));
+        }
+    }
+
+    private function deleteCertificateFile(?string $path): void
     {
         if ($path && file_exists(public_path($path))) {
             unlink(public_path($path));

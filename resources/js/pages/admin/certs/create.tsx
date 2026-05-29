@@ -1,23 +1,12 @@
-import { createTemplate, index as certIndex, store } from '@/actions/App/Http/Controllers/Backends/CertificateController';
+import { index as certIndex, store } from '@/actions/App/Http/Controllers/Backends/CertificateController';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import AdminShell from '@/pages/admin/shell';
-import { CertificateCanvasPreview, CertificateLayout, defaultCertificateLayout, Field, fieldInputClass } from '@/pages/admin/certs/components/certificate-form-ui';
-import { Link, useForm } from '@inertiajs/react';
-import { ArrowLeft, Award, Check, ChevronsUpDown, Save, Search, X } from 'lucide-react';
-import { FormEvent, useMemo, useState } from 'react';
+import { CertificateCanvasPreview, Field, fieldInputClass, FileDrop } from '@/pages/admin/certs/components/certificate-form-ui';
+import { Link, router, useForm } from '@inertiajs/react';
+import { ArrowLeft, Check, ChevronsUpDown, ImagePlus, Save, Search, X } from 'lucide-react';
+import { FormEvent, useEffect, useMemo, useState } from 'react';
 import { toast } from 'sonner';
-
-interface CertificateTemplateItem {
-    id: number;
-    routeKey?: string;
-    name: string;
-    templateImageUrl: string;
-    logoImageUrl: string;
-    layout: CertificateLayout;
-    isActive: boolean;
-    certificatesCount: number;
-}
 
 interface StudentOption {
     id: number;
@@ -36,7 +25,6 @@ interface LevelOption {
 }
 
 interface CreateCertificatePageProps {
-    templates: CertificateTemplateItem[];
     students: StudentOption[];
     levels: LevelOption[];
 }
@@ -44,7 +32,7 @@ interface CreateCertificatePageProps {
 interface CertificateFormData {
     student_id: number | null;
     level_id: number | null;
-    template_id: number | null;
+    certificate_file: File | null;
     type: CertificateType;
     title: string;
     academic_year: string;
@@ -67,14 +55,13 @@ function defaultCertificateNumber(): string {
     return `CERT-${new Date().getFullYear()}-${Math.floor(Math.random() * 900000 + 100000)}`;
 }
 
-function emptyForm(students: StudentOption[], templates: CertificateTemplateItem[]): CertificateFormData {
+function emptyForm(students: StudentOption[]): CertificateFormData {
     const student = students[0];
-    const template = templates.find(item => item.isActive) ?? templates[0];
 
     return {
         student_id: student?.id ?? null,
         level_id: student?.levelId ?? null,
-        template_id: template?.id ?? null,
+        certificate_file: null,
         type: 'completion',
         title: CERT_TYPES.completion.label,
         academic_year: new Date().getFullYear().toString(),
@@ -84,14 +71,26 @@ function emptyForm(students: StudentOption[], templates: CertificateTemplateItem
     };
 }
 
-export default function CreateCertificatePage({ templates, students, levels }: CreateCertificatePageProps) {
+export default function CreateCertificatePage({ students, levels }: CreateCertificatePageProps) {
     const [studentPickerOpen, setStudentPickerOpen] = useState(false);
     const [studentSearch, setStudentSearch] = useState('');
-    const { data, setData, post, processing, errors } = useForm<CertificateFormData>(emptyForm(students, templates));
+    const [certificatePreviewUrl, setCertificatePreviewUrl] = useState('');
+    const { data, setData, post, processing, errors } = useForm<CertificateFormData>(emptyForm(students));
 
     const selectedStudent = useMemo(() => students.find(student => student.id === data.student_id), [data.student_id, students]);
-    const selectedTemplate = useMemo(() => templates.find(template => template.id === data.template_id), [data.template_id, templates]);
     const selectedLevel = useMemo(() => levels.find(level => level.id === data.level_id), [data.level_id, levels]);
+
+    useEffect(() => {
+        if (!data.certificate_file) {
+            setCertificatePreviewUrl('');
+            return;
+        }
+
+        const objectUrl = URL.createObjectURL(data.certificate_file);
+        setCertificatePreviewUrl(objectUrl);
+
+        return () => URL.revokeObjectURL(objectUrl);
+    }, [data.certificate_file]);
 
     const filteredStudents = useMemo(() => {
         const term = studentSearch.trim().toLowerCase();
@@ -125,7 +124,11 @@ export default function CreateCertificatePage({ templates, students, levels }: C
 
         post(store.url(), {
             preserveScroll: true,
-            onSuccess: () => toast.success('Certificate created.'),
+            forceFormData: true,
+            onSuccess: () => {
+                toast.success('Certificate created.');
+                router.visit(certIndex.url(), { replace: true });
+            },
         });
     };
 
@@ -143,17 +146,6 @@ export default function CreateCertificatePage({ templates, students, levels }: C
                 </div>
 
                 <form onSubmit={submit} className="mx-auto flex max-w-6xl flex-col gap-3 rounded-[26px] border border-slate-200 bg-white p-3 shadow-[0_16px_42px_rgba(15,23,42,0.08)] dark:border-slate-700 dark:bg-slate-800/90 md:grid md:grid-cols-[minmax(0,1fr)_minmax(360px,0.92fr)] md:p-6">
-                    <section className="md:col-span-2 flex items-center justify-between gap-3 rounded-[24px] border border-slate-200 bg-slate-50 p-4 dark:border-slate-700 dark:bg-slate-900/70">
-                        <div>
-                            <span className="block text-xs font-black text-slate-400">Certificate issue</span>
-                            <strong className="mt-1 block text-2xl font-black text-slate-900 dark:text-slate-50">Add Certificate</strong>
-                            <p className="mt-1 text-xs font-extrabold text-slate-400">Select a student, template, and issue details.</p>
-                        </div>
-                        <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-blue-600 text-white shadow-[0_14px_26px_rgba(37,99,235,0.28)]">
-                            <Award size={20} />
-                        </div>
-                    </section>
-
                     <div className="grid content-start gap-3 md:grid-cols-2">
                         <Field label="Student *" error={errors.student_id} wide>
                             <Popover open={studentPickerOpen} onOpenChange={setStudentPickerOpen}>
@@ -224,24 +216,13 @@ export default function CreateCertificatePage({ templates, students, levels }: C
                             </Select>
                         </Field>
 
-                        <Field label="Template *" error={errors.template_id}>
-                            <Select value={data.template_id ? String(data.template_id) : 'none'} onValueChange={value => setData('template_id', value === 'none' ? null : Number(value))}>
-                                <SelectTrigger className={fieldInputClass}>
-                                    <SelectValue />
-                                </SelectTrigger>
-                                <SelectContent>
-                                    {templates.length === 0 ? (
-                                        <SelectItem value="none">Create template first</SelectItem>
-                                    ) : (
-                                        templates.map(template => <SelectItem key={template.id} value={String(template.id)}>{template.name}</SelectItem>)
-                                    )}
-                                </SelectContent>
-                            </Select>
-                            {templates.length === 0 && (
-                                <Link href={createTemplate.url()} className="mt-1 inline-flex text-xs font-black text-blue-600 hover:text-blue-500 dark:text-blue-300">
-                                    Create a certificate template
-                                </Link>
-                            )}
+                        <Field label="Certificate image *" error={errors.certificate_file} wide>
+                            <FileDrop
+                                icon={ImagePlus}
+                                label={data.certificate_file ? 'Replace certificate image' : 'Upload finished certificate'}
+                                description="Upload JPG, PNG, or WebP exported from Photoshop"
+                                onChange={file => setData('certificate_file', file)}
+                            />
                         </Field>
 
                         <Field label="Academic year" error={errors.academic_year}>
@@ -264,9 +245,18 @@ export default function CreateCertificatePage({ templates, students, levels }: C
                             levelName={selectedLevel?.name ?? selectedStudent?.level ?? 'Course level'}
                             issuedOn={data.issued_on}
                             certificateNumber={data.certificate_number}
-                            layout={selectedTemplate?.layout ?? defaultCertificateLayout}
-                            templateImageUrl={selectedTemplate?.templateImageUrl ?? ''}
-                            logoImageUrl={selectedTemplate?.logoImageUrl ?? ''}
+                            layout={{
+                                heading: 'Certificate',
+                                presented_to: '',
+                                body: '',
+                                grade: '',
+                                teacher_signature: '',
+                                director_signature: '',
+                                director_name: '',
+                            }}
+                            templateImageUrl=""
+                            logoImageUrl=""
+                            certificateFileUrl={certificatePreviewUrl}
                         />
 
                         <div className="grid grid-cols-[1fr_2fr] gap-2 rounded-[24px] border border-slate-200 bg-slate-50 p-2 dark:border-slate-700 dark:bg-slate-900/70">

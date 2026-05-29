@@ -3,6 +3,7 @@
 namespace App\Services\Student;
 
 use App\Models\AttendanceRecord;
+use App\Models\Certificate;
 use App\Models\Exam;
 use App\Models\ExamResult;
 use App\Models\FeeCharge;
@@ -96,6 +97,21 @@ class StudentPortalService
         return [
             'profile' => $this->profile($user, $student),
             'exams' => $this->allExams($student),
+        ];
+    }
+
+    public function certificatesData(User $user): array
+    {
+        $student = $this->findStudent($user);
+        $certificates = $this->allCertificates($student);
+
+        return [
+            'profile' => $this->profile($user, $student),
+            'summary' => [
+                'total' => count($certificates),
+                'latestIssuedOn' => $certificates[0]['issuedOn'] ?? '',
+            ],
+            'certificates' => $certificates,
         ];
     }
 
@@ -553,6 +569,32 @@ class StudentPortalService
                     'status' => $results[$e->id]->status,
                     'note' => $results[$e->id]->note ?? '',
                 ] : null,
+            ])
+            ->all();
+    }
+
+    private function allCertificates(?Student $student): array
+    {
+        if (! $student) {
+            return [];
+        }
+
+        return Certificate::query()
+            ->with(['level:id,name', 'student.schoolClass:id,name'])
+            ->where('student_id', $student->id)
+            ->where('status', 'issued')
+            ->latest('issued_on')
+            ->get()
+            ->map(fn (Certificate $certificate): array => [
+                'id' => $certificate->id,
+                'title' => $certificate->title,
+                'type' => $certificate->type,
+                'academicYear' => $certificate->academic_year ?? '',
+                'issuedOn' => $certificate->issued_on?->format('Y-m-d') ?? '',
+                'certificateNumber' => $certificate->certificate_number,
+                'level' => $certificate->level?->name ?? '',
+                'className' => $certificate->student?->schoolClass?->name ?? '',
+                'imageUrl' => $certificate->certificate_file_path ? asset($certificate->certificate_file_path) : '',
             ])
             ->all();
     }

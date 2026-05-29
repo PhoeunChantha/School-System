@@ -57,6 +57,11 @@ class StudentPortalController extends Controller
         return Inertia::render('student/exams/index', $this->service->examsData($request->user()));
     }
 
+    public function certificates(Request $request): Response
+    {
+        return Inertia::render('student/certificates/index', $this->service->certificatesData($request->user()));
+    }
+
     public function notifications(Request $request): Response
     {
         return Inertia::render('student/notifications/index', $this->service->notificationsData($request->user()));

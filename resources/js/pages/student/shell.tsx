@@ -1,8 +1,8 @@
 import '@/pages/student/student.css';
 import {
     attendance,
+    certificates,
     dashboard,
-    fees,
     grades,
     homework,
     notifications,
@@ -12,10 +12,10 @@ import { Head, Link, router } from '@inertiajs/react';
 import { useEcho } from '@laravel/echo-react';
 import {
     BarChart2,
+    Award,
     Bell,
     BookOpen,
     CalendarCheck,
-    CreditCard,
     Home,
 } from 'lucide-react';
 import { type ReactNode, useCallback, useEffect, useState } from 'react';
@@ -40,6 +40,7 @@ export type ActivePage =
     | 'homework'
     | 'fees'
     | 'exams'
+    | 'certificates'
     | 'notifications'
     | 'profile';
 
@@ -84,10 +85,10 @@ const NAV_ITEMS = [
         href: homework(),
     },
     {
-        id: 'fees',
-        label: 'Fees',
-        icon: CreditCard,
-        href: fees(),
+        id: 'certificates',
+        label: 'Certs',
+        icon: Award,
+        href: certificates(),
     },
 ] as const;
 
