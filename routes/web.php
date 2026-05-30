@@ -292,6 +292,12 @@ Route::middleware(['auth', 'verified'])->prefix('student')->name('student.')->gr
     Route::post('/homework/{homeworkAssignment}/submit', [StudentPortalController::class, 'submitHomework'])->name('homework.submit');
     Route::get('/fees', [StudentPortalController::class, 'fees'])->name('fees');
     Route::get('/exams', [StudentPortalController::class, 'exams'])->name('exams');
+    Route::get('/exam-results', [StudentPortalController::class, 'examResults'])->name('exam-results');
+    Route::get('/class-schedule', [StudentPortalController::class, 'classSchedule'])->name('class-schedule');
+    Route::get('/learning-materials', [StudentPortalController::class, 'learningMaterials'])->name('learning-materials');
+    Route::get('/attendance-calendar', [StudentPortalController::class, 'attendanceCalendar'])->name('attendance-calendar');
+    Route::get('/homework-calendar', [StudentPortalController::class, 'homeworkCalendar'])->name('homework-calendar');
+    Route::get('/id-card', [StudentPortalController::class, 'idCard'])->name('id-card');
     Route::get('/certificates', [StudentPortalController::class, 'certificates'])->name('certificates');
     Route::put('/notifications/read', [StudentPortalController::class, 'markNotificationsRead'])->name('notifications.read');
     Route::get('/notifications', [StudentPortalController::class, 'notifications'])->name('notifications');
