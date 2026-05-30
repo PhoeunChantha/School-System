@@ -52,6 +52,8 @@ class StudentPortalAddOnsTest extends TestCase
             ->assertInertia(fn ($page) => $page
                 ->component('student/dashboard/index')
                 ->where('stats.certificatesIssued', 1)
+                ->where('translations.student.en.content_text.Welcome back', 'Welcome back')
+                ->where('translations.student.kh.content_text.Welcome back', 'សូមស្វាគមន៍')
                 ->missing('stats.unpaidFees'));
     }
 }

@@ -130,6 +130,45 @@ body:has(.student-wrap) {
     box-shadow: 0 12px 26px rgba(0, 156, 127, 0.24);
 }
 
+.student-header-actions {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    flex-shrink: 0;
+}
+
+.student-language-toggle {
+    height: 36px;
+    padding: 3px;
+    border: 1px solid var(--student-line);
+    border-radius: 999px;
+    display: inline-flex;
+    align-items: center;
+    gap: 2px;
+    background: rgba(255, 255, 255, 0.9);
+    box-shadow: 0 8px 22px rgba(7, 24, 39, 0.07);
+}
+
+.student-language-toggle button {
+    min-width: 34px;
+    height: 28px;
+    border: 0;
+    border-radius: 999px;
+    background: transparent;
+    color: #71809a;
+    cursor: pointer;
+    font-family: inherit;
+    font-size: 11px;
+    font-weight: 900;
+    line-height: 1;
+}
+
+.student-language-toggle button.active {
+    background: var(--student-ink);
+    color: #ffffff;
+    box-shadow: 0 8px 18px rgba(7, 24, 39, 0.16);
+}
+
 .student-notification-dot {
     position: absolute;
     top: -3px;
@@ -959,6 +998,16 @@ a:focus-visible {
     .student-header {
         padding-right: 18px;
         padding-left: 18px;
+        gap: 10px;
+    }
+
+    .student-header-name {
+        max-width: 128px;
+    }
+
+    .student-language-toggle button {
+        min-width: 30px;
+        padding: 0 6px;
     }
 
     .s-page-title {

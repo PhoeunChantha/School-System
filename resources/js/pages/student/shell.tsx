@@ -1,4 +1,6 @@
 import '@/pages/student/student.css';
+import { useStudentDomTranslations } from '@/hooks/use-student-dom-translations';
+import { useStudentTranslation } from '@/hooks/use-student-translation';
 import {
     attendanceCalendar,
     attendance,
@@ -249,6 +251,9 @@ export default function StudentShell({
     title,
     children,
 }: Props) {
+    useStudentDomTranslations();
+
+    const { lang, setLang, t } = useStudentTranslation();
     const [unreadNotifications, setUnreadNotifications] = useState(
         profile.unreadNotifications ?? 0,
     );
@@ -262,13 +267,16 @@ export default function StudentShell({
         (event: StudentNotificationEvent) => {
             setUnreadNotifications(event.unreadNotifications);
 
-            toast.info(event.notification?.title ?? 'New message', {
-                description:
-                    event.notification?.body ??
-                    'You have a new school notification.',
-            });
+            toast.info(
+                event.notification?.title ?? t('content_text.New message'),
+                {
+                    description:
+                        event.notification?.body ??
+                        t('content_text.You have a new school notification.'),
+                },
+            );
         },
-        [],
+        [t],
     );
 
     return (
@@ -298,13 +306,32 @@ export default function StudentShell({
                         <div className="student-header-eyebrow">
                             Welcome back
                         </div>
-                        <div className="student-header-name">
-                            {profile.name || 'Student'}
+                        <div
+                            className="student-header-name"
+                            data-no-translate="true"
+                        >
+                            {profile.name || t('content_text.Student')}
                         </div>
                     </div>
                 </Link>
 
-                <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                <div className="student-header-actions">
+                    <div
+                        className="student-language-toggle"
+                        aria-label="Switch language"
+                        data-no-translate="true"
+                    >
+                        {(['kh', 'en'] as const).map((language) => (
+                            <button
+                                key={language}
+                                type="button"
+                                className={lang === language ? 'active' : ''}
+                                onClick={() => setLang(language)}
+                            >
+                                {language === 'kh' ? 'ខ្មែរ' : 'EN'}
+                            </button>
+                        ))}
+                    </div>
                     <Link
                         href={notifications()}
                         aria-label="Open notifications"
