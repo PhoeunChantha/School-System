@@ -17,8 +17,8 @@ import {
     notifications,
     profile as studentProfile,
 } from '@/routes/student';
-import { publicKey as pushPublicKey } from '@/routes/student/push-notifications';
-import { store as storePushSubscription } from '@/routes/student/push-notifications/subscriptions';
+import { publicKey as pushPublicKey } from '@/routes/student/push-notifications/index';
+import { store as storePushSubscription } from '@/routes/student/push-notifications/subscriptions/index';
 import { logout } from '@/routes';
 import { Head, Link, router, usePage } from '@inertiajs/react';
 import { useEcho } from '@laravel/echo-react';
