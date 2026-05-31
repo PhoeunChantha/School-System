@@ -43,6 +43,10 @@ class WebPushService
             )
             ->get();
 
+        if ($subscriptions->isEmpty()) {
+            return;
+        }
+
         Log::info('WebPush started', [
             'notification_id' => $notification->id,
             'total_subscriptions' => $subscriptions->count(),
