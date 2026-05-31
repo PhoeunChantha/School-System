@@ -2,6 +2,9 @@
 
 namespace Tests\Feature;
 
+use App\Models\GradePeriod;
+use App\Models\GradeRecord;
+use App\Models\Student;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Spatie\Permission\Models\Permission;
@@ -33,6 +36,36 @@ class DashboardTest extends TestCase
         $this->get(route('dashboard'))
             ->assertOk()
             ->assertInertia(fn ($page) => $page->component('dashboard'));
+    }
+
+    public function test_dashboard_includes_top_student_scores(): void
+    {
+        $this->withoutVite();
+
+        $student = Student::factory()->create(['name_en' => 'Top Student']);
+        $period = GradePeriod::factory()->create(['name' => 'Midterm 2026']);
+
+        GradeRecord::factory()->create([
+            'student_id' => $student->id,
+            'school_class_id' => $student->school_class_id,
+            'grade_period_id' => $period->id,
+            'speaking' => 96,
+            'listening' => 94,
+            'reading' => 98,
+            'writing' => 92,
+            'average' => 95,
+        ]);
+
+        $this->actingAs(User::factory()->create());
+
+        $this->get(route('dashboard'))
+            ->assertOk()
+            ->assertInertia(fn ($page) => $page
+                ->component('dashboard')
+                ->has('topStudentScores', 1)
+                ->where('topStudentScores.0.nameEn', 'Top Student')
+                ->where('topStudentScores.0.period', 'Midterm 2026')
+                ->where('topStudentScores.0.score', 95));
     }
 
     public function test_teacher_users_see_teacher_dashboard(): void

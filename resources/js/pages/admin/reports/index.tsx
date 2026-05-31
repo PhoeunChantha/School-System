@@ -2,6 +2,7 @@ import { useAdminTranslation } from '@/hooks/use-admin-translation';
 import AdminShell from '@/pages/admin/shell';
 import { Avatar, Badge, KH, Pagination, PBar, ScoreChip } from '@/pages/admin/ui';
 import {
+    BookOpenCheck,
     ChartNoAxesColumn,
     CheckCircle2,
     ClipboardCheck,
@@ -17,7 +18,7 @@ import type { LucideIcon } from 'lucide-react';
 import { ReactNode, useState } from 'react';
 import { toast } from 'sonner';
 
-type ReportTab = 'attendance' | 'grades' | 'fees';
+type ReportTab = 'attendance' | 'grades';
 
 interface Summary {
     totalStudents: number;
@@ -152,7 +153,7 @@ function downloadCsv(filename: string, rows: Record<string, string | number>[]):
     URL.revokeObjectURL(url);
 }
 
-export default function ReportsPage({ reportDate, summary, attendance, grades, fees }: ReportsPageProps) {
+export default function ReportsPage({ reportDate, summary, attendance, grades }: ReportsPageProps) {
     const { lang } = useAdminTranslation();
     const [tab, setTab] = useState<ReportTab>('attendance');
     const [classAttendancePage, setClassAttendancePage] = useState(1);
@@ -184,19 +185,11 @@ export default function ReportsPage({ reportDate, summary, attendance, grades, f
             return;
         }
 
-        downloadCsv('fees-report.csv', fees.students.map(student => ({
-            Student: student.nameEn,
-            KhmerName: student.nameKh,
-            Level: student.level,
-            Amount: student.amount,
-            Status: student.status,
-        })));
     };
 
     const tabs: { id: ReportTab; label: string; icon: LucideIcon }[] = [
         { id: 'attendance', label: 'Attendance', icon: ClipboardCheck },
         { id: 'grades', label: 'Grades', icon: Star },
-        { id: 'fees', label: 'Fee Summary', icon: CreditCard },
     ];
 
     return (
@@ -224,11 +217,11 @@ export default function ReportsPage({ reportDate, summary, attendance, grades, f
                     <MetricCard icon={GraduationCap} label="Total Students" value={summary.totalStudents} tone="blue" />
                     <MetricCard icon={ClipboardCheck} label="Avg Attendance" value={`${summary.avgAttendance}%`} tone="green" />
                     <MetricCard icon={Star} label="Avg Grade" value={summary.avgGrade} tone="amber" />
-                    <MetricCard icon={DollarSign} label="Fees Collected" value={money(summary.feesCollected)} tone="violet" />
+                    <MetricCard icon={BookOpenCheck} label="Classes Tracked" value={attendance.classes.length} tone="violet" />
                 </div>
 
                 <section className={panelClass}>
-                    <div className="grid grid-cols-3 gap-1 rounded-2xl bg-slate-100 p-1 dark:bg-slate-950">
+                    <div className="grid grid-cols-2 gap-1 rounded-2xl bg-slate-100 p-1 dark:bg-slate-950">
                         {tabs.map(item => {
                             const Icon = item.icon;
 
@@ -294,22 +287,6 @@ export default function ReportsPage({ reportDate, summary, attendance, grades, f
                     </div>
                 )}
 
-                {tab === 'fees' && (
-                    <div className="grid gap-3">
-                        <div className="grid grid-cols-2 gap-2 md:grid-cols-4">
-                            <MiniMetric label="Collected" value={money(summary.feesCollected)} tone="green" />
-                            <MiniMetric label="Outstanding" value={money(summary.outstandingFees)} tone="red" />
-                            <MiniMetric label="Paid" value={summary.paidCount} tone="blue" />
-                            <MiniMetric label="Unpaid" value={summary.unpaidCount} tone="amber" />
-                        </div>
-
-                        <SectionTitle title="Payment history" subtitle={`Payment History - ${reportDate}`} />
-                        <ResponsivePaymentRows payments={fees.payments} isKh={isKh} />
-
-                        <SectionTitle title="Student fee status" />
-                        <ResponsiveFeeRows students={fees.students} isKh={isKh} />
-                    </div>
-                )}
             </div>
         </AdminShell>
     );
@@ -323,7 +300,7 @@ function ResponsiveStudentAttendance({ students, isKh }: { students: StudentRepo
         <section className="overflow-visible rounded-[24px] border-0 bg-transparent shadow-none md:overflow-x-auto md:rounded-2xl md:border md:border-slate-200 md:bg-white md:shadow-sm dark:md:border-slate-700 dark:md:bg-slate-800/90">
             <table className={desktopTableClass}>
                 <thead>
-                    <tr><th>Student</th><th>Class</th><th>Attendance</th><th>Fee</th></tr>
+                    <tr><th>Student</th><th>Class</th><th>Attendance</th><th>Avg Score</th></tr>
                 </thead>
                 <tbody>
                     {paginatedStudents.map(student => (
@@ -331,7 +308,7 @@ function ResponsiveStudentAttendance({ students, isKh }: { students: StudentRepo
                             <td><StudentName student={student} isKh={isKh} /></td>
                             <td><Badge type="blue">{student.className || student.level}</Badge></td>
                             <td><ProgressCell value={student.attendance} /></td>
-                            <td><Badge type={feeBadgeType(student.feeStatus)}>{student.feeStatus}</Badge></td>
+                            <td><strong className={`text-sm font-black ${scoreTextClass(student.average)}`}>{student.average}</strong></td>
                         </tr>
                     ))}
                 </tbody>
@@ -341,7 +318,7 @@ function ResponsiveStudentAttendance({ students, isKh }: { students: StudentRepo
                     <article key={student.id} className={mobileCardClass}>
                         <div className="flex items-center justify-between gap-3">
                             <StudentName student={student} isKh={isKh} />
-                            <Badge type={feeBadgeType(student.feeStatus)}>{student.feeStatus}</Badge>
+                            <strong className={`text-lg font-black ${scoreTextClass(student.average)}`}>{student.average}</strong>
                         </div>
                         <div className="mt-3 rounded-2xl bg-slate-100 px-3 py-2 dark:bg-slate-950">
                             <div className="mb-2 flex items-center justify-between text-xs font-black">

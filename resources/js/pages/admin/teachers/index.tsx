@@ -723,8 +723,16 @@ function TeacherForm({ mode, teacher, onBack }: FormProps) {
         teacher?.photo ?? null,
     );
     const fileInputRef = useRef<HTMLInputElement>(null);
-    const { data, setData, post, processing, errors, transform } =
-        useForm<TeacherFormData>({
+    const {
+        data,
+        setData,
+        post,
+        processing,
+        errors,
+        transform,
+        setError,
+        clearErrors,
+    } = useForm<TeacherFormData>({
             name_kh: teacher?.nameKh ?? '',
             name_en: teacher?.nameEn ?? '',
             profile_photo: null,
@@ -734,8 +742,32 @@ function TeacherForm({ mode, teacher, onBack }: FormProps) {
             status: teacher?.status ?? 'active',
         });
 
+    const validateTeacherForm = () => {
+        clearErrors('name_kh', 'name_en', 'subject');
+
+        if (!data.name_kh.trim()) {
+            setError('name_kh', translateText('Please enter Khmer name.'));
+        }
+
+        if (!data.name_en.trim()) {
+            setError('name_en', translateText('Please enter English name.'));
+        }
+
+        if (!data.subject.trim()) {
+            setError('subject', translateText('Please select a subject.'));
+        }
+
+        return Boolean(
+            data.name_kh.trim() && data.name_en.trim() && data.subject.trim(),
+        );
+    };
+
     const submit = (event: FormEvent<HTMLFormElement>) => {
         event.preventDefault();
+
+        if (!validateTeacherForm()) {
+            return;
+        }
 
         transform((formData) => ({
             ...formData,
@@ -861,8 +893,12 @@ function TeacherForm({ mode, teacher, onBack }: FormProps) {
                         <input
                             className={fieldInputClass}
                             placeholder={translateText('e.g. Teacher Vuthy')}
+                            required
                             value={data.name_kh}
-                            onChange={(e) => setData('name_kh', e.target.value)}
+                            onChange={(e) => {
+                                clearErrors('name_kh');
+                                setData('name_kh', e.target.value);
+                            }}
                         />
                         {inputError(errors.name_kh)}
                     </div>
@@ -873,8 +909,12 @@ function TeacherForm({ mode, teacher, onBack }: FormProps) {
                         <input
                             className={fieldInputClass}
                             placeholder="e.g. Mr. Vuthy"
+                            required
                             value={data.name_en}
-                            onChange={(e) => setData('name_en', e.target.value)}
+                            onChange={(e) => {
+                                clearErrors('name_en');
+                                setData('name_en', e.target.value);
+                            }}
                         />
                         {inputError(errors.name_en)}
                     </div>
@@ -884,7 +924,10 @@ function TeacherForm({ mode, teacher, onBack }: FormProps) {
                         </label>
                         <Select
                             value={data.subject}
-                            onValueChange={(value) => setData('subject', value)}
+                            onValueChange={(value) => {
+                                clearErrors('subject');
+                                setData('subject', value);
+                            }}
                         >
                             <SelectTrigger className={fieldInputClass}>
                                 <SelectValue

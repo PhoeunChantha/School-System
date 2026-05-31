@@ -81,7 +81,7 @@ export default function LevelsPage({ levels }: LevelsPageProps) {
 
     const { data, setData, post, put, processing, errors, reset } = useForm<LevelFormData>({
         name: '',
-        monthly_fee: '',
+        monthly_fee: 0,
         sort_order: 0,
         is_active: true,
     });
@@ -92,7 +92,7 @@ export default function LevelsPage({ levels }: LevelsPageProps) {
         }
 
         reset();
-        setData({ name: '', monthly_fee: '', sort_order: 0, is_active: true });
+        setData({ name: '', monthly_fee: 0, sort_order: 0, is_active: true });
         setEditing(null);
         setIsModalOpen(true);
     };
@@ -221,11 +221,6 @@ export default function LevelsPage({ levels }: LevelsPageProps) {
                                 <label className={fieldLabelClass}>Level Name *</label>
                                 <input className={fieldInputClass} value={data.name} onChange={e => setData('name', e.target.value)} placeholder="e.g. Beginner 1" />
                                 {inputError(errors.name)}
-                            </div>
-                            <div className={fieldGroupClass}>
-                                <label className={fieldLabelClass}>Monthly Fee ($) *</label>
-                                <input type="number" className={fieldInputClass} value={data.monthly_fee} min={0} step="0.01" onChange={e => setData('monthly_fee', e.target.value)} placeholder="0.00" />
-                                {inputError(errors.monthly_fee)}
                             </div>
                             <div className={fieldGroupClass}>
                                 <label className={fieldLabelClass}>Sort Order</label>

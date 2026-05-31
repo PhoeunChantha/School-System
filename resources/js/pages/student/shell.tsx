@@ -1,24 +1,44 @@
 import '@/pages/student/student.css';
+import { useStudentDomTranslations } from '@/hooks/use-student-dom-translations';
+import { useStudentTranslation } from '@/hooks/use-student-translation';
+import type { SharedData } from '@/types';
 import {
+    attendanceCalendar,
     attendance,
+    certificates,
+    classSchedule,
     dashboard,
-    fees,
+    examResults,
     grades,
     homework,
+    homeworkCalendar,
+    idCard,
+    learningMaterials,
     notifications,
     profile as studentProfile,
 } from '@/routes/student';
-import { Head, Link, router } from '@inertiajs/react';
+import { publicKey as pushPublicKey } from '@/routes/student/push-notifications';
+import { store as storePushSubscription } from '@/routes/student/push-notifications/subscriptions';
+import { logout } from '@/routes';
+import { Head, Link, router, usePage } from '@inertiajs/react';
 import { useEcho } from '@laravel/echo-react';
 import {
     BarChart2,
+    Award,
     Bell,
     BookOpen,
     CalendarCheck,
-    CreditCard,
+    CalendarDays,
+    FileBadge,
+    FileText,
     Home,
+    IdCard,
+    Library,
+    LogOut,
+    MoreHorizontal,
+    X,
 } from 'lucide-react';
-import { type ReactNode, useCallback, useEffect, useState } from 'react';
+import { type ReactNode, useCallback, useEffect, useRef, useState } from 'react';
 import { toast } from 'sonner';
 
 export interface StudentProfile {
@@ -40,6 +60,13 @@ export type ActivePage =
     | 'homework'
     | 'fees'
     | 'exams'
+    | 'exam-results'
+    | 'class-schedule'
+    | 'learning-materials'
+    | 'attendance-calendar'
+    | 'homework-calendar'
+    | 'id-card'
+    | 'certificates'
     | 'notifications'
     | 'profile';
 
@@ -56,6 +83,11 @@ interface StudentNotificationEvent {
         body?: string;
     };
     unreadNotifications: number;
+}
+
+interface PushPublicKeyResponse {
+    configured: boolean;
+    publicKey: string | null;
 }
 
 const NAV_ITEMS = [
@@ -83,11 +115,71 @@ const NAV_ITEMS = [
         icon: BookOpen,
         href: homework(),
     },
+] as const;
+
+const MORE_ITEMS = [
     {
-        id: 'fees',
-        label: 'Fees',
-        icon: CreditCard,
-        href: fees(),
+        id: 'certificates',
+        label: 'Certificates',
+        description: 'School awards',
+        icon: Award,
+        href: certificates(),
+    },
+    {
+        id: 'exam-results',
+        label: 'Exam Results',
+        description: 'Scores and pass/fail',
+        icon: FileText,
+        href: examResults(),
+    },
+    {
+        id: 'class-schedule',
+        label: 'Class Schedule',
+        description: 'Weekly timetable',
+        icon: CalendarDays,
+        href: classSchedule(),
+    },
+    {
+        id: 'learning-materials',
+        label: 'Learning Materials',
+        description: 'Files and lesson notes',
+        icon: Library,
+        href: learningMaterials(),
+    },
+    {
+        id: 'attendance-calendar',
+        label: 'Attendance Calendar',
+        description: 'Present and absent days',
+        icon: CalendarCheck,
+        href: attendanceCalendar(),
+    },
+    {
+        id: 'homework-calendar',
+        label: 'Homework Calendar',
+        description: 'Due dates and status',
+        icon: BookOpen,
+        href: homeworkCalendar(),
+    },
+    {
+        id: 'id-card',
+        label: 'Student ID Card',
+        description: 'Digital student identity',
+        icon: IdCard,
+        href: idCard(),
+    },
+    {
+        id: 'notifications',
+        label: 'Notifications',
+        description: 'School messages',
+        icon: Bell,
+        href: notifications(),
+    },
+    {
+        id: 'profile',
+        label: 'Profile',
+        description: 'Personal information',
+        icon: FileBadge,
+        href: studentProfile(),
     },
 ] as const;
 
@@ -136,6 +228,83 @@ function SAvatar({
 
 export { SAvatar };
 
+function csrfToken() {
+    return (
+        document
+            .querySelector<HTMLMetaElement>('meta[name="csrf-token"]')
+            ?.getAttribute('content') ?? ''
+    );
+}
+
+function urlBase64ToUint8Array(value: string) {
+    const padding = '='.repeat((4 - (value.length % 4)) % 4);
+    const base64 = (value + padding).replace(/-/g, '+').replace(/_/g, '/');
+    const rawData = window.atob(base64);
+    const output = new Uint8Array(rawData.length);
+
+    for (let index = 0; index < rawData.length; index += 1) {
+        output[index] = rawData.charCodeAt(index);
+    }
+
+    return output;
+}
+
+async function registerStudentPushSubscription() {
+    if (
+        !window.isSecureContext ||
+        !('Notification' in window) ||
+        !('PushManager' in window)
+    ) {
+        return;
+    }
+
+    const keyResponse = await fetch(pushPublicKey.url(), {
+        headers: { Accept: 'application/json' },
+        credentials: 'same-origin',
+    });
+
+    if (!keyResponse.ok) {
+        return;
+    }
+
+    const { configured, publicKey } =
+        (await keyResponse.json()) as PushPublicKeyResponse;
+
+    if (!configured || !publicKey || Notification.permission === 'denied') {
+        return;
+    }
+
+    const permission =
+        Notification.permission === 'granted'
+            ? 'granted'
+            : await Notification.requestPermission();
+
+    if (permission !== 'granted') {
+        return;
+    }
+
+    const registration = await navigator.serviceWorker.ready;
+    const existingSubscription =
+        await registration.pushManager.getSubscription();
+    const subscription =
+        existingSubscription ??
+        (await registration.pushManager.subscribe({
+            userVisibleOnly: true,
+            applicationServerKey: urlBase64ToUint8Array(publicKey),
+        }));
+
+    await fetch(storePushSubscription.url(), {
+        method: 'POST',
+        headers: {
+            Accept: 'application/json',
+            'Content-Type': 'application/json',
+            'X-CSRF-TOKEN': csrfToken(),
+        },
+        credentials: 'same-origin',
+        body: JSON.stringify(subscription.toJSON()),
+    });
+}
+
 function StudentRealtimeNotifications({
     activePage,
     onNotification,
@@ -167,30 +336,92 @@ export default function StudentShell({
     title,
     children,
 }: Props) {
+    useStudentDomTranslations();
+
+    const { notificationSound, school } = usePage<SharedData>().props;
+    const { lang, setLang, t } = useStudentTranslation();
+    const notificationSoundRef = useRef<HTMLAudioElement | null>(null);
     const [unreadNotifications, setUnreadNotifications] = useState(
         profile.unreadNotifications ?? 0,
     );
+    const [moreOpen, setMoreOpen] = useState(false);
+
+    useEffect(() => {
+        if (!('serviceWorker' in navigator)) {
+            return;
+        }
+
+        navigator.serviceWorker
+            .register('/student/service-worker.js', { scope: '/student/' })
+            .then(() => registerStudentPushSubscription())
+            .catch(() => undefined);
+    }, []);
 
     useEffect(() => {
         setUnreadNotifications(profile.unreadNotifications ?? 0);
     }, [profile.unreadNotifications]);
 
+    useEffect(() => {
+        notificationSoundRef.current = notificationSound
+            ? new Audio(notificationSound)
+            : null;
+    }, [notificationSound]);
+
     const handleRealtimeNotification = useCallback(
         (event: StudentNotificationEvent) => {
             setUnreadNotifications(event.unreadNotifications);
 
-            toast.info(event.notification?.title ?? 'New message', {
-                description:
-                    event.notification?.body ??
-                    'You have a new school notification.',
-            });
+            if (notificationSoundRef.current) {
+                notificationSoundRef.current.currentTime = 0;
+                notificationSoundRef.current.play().catch(() => undefined);
+            }
+
+            toast.info(
+                event.notification?.title ?? t('content_text.New message'),
+                {
+                    description:
+                        event.notification?.body ??
+                        t('content_text.You have a new school notification.'),
+                },
+            );
         },
-        [],
+        [t],
     );
 
     return (
         <div className="student-wrap">
-            <Head title={title} />
+            <Head title={title}>
+                <link
+                    head-key="student-pwa-manifest"
+                    rel="manifest"
+                    href="/student/manifest.webmanifest"
+                />
+                <meta
+                    head-key="student-pwa-theme-color"
+                    name="theme-color"
+                    content="#009c7f"
+                />
+                <meta
+                    head-key="student-pwa-mobile-web-app-capable"
+                    name="mobile-web-app-capable"
+                    content="yes"
+                />
+                <meta
+                    head-key="student-pwa-apple-mobile-web-app-capable"
+                    name="apple-mobile-web-app-capable"
+                    content="yes"
+                />
+                <meta
+                    head-key="student-pwa-apple-mobile-web-app-title"
+                    name="apple-mobile-web-app-title"
+                    content={`${school.nameEn} Student`}
+                />
+                <link
+                    head-key="student-pwa-apple-touch-icon"
+                    rel="apple-touch-icon"
+                    href={school.logo ?? school.favicon ?? '/apple-touch-icon.png'}
+                />
+            </Head>
             {profile.studentId ? (
                 <StudentRealtimeNotifications
                     activePage={activePage}
@@ -215,13 +446,32 @@ export default function StudentShell({
                         <div className="student-header-eyebrow">
                             Welcome back
                         </div>
-                        <div className="student-header-name">
-                            {profile.name || 'Student'}
+                        <div
+                            className="student-header-name"
+                            data-no-translate="true"
+                        >
+                            {profile.name || t('content_text.Student')}
                         </div>
                     </div>
                 </Link>
 
-                <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                <div className="student-header-actions">
+                    <div
+                        className="student-language-toggle"
+                        aria-label="Switch language"
+                        data-no-translate="true"
+                    >
+                        {(['kh', 'en'] as const).map((language) => (
+                            <button
+                                key={language}
+                                type="button"
+                                className={lang === language ? 'active' : ''}
+                                onClick={() => setLang(language)}
+                            >
+                                {language === 'kh' ? 'ខ្មែរ' : 'EN'}
+                            </button>
+                        ))}
+                    </div>
                     <Link
                         href={notifications()}
                         aria-label="Open notifications"
@@ -268,7 +518,230 @@ export default function StudentShell({
                         </Link>
                     );
                 })}
+                <button
+                    type="button"
+                    aria-label="Open more student menu"
+                    aria-expanded={moreOpen}
+                    onClick={() => setMoreOpen(true)}
+                    className={
+                        MORE_ITEMS.some((item) => item.id === activePage)
+                            ? 'student-nav-btn active'
+                            : 'student-nav-btn'
+                    }
+                >
+                    <div className="snb-icon">
+                        <MoreHorizontal
+                            size={18}
+                            color={
+                                MORE_ITEMS.some((item) => item.id === activePage)
+                                    ? '#ffffff'
+                                    : '#71809a'
+                            }
+                        />
+                    </div>
+                    <span className="snb-label">More</span>
+                </button>
             </nav>
+
+            {moreOpen && (
+                <div
+                    role="dialog"
+                    aria-modal="true"
+                    aria-label="More student actions"
+                    onClick={() => setMoreOpen(false)}
+                    style={{
+                        position: 'fixed',
+                        inset: 0,
+                        zIndex: 90,
+                        background: 'rgba(15, 23, 42, 0.34)',
+                        display: 'flex',
+                        justifyContent: 'center',
+                        alignItems: 'flex-end',
+                        padding: '18px 14px',
+                    }}
+                >
+                    <div
+                        onClick={(event) => event.stopPropagation()}
+                        style={{
+                            width: 'min(100%, 420px)',
+                            maxHeight: 'min(78dvh, 720px)',
+                            overflowY: 'auto',
+                            borderRadius: 28,
+                            background: '#ffffff',
+                            boxShadow: '0 24px 60px rgba(15,23,42,0.26)',
+                            padding: 16,
+                        }}
+                    >
+                        <div
+                            style={{
+                                display: 'flex',
+                                alignItems: 'center',
+                                justifyContent: 'space-between',
+                                marginBottom: 12,
+                            }}
+                        >
+                            <div
+                                style={{
+                                    display: 'flex',
+                                    alignItems: 'center',
+                                    gap: 10,
+                                }}
+                            >
+                                <SAvatar
+                                    photo={profile.photo}
+                                    name={profile.name}
+                                    size={42}
+                                />
+                                <div>
+                                    <div
+                                        style={{
+                                            color: '#0f172a',
+                                            fontSize: 14,
+                                            fontWeight: 900,
+                                        }}
+                                    >
+                                        {profile.name || 'Student'}
+                                    </div>
+                                    <div
+                                        style={{
+                                            color: '#94a3b8',
+                                            fontSize: 11,
+                                            fontWeight: 700,
+                                        }}
+                                    >
+                                        {profile.className || profile.level}
+                                    </div>
+                                </div>
+                            </div>
+                            <button
+                                type="button"
+                                aria-label="Close more menu"
+                                onClick={() => setMoreOpen(false)}
+                                style={{
+                                    width: 36,
+                                    height: 36,
+                                    borderRadius: 999,
+                                    border: 'none',
+                                    background: '#f1f5f9',
+                                    color: '#64748b',
+                                    display: 'grid',
+                                    placeItems: 'center',
+                                }}
+                            >
+                                <X size={17} />
+                            </button>
+                        </div>
+
+                        <div
+                            style={{
+                                display: 'grid',
+                                gap: 8,
+                            }}
+                        >
+                            {MORE_ITEMS.map((item) => {
+                                const Icon = item.icon;
+                                const active = item.id === activePage;
+
+                                return (
+                                    <Link
+                                        key={item.id}
+                                        href={item.href}
+                                        onClick={() => setMoreOpen(false)}
+                                        style={{
+                                            display: 'flex',
+                                            alignItems: 'center',
+                                            gap: 12,
+                                            padding: '12px 14px',
+                                            borderRadius: 18,
+                                            textDecoration: 'none',
+                                            background: active
+                                                ? '#eff6ff'
+                                                : '#f8fafc',
+                                            color: '#0f172a',
+                                        }}
+                                    >
+                                        <span
+                                            style={{
+                                                width: 38,
+                                                height: 38,
+                                                borderRadius: 14,
+                                                display: 'grid',
+                                                placeItems: 'center',
+                                                background: active
+                                                    ? '#2563eb'
+                                                    : '#e2e8f0',
+                                                color: active
+                                                    ? '#ffffff'
+                                                    : '#64748b',
+                                                flexShrink: 0,
+                                            }}
+                                        >
+                                            <Icon size={17} />
+                                        </span>
+                                        <span style={{ minWidth: 0, flex: 1 }}>
+                                            <span
+                                                style={{
+                                                    display: 'block',
+                                                    fontSize: 13,
+                                                    fontWeight: 900,
+                                                }}
+                                            >
+                                                {item.label}
+                                            </span>
+                                            <span
+                                                style={{
+                                                    display: 'block',
+                                                    color: '#94a3b8',
+                                                    fontSize: 11,
+                                                    fontWeight: 700,
+                                                    marginTop: 2,
+                                                }}
+                                            >
+                                                {item.description}
+                                            </span>
+                                        </span>
+                                    </Link>
+                                );
+                            })}
+
+                            <Link
+                                href={logout()}
+                                method="post"
+                                as="button"
+                                style={{
+                                    width: '100%',
+                                    marginTop: 4,
+                                    display: 'flex',
+                                    alignItems: 'center',
+                                    gap: 12,
+                                    padding: '12px 14px',
+                                    borderRadius: 18,
+                                    border: 'none',
+                                    background: '#fee2e2',
+                                    color: '#b91c1c',
+                                    fontSize: 13,
+                                    fontWeight: 900,
+                                    textAlign: 'left',
+                                }}
+                            >
+                                <span
+                                    style={{
+                                        width: 38,
+                                        height: 38,
+                                        borderRadius: 14,
+                                        display: 'grid',
+                                        placeItems: 'center',
+                                        background: '#fecaca',
+                                    }}
+                                >
+                                    <LogOut size={17} />
+                                </span>
+                                Logout
+                            </Link>
+                        </div>
+                    </div>
+                </div>
+            )}
         </div>
     );
 }

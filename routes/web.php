@@ -23,6 +23,8 @@ use App\Http\Controllers\Backends\TeacherController;
 use App\Http\Controllers\Backends\TeacherGradeController;
 use App\Http\Controllers\Backends\UserController;
 use App\Http\Controllers\Student\StudentPortalController;
+use App\Http\Controllers\Student\StudentPushSubscriptionController;
+use App\Http\Controllers\Student\StudentPwaController;
 use App\Models\ActivityLog;
 use App\Models\AttendanceSession;
 use App\Models\Certificate;
@@ -42,13 +44,21 @@ use App\Models\SchoolSetting;
 use App\Models\Student;
 use App\Models\Teacher;
 use App\Models\User;
+use App\Support\RoleRedirect;
+use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 use Inertia\Inertia;
 use Laravel\Fortify\Features;
 use Spatie\Permission\Models\Permission;
 use Spatie\Permission\Models\Role;
 
-Route::get('/', function () {
+Route::get('/', function (Request $request) {
+    $user = $request->user() ?? auth()->user();
+
+    if ($user) {
+        return redirect()->to(RoleRedirect::defaultPathFor($user));
+    }
+
     return Inertia::render('auth/login', [
         'canRegister' => Features::enabled(Features::registration()),
     ]);
@@ -213,6 +223,11 @@ Route::middleware(['auth', 'verified'])->prefix('admin')->name('admin.')->group(
     // Certificates
     Route::prefix('certs')->group(function () {
         Route::get('/', [CertificateController::class, 'index'])->can('view', Certificate::class)->name('certs');
+        Route::get('/create', [CertificateController::class, 'create'])->can('create', Certificate::class)->name('certs.create');
+        Route::get('/templates/create', [CertificateController::class, 'createTemplate'])->can('create', Certificate::class)->name('certs.templates.create');
+        Route::post('/templates', [CertificateController::class, 'storeTemplate'])->can('create', Certificate::class)->name('certs.templates.store');
+        Route::put('/templates/{certificateTemplate}', [CertificateController::class, 'updateTemplate'])->can('update', Certificate::class)->name('certs.templates.update');
+        Route::delete('/templates/{certificateTemplate}', [CertificateController::class, 'destroyTemplate'])->can('delete', Certificate::class)->name('certs.templates.destroy');
         Route::post('/', [CertificateController::class, 'store'])->can('create', Certificate::class)->name('certs.store');
         Route::put('/{certificate}', [CertificateController::class, 'update'])->can('update', 'certificate')->name('certs.update');
         Route::delete('/{certificate}', [CertificateController::class, 'destroy'])->can('delete', 'certificate')->name('certs.destroy');
@@ -270,8 +285,20 @@ Route::middleware(['auth', 'verified'])->prefix('admin')->name('admin.')->group(
     });
 });
 
+// Student Portal PWA
+Route::prefix('student')->name('student.')->controller(StudentPwaController::class)->group(function () {
+    Route::get('/manifest.webmanifest', 'manifest')->name('manifest');
+    Route::get('/service-worker.js', 'serviceWorker')->name('service-worker');
+    Route::get('/offline', 'offline')->name('offline');
+});
+
 // Student Portal
 Route::middleware(['auth', 'verified'])->prefix('student')->name('student.')->group(function () {
+    Route::get('/push-notifications/public-key', [StudentPushSubscriptionController::class, 'publicKey'])->name('push-notifications.public-key');
+    Route::post('/push-notifications/subscriptions', [StudentPushSubscriptionController::class, 'store'])->name('push-notifications.subscriptions.store');
+    Route::delete('/push-notifications/subscriptions', [StudentPushSubscriptionController::class, 'destroy'])->name('push-notifications.subscriptions.destroy');
+    Route::get('/push-notifications/latest', [StudentPushSubscriptionController::class, 'latest'])->name('push-notifications.latest');
+
     Route::get('/dashboard', [StudentPortalController::class, 'dashboard'])->name('dashboard');
     Route::get('/attendance', [StudentPortalController::class, 'attendance'])->name('attendance');
     Route::get('/grades', [StudentPortalController::class, 'grades'])->name('grades');
@@ -279,6 +306,13 @@ Route::middleware(['auth', 'verified'])->prefix('student')->name('student.')->gr
     Route::post('/homework/{homeworkAssignment}/submit', [StudentPortalController::class, 'submitHomework'])->name('homework.submit');
     Route::get('/fees', [StudentPortalController::class, 'fees'])->name('fees');
     Route::get('/exams', [StudentPortalController::class, 'exams'])->name('exams');
+    Route::get('/exam-results', [StudentPortalController::class, 'examResults'])->name('exam-results');
+    Route::get('/class-schedule', [StudentPortalController::class, 'classSchedule'])->name('class-schedule');
+    Route::get('/learning-materials', [StudentPortalController::class, 'learningMaterials'])->name('learning-materials');
+    Route::get('/attendance-calendar', [StudentPortalController::class, 'attendanceCalendar'])->name('attendance-calendar');
+    Route::get('/homework-calendar', [StudentPortalController::class, 'homeworkCalendar'])->name('homework-calendar');
+    Route::get('/id-card', [StudentPortalController::class, 'idCard'])->name('id-card');
+    Route::get('/certificates', [StudentPortalController::class, 'certificates'])->name('certificates');
     Route::put('/notifications/read', [StudentPortalController::class, 'markNotificationsRead'])->name('notifications.read');
     Route::get('/notifications', [StudentPortalController::class, 'notifications'])->name('notifications');
     Route::get('/notifications/{notification}', [StudentPortalController::class, 'notificationShow'])->name('notifications.show');

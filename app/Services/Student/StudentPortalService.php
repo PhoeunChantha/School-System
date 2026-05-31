@@ -3,6 +3,7 @@
 namespace App\Services\Student;
 
 use App\Models\AttendanceRecord;
+use App\Models\Certificate;
 use App\Models\Exam;
 use App\Models\ExamResult;
 use App\Models\FeeCharge;
@@ -96,6 +97,104 @@ class StudentPortalService
         return [
             'profile' => $this->profile($user, $student),
             'exams' => $this->allExams($student),
+        ];
+    }
+
+    public function examResultsData(User $user): array
+    {
+        $student = $this->findStudent($user);
+        $results = $this->allExamResults($student);
+
+        return [
+            'profile' => $this->profile($user, $student),
+            'summary' => [
+                'total' => count($results),
+                'passed' => collect($results)->where('status', 'passed')->count(),
+                'average' => round((float) collect($results)->avg('percent'), 2),
+            ],
+            'results' => $results,
+        ];
+    }
+
+    public function classScheduleData(User $user): array
+    {
+        $student = $this->findStudent($user);
+
+        return [
+            'profile' => $this->profile($user, $student),
+            'schedule' => $this->classSchedule($student),
+        ];
+    }
+
+    public function learningMaterialsData(User $user): array
+    {
+        $student = $this->findStudent($user);
+        $materials = $this->learningMaterials($student);
+
+        return [
+            'profile' => $this->profile($user, $student),
+            'summary' => [
+                'total' => count($materials),
+                'files' => collect($materials)->where('hasFile', true)->count(),
+            ],
+            'materials' => $materials,
+        ];
+    }
+
+    public function attendanceCalendarData(User $user): array
+    {
+        $student = $this->findStudent($user);
+        $records = $this->attendanceCalendarRecords($student);
+
+        return [
+            'profile' => $this->profile($user, $student),
+            'summary' => [
+                'total' => count($records),
+                'present' => collect($records)->whereIn('status', ['present', 'late', 'excused'])->count(),
+                'absent' => collect($records)->where('status', 'absent')->count(),
+            ],
+            'records' => $records,
+        ];
+    }
+
+    public function homeworkCalendarData(User $user): array
+    {
+        $student = $this->findStudent($user);
+        $items = $this->homeworkCalendarItems($student);
+
+        return [
+            'profile' => $this->profile($user, $student),
+            'summary' => [
+                'total' => count($items),
+                'submitted' => collect($items)->where('submissionStatus', '!=', 'pending')->count(),
+                'pending' => collect($items)->where('submissionStatus', 'pending')->count(),
+            ],
+            'items' => $items,
+        ];
+    }
+
+    public function idCardData(User $user): array
+    {
+        $student = $this->findStudent($user);
+
+        return [
+            'profile' => $this->profile($user, $student),
+            'student' => $this->idCard($student),
+        ];
+    }
+
+    public function certificatesData(User $user): array
+    {
+        $student = $this->findStudent($user);
+        $certificates = $this->allCertificates($student);
+
+        return [
+            'profile' => $this->profile($user, $student),
+            'summary' => [
+                'total' => count($certificates),
+                'latestIssuedOn' => $certificates[0]['issuedOn'] ?? '',
+            ],
+            'certificates' => $certificates,
         ];
     }
 
@@ -270,7 +369,7 @@ class StudentPortalService
     private function stats(?Student $student): array
     {
         if (! $student) {
-            return ['attendanceRate' => 0, 'latestAverage' => 0, 'homeworkSubmitted' => 0, 'unpaidFees' => 0];
+            return ['attendanceRate' => 0, 'latestAverage' => 0, 'homeworkSubmitted' => 0, 'certificatesIssued' => 0];
         }
 
         $total = $student->attendanceRecords()->count();
@@ -282,7 +381,7 @@ class StudentPortalService
             'attendanceRate' => $total > 0 ? (int) round(($present / $total) * 100) : 0,
             'latestAverage' => (int) round((float) ($student->gradeRecords()->latest('graded_at')->value('average') ?? 0)),
             'homeworkSubmitted' => $student->homeworkSubmissions()->whereIn('status', ['submitted', 'graded'])->count(),
-            'unpaidFees' => $student->feeCharges()->whereIn('status', ['unpaid', 'partial'])->count(),
+            'certificatesIssued' => $student->certificates()->where('status', 'issued')->count(),
         ];
     }
 
@@ -553,6 +652,214 @@ class StudentPortalService
                     'status' => $results[$e->id]->status,
                     'note' => $results[$e->id]->note ?? '',
                 ] : null,
+            ])
+            ->all();
+    }
+
+    private function allExamResults(?Student $student): array
+    {
+        if (! $student) {
+            return [];
+        }
+
+        return ExamResult::query()
+            ->with('exam:id,title,subject,exam_date,school_class_id')
+            ->where('student_id', $student->id)
+            ->latest()
+            ->get()
+            ->map(function (ExamResult $result): array {
+                $maxScore = (float) $result->max_score;
+                $score = (float) ($result->score ?? 0);
+
+                return [
+                    'id' => $result->id,
+                    'examTitle' => $result->exam?->title ?? 'Exam',
+                    'subject' => $result->exam?->subject ?? '',
+                    'date' => $result->exam?->exam_date?->format('Y-m-d') ?? '',
+                    'score' => $score,
+                    'maxScore' => $maxScore,
+                    'percent' => $maxScore > 0 ? round(($score / $maxScore) * 100, 2) : 0,
+                    'status' => $result->status,
+                    'note' => $result->note ?? '',
+                ];
+            })
+            ->all();
+    }
+
+    private function classSchedule(?Student $student): array
+    {
+        if (! $student?->schoolClass) {
+            return [];
+        }
+
+        $class = $student->schoolClass()->with('teacher:id,name_en,name_kh')->first();
+
+        if (! $class) {
+            return [];
+        }
+
+        return [
+            'className' => $class->name,
+            'teacher' => $class->teacher?->name_en ?? $class->teacher?->name_kh ?? '',
+            'room' => $class->room ?? '',
+            'startsAt' => $class->starts_at ?? '',
+            'endsAt' => $class->ends_at ?? '',
+            'days' => $class->days ?? [],
+        ];
+    }
+
+    private function learningMaterials(?Student $student): array
+    {
+        if (! $student || ! $student->school_class_id) {
+            return [];
+        }
+
+        $homework = HomeworkAssignment::query()
+            ->where('school_class_id', $student->school_class_id)
+            ->whereNotNull('attachment_path')
+            ->latest('due_on')
+            ->get(['id', 'title_en', 'title_kh', 'attachment_path', 'attachment_name', 'due_on'])
+            ->map(fn (HomeworkAssignment $assignment): array => [
+                'id' => 'homework-'.$assignment->id,
+                'title' => $assignment->title_en ?: $assignment->title_kh,
+                'type' => 'Homework file',
+                'date' => $assignment->due_on?->format('Y-m-d') ?? '',
+                'description' => 'Class homework attachment',
+                'fileName' => $assignment->attachment_name ?? 'Attachment',
+                'fileUrl' => $assignment->attachment_path ? asset($assignment->attachment_path) : '',
+                'hasFile' => true,
+            ]);
+
+        $exams = Exam::query()
+            ->where('school_class_id', $student->school_class_id)
+            ->whereNotNull('attachment_path')
+            ->latest('exam_date')
+            ->get(['id', 'title', 'subject', 'attachment_path', 'exam_date'])
+            ->map(fn (Exam $exam): array => [
+                'id' => 'exam-'.$exam->id,
+                'title' => $exam->title,
+                'type' => 'Exam file',
+                'date' => $exam->exam_date?->format('Y-m-d') ?? '',
+                'description' => $exam->subject ?? 'Exam material',
+                'fileName' => 'Exam attachment',
+                'fileUrl' => $exam->attachment_path ? asset($exam->attachment_path) : '',
+                'hasFile' => true,
+            ]);
+
+        $lessons = LessonPlan::query()
+            ->where('school_class_id', $student->school_class_id)
+            ->whereNotNull('materials')
+            ->latest('lesson_date')
+            ->take(20)
+            ->get(['id', 'title', 'materials', 'lesson_date'])
+            ->map(fn (LessonPlan $lesson): array => [
+                'id' => 'lesson-'.$lesson->id,
+                'title' => $lesson->title,
+                'type' => 'Lesson material',
+                'date' => $lesson->lesson_date?->format('Y-m-d') ?? '',
+                'description' => $lesson->materials ?? '',
+                'fileName' => '',
+                'fileUrl' => '',
+                'hasFile' => false,
+            ]);
+
+        return $homework->concat($exams)->concat($lessons)->values()->all();
+    }
+
+    private function attendanceCalendarRecords(?Student $student): array
+    {
+        if (! $student) {
+            return [];
+        }
+
+        return AttendanceRecord::query()
+            ->join('attendance_sessions', 'attendance_records.attendance_session_id', '=', 'attendance_sessions.id')
+            ->where('attendance_records.student_id', $student->id)
+            ->orderByDesc('attendance_sessions.attendance_date')
+            ->get([
+                'attendance_records.status',
+                'attendance_records.note',
+                'attendance_sessions.attendance_date',
+                'attendance_sessions.period',
+            ])
+            ->map(fn ($record): array => [
+                'date' => $record->attendance_date,
+                'period' => $record->period ?? 'Morning',
+                'status' => $record->status,
+                'note' => $record->note ?? '',
+            ])
+            ->all();
+    }
+
+    private function homeworkCalendarItems(?Student $student): array
+    {
+        if (! $student || ! $student->school_class_id) {
+            return [];
+        }
+
+        $submissions = HomeworkSubmission::query()
+            ->where('student_id', $student->id)
+            ->get(['homework_assignment_id', 'status', 'submitted_at'])
+            ->keyBy('homework_assignment_id');
+
+        return HomeworkAssignment::query()
+            ->where('school_class_id', $student->school_class_id)
+            ->latest('due_on')
+            ->get(['id', 'title_en', 'title_kh', 'points', 'due_on', 'status'])
+            ->map(fn (HomeworkAssignment $assignment): array => [
+                'id' => $assignment->id,
+                'title' => $assignment->title_en ?: $assignment->title_kh,
+                'due' => $assignment->due_on?->format('Y-m-d') ?? '',
+                'points' => $assignment->points ?? 0,
+                'status' => $assignment->status,
+                'submissionStatus' => $submissions[$assignment->id]->status ?? 'pending',
+                'submittedAt' => isset($submissions[$assignment->id])
+                    ? $submissions[$assignment->id]->submitted_at?->format('Y-m-d') ?? ''
+                    : '',
+            ])
+            ->all();
+    }
+
+    private function idCard(?Student $student): array
+    {
+        if (! $student) {
+            return [];
+        }
+
+        return [
+            'name' => $student->name_en,
+            'nameKh' => $student->name_kh,
+            'code' => $student->code,
+            'photo' => $student->profile_photo ? asset($student->profile_photo) : null,
+            'level' => $student->level?->name ?? '',
+            'className' => $student->schoolClass?->name ?? '',
+            'gender' => $student->gender ?? '',
+            'enrolledOn' => $student->enrolled_on?->format('Y-m-d') ?? '',
+        ];
+    }
+
+    private function allCertificates(?Student $student): array
+    {
+        if (! $student) {
+            return [];
+        }
+
+        return Certificate::query()
+            ->with(['level:id,name', 'student.schoolClass:id,name'])
+            ->where('student_id', $student->id)
+            ->where('status', 'issued')
+            ->latest('issued_on')
+            ->get()
+            ->map(fn (Certificate $certificate): array => [
+                'id' => $certificate->id,
+                'title' => $certificate->title,
+                'type' => $certificate->type,
+                'academicYear' => $certificate->academic_year ?? '',
+                'issuedOn' => $certificate->issued_on?->format('Y-m-d') ?? '',
+                'certificateNumber' => $certificate->certificate_number,
+                'level' => $certificate->level?->name ?? '',
+                'className' => $certificate->student?->schoolClass?->name ?? '',
+                'imageUrl' => $certificate->certificate_file_path ? asset($certificate->certificate_file_path) : '',
             ])
             ->all();
     }

@@ -198,7 +198,7 @@ class SchoolSettingService
     }
 
     /**
-     * Move an uploaded image to public/uploads/school/, delete the old file, and
+     * Move an uploaded file to public/uploads/school/, delete the old file, and
      * merge the new path into the saved school settings.
      */
     public function uploadImage(string $type, UploadedFile $file, ?int $userId): string
@@ -209,7 +209,11 @@ class SchoolSettingService
             mkdir($destination, 0755, true);
         }
 
-        $group = $type === 'seoImage' ? 'seo' : 'school';
+        $group = match ($type) {
+            'seoImage' => 'seo',
+            'notificationSound' => 'notifications',
+            default => 'school',
+        };
         $current = $this->settingValue($group);
 
         // Remove old file if it exists
@@ -345,6 +349,7 @@ class SchoolSettingService
                 'feeReminderDays' => '3',
                 'homeworkDue' => true,
                 'systemUpdates' => true,
+                'notificationSound' => null,
             ],
             default => [],
         };

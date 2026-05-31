@@ -136,6 +136,7 @@ class AdminSchoolSettingCrudTest extends TestCase
                 'feeReminderDays' => '3',
                 'homeworkDue' => true,
                 'systemUpdates' => true,
+                'notificationSound' => 'uploads/school/alert.mp3',
             ],
         ];
 
@@ -149,6 +150,36 @@ class AdminSchoolSettingCrudTest extends TestCase
 
         $this->assertSame('75', $setting->value['lowAttendanceThreshold']);
         $this->assertFalse($setting->value['feeReminder']);
+        $this->assertSame('uploads/school/alert.mp3', $setting->value['notificationSound']);
+    }
+
+    public function test_admin_can_upload_notification_sound(): void
+    {
+        $this->actingAs(User::factory()->create());
+
+        try {
+            $this->post(route('admin.settings.upload-image'), [
+                'type' => 'notificationSound',
+                'image' => UploadedFile::fake()->create('notification.mp3', 100, 'audio/mpeg'),
+            ])->assertRedirect();
+
+            $setting = SchoolSetting::query()
+                ->where('group', 'notifications')
+                ->where('key', 'preferences')
+                ->firstOrFail();
+
+            $this->assertStringStartsWith('uploads/school/notificationSound_', $setting->value['notificationSound']);
+            $this->assertFileExists(public_path($setting->value['notificationSound']));
+        } finally {
+            $setting = SchoolSetting::query()
+                ->where('group', 'notifications')
+                ->where('key', 'preferences')
+                ->first();
+
+            if ($setting && ! empty($setting->value['notificationSound'])) {
+                @unlink(public_path($setting->value['notificationSound']));
+            }
+        }
     }
 
     public function test_database_setting_updates_environment_file(): void

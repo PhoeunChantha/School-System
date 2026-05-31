@@ -23,6 +23,8 @@ use App\Models\Teacher;
 use App\Models\User;
 use App\Policies\FeaturePermissionPolicy;
 use App\Support\EncryptedRouteKey;
+use App\Support\SchoolProfile;
+use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\Facades\Route;
 use Illuminate\Support\Facades\View;
@@ -47,24 +49,21 @@ class AppServiceProvider extends ServiceProvider
     {
         // Share school data with the root blade for favicon and OG meta tags
         View::composer('app', function (\Illuminate\View\View $view): void {
-            $value = SchoolSetting::query()
-                ->where('group', 'school')
-                ->where('key', 'profile')
-                ->first()?->value ?? [];
+            $value = app(SchoolProfile::class)->data();
             $seo = SchoolSetting::query()
                 ->where('group', 'seo')
                 ->where('key', 'meta')
                 ->first()?->value ?? [];
 
-            $view->with('schoolFavicon', ! empty($value['favicon']) ? asset($value['favicon']) : null);
-            $view->with('schoolLogo', ! empty($value['logo']) ? asset($value['logo']) : null);
+            $view->with('schoolFavicon', $value['favicon']);
+            $view->with('schoolLogo', $value['logo']);
             $view->with('schoolName', $value['nameEn'] ?? config('app.name', 'School System'));
             $view->with('seoTitle', $seo['title'] ?? $value['nameEn'] ?? config('app.name', 'School System'));
             $view->with('seoDescription', $seo['description'] ?? ($value['nameEn'] ?? config('app.name', 'School System')).' - School Management System');
             $view->with('seoKeywords', $seo['keywords'] ?? null);
             $view->with('seoCanonicalUrl', $seo['canonicalUrl'] ?? null);
             $view->with('seoRobots', $seo['robots'] ?? 'index,follow');
-            $view->with('seoImage', ! empty($seo['seoImage']) ? asset($seo['seoImage']) : null);
+            $view->with('seoImage', filled(Arr::get($seo, 'seoImage')) ? asset((string) Arr::get($seo, 'seoImage')) : null);
         });
 
         $policyModels = [

@@ -1,7 +1,7 @@
 import '@/pages/admin/admin.css';
 import { useAdminTranslation } from '@/hooks/use-admin-translation';
 import AdminShell from '@/pages/admin/shell';
-import { Avatar, Badge, FeeTag, KH, ScoreChip } from '@/pages/admin/ui';
+import { Avatar, Badge, KH, ScoreChip } from '@/pages/admin/ui';
 import { type SharedData } from '@/types';
 import { Head, Link, usePage } from '@inertiajs/react';
 import {
@@ -22,8 +22,6 @@ import {
 import type { LucideIcon } from 'lucide-react';
 import type { ReactNode } from 'react';
 import {
-    Area,
-    AreaChart,
     Bar,
     BarChart,
     CartesianGrid,
@@ -108,6 +106,18 @@ interface RecentStudent {
     province: string;
 }
 
+interface TopStudentScore {
+    id: number;
+    studentId: number;
+    nameKh: string;
+    nameEn: string;
+    photo: string | null;
+    level: string;
+    className: string;
+    period: string;
+    score: number;
+}
+
 interface ClassSummary {
     id: number;
     name: string;
@@ -127,6 +137,7 @@ interface DashboardProps {
     atRiskStudents: AtRiskStudent[];
     recentPayments: RecentPayment[];
     recentStudents: RecentStudent[];
+    topStudentScores: TopStudentScore[];
     classes: ClassSummary[];
 }
 
@@ -141,11 +152,6 @@ interface StatCard {
 const panelClass = 'rounded-[22px] border border-slate-200/80 bg-white/95 p-4 shadow-[0_14px_34px_rgba(15,23,42,0.07)] dark:border-slate-700 dark:bg-slate-800/90';
 const rowCardClass = 'rounded-[18px] border border-slate-200/80 bg-slate-50/90 p-3 dark:border-slate-700 dark:bg-slate-950/70';
 const mutedTextClass = 'text-[11px] font-extrabold text-slate-400';
-
-const avg = (grade: RecentStudent['grade']): number =>
-    Math.round(
-        (grade.speaking + grade.listening + grade.reading + grade.writing) / 4,
-    );
 
 const formatMoney = (amount: number): string =>
     new Intl.NumberFormat('en-US', {
@@ -208,25 +214,16 @@ function SectionCard({
 export default function Dashboard({
     stats,
     revenueTrend,
-    feeStatus,
     attendanceByClass,
     skillsAvg,
     atRiskStudents,
-    recentPayments,
-    recentStudents,
+    topStudentScores,
     classes,
 }: DashboardProps) {
     const { props } = usePage<SharedData>();
     const { lang } = useAdminTranslation();
     const isKh = lang === 'kh';
     const userName = props.auth?.user?.name ?? 'Admin';
-    const latestRevenue = revenueTrend.at(-1)?.revenue ?? stats.monthlyRevenue;
-    const previousRevenue = revenueTrend.at(-2)?.revenue ?? 0;
-    const revenueChange =
-        previousRevenue > 0
-            ? Math.round(((latestRevenue - previousRevenue) / previousRevenue) * 100)
-            : 0;
-
     const statCards: StatCard[] = [
         {
             icon: GraduationCap,
@@ -258,9 +255,6 @@ export default function Dashboard({
         },
     ];
 
-    const feeTotal = feeStatus.paid + feeStatus.unpaid + feeStatus.partial;
-    const paidRate = feeTotal > 0 ? Math.round((feeStatus.paid / feeTotal) * 100) : 0;
-
     const skillsData = [
         { skill: 'Speaking', labelKh: 'Speaking', avg: skillsAvg.speaking },
         { skill: 'Listening', labelKh: 'Listening', avg: skillsAvg.listening },
@@ -272,7 +266,7 @@ export default function Dashboard({
     }));
 
     const compactAttendance = attendanceByClass.slice(0, 5);
-    const visibleStudents = recentStudents.slice(0, 5);
+    const visibleTopScores = topStudentScores.slice(0, 5);
     const visibleClasses = classes.slice(0, 4);
     const urgentStudents = atRiskStudents.slice(0, 3);
 
@@ -282,7 +276,7 @@ export default function Dashboard({
 
             <div className="min-h-full bg-slate-50 dark:bg-slate-950 md:p-6 max-md:bg-[radial-gradient(circle_at_100%_0,rgba(37,99,235,0.12),transparent_34%),linear-gradient(180deg,#f7f9fc_0%,#eef3f8_100%)] max-md:px-2.5 max-md:py-3 max-md:pb-[calc(104px+env(safe-area-inset-bottom))] dark:max-md:bg-[radial-gradient(circle_at_100%_0,rgba(96,165,250,0.14),transparent_34%),linear-gradient(180deg,#0f172a_0%,#111827_100%)]">
                 <div className="fade-in mx-auto flex max-w-7xl flex-col gap-4 max-md:gap-3">
-                    <section className="grid grid-cols-[minmax(0,1fr)_280px] gap-4 max-lg:grid-cols-1">
+                    <section>
                         <div className="relative overflow-hidden rounded-[28px] border border-slate-200 bg-slate-900 p-7 text-white shadow-[0_18px_42px_rgba(15,23,42,0.16)] max-md:rounded-[22px] max-md:p-4 dark:border-slate-700 dark:bg-slate-800">
                             <span className="mb-5 inline-flex items-center gap-2 rounded-full bg-blue-500/15 px-3 py-1.5 text-xs font-black text-blue-100 max-md:mb-4">
                                 <Sparkles size={14} />
@@ -295,18 +289,6 @@ export default function Dashboard({
                                 Here is today&apos;s school activity, attendance,
                                 payments, and class progress.
                             </p>
-                        </div>
-
-                        <div className={`${panelClass} flex items-center justify-between gap-4 max-lg:hidden`}>
-                            <div>
-                                <span className={mutedTextClass}>Monthly revenue</span>
-                                <strong className="mt-2 block text-3xl font-black text-slate-900 dark:text-slate-50">{formatMoney(latestRevenue)}</strong>
-                            </div>
-                            <Badge type={revenueChange >= 0 ? 'green' : 'red'}>
-                                <TrendingUp size={12} />
-                                {revenueChange >= 0 ? '+' : ''}
-                                {revenueChange}%
-                            </Badge>
                         </div>
                     </section>
 
@@ -344,111 +326,11 @@ export default function Dashboard({
                         })}
                     </section>
 
+                    {/*
                     <div className="grid grid-cols-2 gap-4 max-lg:grid-cols-1 max-md:gap-3">
-                        <SectionCard
-                            title="Revenue trend"
-                            subtitle="Last 6 months"
-                            className="min-h-[240px] max-md:min-h-[190px]"
-                        >
-                            <ResponsiveContainer width="100%" height={176}>
-                                <AreaChart
-                                    data={revenueTrend}
-                                    margin={{ top: 8, right: 8, left: -18, bottom: 0 }}
-                                >
-                                    <defs>
-                                        <linearGradient
-                                            id="dashboardRevenue"
-                                            x1="0"
-                                            x2="0"
-                                            y1="0"
-                                            y2="1"
-                                        >
-                                            <stop
-                                                offset="0%"
-                                                stopColor="#2563eb"
-                                                stopOpacity={0.3}
-                                            />
-                                            <stop
-                                                offset="100%"
-                                                stopColor="#2563eb"
-                                                stopOpacity={0}
-                                            />
-                                        </linearGradient>
-                                    </defs>
-                                    <CartesianGrid
-                                        stroke="#e8edf5"
-                                        strokeDasharray="4 4"
-                                        vertical={false}
-                                    />
-                                    <XAxis
-                                        axisLine={false}
-                                        dataKey="month"
-                                        tick={{ fill: '#94a3b8', fontSize: 11 }}
-                                        tickLine={false}
-                                    />
-                                    <YAxis
-                                        axisLine={false}
-                                        tick={{ fill: '#94a3b8', fontSize: 10 }}
-                                        tickFormatter={(value) =>
-                                            `$${Number(value) / 1000}k`
-                                        }
-                                        tickLine={false}
-                                    />
-                                    <Tooltip content={<DashboardTooltip />} />
-                                    <Area
-                                        activeDot={{
-                                            fill: '#2563eb',
-                                            r: 5,
-                                            stroke: '#fff',
-                                            strokeWidth: 2,
-                                        }}
-                                        dataKey="revenue"
-                                        fill="url(#dashboardRevenue)"
-                                        name="revenue"
-                                        stroke="#2563eb"
-                                        strokeWidth={3}
-                                        type="monotone"
-                                    />
-                                </AreaChart>
-                            </ResponsiveContainer>
-                        </SectionCard>
-
-                        <SectionCard
-                            title="Fee health"
-                            subtitle={`${paidRate}% paid this cycle`}
-                            className="flex flex-col items-center"
-                        >
-                            <div className="grid place-items-center">
-                                <div
-                                    className="grid h-36 w-36 place-items-center rounded-full"
-                                    style={{
-                                        background: `conic-gradient(#10b981 ${paidRate}%, #e2e8f0 0)`,
-                                    }}
-                                >
-                                    <div className="grid h-24 w-24 place-items-center rounded-full bg-white text-center dark:bg-slate-900">
-                                        <div>
-                                            <strong className="block text-2xl font-black text-slate-900 dark:text-slate-50">{paidRate}%</strong>
-                                            <span className="text-[10px] font-black uppercase text-slate-400">Paid</span>
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
-                            <div className="mt-4 grid w-full gap-2">
-                                <span className="flex items-center justify-between rounded-2xl bg-slate-50 px-3 py-2 text-xs font-extrabold text-slate-500 dark:bg-slate-950 dark:text-slate-300">
-                                    <i className="h-2 w-2 rounded-full bg-emerald-500" />
-                                    Paid <strong>{feeStatus.paid}</strong>
-                                </span>
-                                <span className="flex items-center justify-between rounded-2xl bg-slate-50 px-3 py-2 text-xs font-extrabold text-slate-500 dark:bg-slate-950 dark:text-slate-300">
-                                    <i className="h-2 w-2 rounded-full bg-amber-500" />
-                                    Partial <strong>{feeStatus.partial}</strong>
-                                </span>
-                                <span className="flex items-center justify-between rounded-2xl bg-slate-50 px-3 py-2 text-xs font-extrabold text-slate-500 dark:bg-slate-950 dark:text-slate-300">
-                                    <i className="h-2 w-2 rounded-full bg-red-500" />
-                                    Unpaid <strong>{feeStatus.unpaid}</strong>
-                                </span>
-                            </div>
-                        </SectionCard>
+                        Revenue trend and Fee health are hidden by request.
                     </div>
+                    */}
 
                     <div className="grid grid-cols-2 gap-4 max-lg:grid-cols-1 max-md:gap-3">
                         <SectionCard
@@ -459,36 +341,33 @@ export default function Dashboard({
                             <ResponsiveContainer width="100%" height={210}>
                                 <BarChart
                                     data={compactAttendance}
-                                    layout="vertical"
-                                    margin={{ top: 4, right: 18, left: -18, bottom: 0 }}
+                                    margin={{ top: 12, right: 8, left: -18, bottom: 0 }}
                                 >
                                     <CartesianGrid
-                                        horizontal={false}
+                                        vertical={false}
                                         stroke="#e8edf5"
                                         strokeDasharray="4 4"
                                     />
                                     <XAxis
                                         axisLine={false}
+                                        dataKey="short"
+                                        interval={0}
+                                        tick={{ fill: '#475569', fontSize: 10, fontWeight: 700 }}
+                                        tickLine={false}
+                                    />
+                                    <YAxis
+                                        axisLine={false}
                                         domain={[0, 100]}
                                         tick={{ fill: '#94a3b8', fontSize: 10 }}
                                         tickFormatter={(value) => `${value}%`}
                                         tickLine={false}
-                                        type="number"
-                                    />
-                                    <YAxis
-                                        axisLine={false}
-                                        dataKey="short"
-                                        tick={{ fill: '#475569', fontSize: 11 }}
-                                        tickLine={false}
-                                        type="category"
-                                        width={78}
                                     />
                                     <Tooltip content={<DashboardTooltip />} />
                                     <Bar
-                                        barSize={14}
+                                        barSize={26}
                                         dataKey="rate"
                                         name="rate"
-                                        radius={[0, 999, 999, 0]}
+                                        radius={[0, 0, 0, 0]}
                                     >
                                         {compactAttendance.map((entry) => (
                                             <Cell
@@ -603,43 +482,88 @@ export default function Dashboard({
                     )}
 
                     <SectionCard
-                        title="Recent students"
-                        subtitle="Latest enrolled profiles"
+                        title="Top student scores"
+                        subtitle="Highest grade averages"
                         action={
                             <Link
-                                className="inline-flex items-center gap-1 rounded-full bg-blue-600 px-3 py-1.5 text-xs font-black text-white"
-                                href="/admin/students/create"
+                                className="inline-flex items-center gap-1 text-xs font-black text-blue-600 dark:text-blue-300"
+                                href="/admin/grades"
                             >
-                                <Plus size={14} />
-                                Add
+                                View grades <ArrowRight size={14} />
                             </Link>
                         }
                     >
-                        <div className="grid gap-2">
-                            {visibleStudents.map((student) => (
-                                <article
-                                    key={student.id}
-                                    className={`${rowCardClass} flex items-center gap-3`}
-                                >
-                                    <Avatar
-                                        name={student.nameEn}
-                                        size={44}
-                                        src={student.photo}
-                                    />
-                                    <div className="min-w-0 flex-1">
-                                        <KH className="block truncate text-sm font-black text-slate-900 dark:text-slate-50">{student.nameKh}</KH>
-                                        <span className="block truncate text-[11px] font-extrabold text-slate-400">{student.nameEn}</span>
-                                        <div className="mt-2 flex flex-wrap gap-1.5">
-                                            <Badge type="blue">{student.level}</Badge>
-                                            <FeeTag status={student.fees} />
+                        <div className="grid gap-3">
+                            {visibleTopScores.length === 0 && (
+                                <div className="rounded-[18px] border border-dashed border-slate-300 bg-slate-50 px-4 py-8 text-center text-sm font-black text-slate-400 dark:border-slate-700 dark:bg-slate-950/70">
+                                    No grade scores recorded yet.
+                                </div>
+                            )}
+                            <div className="grid grid-cols-5 gap-3 max-xl:grid-cols-3 max-md:grid-cols-2">
+                                {visibleTopScores.map((student, index) => {
+                                    const ringValue = Math.max(0, Math.min(100, Math.round(student.score)));
+                                    const ringColor = ringValue >= 85 ? '#10b981' : ringValue >= 70 ? '#2563eb' : ringValue >= 50 ? '#f59e0b' : '#ef4444';
+
+                                    return (
+                                        <article
+                                            key={student.id}
+                                            className={`${rowCardClass} flex min-h-[210px] flex-col items-center justify-between gap-3 text-center`}
+                                        >
+                                            <div className="flex w-full items-center justify-between">
+                                                <span className="inline-flex h-8 w-8 items-center justify-center rounded-2xl bg-blue-600 text-xs font-black text-white shadow-[0_10px_22px_rgba(37,99,235,0.25)]">
+                                                    {index + 1}
+                                                </span>
+                                                <ScoreChip score={ringValue} />
+                                            </div>
+
+                                            <div
+                                                className="relative grid h-28 w-28 place-items-center rounded-full"
+                                                style={{
+                                                    background: `conic-gradient(${ringColor} ${ringValue * 3.6}deg, #e2e8f0 0deg)`,
+                                                }}
+                                            >
+                                                <div className="absolute inset-2 rounded-full bg-white dark:bg-slate-900" />
+                                                <div className="relative grid place-items-center gap-1">
+                                                    <Avatar
+                                                        name={student.nameEn}
+                                                        size={54}
+                                                        src={student.photo}
+                                                    />
+                                                    <strong className="text-lg font-black leading-none text-slate-900 dark:text-slate-50">{student.score}</strong>
+                                                </div>
+                                            </div>
+
+                                            <div className="min-w-0">
+                                                <KH className="block truncate text-sm font-black text-slate-900 dark:text-slate-50">{student.nameKh}</KH>
+                                                <span className="block truncate text-[11px] font-extrabold text-slate-400">{student.nameEn}</span>
+                                                <div className="mt-2 flex flex-wrap justify-center gap-1.5">
+                                                    {student.className && <Badge type="blue">{student.className}</Badge>}
+                                                    <Badge type="green">{student.period}</Badge>
+                                                </div>
+                                            </div>
+                                        </article>
+                                    );
+                                })}
+                            </div>
+
+                            {visibleTopScores.length > 0 && (
+                                <div className="grid grid-cols-5 gap-2 rounded-[18px] border border-slate-200 bg-slate-50/80 p-3 dark:border-slate-700 dark:bg-slate-950/70 max-md:grid-cols-1">
+                                    {visibleTopScores.map((student) => (
+                                        <div key={`legend-${student.id}`} className="min-w-0">
+                                            <div className="mb-1 flex items-center justify-between gap-2 text-[10px] font-black uppercase text-slate-400">
+                                                <span className="truncate">{student.nameEn}</span>
+                                                <span>{student.score}</span>
+                                            </div>
+                                            <div className="h-1.5 overflow-hidden rounded-full bg-slate-200 dark:bg-slate-800">
+                                                <div
+                                                    className="h-full rounded-full bg-blue-600"
+                                                    style={{ width: `${Math.max(0, Math.min(100, Math.round(student.score)))}%` }}
+                                                />
+                                            </div>
                                         </div>
-                                    </div>
-                                    <div className="grid justify-items-end gap-1">
-                                        <ScoreChip score={avg(student.grade)} />
-                                        <span className="text-[11px] font-black text-slate-400">{student.attendance}%</span>
-                                    </div>
-                                </article>
-                            ))}
+                                    ))}
+                                </div>
+                            )}
                         </div>
                     </SectionCard>
 
@@ -681,38 +605,9 @@ export default function Dashboard({
                         </div>
                     </SectionCard>
 
-                    {recentPayments.length > 0 && (
-                        <SectionCard
-                            title="Recent payments"
-                            subtitle="Latest fee activity"
-                            action={
-                                <Link className="inline-flex items-center gap-1 text-xs font-black text-blue-600 dark:text-blue-300" href="/admin/fee">
-                                    View all <ArrowRight size={14} />
-                                </Link>
-                            }
-                        >
-                            <div className="grid gap-2">
-                                {recentPayments.slice(0, 4).map((payment) => (
-                                    <article
-                                        key={payment.id}
-                                        className={`${rowCardClass} flex items-center justify-between gap-3`}
-                                    >
-                                        <div className="flex min-w-0 items-center gap-3">
-                                            <Avatar name={payment.nameEn} size={38} />
-                                            <div className="min-w-0">
-                                                <KH className="block truncate text-sm font-black text-slate-900 dark:text-slate-50">{payment.nameKh}</KH>
-                                                <span className="block truncate text-[11px] font-extrabold text-slate-400">{payment.method}</span>
-                                            </div>
-                                        </div>
-                                        <div className="shrink-0 text-right">
-                                            <strong className="block text-sm font-black text-emerald-600 dark:text-emerald-300">{formatMoney(payment.amount)}</strong>
-                                            <span className="text-[11px] font-extrabold text-slate-400">{payment.date}</span>
-                                        </div>
-                                    </article>
-                                ))}
-                            </div>
-                        </SectionCard>
-                    )}
+                    {/*
+                    Recent payments is hidden by request.
+                    */}
                 </div>
             </div>
         </AdminShell>

@@ -57,6 +57,41 @@ class StudentPortalController extends Controller
         return Inertia::render('student/exams/index', $this->service->examsData($request->user()));
     }
 
+    public function examResults(Request $request): Response
+    {
+        return Inertia::render('student/exam-results/index', $this->service->examResultsData($request->user()));
+    }
+
+    public function classSchedule(Request $request): Response
+    {
+        return Inertia::render('student/class-schedule/index', $this->service->classScheduleData($request->user()));
+    }
+
+    public function learningMaterials(Request $request): Response
+    {
+        return Inertia::render('student/learning-materials/index', $this->service->learningMaterialsData($request->user()));
+    }
+
+    public function attendanceCalendar(Request $request): Response
+    {
+        return Inertia::render('student/attendance-calendar/index', $this->service->attendanceCalendarData($request->user()));
+    }
+
+    public function homeworkCalendar(Request $request): Response
+    {
+        return Inertia::render('student/homework-calendar/index', $this->service->homeworkCalendarData($request->user()));
+    }
+
+    public function idCard(Request $request): Response
+    {
+        return Inertia::render('student/id-card/index', $this->service->idCardData($request->user()));
+    }
+
+    public function certificates(Request $request): Response
+    {
+        return Inertia::render('student/certificates/index', $this->service->certificatesData($request->user()));
+    }
+
     public function notifications(Request $request): Response
     {
         return Inertia::render('student/notifications/index', $this->service->notificationsData($request->user()));

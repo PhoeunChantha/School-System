@@ -1,6 +1,7 @@
 import StudentShell, { type StudentProfile } from '@/pages/student/shell';
 import {
     attendance,
+    classSchedule,
     exams,
     fees,
     grades,
@@ -9,10 +10,12 @@ import {
 } from '@/routes/student';
 import { Link } from '@inertiajs/react';
 import {
+    Award,
     BarChart2,
     Bell,
     BookOpen,
     CalendarCheck,
+    CalendarDays,
     CreditCard,
     FileText,
     Star,
@@ -56,7 +59,7 @@ interface Stats {
     attendanceRate: number;
     latestAverage: number;
     homeworkSubmitted: number;
-    unpaidFees: number;
+    certificatesIssued: number;
 }
 
 interface Props {
@@ -106,6 +109,14 @@ const QUICK_LINKS = [
         label: 'Alerts',
         icon: Bell,
         href: notifications(),
+        bg: '#ecfdf8',
+        color: '#009c7f',
+    },
+    {
+        id: 'schedule',
+        label: 'Schedule',
+        icon: CalendarDays,
+        href: classSchedule(),
         bg: '#ecfdf8',
         color: '#009c7f',
     },
@@ -254,9 +265,9 @@ export default function StudentDashboard({
                     <div className="s-stat-label">Homework</div>
                 </div>
 
-                {/* Unpaid Fees */}
+                {/* Certificates */}
                 <div className="s-stat-card">
-                    <CreditCard
+                    <Award
                         size={28}
                         color="#009c7f"
                         style={{
@@ -272,9 +283,9 @@ export default function StudentDashboard({
                             color: '#071827',
                         }}
                     >
-                        {stats.unpaidFees}
+                        {stats.certificatesIssued}
                     </div>
-                    <div className="s-stat-label">Fees Due</div>
+                    <div className="s-stat-label">Certificates</div>
                 </div>
             </div>
 

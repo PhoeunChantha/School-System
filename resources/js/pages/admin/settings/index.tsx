@@ -110,6 +110,7 @@ interface NotificationSettings {
     feeReminderDays: string;
     homeworkDue: boolean;
     systemUpdates: boolean;
+    notificationSound: string | null;
 }
 
 interface DatabaseSettings {
@@ -320,13 +321,23 @@ export default function SettingsPage({
     const [seoImagePreview, setSeoImagePreview] = useState<string | null>(
         toUrl(settings.seo.seoImage),
     );
+    const [notificationSoundPreview, setNotificationSoundPreview] = useState<
+        string | null
+    >(toUrl(settings.notifications.notificationSound));
     const [uploadingType, setUploadingType] = useState<
-        'logo' | 'favicon' | 'loginBg' | 'seoImage' | 'searchConsole' | null
+        | 'logo'
+        | 'favicon'
+        | 'loginBg'
+        | 'seoImage'
+        | 'notificationSound'
+        | 'searchConsole'
+        | null
     >(null);
     const logoInputRef = useRef<HTMLInputElement>(null);
     const faviconInputRef = useRef<HTMLInputElement>(null);
     const loginBgInputRef = useRef<HTMLInputElement>(null);
     const seoImageInputRef = useRef<HTMLInputElement>(null);
+    const notificationSoundInputRef = useRef<HTMLInputElement>(null);
     const searchConsoleInputRef = useRef<HTMLInputElement>(null);
 
     const saveGroup = (group: SettingsTab, value: object) => {
@@ -343,13 +354,15 @@ export default function SettingsPage({
     };
 
     const handleImageUpload = (
-        type: 'logo' | 'favicon' | 'loginBg' | 'seoImage',
+        type: 'logo' | 'favicon' | 'loginBg' | 'seoImage' | 'notificationSound',
         file: File,
     ) => {
         const previewUrl = URL.createObjectURL(file);
         if (type === 'logo') setLogoPreview(previewUrl);
         else if (type === 'favicon') setFaviconPreview(previewUrl);
         else if (type === 'loginBg') setLoginBgPreview(previewUrl);
+        else if (type === 'notificationSound')
+            setNotificationSoundPreview(previewUrl);
         else setSeoImagePreview(previewUrl);
 
         setUploadingType(type);
@@ -359,10 +372,23 @@ export default function SettingsPage({
             {
                 forceFormData: true,
                 preserveScroll: true,
-                onSuccess: () =>
+                onSuccess: (page) => {
+                    if (type === 'notificationSound') {
+                        const uploadedSound = (
+                            page.props as unknown as SettingsPageProps
+                        ).settings.notifications.notificationSound;
+
+                        setNotifications((current) => ({
+                            ...current,
+                            notificationSound: uploadedSound,
+                        }));
+                        setNotificationSoundPreview(toUrl(uploadedSound));
+                    }
+
                     toast.success(
-                        `${type === 'logo' ? 'Logo' : type === 'favicon' ? 'Favicon' : type === 'loginBg' ? 'Login background' : 'SEO image'} uploaded successfully.`,
-                    ),
+                        `${type === 'logo' ? 'Logo' : type === 'favicon' ? 'Favicon' : type === 'loginBg' ? 'Login background' : type === 'notificationSound' ? 'Notification sound' : 'SEO image'} uploaded successfully.`,
+                    );
+                },
                 onError: () => {
                     if (type === 'logo')
                         setLogoPreview(toUrl(settings.school.logo));
@@ -370,6 +396,10 @@ export default function SettingsPage({
                         setFaviconPreview(toUrl(settings.school.favicon));
                     else if (type === 'loginBg')
                         setLoginBgPreview(toUrl(settings.school.loginBg));
+                    else if (type === 'notificationSound')
+                        setNotificationSoundPreview(
+                            toUrl(settings.notifications.notificationSound),
+                        );
                     else setSeoImagePreview(toUrl(settings.seo.seoImage));
                     toast.error('Upload failed. Please try again.');
                 },
@@ -2078,6 +2108,110 @@ export default function SettingsPage({
                                         gap: 14,
                                     }}
                                 >
+                                    <div
+                                        style={{
+                                            padding: '14px 16px',
+                                            background: '#f8fafc',
+                                            borderRadius: 12,
+                                        }}
+                                    >
+                                        <div
+                                            style={{
+                                                display: 'flex',
+                                                alignItems: 'center',
+                                                justifyContent: 'space-between',
+                                                gap: 12,
+                                                flexWrap: 'wrap',
+                                            }}
+                                        >
+                                            <div>
+                                                <KH
+                                                    style={{
+                                                        fontWeight: 800,
+                                                        fontSize: 13,
+                                                        display: 'block',
+                                                    }}
+                                                >
+                                                    សំឡេងជូនដំណឹង
+                                                </KH>
+                                                <div
+                                                    style={{
+                                                        fontSize: 12,
+                                                        color: '#64748b',
+                                                    }}
+                                                >
+                                                    Reverb alert sound while the student portal is open
+                                                </div>
+                                            </div>
+                                            <button
+                                                type="button"
+                                                onClick={() =>
+                                                    notificationSoundInputRef.current?.click()
+                                                }
+                                                style={{
+                                                    display: 'inline-flex',
+                                                    alignItems: 'center',
+                                                    gap: 8,
+                                                    minHeight: 38,
+                                                    border: 'none',
+                                                    borderRadius: 12,
+                                                    background: '#2563eb',
+                                                    color: '#ffffff',
+                                                    padding: '8px 14px',
+                                                    fontSize: 12,
+                                                    fontWeight: 900,
+                                                    cursor: 'pointer',
+                                                }}
+                                            >
+                                                <Upload size={14} />
+                                                {uploadingType ===
+                                                'notificationSound'
+                                                    ? 'Uploading'
+                                                    : 'Upload Sound'}
+                                            </button>
+                                        </div>
+                                        <input
+                                            ref={notificationSoundInputRef}
+                                            type="file"
+                                            accept="audio/mpeg,audio/wav,audio/ogg,.mp3,.wav,.ogg"
+                                            style={{ display: 'none' }}
+                                            onChange={(event) => {
+                                                const file =
+                                                    event.target.files?.[0];
+
+                                                if (file) {
+                                                    handleImageUpload(
+                                                        'notificationSound',
+                                                        file,
+                                                    );
+                                                }
+
+                                                event.target.value = '';
+                                            }}
+                                        />
+                                        {notificationSoundPreview ? (
+                                            <audio
+                                                controls
+                                                src={notificationSoundPreview}
+                                                style={{
+                                                    width: '100%',
+                                                    marginTop: 12,
+                                                }}
+                                            />
+                                        ) : (
+                                            <div
+                                                style={{
+                                                    marginTop: 10,
+                                                    color: '#94a3b8',
+                                                    fontSize: 11,
+                                                    fontWeight: 700,
+                                                }}
+                                            >
+                                                No custom sound uploaded
+                                            </div>
+                                        )}
+                                    </div>
+
                                     {[
                                         {
                                             key: 'attendanceAlert' as const,

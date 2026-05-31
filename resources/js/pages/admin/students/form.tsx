@@ -89,8 +89,16 @@ export default function StudentFormPage({
         student?.profile_photo_url ?? null,
     );
     const fileInputRef = useRef<HTMLInputElement>(null);
-    const { data, setData, post, processing, errors, transform } =
-        useForm<StudentFormData>({
+    const {
+        data,
+        setData,
+        post,
+        processing,
+        errors,
+        transform,
+        setError,
+        clearErrors,
+    } = useForm<StudentFormData>({
             level_id: student?.level_id ?? null,
             school_class_id: student?.school_class_id ?? null,
             code: student?.code ?? '',
@@ -118,13 +126,43 @@ export default function StudentFormPage({
         ? classes.filter((schoolClass) => schoolClass.levelId === data.level_id)
         : classes;
 
-    const selectedLevel = levels.find((level) => level.id === data.level_id);
-
     const preventNativeSubmit = (event: FormEvent<HTMLFormElement>) => {
         event.preventDefault();
     };
 
+    const validateStep = (targetStep: number) => {
+        if (targetStep !== 2) {
+            return true;
+        }
+
+        clearErrors('level_id', 'school_class_id');
+
+        if (!data.level_id) {
+            setError('level_id', translateText('Please select a level.'));
+        }
+
+        if (!data.school_class_id) {
+            setError('school_class_id', translateText('Please select a class.'));
+        }
+
+        return Boolean(data.level_id && data.school_class_id);
+    };
+
+    const goNextStep = () => {
+        if (!validateStep(step)) {
+            return;
+        }
+
+        setStep((value) => value + 1);
+    };
+
     const saveStudent = () => {
+        if (!validateStep(2)) {
+            setStep(2);
+
+            return;
+        }
+
         transform((formData) => ({
             ...formData,
             ...(isEdit ? { _method: 'put' as const } : {}),
@@ -402,6 +440,10 @@ export default function StudentFormPage({
                                         const level = levels.find(
                                             (item) => item.id === Number(event),
                                         );
+                                        clearErrors(
+                                            'level_id',
+                                            'school_class_id',
+                                        );
                                         setData((current) => ({
                                             ...current,
                                             level_id: level?.id ?? null,
@@ -440,12 +482,13 @@ export default function StudentFormPage({
                                     value={
                                         data.school_class_id?.toString() ?? ''
                                     }
-                                    onValueChange={(event) =>
+                                    onValueChange={(event) => {
+                                        clearErrors('school_class_id');
                                         setData(
                                             'school_class_id',
                                             event ? Number(event) : null,
-                                        )
-                                    }
+                                        );
+                                    }}
                                 >
                                     <SelectTrigger className={fieldInputClass}>
                                         <SelectValue
@@ -472,32 +515,6 @@ export default function StudentFormPage({
                             </div>
                             <div className={fieldGroupClass}>
                                 <label className={fieldLabelClass}>
-                                    {translateText('Monthly Fee')}
-                                </label>
-                                <input
-                                    type="number"
-                                    className={fieldInputClass}
-                                    value={data.monthly_fee}
-                                    min={0}
-                                    onChange={(event) =>
-                                        setData(
-                                            'monthly_fee',
-                                            event.target.value,
-                                        )
-                                    }
-                                />
-                                {selectedLevel && (
-                                    <div
-                                        className="mt-1 text-[11px] font-bold text-slate-400"
-                                    >
-                                        {translateText('Level default')}: $
-                                        {selectedLevel.monthly_fee}
-                                    </div>
-                                )}
-                                {inputError(errors.monthly_fee)}
-                            </div>
-                            <div className={fieldGroupClass}>
-                                <label className={fieldLabelClass}>
                                     {translateText('Scholarship Amount')}
                                 </label>
                                 <input
@@ -513,36 +530,6 @@ export default function StudentFormPage({
                                     }
                                 />
                                 {inputError(errors.scholarship_amount)}
-                            </div>
-                            <div className={fieldGroupClass}>
-                                <label className={fieldLabelClass}>
-                                    {translateText('Fee Status')}
-                                </label>
-                                <Select
-                                    value={data.fee_status}
-                                    onValueChange={(value) =>
-                                        setData(
-                                            'fee_status',
-                                            value as StudentFormData['fee_status'],
-                                        )
-                                    }
-                                >
-                                    <SelectTrigger className={fieldInputClass}>
-                                        <SelectValue />
-                                    </SelectTrigger>
-                                    <SelectContent>
-                                        <SelectItem value="unpaid">
-                                            {translateText('Unpaid')}
-                                        </SelectItem>
-                                        <SelectItem value="partial">
-                                            {translateText('Partial')}
-                                        </SelectItem>
-                                        <SelectItem value="paid">
-                                            {translateText('Paid')}
-                                        </SelectItem>
-                                    </SelectContent>
-                                </Select>
-                                {inputError(errors.fee_status)}
                             </div>
                             <div className={fieldGroupClass}>
                                 <label className={fieldLabelClass}>
@@ -708,7 +695,7 @@ export default function StudentFormPage({
                         {step < 3 ? (
                             <button
                                 type="button"
-                                onClick={() => setStep((value) => value + 1)}
+                                onClick={goNextStep}
                                 className="inline-flex min-h-12 flex-[2_1_180px] items-center justify-center gap-1.5 rounded-2xl bg-blue-600 p-3 text-sm font-black text-white"
                             >
                                 {translateText('Next')} <ArrowRight size={16} />

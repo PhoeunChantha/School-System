@@ -2,24 +2,14 @@
 
 namespace App\Http\Responses;
 
+use App\Support\RoleRedirect;
 use Laravel\Fortify\Contracts\LoginResponse as LoginResponseContract;
+use Symfony\Component\HttpFoundation\Response;
 
 class LoginResponse implements LoginResponseContract
 {
-    public function toResponse($request)
+    public function toResponse($request): Response
     {
-        $user = $request->user();
-
-        $intended = $request->session()->pull('url.intended');
-
-        if ($intended) {
-            return redirect()->to($intended);
-        }
-
-        if ($user?->hasRole('student')) {
-            return redirect()->route('student.dashboard');
-        }
-
-        return redirect()->route('dashboard');
+        return redirect()->to(RoleRedirect::intendedOrDefaultPathFor($request));
     }
 }

@@ -1,12 +1,12 @@
-import { destroy, store, update } from '@/actions/App/Http/Controllers/Backends/CertificateController';
+import { create as createCertificate, destroy, destroyTemplate, store, storeTemplate, update, updateTemplate } from '@/actions/App/Http/Controllers/Backends/CertificateController';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle } from '@/components/ui/sheet';
 import { useAdminPermissions } from '@/hooks/use-admin-permissions';
 import AdminShell from '@/pages/admin/shell';
 import { Avatar, Badge, KH, Pagination, RowActions } from '@/pages/admin/ui';
-import { router, useForm } from '@inertiajs/react';
-import { Award, Check, ChevronsUpDown, Edit3, Eye, Plus, Printer, Search, Trash2, X } from 'lucide-react';
+import { Link, router, useForm } from '@inertiajs/react';
+import { Award, Check, ChevronsUpDown, Edit3, Eye, ImagePlus, Plus, Printer, Search, Trash2, Upload, X } from 'lucide-react';
 import { FormEvent, ReactNode, useEffect, useMemo, useState } from 'react';
 import { toast } from 'sonner';
 
@@ -14,6 +14,7 @@ interface CertificateItem {
     id: number;
     routeKey?: string;
     studentId: number;
+    templateId: number | null;
     studentNameKh: string;
     studentNameEn: string;
     className: string;
@@ -25,6 +26,19 @@ interface CertificateItem {
     issuedOn: string;
     certificateNumber: string;
     status: CertificateStatus;
+    certificateFileUrl: string;
+    template: CertificateTemplateItem | null;
+}
+
+interface CertificateTemplateItem {
+    id: number;
+    routeKey?: string;
+    name: string;
+    templateImageUrl: string;
+    logoImageUrl: string;
+    layout: CertificateLayout;
+    isActive: boolean;
+    certificatesCount: number;
 }
 
 interface StudentOption {
@@ -45,6 +59,7 @@ interface LevelOption {
 
 interface CertificatesPageProps {
     certificates: CertificateItem[];
+    templates: CertificateTemplateItem[];
     students: StudentOption[];
     levels: LevelOption[];
     summary: {
@@ -58,12 +73,32 @@ interface CertificatesPageProps {
 interface CertificateFormData {
     student_id: number | null;
     level_id: number | null;
+    template_id: number | null;
+    certificate_file: File | null;
     type: CertificateType;
     title: string;
     academic_year: string;
     issued_on: string;
     certificate_number: string;
     status: CertificateStatus;
+}
+
+interface CertificateTemplateFormData {
+    name: string;
+    template_image: File | null;
+    logo_image: File | null;
+    is_active: boolean;
+    layout: CertificateLayout;
+}
+
+interface CertificateLayout {
+    heading: string;
+    presented_to: string;
+    body: string;
+    grade: string;
+    teacher_signature: string;
+    director_signature: string;
+    director_name: string;
 }
 
 type CertificateType = 'excellence' | 'merit' | 'completion' | 'participation';
@@ -100,22 +135,45 @@ const mobileCardClass = 'rounded-[22px] border border-slate-200/80 bg-white/95 p
 const desktopTableClass = 'hidden min-w-full border-collapse text-left md:table [&_td]:px-3 [&_td]:py-3 [&_th]:border-b [&_th]:border-slate-200 [&_th]:px-3 [&_th]:py-3 [&_th]:text-[10px] [&_th]:font-black [&_th]:uppercase [&_th]:tracking-[0.08em] [&_th]:text-slate-400 dark:[&_th]:border-slate-700';
 const footerButtonClass = 'inline-flex min-h-11 items-center justify-center gap-1.5 rounded-xl px-3 py-2 text-sm font-black transition';
 
+const defaultLayout: CertificateLayout = {
+    heading: 'Certificate',
+    presented_to: 'This certificate is presented to',
+    body: 'For completing the course with dedication and strong progress.',
+    grade: 'Grade A+',
+    teacher_signature: 'Teacher Signature',
+    director_signature: 'School Director',
+    director_name: '',
+};
+
 function defaultCertificateNumber(): string {
     return `CERT-${new Date().getFullYear()}-${Math.floor(Math.random() * 900000 + 100000)}`;
 }
 
-function emptyForm(students: StudentOption[]): CertificateFormData {
+function emptyForm(students: StudentOption[], templates: CertificateTemplateItem[] = []): CertificateFormData {
     const student = students[0];
+    const template = templates.find(item => item.isActive) ?? templates[0];
 
     return {
         student_id: student?.id ?? null,
         level_id: student?.levelId ?? null,
+        template_id: template?.id ?? null,
+        certificate_file: null,
         type: 'completion',
         title: CERT_TYPES.completion.label,
         academic_year: new Date().getFullYear().toString(),
         issued_on: new Date().toISOString().slice(0, 10),
         certificate_number: defaultCertificateNumber(),
         status: 'issued',
+    };
+}
+
+function emptyTemplateForm(): CertificateTemplateFormData {
+    return {
+        name: '',
+        template_image: null,
+        logo_image: null,
+        is_active: true,
+        layout: defaultLayout,
     };
 }
 
@@ -132,7 +190,7 @@ function sortCertificates(list: CertificateItem[], order: OrderKey): Certificate
     });
 }
 
-export default function CertificatesPage({ certificates, students, levels, summary }: CertificatesPageProps) {
+export default function CertificatesPage({ certificates, templates, students, levels, summary }: CertificatesPageProps) {
     const { can } = useAdminPermissions();
     const canCreate = can('certificates.create');
     const canUpdate = can('certificates.update');
@@ -148,10 +206,64 @@ export default function CertificatesPage({ certificates, students, levels, summa
     const [editingCertificate, setEditingCertificate] = useState<CertificateItem | null>(null);
     const [preview, setPreview] = useState<CertificateItem | null>(null);
     const [deleteTarget, setDeleteTarget] = useState<CertificateItem | null>(null);
+    const [templateMode, setTemplateMode] = useState<DrawerMode | null>(null);
+    const [editingTemplate, setEditingTemplate] = useState<CertificateTemplateItem | null>(null);
+    const [templateDeleteTarget, setTemplateDeleteTarget] = useState<CertificateTemplateItem | null>(null);
+    const [templatePreviewUrl, setTemplatePreviewUrl] = useState('');
+    const [logoPreviewUrl, setLogoPreviewUrl] = useState('');
+    const [certificatePreviewUrl, setCertificatePreviewUrl] = useState('');
+    const [printTarget, setPrintTarget] = useState<CertificateItem | null>(null);
 
-    const { data, setData, post, put, processing, errors, reset } = useForm<CertificateFormData>(emptyForm(students));
+    const { data, setData, post, processing, errors, reset, transform } = useForm<CertificateFormData>(emptyForm(students, templates));
+    const templateForm = useForm<CertificateTemplateFormData>(emptyTemplateForm());
 
     useEffect(() => { setPage(1); }, [filter, search, orderBy, perPage]);
+
+    useEffect(() => {
+        if (!printTarget) {
+            return;
+        }
+
+        const timer = window.setTimeout(() => window.print(), 80);
+        const clearPrintTarget = () => setPrintTarget(null);
+
+        window.addEventListener('afterprint', clearPrintTarget, { once: true });
+
+        return () => {
+            window.clearTimeout(timer);
+            window.removeEventListener('afterprint', clearPrintTarget);
+        };
+    }, [printTarget]);
+
+    useEffect(() => {
+        if (!templateForm.data.template_image) return;
+
+        const objectUrl = URL.createObjectURL(templateForm.data.template_image);
+        setTemplatePreviewUrl(objectUrl);
+
+        return () => URL.revokeObjectURL(objectUrl);
+    }, [templateForm.data.template_image]);
+
+    useEffect(() => {
+        if (!templateForm.data.logo_image) return;
+
+        const objectUrl = URL.createObjectURL(templateForm.data.logo_image);
+        setLogoPreviewUrl(objectUrl);
+
+        return () => URL.revokeObjectURL(objectUrl);
+    }, [templateForm.data.logo_image]);
+
+    useEffect(() => {
+        if (!data.certificate_file) {
+            setCertificatePreviewUrl('');
+            return;
+        }
+
+        const objectUrl = URL.createObjectURL(data.certificate_file);
+        setCertificatePreviewUrl(objectUrl);
+
+        return () => URL.revokeObjectURL(objectUrl);
+    }, [data.certificate_file]);
 
     const filteredCertificates = useMemo(() => {
         const query = search.toLowerCase();
@@ -196,7 +308,7 @@ export default function CertificatesPage({ certificates, students, levels, summa
     const openCreateDrawer = () => {
         if (!canCreate) return;
         reset();
-        setData(emptyForm(students));
+        setData(emptyForm(students, templates));
         setStudentSearch('');
         setStudentPickerOpen(false);
         setEditingCertificate(null);
@@ -208,6 +320,8 @@ export default function CertificatesPage({ certificates, students, levels, summa
         setData({
             student_id: certificate.studentId,
             level_id: certificate.levelId,
+            template_id: certificate.templateId,
+            certificate_file: null,
             type: certificate.type,
             title: certificate.title,
             academic_year: certificate.academicYear,
@@ -217,6 +331,7 @@ export default function CertificatesPage({ certificates, students, levels, summa
         });
         setStudentSearch('');
         setStudentPickerOpen(false);
+        setCertificatePreviewUrl('');
         setEditingCertificate(certificate);
         setDrawerMode('edit');
     };
@@ -224,6 +339,7 @@ export default function CertificatesPage({ certificates, students, levels, summa
     const closeDrawer = () => {
         setStudentSearch('');
         setStudentPickerOpen(false);
+        setCertificatePreviewUrl('');
         setDrawerMode(null);
         setEditingCertificate(null);
     };
@@ -241,6 +357,100 @@ export default function CertificatesPage({ certificates, students, levels, summa
 
     const selectType = (type: CertificateType) => {
         setData(current => ({ ...current, type, title: CERT_TYPES[type].label }));
+    };
+
+    const updateTemplateLayout = (key: keyof CertificateLayout, value: string) => {
+        templateForm.setData(current => ({
+            ...current,
+            layout: {
+                ...current.layout,
+                [key]: value,
+            },
+        }));
+    };
+
+    const openCreateTemplateDrawer = () => {
+        if (!canCreate) return;
+        templateForm.reset();
+        templateForm.clearErrors();
+        templateForm.setData(emptyTemplateForm());
+        setTemplatePreviewUrl('');
+        setLogoPreviewUrl('');
+        setEditingTemplate(null);
+        setTemplateMode('create');
+    };
+
+    const openEditTemplateDrawer = (template: CertificateTemplateItem) => {
+        if (!canUpdate) return;
+        templateForm.clearErrors();
+        templateForm.setData({
+            name: template.name,
+            template_image: null,
+            logo_image: null,
+            is_active: template.isActive,
+            layout: template.layout,
+        });
+        setTemplatePreviewUrl(template.templateImageUrl);
+        setLogoPreviewUrl(template.logoImageUrl);
+        setEditingTemplate(template);
+        setTemplateMode('edit');
+    };
+
+    const closeTemplateDrawer = () => {
+        setTemplateMode(null);
+        setEditingTemplate(null);
+        setTemplatePreviewUrl('');
+        setLogoPreviewUrl('');
+        templateForm.clearErrors();
+    };
+
+    const submitTemplate = (event: FormEvent<HTMLFormElement>) => {
+        event.preventDefault();
+
+        if (templateMode === 'edit' && !canUpdate) {
+            closeTemplateDrawer();
+            return;
+        }
+
+        if (templateMode === 'create' && !canCreate) {
+            closeTemplateDrawer();
+            return;
+        }
+
+        const options = {
+            preserveScroll: true,
+            forceFormData: true,
+            onSuccess: () => {
+                toast.success(templateMode === 'edit' ? 'Template updated.' : 'Template created.');
+                closeTemplateDrawer();
+            },
+        };
+
+        if (templateMode === 'edit' && editingTemplate) {
+            templateForm.transform(formData => ({ ...formData, _method: 'put' }));
+            templateForm.post(updateTemplate.url((editingTemplate.routeKey ?? editingTemplate.id) as never), options);
+            return;
+        }
+
+        templateForm.transform(formData => formData);
+        templateForm.post(storeTemplate.url(), options);
+    };
+
+    const confirmTemplateDelete = () => {
+        if (!templateDeleteTarget) return;
+
+        if (!canDelete) {
+            setTemplateDeleteTarget(null);
+            return;
+        }
+
+        router.delete(destroyTemplate.url((templateDeleteTarget.routeKey ?? templateDeleteTarget.id) as never), {
+            preserveScroll: true,
+            onSuccess: () => {
+                toast.success('Template deleted.');
+                setTemplateDeleteTarget(null);
+            },
+        });
     };
 
     const submitCertificate = (event: FormEvent<HTMLFormElement>) => {
@@ -262,13 +472,16 @@ export default function CertificatesPage({ certificates, students, levels, summa
                 toast.success(drawerMode === 'edit' ? 'Certificate updated.' : 'Certificate created.');
                 closeDrawer();
             },
+            forceFormData: true,
         };
 
         if (drawerMode === 'edit' && editingCertificate) {
-            put(update.url((editingCertificate.routeKey ?? editingCertificate.id) as never), options);
+            transform(formData => ({ ...formData, _method: 'put' }));
+            post(update.url((editingCertificate.routeKey ?? editingCertificate.id) as never), options);
             return;
         }
 
+        transform(formData => formData);
         post(store.url(), options);
     };
 
@@ -291,9 +504,14 @@ export default function CertificatesPage({ certificates, students, levels, summa
 
     const actionsFor = (certificate: CertificateItem) => [
         { key: 'preview', label: 'Preview', icon: Eye, onSelect: () => setPreview(certificate) },
-        { key: 'print', label: 'Print', icon: Printer, onSelect: () => window.print() },
+        { key: 'print', label: 'Print', icon: Printer, onSelect: () => setPrintTarget(certificate) },
         { key: 'edit', label: 'Edit', icon: Edit3, onSelect: () => openEditDrawer(certificate), hidden: !canUpdate },
         { key: 'delete', label: 'Delete', icon: Trash2, onSelect: () => setDeleteTarget(certificate), variant: 'destructive' as const, separatorBefore: true, hidden: !canDelete },
+    ];
+
+    const templateActionsFor = (template: CertificateTemplateItem) => [
+        { key: 'edit', label: 'Edit template', icon: Edit3, onSelect: () => openEditTemplateDrawer(template), hidden: !canUpdate },
+        { key: 'delete', label: 'Delete template', icon: Trash2, onSelect: () => setTemplateDeleteTarget(template), variant: 'destructive' as const, hidden: !canDelete },
     ];
 
     return (
@@ -306,9 +524,9 @@ export default function CertificatesPage({ certificates, students, levels, summa
                         <p className="mt-1 truncate text-xs font-extrabold text-slate-400">{summary.issuedCount} issued - {summary.draftCount} drafts</p>
                     </div>
                     {canCreate && (
-                        <button onClick={openCreateDrawer} className="inline-flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-blue-600 text-white shadow-[0_14px_26px_rgba(37,99,235,0.28)] transition hover:bg-blue-500" aria-label="Add certificate">
+                        <Link href={createCertificate.url()} className="inline-flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-blue-600 text-white shadow-[0_14px_26px_rgba(37,99,235,0.28)] transition hover:bg-blue-500" aria-label="Add certificate">
                             <Plus size={18} />
-                        </button>
+                        </Link>
                     )}
                 </section>
 
@@ -492,6 +710,15 @@ export default function CertificatesPage({ certificates, students, levels, summa
                                     </Select>
                                 </Field>
 
+                                <Field label={drawerMode === 'create' ? 'Certificate image *' : 'Certificate image'} error={errors.certificate_file}>
+                                    <FileDrop
+                                        icon={ImagePlus}
+                                        label={certificatePreviewUrl || editingCertificate?.certificateFileUrl ? 'Replace certificate image' : 'Upload finished certificate'}
+                                        description="Upload JPG, PNG, or WebP exported from Photoshop"
+                                        onChange={file => setData('certificate_file', file)}
+                                    />
+                                </Field>
+
                                 <Field label="Academic Year" error={errors.academic_year}>
                                     <input className={inputClass} value={data.academic_year} onChange={event => setData('academic_year', event.target.value)} />
                                 </Field>
@@ -503,6 +730,20 @@ export default function CertificatesPage({ certificates, students, levels, summa
                                 <Field label="Certificate No. *" error={errors.certificate_number}>
                                     <input className={inputClass} value={data.certificate_number} onChange={event => setData('certificate_number', event.target.value)} />
                                 </Field>
+
+                                <div className="md:col-span-2">
+                                    <CertificateCanvasPreview
+                                        title={data.title}
+                                        studentName={selectedStudent?.nameEn ?? 'Student name'}
+                                        levelName={levels.find(level => level.id === data.level_id)?.name ?? selectedStudent?.level ?? 'Course level'}
+                                        issuedOn={data.issued_on}
+                                        certificateNumber={data.certificate_number}
+                                        layout={editingCertificate?.template?.layout ?? defaultLayout}
+                                        templateImageUrl={editingCertificate?.template?.templateImageUrl ?? ''}
+                                        logoImageUrl={editingCertificate?.template?.logoImageUrl ?? ''}
+                                        certificateFileUrl={certificatePreviewUrl || editingCertificate?.certificateFileUrl || ''}
+                                    />
+                                </div>
                             </div>
 
                             <div className="mt-auto grid grid-cols-[1fr_2fr] gap-2 border-t border-slate-200 p-4 dark:border-slate-700">
@@ -518,7 +759,104 @@ export default function CertificatesPage({ certificates, students, levels, summa
                 </SheetContent>
             </Sheet>
 
-            {preview && <CertificatePreview certificate={preview} onClose={() => setPreview(null)} />}
+            <Sheet open={templateMode !== null} onOpenChange={(open) => { if (!open) closeTemplateDrawer(); }}>
+                <SheetContent side="right" className="w-full gap-0 overflow-y-auto p-0 sm:max-w-[620px]">
+                    {templateMode && (
+                        <form onSubmit={submitTemplate} className="flex min-h-full flex-col bg-white dark:bg-slate-900">
+                            <SheetHeader className="border-b border-slate-200 px-5 py-5 text-left dark:border-slate-700">
+                                <SheetTitle className="text-lg font-black text-slate-900 dark:text-slate-50">
+                                    {templateMode === 'create' ? 'Add Certificate Template' : 'Edit Certificate Template'}
+                                </SheetTitle>
+                                <SheetDescription>
+                                    Upload the background once, then assign it from Add Certificate.
+                                </SheetDescription>
+                            </SheetHeader>
+
+                            <div className="grid grid-cols-1 gap-3 p-4 md:grid-cols-2 md:p-5">
+                                <Field label="Template name *" error={templateForm.errors.name} wide>
+                                    <input className={inputClass} value={templateForm.data.name} onChange={event => templateForm.setData('name', event.target.value)} placeholder="e.g. Completion certificate" />
+                                </Field>
+
+                                <Field label="Template image *" error={templateForm.errors.template_image} wide>
+                                    <FileDrop
+                                        icon={ImagePlus}
+                                        label={templatePreviewUrl ? 'Replace certificate background' : 'Upload certificate background'}
+                                        description="JPG, PNG, or WebP template image"
+                                        onChange={file => templateForm.setData('template_image', file)}
+                                    />
+                                </Field>
+
+                                <Field label="Logo image" error={templateForm.errors.logo_image} wide>
+                                    <FileDrop
+                                        icon={Upload}
+                                        label={logoPreviewUrl ? 'Replace certificate logo' : 'Upload certificate logo'}
+                                        description="Optional logo shown on the certificate"
+                                        onChange={file => templateForm.setData('logo_image', file)}
+                                    />
+                                </Field>
+
+                                <Field label="Heading" error={templateForm.errors['layout.heading']}>
+                                    <input className={inputClass} value={templateForm.data.layout.heading} onChange={event => updateTemplateLayout('heading', event.target.value)} />
+                                </Field>
+
+                                <Field label="Presented line" error={templateForm.errors['layout.presented_to']}>
+                                    <input className={inputClass} value={templateForm.data.layout.presented_to} onChange={event => updateTemplateLayout('presented_to', event.target.value)} />
+                                </Field>
+
+                                <Field label="Certificate body" error={templateForm.errors['layout.body']} wide>
+                                    <textarea className={`${inputClass} min-h-24 resize-none`} value={templateForm.data.layout.body} onChange={event => updateTemplateLayout('body', event.target.value)} />
+                                </Field>
+
+                                <Field label="Grade / award text" error={templateForm.errors['layout.grade']}>
+                                    <input className={inputClass} value={templateForm.data.layout.grade} onChange={event => updateTemplateLayout('grade', event.target.value)} />
+                                </Field>
+
+                                <Field label="Director name" error={templateForm.errors['layout.director_name']}>
+                                    <input className={inputClass} value={templateForm.data.layout.director_name} onChange={event => updateTemplateLayout('director_name', event.target.value)} />
+                                </Field>
+
+                                <Field label="Teacher signature label" error={templateForm.errors['layout.teacher_signature']}>
+                                    <input className={inputClass} value={templateForm.data.layout.teacher_signature} onChange={event => updateTemplateLayout('teacher_signature', event.target.value)} />
+                                </Field>
+
+                                <Field label="Director signature label" error={templateForm.errors['layout.director_signature']}>
+                                    <input className={inputClass} value={templateForm.data.layout.director_signature} onChange={event => updateTemplateLayout('director_signature', event.target.value)} />
+                                </Field>
+
+                                <label className="flex items-center gap-3 rounded-2xl border border-slate-200 bg-slate-50 p-3 text-sm font-black text-slate-700 dark:border-slate-700 dark:bg-slate-950 dark:text-slate-200 md:col-span-2">
+                                    <input type="checkbox" checked={templateForm.data.is_active} onChange={event => templateForm.setData('is_active', event.target.checked)} className="h-4 w-4 accent-blue-600" />
+                                    Active template
+                                </label>
+
+                                <div className="md:col-span-2">
+                                    <CertificateCanvasPreview
+                                        title={templateForm.data.layout.grade}
+                                        studentName="Student name"
+                                        levelName="Course level"
+                                        issuedOn={new Date().toISOString().slice(0, 10)}
+                                        certificateNumber="CERT-PREVIEW"
+                                        layout={templateForm.data.layout}
+                                        templateImageUrl={templatePreviewUrl}
+                                        logoImageUrl={logoPreviewUrl}
+                                    />
+                                </div>
+                            </div>
+
+                            <div className="mt-auto grid grid-cols-[1fr_2fr] gap-2 border-t border-slate-200 p-4 dark:border-slate-700">
+                                <button type="button" onClick={closeTemplateDrawer} className={`${footerButtonClass} bg-slate-100 text-slate-500 hover:bg-slate-200 dark:bg-slate-950 dark:text-slate-300 dark:hover:bg-slate-800`}>
+                                    <X size={15} /> Cancel
+                                </button>
+                                <button disabled={templateForm.processing} type="submit" className={`${footerButtonClass} bg-blue-600 text-white shadow-[0_12px_24px_rgba(37,99,235,0.22)] hover:bg-blue-500 disabled:cursor-default disabled:bg-blue-300`}>
+                                    {templateMode === 'create' ? 'Save Template' : 'Save Changes'}
+                                </button>
+                            </div>
+                        </form>
+                    )}
+                </SheetContent>
+            </Sheet>
+
+            {preview && <CertificatePreview certificate={preview} onClose={() => setPreview(null)} onPrint={() => setPrintTarget(preview)} />}
+            {printTarget && <CertificatePrintTarget certificate={printTarget} />}
 
             {deleteTarget && (
                 <div className="fixed inset-0 z-[230] flex items-center justify-center bg-black/45 p-4">
@@ -535,6 +873,28 @@ export default function CertificatesPage({ certificates, students, levels, summa
                                 <X size={15} /> Cancel
                             </button>
                             <button onClick={confirmDelete} className={`${footerButtonClass} bg-red-500 text-white hover:bg-red-600`}>
+                                <Trash2 size={15} /> Delete
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
+
+            {templateDeleteTarget && (
+                <div className="fixed inset-0 z-[230] flex items-center justify-center bg-black/45 p-4">
+                    <div className="w-full max-w-[420px] rounded-[24px] border border-slate-200 bg-white p-6 shadow-[0_24px_60px_rgba(0,0,0,0.18)] dark:border-slate-700 dark:bg-slate-800">
+                        <div className="mb-5 text-center">
+                            <div className="mx-auto mb-3 flex h-14 w-14 items-center justify-center rounded-full bg-red-500/10 text-red-500">
+                                <Trash2 size={24} />
+                            </div>
+                            <div className="mb-1.5 text-lg font-black text-slate-900 dark:text-slate-50">Delete Template?</div>
+                            <div className="text-sm font-medium leading-6 text-slate-500 dark:text-slate-300">Remove <strong>{templateDeleteTarget.name}</strong>? Certificates using it will keep their records without a template.</div>
+                        </div>
+                        <div className="grid grid-cols-2 gap-2.5">
+                            <button onClick={() => setTemplateDeleteTarget(null)} className={`${footerButtonClass} bg-slate-100 text-slate-500 hover:bg-slate-200 dark:bg-slate-950 dark:text-slate-300 dark:hover:bg-slate-900`}>
+                                <X size={15} /> Cancel
+                            </button>
+                            <button onClick={confirmTemplateDelete} className={`${footerButtonClass} bg-red-500 text-white hover:bg-red-600`}>
                                 <Trash2 size={15} /> Delete
                             </button>
                         </div>
@@ -608,29 +968,179 @@ function PickerOption({ selected, onClick, children }: { selected: boolean; onCl
     );
 }
 
-function CertificatePreview({ certificate, onClose }: { certificate: CertificateItem; onClose: () => void }) {
-    const meta = CERT_TYPES[certificate.type];
+function FileDrop({
+    icon: Icon,
+    label,
+    description,
+    onChange,
+}: {
+    icon: typeof Upload;
+    label: string;
+    description: string;
+    onChange: (file: File | null) => void;
+}) {
+    return (
+        <label className="flex cursor-pointer items-center gap-3 rounded-2xl border border-dashed border-slate-300 bg-slate-50 p-3 transition hover:border-blue-400 hover:bg-blue-50 dark:border-slate-700 dark:bg-slate-950 dark:hover:border-blue-500 dark:hover:bg-blue-500/10">
+            <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-blue-500/10 text-blue-600 dark:text-blue-300">
+                <Icon size={19} />
+            </span>
+            <span className="min-w-0 flex-1">
+                <span className="block text-sm font-black text-slate-900 dark:text-slate-50">{label}</span>
+                <span className="mt-0.5 block text-xs font-bold text-slate-400">{description}</span>
+            </span>
+            <input type="file" accept="image/*" className="sr-only" onChange={event => onChange(event.target.files?.[0] ?? null)} />
+        </label>
+    );
+}
+
+function CertificateCanvasPreview({
+    title,
+    studentName,
+    levelName,
+    issuedOn,
+    certificateNumber,
+    layout,
+    templateImageUrl,
+    logoImageUrl,
+    certificateFileUrl = '',
+}: {
+    title: string;
+    studentName: string;
+    levelName: string;
+    issuedOn: string;
+    certificateNumber: string;
+    layout: CertificateLayout;
+    templateImageUrl: string;
+    logoImageUrl: string;
+    certificateFileUrl?: string;
+}) {
+    return (
+        <div className="overflow-hidden rounded-[22px] border border-slate-200 bg-slate-100 p-2 dark:border-slate-700 dark:bg-slate-950">
+            <div className="relative aspect-[1.414/1] overflow-hidden rounded-[18px] bg-white text-center text-slate-900 shadow-inner">
+                {certificateFileUrl ? (
+                    <img src={certificateFileUrl} alt="" className="absolute inset-0 h-full w-full object-contain" />
+                ) : templateImageUrl ? (
+                    <img src={templateImageUrl} alt="" className="absolute inset-0 h-full w-full object-cover" />
+                ) : (
+                    <div className="absolute inset-0 bg-[linear-gradient(135deg,#f8fafc_0%,#ffffff_48%,#e0f2fe_100%)]">
+                        <div className="absolute inset-x-6 top-6 h-2 bg-blue-700" />
+                        <div className="absolute inset-x-10 top-10 h-1 bg-amber-400" />
+                        <div className="absolute inset-y-0 left-0 w-8 bg-blue-900" />
+                        <div className="absolute bottom-0 right-0 h-16 w-44 -skew-x-12 bg-amber-400/80" />
+                    </div>
+                )}
+                {!certificateFileUrl && <div className="absolute inset-5 border-2 border-slate-300/70" />}
+                {!certificateFileUrl && <div className="absolute inset-8 border border-slate-300/60" />}
+
+                {!certificateFileUrl && <div className="relative z-10 flex h-full flex-col items-center px-[8%] py-[6%]">
+                    <div className="flex w-full items-center justify-center gap-4">
+                        {logoImageUrl && <img src={logoImageUrl} alt="" className="h-14 w-14 object-contain" />}
+                        <div className="text-[clamp(16px,3vw,30px)] font-black tracking-tight">Frania Aranh Foundation School</div>
+                    </div>
+
+                    <div className="mt-[4%] font-serif text-[clamp(20px,4vw,42px)] font-bold">{layout.heading || 'Certificate'}</div>
+                    <div className="mt-1 text-[clamp(10px,1.6vw,18px)] font-black uppercase tracking-wide text-indigo-500">{layout.presented_to}</div>
+                    <div className="mt-2 font-serif text-[clamp(16px,2.8vw,30px)] font-bold">{studentName}</div>
+                    <div className="mt-3 max-w-[76%] text-[clamp(8px,1.25vw,15px)] font-bold leading-relaxed text-slate-500">{layout.body}</div>
+                    <div className="mt-auto text-[clamp(12px,2vw,24px)] font-black text-slate-700">{layout.grade || title}</div>
+                    <div className="mt-3 text-[clamp(8px,1.2vw,14px)] font-bold text-slate-600">{issuedOn || new Date().toISOString().slice(0, 10)}</div>
+
+                    <div className="mt-[4%] grid w-full grid-cols-2 gap-12 text-[clamp(8px,1.15vw,14px)]">
+                        <div>
+                            <div className="mx-auto h-px w-32 max-w-full bg-blue-700" />
+                            <div className="mt-2 font-serif">{layout.teacher_signature}</div>
+                        </div>
+                        <div>
+                            <div className="mx-auto h-px w-32 max-w-full bg-blue-700" />
+                            <div className="mt-1 font-serif">{layout.director_name}</div>
+                            <div className="font-serif">{layout.director_signature}</div>
+                        </div>
+                    </div>
+                    <div className="absolute bottom-3 right-5 text-[9px] font-bold text-slate-400">{certificateNumber} - {levelName}</div>
+                </div>}
+            </div>
+        </div>
+    );
+}
+
+function CertificatePreview({ certificate, onClose, onPrint }: { certificate: CertificateItem; onClose: () => void; onPrint: () => void }) {
+    const template = certificate.template;
 
     return (
         <div className="fixed inset-0 z-[240] flex items-center justify-center bg-black/55 p-4" onClick={event => { if (event.target === event.currentTarget) onClose(); }}>
-            <div className="w-full max-w-[620px] overflow-hidden rounded-[24px] bg-white shadow-[0_24px_70px_rgba(0,0,0,0.28)] dark:bg-slate-900">
-                <div id="certificate-preview" className="bg-gradient-to-br from-slate-900 to-blue-700 px-6 py-10 text-center text-white md:px-12">
-                    <Award size={54} className={`mx-auto mb-3 ${toneTextClass(meta.tone)}`} />
-                    <div className="mb-2 text-[11px] font-black uppercase tracking-[0.16em] text-white/60">Certificate of {meta.label}</div>
-                    <KH className="mb-5 block text-lg font-black">{meta.labelKh}</KH>
-                    <div className="mb-4 text-xs text-white/60">This certifies that</div>
-                    <KH className="mb-1 block text-3xl font-black">{certificate.studentNameKh}</KH>
-                    <div className="mb-6 text-lg font-bold text-white/85">{certificate.studentNameEn}</div>
-                    <div className="text-sm text-white/75">has received <strong>{certificate.title}</strong></div>
-                    <div className="mt-2 text-xs text-white/60">{certificate.levelName} - {certificate.academicYear}</div>
-                    <div className="mt-6 text-[11px] text-white/50">{certificate.certificateNumber} - Issued {certificate.issuedOn}</div>
+            <div className="w-full max-w-[900px] overflow-hidden rounded-[24px] bg-white shadow-[0_24px_70px_rgba(0,0,0,0.28)] dark:bg-slate-900">
+                <div id="certificate-preview" className="p-3">
+                    <CertificateCanvasPreview
+                        title={certificate.title}
+                        studentName={certificate.studentNameEn}
+                        levelName={certificate.levelName || certificate.className}
+                        issuedOn={certificate.issuedOn}
+                        certificateNumber={certificate.certificateNumber}
+                        layout={template?.layout ?? defaultLayout}
+                        templateImageUrl={template?.templateImageUrl ?? ''}
+                        logoImageUrl={template?.logoImageUrl ?? ''}
+                        certificateFileUrl={certificate.certificateFileUrl}
+                    />
                 </div>
                 <div className="grid grid-cols-[1fr_2fr] gap-2 p-4">
                     <button onClick={onClose} className={`${footerButtonClass} bg-slate-100 text-slate-500 hover:bg-slate-200 dark:bg-slate-950 dark:text-slate-300 dark:hover:bg-slate-800`}>Close</button>
-                    <button onClick={() => window.print()} className={`${footerButtonClass} bg-blue-600 text-white hover:bg-blue-500`}><Printer size={15} /> Print Certificate</button>
+                    <button onClick={onPrint} className={`${footerButtonClass} bg-blue-600 text-white hover:bg-blue-500`}><Printer size={15} /> Print Certificate</button>
                 </div>
             </div>
         </div>
+    );
+}
+
+function CertificatePrintTarget({ certificate }: { certificate: CertificateItem }) {
+    const template = certificate.template;
+
+    return (
+        <>
+            <style>{`
+                @media print {
+                    body * { visibility: hidden !important; }
+                    #certificate-print-root,
+                    #certificate-print-root * { visibility: visible !important; }
+                    #certificate-print-root {
+                        position: fixed !important;
+                        inset: 0 !important;
+                        display: flex !important;
+                        align-items: center !important;
+                        justify-content: center !important;
+                        background: white !important;
+                        padding: 0 !important;
+                        z-index: 999999 !important;
+                    }
+                    #certificate-print-root .certificate-print-sheet {
+                        width: 297mm !important;
+                        max-width: 297mm !important;
+                        height: auto !important;
+                        box-shadow: none !important;
+                        border: 0 !important;
+                        padding: 0 !important;
+                    }
+                    @page {
+                        size: A4 landscape;
+                        margin: 8mm;
+                    }
+                }
+            `}</style>
+            <div id="certificate-print-root" className="pointer-events-none fixed inset-0 -z-10 hidden bg-white print:z-[999999] print:flex">
+                <div className="certificate-print-sheet w-[297mm]">
+                    <CertificateCanvasPreview
+                        title={certificate.title}
+                        studentName={certificate.studentNameEn}
+                        levelName={certificate.levelName || certificate.className}
+                        issuedOn={certificate.issuedOn}
+                        certificateNumber={certificate.certificateNumber}
+                        layout={template?.layout ?? defaultLayout}
+                        templateImageUrl={template?.templateImageUrl ?? ''}
+                        logoImageUrl={template?.logoImageUrl ?? ''}
+                        certificateFileUrl={certificate.certificateFileUrl}
+                    />
+                </div>
+            </div>
+        </>
     );
 }
 

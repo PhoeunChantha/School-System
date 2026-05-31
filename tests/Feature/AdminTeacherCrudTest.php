@@ -68,6 +68,20 @@ class AdminTeacherCrudTest extends TestCase
         ]);
     }
 
+    public function test_admin_must_complete_required_teacher_fields(): void
+    {
+        $this->actingAs(User::factory()->create());
+
+        $this->post(route('admin.teachers.store'), [
+            'name_kh' => '',
+            'name_en' => '',
+            'subject' => '',
+            'phone' => '012345678',
+            'telegram_username' => '@vuthy',
+            'status' => 'active',
+        ])->assertSessionHasErrors(['name_kh', 'name_en', 'subject']);
+    }
+
     public function test_admin_can_update_teacher(): void
     {
         $user = User::factory()->create();

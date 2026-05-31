@@ -24,8 +24,8 @@ class StoreSchoolClassRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'level_id' => ['nullable', 'integer', Rule::exists('levels', 'id')],
-            'teacher_id' => ['nullable', 'integer', Rule::exists('teachers', 'id')],
+            'level_id' => ['required', 'integer', Rule::exists('levels', 'id')->whereNull('deleted_at')],
+            'teacher_id' => ['required', 'integer', Rule::exists('teachers', 'id')->whereNull('deleted_at')],
             'name' => [
                 'required',
                 'string',
@@ -34,10 +34,10 @@ class StoreSchoolClassRequest extends FormRequest
                     ->where('room', $this->string('room')->toString())
                     ->whereNull('deleted_at')),
             ],
-            'room' => ['nullable', 'string', 'max:255'],
+            'room' => ['required', 'string', 'max:255'],
             'starts_at' => ['nullable', 'date_format:H:i'],
             'ends_at' => ['nullable', 'date_format:H:i'],
-            'days' => ['nullable', 'array'],
+            'days' => ['required', 'array', 'min:1'],
             'days.*' => ['string', Rule::in(['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'])],
             'capacity' => ['nullable', 'integer', 'min:1', 'max:200'],
             'academic_year' => ['nullable', 'string', 'max:255'],
