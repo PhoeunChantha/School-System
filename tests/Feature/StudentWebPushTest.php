@@ -136,4 +136,34 @@ class StudentWebPushTest extends TestCase
 
         $this->assertSame(2, $service->sentCount);
     }
+
+    public function test_notification_without_matching_subscription_does_not_start_web_push(): void
+    {
+        config()->set('services.webpush.public_key', 'public-key');
+        config()->set('services.webpush.private_key', 'private-key');
+        config()->set('services.webpush.subject', 'mailto:test@example.com');
+
+        $student = Student::factory()->create();
+        $notification = Notification::factory()->create([
+            'student_id' => $student->id,
+            'user_id' => $student->user_id,
+            'read_at' => null,
+        ]);
+
+        $service = new class extends WebPushService
+        {
+            public bool $started = false;
+
+            protected function webPush(): WebPush
+            {
+                $this->started = true;
+
+                return new WebPush;
+            }
+        };
+
+        $service->sendForNotification($notification);
+
+        $this->assertFalse($service->started);
+    }
 }
