@@ -2,6 +2,7 @@
 
 namespace App\Http\Middleware;
 
+use App\Models\SchoolSetting;
 use App\Support\SchoolProfile;
 use Illuminate\Foundation\Inspiring;
 use Illuminate\Http\Request;
@@ -61,6 +62,16 @@ class HandleInertiaRequests extends Middleware
             ],
             'sidebarOpen' => ! $request->hasCookie('sidebar_state') || $request->cookie('sidebar_state') === 'true',
             'school' => fn (): array => Arr::only(app(SchoolProfile::class)->data(), ['nameEn', 'logo', 'favicon', 'loginBg']),
+            'notificationSound' => function (): ?string {
+                $value = SchoolSetting::query()
+                    ->where('group', 'notifications')
+                    ->where('key', 'preferences')
+                    ->value('value') ?? [];
+
+                $path = Arr::get($value, 'notificationSound');
+
+                return filled($path) ? asset((string) $path) : null;
+            },
             'translations' => [
                 'admin' => [
                     'en' => Lang::get('admin', [], 'en'),

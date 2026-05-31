@@ -7,10 +7,13 @@ use App\Models\HomeworkAssignment;
 use App\Models\LessonPlan;
 use App\Models\Notification;
 use App\Models\Student;
+use App\Services\WebPushService;
 use Illuminate\Support\Facades\DB;
 
 class ClassStudentNotificationService
 {
+    public function __construct(private readonly WebPushService $webPush) {}
+
     public function homeworkAssigned(HomeworkAssignment $homeworkAssignment, ?int $userId): void
     {
         $this->createForClass(
@@ -79,6 +82,7 @@ class ClassStudentNotificationService
 
             DB::afterCommit(function () use ($notification, $unreadNotifications): void {
                 event(new StudentNotificationCreated($notification, $unreadNotifications));
+                $this->webPush->sendForNotification($notification);
             });
         });
     }

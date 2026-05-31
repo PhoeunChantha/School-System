@@ -17,6 +17,8 @@ import {
     notifications,
     profile as studentProfile,
 } from '@/routes/student';
+import { publicKey as pushPublicKey } from '@/routes/student/push-notifications';
+import { store as storePushSubscription } from '@/routes/student/push-notifications/subscriptions';
 import { logout } from '@/routes';
 import { Head, Link, router, usePage } from '@inertiajs/react';
 import { useEcho } from '@laravel/echo-react';
@@ -36,7 +38,7 @@ import {
     MoreHorizontal,
     X,
 } from 'lucide-react';
-import { type ReactNode, useCallback, useEffect, useState } from 'react';
+import { type ReactNode, useCallback, useEffect, useRef, useState } from 'react';
 import { toast } from 'sonner';
 
 export interface StudentProfile {
@@ -81,6 +83,11 @@ interface StudentNotificationEvent {
         body?: string;
     };
     unreadNotifications: number;
+}
+
+interface PushPublicKeyResponse {
+    configured: boolean;
+    publicKey: string | null;
 }
 
 const NAV_ITEMS = [
@@ -221,6 +228,83 @@ function SAvatar({
 
 export { SAvatar };
 
+function csrfToken() {
+    return (
+        document
+            .querySelector<HTMLMetaElement>('meta[name="csrf-token"]')
+            ?.getAttribute('content') ?? ''
+    );
+}
+
+function urlBase64ToUint8Array(value: string) {
+    const padding = '='.repeat((4 - (value.length % 4)) % 4);
+    const base64 = (value + padding).replace(/-/g, '+').replace(/_/g, '/');
+    const rawData = window.atob(base64);
+    const output = new Uint8Array(rawData.length);
+
+    for (let index = 0; index < rawData.length; index += 1) {
+        output[index] = rawData.charCodeAt(index);
+    }
+
+    return output;
+}
+
+async function registerStudentPushSubscription() {
+    if (
+        !window.isSecureContext ||
+        !('Notification' in window) ||
+        !('PushManager' in window)
+    ) {
+        return;
+    }
+
+    const keyResponse = await fetch(pushPublicKey.url(), {
+        headers: { Accept: 'application/json' },
+        credentials: 'same-origin',
+    });
+
+    if (!keyResponse.ok) {
+        return;
+    }
+
+    const { configured, publicKey } =
+        (await keyResponse.json()) as PushPublicKeyResponse;
+
+    if (!configured || !publicKey || Notification.permission === 'denied') {
+        return;
+    }
+
+    const permission =
+        Notification.permission === 'granted'
+            ? 'granted'
+            : await Notification.requestPermission();
+
+    if (permission !== 'granted') {
+        return;
+    }
+
+    const registration = await navigator.serviceWorker.ready;
+    const existingSubscription =
+        await registration.pushManager.getSubscription();
+    const subscription =
+        existingSubscription ??
+        (await registration.pushManager.subscribe({
+            userVisibleOnly: true,
+            applicationServerKey: urlBase64ToUint8Array(publicKey),
+        }));
+
+    await fetch(storePushSubscription.url(), {
+        method: 'POST',
+        headers: {
+            Accept: 'application/json',
+            'Content-Type': 'application/json',
+            'X-CSRF-TOKEN': csrfToken(),
+        },
+        credentials: 'same-origin',
+        body: JSON.stringify(subscription.toJSON()),
+    });
+}
+
 function StudentRealtimeNotifications({
     activePage,
     onNotification,
@@ -254,8 +338,9 @@ export default function StudentShell({
 }: Props) {
     useStudentDomTranslations();
 
-    const { school } = usePage<SharedData>().props;
+    const { notificationSound, school } = usePage<SharedData>().props;
     const { lang, setLang, t } = useStudentTranslation();
+    const notificationSoundRef = useRef<HTMLAudioElement | null>(null);
     const [unreadNotifications, setUnreadNotifications] = useState(
         profile.unreadNotifications ?? 0,
     );
@@ -268,6 +353,7 @@ export default function StudentShell({
 
         navigator.serviceWorker
             .register('/student/service-worker.js', { scope: '/student/' })
+            .then(() => registerStudentPushSubscription())
             .catch(() => undefined);
     }, []);
 
@@ -275,9 +361,20 @@ export default function StudentShell({
         setUnreadNotifications(profile.unreadNotifications ?? 0);
     }, [profile.unreadNotifications]);
 
+    useEffect(() => {
+        notificationSoundRef.current = notificationSound
+            ? new Audio(notificationSound)
+            : null;
+    }, [notificationSound]);
+
     const handleRealtimeNotification = useCallback(
         (event: StudentNotificationEvent) => {
             setUnreadNotifications(event.unreadNotifications);
+
+            if (notificationSoundRef.current) {
+                notificationSoundRef.current.currentTime = 0;
+                notificationSoundRef.current.play().catch(() => undefined);
+            }
 
             toast.info(
                 event.notification?.title ?? t('content_text.New message'),

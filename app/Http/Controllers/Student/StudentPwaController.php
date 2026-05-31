@@ -98,6 +98,7 @@ class StudentPwaController extends Controller
      */
     private function serviceWorkerScript(array $cachePaths): string
     {
+        $notificationIcon = $cachePaths[0] ?? '/favicon.ico';
         $precacheUrls = json_encode(
             array_values(array_unique([
                 '/student/offline',
@@ -110,6 +111,7 @@ class StudentPwaController extends Controller
         $script = <<<'JS'
             const CACHE_NAME = '__CACHE_NAME__';
             const OFFLINE_URL = '/student/offline';
+            const NOTIFICATION_ICON = '__NOTIFICATION_ICON__';
             const PRECACHE_URLS = __PRECACHE_URLS__;
 
             self.addEventListener('install', (event) => {
@@ -159,6 +161,32 @@ class StudentPwaController extends Controller
                 }
             });
 
+            self.addEventListener('push', (event) => {
+                event.waitUntil(showLatestStudentNotification());
+            });
+
+            self.addEventListener('notificationclick', (event) => {
+                event.notification.close();
+
+                const targetUrl = event.notification.data?.url || '/student/notifications';
+
+                event.waitUntil(
+                    self.clients
+                        .matchAll({ type: 'window', includeUncontrolled: true })
+                        .then((clients) => {
+                            const visibleClient = clients.find((client) => 'focus' in client);
+
+                            if (visibleClient) {
+                                visibleClient.navigate(targetUrl);
+
+                                return visibleClient.focus();
+                            }
+
+                            return self.clients.openWindow(targetUrl);
+                        }),
+                );
+            });
+
             async function networkFirstStudentNavigation(request) {
                 try {
                     return await fetch(request);
@@ -189,11 +217,42 @@ class StudentPwaController extends Controller
                     PRECACHE_URLS.includes(url.pathname)
                 );
             }
+
+            async function showLatestStudentNotification() {
+                const response = await fetch('/student/push-notifications/latest', {
+                    headers: {
+                        Accept: 'application/json',
+                    },
+                    credentials: 'same-origin',
+                });
+
+                if (!response.ok) {
+                    return;
+                }
+
+                const payload = await response.json();
+                const notification = payload.notification;
+
+                if (!notification) {
+                    return;
+                }
+
+                await self.registration.showNotification(notification.title, {
+                    body: notification.body,
+                    icon: NOTIFICATION_ICON,
+                    badge: NOTIFICATION_ICON,
+                    silent: false,
+                    tag: notification.tag,
+                    data: {
+                        url: notification.url,
+                    },
+                });
+            }
             JS;
 
         return str_replace(
-            ['__CACHE_NAME__', '__PRECACHE_URLS__'],
-            [$cacheName, $precacheUrls],
+            ['__CACHE_NAME__', '__NOTIFICATION_ICON__', '__PRECACHE_URLS__'],
+            [$cacheName, $notificationIcon, $precacheUrls],
             $script,
         );
     }

@@ -23,6 +23,7 @@ use App\Http\Controllers\Backends\TeacherController;
 use App\Http\Controllers\Backends\TeacherGradeController;
 use App\Http\Controllers\Backends\UserController;
 use App\Http\Controllers\Student\StudentPortalController;
+use App\Http\Controllers\Student\StudentPushSubscriptionController;
 use App\Http\Controllers\Student\StudentPwaController;
 use App\Models\ActivityLog;
 use App\Models\AttendanceSession;
@@ -293,6 +294,11 @@ Route::prefix('student')->name('student.')->controller(StudentPwaController::cla
 
 // Student Portal
 Route::middleware(['auth', 'verified'])->prefix('student')->name('student.')->group(function () {
+    Route::get('/push-notifications/public-key', [StudentPushSubscriptionController::class, 'publicKey'])->name('push-notifications.public-key');
+    Route::post('/push-notifications/subscriptions', [StudentPushSubscriptionController::class, 'store'])->name('push-notifications.subscriptions.store');
+    Route::delete('/push-notifications/subscriptions', [StudentPushSubscriptionController::class, 'destroy'])->name('push-notifications.subscriptions.destroy');
+    Route::get('/push-notifications/latest', [StudentPushSubscriptionController::class, 'latest'])->name('push-notifications.latest');
+
     Route::get('/dashboard', [StudentPortalController::class, 'dashboard'])->name('dashboard');
     Route::get('/attendance', [StudentPortalController::class, 'attendance'])->name('attendance');
     Route::get('/grades', [StudentPortalController::class, 'grades'])->name('grades');

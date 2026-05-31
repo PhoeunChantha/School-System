@@ -5,10 +5,13 @@ namespace App\Services\Backends;
 use App\Models\Notification;
 use App\Models\Student;
 use App\Models\User;
+use App\Services\WebPushService;
 use Illuminate\Support\Facades\DB;
 
 class NotificationService
 {
+    public function __construct(private readonly WebPushService $webPush) {}
+
     /**
      * @return array{notifications: mixed, students: mixed, users: mixed, summary: array<string, mixed>}
      */
@@ -41,10 +44,18 @@ class NotificationService
      */
     public function create(array $data, ?int $userId): Notification
     {
-        return DB::transaction(fn (): Notification => Notification::create([
-            ...$this->normalizedData($data),
-            'created_by' => $userId,
-        ]));
+        return DB::transaction(function () use ($data, $userId): Notification {
+            $notification = Notification::create([
+                ...$this->normalizedData($data),
+                'created_by' => $userId,
+            ]);
+
+            DB::afterCommit(function () use ($notification): void {
+                $this->webPush->sendForNotification($notification);
+            });
+
+            return $notification;
+        });
     }
 
     /**
