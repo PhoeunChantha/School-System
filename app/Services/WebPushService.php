@@ -6,6 +6,7 @@ use App\Models\Notification;
 use App\Models\PushSubscription;
 use Illuminate\Http\Client\Response;
 use Illuminate\Support\Facades\Http;
+use Illuminate\Support\Facades\Log;
 
 class WebPushService
 {
@@ -21,28 +22,77 @@ class WebPushService
         }
 
         PushSubscription::query()
-            ->where(function ($query) use ($notification): void {
-                $query->where('student_id', $notification->student_id);
+            ->when(
+                $notification->student_id !== null || $notification->user_id !== null,
+                function ($query) use ($notification): void {
+                    $query->where(function ($query) use ($notification): void {
+                        if ($notification->student_id !== null) {
+                            $query->where('student_id', $notification->student_id);
+                        }
 
-                if ($notification->user_id !== null) {
-                    $query->orWhere('user_id', $notification->user_id);
-                }
-            })
+                        if ($notification->user_id !== null) {
+                            $query->orWhere('user_id', $notification->user_id);
+                        }
+                    });
+                },
+            )
             ->get()
             ->each(function (PushSubscription $subscription): void {
-                $response = $this->sendEmptyPush($subscription->endpoint);
 
-                if (in_array($response->status(), [404, 410], true)) {
-                    $subscription->delete();
+                Log::info('WebPush sending', [
+                    'subscription_id' => $subscription->id,
+                    'endpoint' => $subscription->endpoint,
+                ]);
 
-                    return;
-                }
+                try {
+                    $response = $this->sendEmptyPush($subscription->endpoint);
 
-                if ($response->successful()) {
-                    $subscription->update(['last_used_at' => now()]);
+                    Log::info('WebPush response', [
+                        'subscription_id' => $subscription->id,
+                        'status' => $response->status(),
+                        'body' => $response->body(),
+                    ]);
+
+                    if (in_array($response->status(), [404, 410], true)) {
+
+                        Log::warning('WebPush subscription expired', [
+                            'subscription_id' => $subscription->id,
+                        ]);
+
+                        $subscription->delete();
+
+                        return;
+                    }
+
+                    if ($response->successful()) {
+
+                        Log::info('WebPush success', [
+                            'subscription_id' => $subscription->id,
+                        ]);
+
+                        $subscription->update([
+                            'last_used_at' => now(),
+                        ]);
+                    } else {
+
+                        Log::error('WebPush failed', [
+                            'subscription_id' => $subscription->id,
+                            'status' => $response->status(),
+                            'body' => $response->body(),
+                        ]);
+                    }
+
+                } catch (\Throwable $e) {
+
+                    Log::error('WebPush exception', [
+                        'subscription_id' => $subscription->id,
+                        'message' => $e->getMessage(),
+                        'trace' => $e->getTraceAsString(),
+                    ]);
                 }
             });
     }
+
 
     private function sendEmptyPush(string $endpoint): Response
     {

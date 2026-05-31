@@ -6,7 +6,9 @@ use App\Models\Notification;
 use App\Models\PushSubscription;
 use App\Models\Student;
 use App\Models\User;
+use App\Services\WebPushService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\Http;
 use Tests\TestCase;
 
 class StudentWebPushTest extends TestCase
@@ -89,5 +91,26 @@ class StudentWebPushTest extends TestCase
         $this->assertDatabaseMissing('push_subscriptions', [
             'id' => $subscription->id,
         ]);
+    }
+
+    public function test_global_student_notification_sends_push_to_all_subscriptions(): void
+    {
+        config()->set('services.webpush.public_key', 'BGM0YismKfbX9gptUm1MioOVWROlmfWzOwCPbpbww_icstO9uQW0Kqy-VHkFSR9EVO2aJyxOiwzBJEIfUT_9Vug');
+        config()->set('services.webpush.private_key', 'LS0tLS1CRUdJTiBQUklWQVRFIEtFWS0tLS0tCk1JR0hBZ0VBTUJNR0J5cUdTTTQ5QWdFR0NDcUdTTTQ5QXdFSEJHMHdhd0lCQVFRZ0NMZmNrdCsxZERNeXJ2d1AKNjZsSVBZWi92aUI3VTd2ajdGRTdCa091TDhTaFJBTkNBQVJqTkdJckppbjIxL1lLYlZKdFRJcURsVmtUcFpuMQpzenNBajI2VzhNUDRuTExUdmJrRnRDcXN2bFI1QlVrZlJGVHRtaWNzVG9zTXdTUkNIMUUvL1ZibwotLS0tLUVORCBQUklWQVRFIEtFWS0tLS0tCg==');
+        config()->set('services.webpush.subject', 'mailto:test@example.com');
+        Http::fake([
+            '*' => Http::response('', 201),
+        ]);
+
+        PushSubscription::factory()->count(2)->create();
+        $notification = Notification::factory()->create([
+            'student_id' => null,
+            'user_id' => null,
+            'read_at' => null,
+        ]);
+
+        app(WebPushService::class)->sendForNotification($notification);
+
+        Http::assertSentCount(2);
     }
 }
