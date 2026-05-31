@@ -5,6 +5,7 @@ namespace App\Services;
 use App\Models\Notification;
 use App\Models\PushSubscription;
 use Illuminate\Support\Facades\Log;
+use Minishlink\WebPush\MessageSentReport;
 use Minishlink\WebPush\Subscription;
 use Minishlink\WebPush\WebPush;
 
@@ -19,17 +20,17 @@ class WebPushService
 
     public function sendForNotification(Notification $notification): void
     {
-        Log::info('test');
         if (! $this->isConfigured()) {
             Log::warning('WebPush not configured');
+
             return;
         }
 
         $subscriptions = PushSubscription::query()
             ->when(
                 $notification->student_id !== null || $notification->user_id !== null,
-                function ($query) use ($notification) {
-                    $query->where(function ($query) use ($notification) {
+                function ($query) use ($notification): void {
+                    $query->where(function ($query) use ($notification): void {
                         if ($notification->student_id !== null) {
                             $query->where('student_id', $notification->student_id);
                         }
@@ -47,31 +48,11 @@ class WebPushService
             'total_subscriptions' => $subscriptions->count(),
         ]);
 
-        $webPush = new WebPush([
-            'VAPID' => [
-                'subject' => config('services.webpush.subject'),
-                'publicKey' => config('services.webpush.public_key'),
-                'privateKey' => config('services.webpush.private_key'),
-            ],
-        ]);
+        $webPush = $this->webPush();
 
         foreach ($subscriptions as $pushSubscription) {
             try {
-                $subscription = Subscription::create([
-                    'endpoint' => $pushSubscription->endpoint,
-                    'publicKey' => $pushSubscription->public_key,
-                    'authToken' => $pushSubscription->auth_token,
-                    'contentEncoding' => $pushSubscription->content_encoding ?? 'aes128gcm',
-                ]);
-
-                $payload = json_encode([
-                    'title' => $notification->title ?? 'New Notification',
-                    'body' => $notification->message ?? 'You have a new notification.',
-                    'url' => '/student/notifications',
-                    'icon' => '/icons/icon-192x192.png',
-                ]);
-
-                $report = $webPush->sendOneNotification($subscription, $payload);
+                $report = $this->sendNotification($webPush, $pushSubscription, $notification);
 
                 Log::info('WebPush report', [
                     'subscription_id' => $pushSubscription->id,
@@ -96,5 +77,38 @@ class WebPushService
                 ]);
             }
         }
+    }
+
+    protected function webPush(): WebPush
+    {
+        return new WebPush([
+            'VAPID' => [
+                'subject' => config('services.webpush.subject'),
+                'publicKey' => config('services.webpush.public_key'),
+                'privateKey' => config('services.webpush.private_key'),
+            ],
+        ]);
+    }
+
+    protected function sendNotification(
+        WebPush $webPush,
+        PushSubscription $pushSubscription,
+        Notification $notification,
+    ): MessageSentReport {
+        $subscription = Subscription::create([
+            'endpoint' => $pushSubscription->endpoint,
+            'publicKey' => $pushSubscription->public_key,
+            'authToken' => $pushSubscription->auth_token,
+            'contentEncoding' => $pushSubscription->content_encoding ?? 'aes128gcm',
+        ]);
+
+        $payload = json_encode([
+            'title' => $notification->title ?? 'New Notification',
+            'body' => $notification->body ?? 'You have a new notification.',
+            'url' => '/student/notifications',
+            'icon' => '/icons/icon-192x192.png',
+        ], JSON_THROW_ON_ERROR);
+
+        return $webPush->sendOneNotification($subscription, $payload);
     }
 }

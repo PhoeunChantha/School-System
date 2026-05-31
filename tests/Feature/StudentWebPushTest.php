@@ -7,8 +7,10 @@ use App\Models\PushSubscription;
 use App\Models\Student;
 use App\Models\User;
 use App\Services\WebPushService;
+use GuzzleHttp\Psr7\Request;
 use Illuminate\Foundation\Testing\RefreshDatabase;
-use Illuminate\Support\Facades\Http;
+use Minishlink\WebPush\MessageSentReport;
+use Minishlink\WebPush\WebPush;
 use Tests\TestCase;
 
 class StudentWebPushTest extends TestCase
@@ -95,12 +97,9 @@ class StudentWebPushTest extends TestCase
 
     public function test_global_student_notification_sends_push_to_all_subscriptions(): void
     {
-        config()->set('services.webpush.public_key', 'BGM0YismKfbX9gptUm1MioOVWROlmfWzOwCPbpbww_icstO9uQW0Kqy-VHkFSR9EVO2aJyxOiwzBJEIfUT_9Vug');
-        config()->set('services.webpush.private_key', 'LS0tLS1CRUdJTiBQUklWQVRFIEtFWS0tLS0tCk1JR0hBZ0VBTUJNR0J5cUdTTTQ5QWdFR0NDcUdTTTQ5QXdFSEJHMHdhd0lCQVFRZ0NMZmNrdCsxZERNeXJ2d1AKNjZsSVBZWi92aUI3VTd2ajdGRTdCa091TDhTaFJBTkNBQVJqTkdJckppbjIxL1lLYlZKdFRJcURsVmtUcFpuMQpzenNBajI2VzhNUDRuTExUdmJrRnRDcXN2bFI1QlVrZlJGVHRtaWNzVG9zTXdTUkNIMUUvL1ZibwotLS0tLUVORCBQUklWQVRFIEtFWS0tLS0tCg==');
+        config()->set('services.webpush.public_key', 'public-key');
+        config()->set('services.webpush.private_key', 'private-key');
         config()->set('services.webpush.subject', 'mailto:test@example.com');
-        Http::fake([
-            '*' => Http::response('', 201),
-        ]);
 
         PushSubscription::factory()->count(2)->create();
         $notification = Notification::factory()->create([
@@ -109,8 +108,32 @@ class StudentWebPushTest extends TestCase
             'read_at' => null,
         ]);
 
-        app(WebPushService::class)->sendForNotification($notification);
+        $service = new class extends WebPushService
+        {
+            public int $sentCount = 0;
 
-        Http::assertSentCount(2);
+            protected function webPush(): WebPush
+            {
+                return new WebPush;
+            }
+
+            protected function sendNotification(
+                WebPush $webPush,
+                PushSubscription $pushSubscription,
+                Notification $notification,
+            ): MessageSentReport {
+                $this->sentCount++;
+
+                $pushSubscription->update(['last_used_at' => now()]);
+
+                return new MessageSentReport(
+                    new Request('POST', $pushSubscription->endpoint),
+                );
+            }
+        };
+
+        $service->sendForNotification($notification);
+
+        $this->assertSame(2, $service->sentCount);
     }
 }
