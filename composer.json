@@ -16,6 +16,7 @@
         "laravel/reverb": "^1.10",
         "laravel/tinker": "^3.0",
         "laravel/wayfinder": "^0.1.9",
+        "minishlink/web-push": "^10.1",
         "pusher/pusher-php-server": "^7.2",
         "spatie/laravel-permission": "^7.4"
     },
