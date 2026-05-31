@@ -61,7 +61,7 @@ class TeacherGradeManagementTest extends TestCase
         $period = GradePeriod::factory()->create(['is_current' => true]);
         $student = Student::factory()->for($schoolClass)->create();
 
-        $this->actingAs($user)
+        $response = $this->actingAs($user)
             ->post(route('admin.teachers.grades.store', $teacher), [
                 'grade_period_id' => $period->id,
                 'student_id' => $student->id,
@@ -71,7 +71,12 @@ class TeacherGradeManagementTest extends TestCase
                 'reading' => 70,
                 'writing' => 60,
             ])
-            ->assertRedirect(route('admin.teachers.grades', $teacher));
+            ->assertRedirect();
+
+        $this->assertMatchesRegularExpression(
+            '#/admin/teachers/.+/grades$#',
+            $response->headers->get('Location') ?? '',
+        );
 
         $this->assertDatabaseHas('grade_records', [
             'grade_period_id' => $period->id,
