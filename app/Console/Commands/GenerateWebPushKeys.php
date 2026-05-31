@@ -4,6 +4,7 @@ namespace App\Console\Commands;
 
 use Illuminate\Console\Command;
 use Illuminate\Support\Facades\File;
+use Minishlink\WebPush\VAPID;
 
 class GenerateWebPushKeys extends Command
 {
@@ -14,33 +15,10 @@ class GenerateWebPushKeys extends Command
 
     public function handle(): int
     {
-        putenv('RANDFILE='.storage_path('framework/openssl.rnd'));
+        $keys = VAPID::createVapidKeys();
 
-        $key = @openssl_pkey_new([
-            'curve_name' => 'prime256v1',
-            'config' => $this->opensslConfigPath(),
-            'private_key_type' => OPENSSL_KEYTYPE_EC,
-        ]);
-
-        if ($key === false) {
-            $this->error('Unable to generate VAPID key pair.');
-
-            return self::FAILURE;
-        }
-
-        openssl_pkey_export($key, $privateKeyPem, null, [
-            'config' => $this->opensslConfigPath(),
-        ]);
-        $details = openssl_pkey_get_details($key);
-
-        if (! is_string($privateKeyPem) || ! isset($details['ec']['x'], $details['ec']['y'])) {
-            $this->error('Unable to export VAPID key pair.');
-
-            return self::FAILURE;
-        }
-
-        $publicKey = $this->base64UrlEncode("\x04".$details['ec']['x'].$details['ec']['y']);
-        $privateKey = base64_encode($privateKeyPem);
+        $publicKey = $keys['publicKey'];
+        $privateKey = $keys['privateKey'];
 
         $this->line('WEB_PUSH_PUBLIC_KEY='.$publicKey);
         $this->line('WEB_PUSH_PRIVATE_KEY='.$privateKey);
@@ -52,7 +30,7 @@ class GenerateWebPushKeys extends Command
         $this->updateEnvironmentFile('WEB_PUSH_PUBLIC_KEY', $publicKey);
         $this->updateEnvironmentFile('WEB_PUSH_PRIVATE_KEY', $privateKey);
 
-        $this->info('Web Push VAPID keys written to .env. Run php artisan config:clear if config is cached.');
+        $this->info('Web Push VAPID keys written to .env.');
 
         return self::SUCCESS;
     }

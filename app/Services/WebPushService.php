@@ -19,6 +19,7 @@ class WebPushService
 
     public function sendForNotification(Notification $notification): void
     {
+        Log::info('test');
         if (! $this->isConfigured()) {
             Log::warning('WebPush not configured');
             return;
