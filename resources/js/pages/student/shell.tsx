@@ -1,6 +1,7 @@
 import '@/pages/student/student.css';
 import { useStudentDomTranslations } from '@/hooks/use-student-dom-translations';
 import { useStudentTranslation } from '@/hooks/use-student-translation';
+import type { SharedData } from '@/types';
 import {
     attendanceCalendar,
     attendance,
@@ -17,7 +18,7 @@ import {
     profile as studentProfile,
 } from '@/routes/student';
 import { logout } from '@/routes';
-import { Head, Link, router } from '@inertiajs/react';
+import { Head, Link, router, usePage } from '@inertiajs/react';
 import { useEcho } from '@laravel/echo-react';
 import {
     BarChart2,
@@ -253,11 +254,22 @@ export default function StudentShell({
 }: Props) {
     useStudentDomTranslations();
 
+    const { school } = usePage<SharedData>().props;
     const { lang, setLang, t } = useStudentTranslation();
     const [unreadNotifications, setUnreadNotifications] = useState(
         profile.unreadNotifications ?? 0,
     );
     const [moreOpen, setMoreOpen] = useState(false);
+
+    useEffect(() => {
+        if (!('serviceWorker' in navigator)) {
+            return;
+        }
+
+        navigator.serviceWorker
+            .register('/student/service-worker.js', { scope: '/student/' })
+            .catch(() => undefined);
+    }, []);
 
     useEffect(() => {
         setUnreadNotifications(profile.unreadNotifications ?? 0);
@@ -281,7 +293,38 @@ export default function StudentShell({
 
     return (
         <div className="student-wrap">
-            <Head title={title} />
+            <Head title={title}>
+                <link
+                    head-key="student-pwa-manifest"
+                    rel="manifest"
+                    href="/student/manifest.webmanifest"
+                />
+                <meta
+                    head-key="student-pwa-theme-color"
+                    name="theme-color"
+                    content="#009c7f"
+                />
+                <meta
+                    head-key="student-pwa-mobile-web-app-capable"
+                    name="mobile-web-app-capable"
+                    content="yes"
+                />
+                <meta
+                    head-key="student-pwa-apple-mobile-web-app-capable"
+                    name="apple-mobile-web-app-capable"
+                    content="yes"
+                />
+                <meta
+                    head-key="student-pwa-apple-mobile-web-app-title"
+                    name="apple-mobile-web-app-title"
+                    content={`${school.nameEn} Student`}
+                />
+                <link
+                    head-key="student-pwa-apple-touch-icon"
+                    rel="apple-touch-icon"
+                    href={school.logo ?? school.favicon ?? '/apple-touch-icon.png'}
+                />
+            </Head>
             {profile.studentId ? (
                 <StudentRealtimeNotifications
                     activePage={activePage}

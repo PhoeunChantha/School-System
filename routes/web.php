@@ -23,6 +23,7 @@ use App\Http\Controllers\Backends\TeacherController;
 use App\Http\Controllers\Backends\TeacherGradeController;
 use App\Http\Controllers\Backends\UserController;
 use App\Http\Controllers\Student\StudentPortalController;
+use App\Http\Controllers\Student\StudentPwaController;
 use App\Models\ActivityLog;
 use App\Models\AttendanceSession;
 use App\Models\Certificate;
@@ -281,6 +282,13 @@ Route::middleware(['auth', 'verified'])->prefix('admin')->name('admin.')->group(
         Route::post('/upload-image', [SchoolSettingController::class, 'uploadImage'])->can('update', SchoolSetting::class)->name('settings.upload-image');
         Route::post('/search-console-file', [SchoolSettingController::class, 'uploadSearchConsoleFile'])->can('update', SchoolSetting::class)->name('settings.search-console-file');
     });
+});
+
+// Student Portal PWA
+Route::prefix('student')->name('student.')->controller(StudentPwaController::class)->group(function () {
+    Route::get('/manifest.webmanifest', 'manifest')->name('manifest');
+    Route::get('/service-worker.js', 'serviceWorker')->name('service-worker');
+    Route::get('/offline', 'offline')->name('offline');
 });
 
 // Student Portal
