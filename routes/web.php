@@ -292,7 +292,7 @@ Route::prefix('student')->name('student.')->controller(StudentPwaController::cla
     Route::get('/offline', 'offline')->name('offline');
 });
 
-// Student Portal
+// Student Portal Student
 Route::middleware(['auth', 'verified'])->prefix('student')->name('student.')->group(function () {
     Route::get('/push-notifications/public-key', [StudentPushSubscriptionController::class, 'publicKey'])->name('push-notifications.public-key');
     Route::post('/push-notifications/subscriptions', [StudentPushSubscriptionController::class, 'store'])->name('push-notifications.subscriptions.store');
