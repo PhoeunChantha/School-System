@@ -76,11 +76,14 @@ class HandleInertiaRequests extends Middleware
             },
             'homeworkSubmissionAlerts' => function () use ($user): array {
                 if (! $user || ! $user->can('view', HomeworkSubmission::class)) {
-                    return ['unreadCount' => 0];
+                    return ['unreadCount' => 0, 'latest' => null];
                 }
 
+                $alerts = app(HomeworkSubmissionAlerts::class);
+
                 return [
-                    'unreadCount' => app(HomeworkSubmissionAlerts::class)->unreadCount($user),
+                    'unreadCount' => $alerts->unreadCount($user),
+                    'latest' => $alerts->latestUnread($user),
                 ];
             },
             'translations' => [
