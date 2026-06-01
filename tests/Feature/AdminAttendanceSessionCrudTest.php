@@ -42,7 +42,10 @@ class AdminAttendanceSessionCrudTest extends TestCase
         $this->actingAs(User::factory()->create());
 
         $schoolClass = SchoolClass::factory()->create(['name' => 'Advanced A']);
-        $student = Student::factory()->for($schoolClass)->create(['name_en' => 'Chanthy Mao']);
+        $student = Student::factory()->for($schoolClass)->create([
+            'name_en' => 'Chanthy Mao',
+            'profile_photo' => 'uploads/students/chanthy.jpg',
+        ]);
         $session = AttendanceSession::factory()->for($schoolClass)->create([
             'attendance_date' => '2026-05-13',
             'period' => 'morning',
@@ -55,7 +58,31 @@ class AdminAttendanceSessionCrudTest extends TestCase
                 ->component('admin/attendance/mark')
                 ->where('editingSession.id', $session->id)
                 ->where('editingSession.period', 'morning')
+                ->where('editingSession.records.0.photo', asset('uploads/students/chanthy.jpg'))
                 ->where('editingSession.records.0.status', 'present'));
+    }
+
+    public function test_admin_can_open_attendance_mark_page_for_selected_class_with_student_profiles(): void
+    {
+        $this->actingAs(User::factory()->create());
+
+        $firstClass = SchoolClass::factory()->create(['name' => 'Beginner A']);
+        $selectedClass = SchoolClass::factory()->create(['name' => 'Advanced A']);
+        Student::factory()->for($firstClass)->create(['name_en' => 'Other Student']);
+        $student = Student::factory()->for($selectedClass)->create([
+            'code' => 'STU-1234',
+            'name_en' => 'Makara Mao',
+            'profile_photo' => 'uploads/students/makara.jpg',
+        ]);
+
+        $this->get(route('admin.attendance.mark', ['class_id' => $selectedClass->id]))
+            ->assertOk()
+            ->assertInertia(fn ($page) => $page
+                ->component('admin/attendance/mark')
+                ->where('initialClassId', $selectedClass->id)
+                ->where('classes.0.students.0.id', $student->id)
+                ->where('classes.0.students.0.code', 'STU-1234')
+                ->where('classes.0.students.0.photo', asset('uploads/students/makara.jpg')));
     }
 
     public function test_admin_can_open_attendance_edit_page_from_legacy_mark_query(): void

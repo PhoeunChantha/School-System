@@ -2,12 +2,16 @@
 
 namespace Tests\Feature;
 
+use App\Events\HomeworkSubmissionSubmitted;
 use App\Models\HomeworkAssignment;
 use App\Models\HomeworkSubmission;
+use App\Models\HomeworkSubmissionRead;
 use App\Models\Student;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Http\UploadedFile;
+use Illuminate\Support\Facades\Event;
+use Spatie\Permission\Models\Permission;
 use Tests\TestCase;
 
 class AdminHomeworkSubmissionCrudTest extends TestCase
@@ -149,6 +153,68 @@ class AdminHomeworkSubmissionCrudTest extends TestCase
 
         $this->assertDatabaseMissing('homework_submissions', [
             'id' => $homeworkSubmission->id,
+        ]);
+    }
+
+    public function test_student_homework_submission_broadcasts_admin_alert_and_resets_reads(): void
+    {
+        Event::fake([HomeworkSubmissionSubmitted::class]);
+
+        $studentUser = User::factory()->create();
+        $adminUser = User::factory()->create();
+        $assignment = HomeworkAssignment::factory()->create();
+        $student = Student::factory()->create([
+            'user_id' => $studentUser->id,
+            'school_class_id' => $assignment->school_class_id,
+        ]);
+        $submission = HomeworkSubmission::factory()
+            ->for($assignment)
+            ->for($student)
+            ->create([
+                'status' => 'submitted',
+                'submitted_at' => now()->subDay(),
+            ]);
+        HomeworkSubmissionRead::query()->create([
+            'homework_submission_id' => $submission->id,
+            'user_id' => $adminUser->id,
+            'read_at' => now()->subHour(),
+        ]);
+
+        $this->actingAs($studentUser)
+            ->post(route('student.homework.submit', $assignment), [
+                'note' => 'Please review my new homework.',
+            ])
+            ->assertRedirect();
+
+        $submission->refresh();
+
+        $this->assertSame('Please review my new homework.', $submission->note);
+        $this->assertDatabaseMissing('homework_submission_reads', [
+            'homework_submission_id' => $submission->id,
+            'user_id' => $adminUser->id,
+        ]);
+        Event::assertDispatched(
+            HomeworkSubmissionSubmitted::class,
+            fn (HomeworkSubmissionSubmitted $event): bool => $event->submission->is($submission),
+        );
+    }
+
+    public function test_homework_submissions_page_marks_alerts_read_for_current_user(): void
+    {
+        $user = User::factory()->create();
+        $user->givePermissionTo(Permission::findOrCreate('homework-submissions.view'));
+        $submission = HomeworkSubmission::factory()->create([
+            'status' => 'submitted',
+            'submitted_at' => now(),
+        ]);
+
+        $this->actingAs($user)
+            ->get(route('admin.homework-submissions'))
+            ->assertOk();
+
+        $this->assertDatabaseHas('homework_submission_reads', [
+            'homework_submission_id' => $submission->id,
+            'user_id' => $user->id,
         ]);
     }
 

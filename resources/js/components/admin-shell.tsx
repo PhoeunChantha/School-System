@@ -1,4 +1,13 @@
 import { AdminFooter } from '@/components/admin-footer';
+import { Button } from '@/components/ui/button';
+import {
+    Dialog,
+    DialogContent,
+    DialogDescription,
+    DialogFooter,
+    DialogHeader,
+    DialogTitle,
+} from '@/components/ui/dialog';
 import {
     DropdownMenu,
     DropdownMenuContent,
@@ -15,10 +24,12 @@ import { Avatar, KH } from '@/pages/admin/ui';
 import { logout } from '@/routes';
 import { type BreadcrumbItem, type SharedData } from '@/types';
 import { Head, Link, router, usePage } from '@inertiajs/react';
+import { useEcho } from '@laravel/echo-react';
 import type { LucideIcon } from 'lucide-react';
 import {
     Award,
     Bell,
+    BellRing,
     BookOpen,
     Building2,
     ChartNoAxesColumn,
@@ -68,6 +79,31 @@ interface NavItem {
 }
 type NavEntry = NavGroup | NavItem;
 const isItem = (e: NavEntry): e is NavItem => 'id' in e;
+
+interface HomeworkSubmissionAlertEvent {
+    submission: {
+        id: number;
+        routeKey: string;
+        studentName: string;
+        assignmentTitle: string;
+        className: string;
+        submittedAt: string;
+    };
+}
+
+function AdminHomeworkSubmissionRealtime({
+    onAlert,
+}: {
+    onAlert: (event: HomeworkSubmissionAlertEvent) => void;
+}) {
+    useEcho<HomeworkSubmissionAlertEvent>(
+        'admin.homework-submissions',
+        '.homework.submission.submitted',
+        onAlert,
+    );
+
+    return null;
+}
 
 const NAV_PERMISSIONS: Record<string, string[]> = {
     dashboard: ['dashboard.view'],
@@ -283,6 +319,7 @@ export default function AdminShell({ children }: AdminShellProps) {
     const { url, props } = usePage<SharedData>();
     const user = props.auth?.user;
     const school = props.school;
+    const { notificationSound } = props;
     const { lang, setLang, t } = useAdminTranslation();
     useAdminDomTranslations();
     const [hiddenNavItems, setHiddenNavItems] = useState<Set<string>>(() => {
@@ -371,9 +408,17 @@ export default function AdminShell({ children }: AdminShellProps) {
         visibleMobileNav.find((item) => item.id === 'dashboard');
     const active = activeItem?.id ?? 'dashboard';
     const activeMobileNavRef = useRef<HTMLAnchorElement | null>(null);
+    const activeRef = useRef(active);
     const [collapsed, setCollapsed] = useState(false);
     const [mobileOpen, setMobileOpen] = useState(false);
     const [mobileMoreOpen, setMobileMoreOpen] = useState(false);
+    const notificationSoundRef = useRef<HTMLAudioElement | null>(null);
+    const [homeworkUnreadCount, setHomeworkUnreadCount] = useState(
+        props.homeworkSubmissionAlerts?.unreadCount ?? 0,
+    );
+    const [homeworkAlert, setHomeworkAlert] = useState<
+        HomeworkSubmissionAlertEvent['submission'] | null
+    >(null);
     const [dark, setDark] = useState(() => {
         if (typeof window === 'undefined') {
             return false;
@@ -393,6 +438,32 @@ export default function AdminShell({ children }: AdminShellProps) {
         document.documentElement.classList.toggle('dark', dark);
         window.localStorage.setItem('admin-theme', dark ? 'dark' : 'light');
     }, [dark]);
+
+    useEffect(() => {
+        activeRef.current = active;
+    }, [active]);
+
+    useEffect(() => {
+        setHomeworkUnreadCount(
+            props.homeworkSubmissionAlerts?.unreadCount ?? 0,
+        );
+    }, [props.homeworkSubmissionAlerts?.unreadCount]);
+
+    useEffect(() => {
+        notificationSoundRef.current = notificationSound
+            ? new Audio(notificationSound)
+            : null;
+    }, [notificationSound]);
+
+    useEffect(() => {
+        if (!homeworkAlert) {
+            return;
+        }
+
+        const timeout = window.setTimeout(() => setHomeworkAlert(null), 5000);
+
+        return () => window.clearTimeout(timeout);
+    }, [homeworkAlert]);
 
     useEffect(() => {
         const activeMobileNav = activeMobileNavRef.current;
@@ -439,6 +510,27 @@ export default function AdminShell({ children }: AdminShellProps) {
         setMobileMoreOpen(false);
         router.flushAll();
     };
+    const openHomeworkSubmissions = () => {
+        setHomeworkAlert(null);
+        router.visit('/admin/homework-submissions');
+    };
+    const handleHomeworkSubmissionAlert = (
+        event: HomeworkSubmissionAlertEvent,
+    ) => {
+        setHomeworkUnreadCount((count) => count + 1);
+        setHomeworkAlert(event.submission);
+
+        if (notificationSoundRef.current) {
+            notificationSoundRef.current.currentTime = 0;
+            notificationSoundRef.current.play().catch(() => undefined);
+        }
+
+        if (activeRef.current === 'homework-submissions') {
+            router.reload({
+                only: ['submissions', 'summary', 'homeworkSubmissionAlerts'],
+            });
+        }
+    };
 
     return (
         <div
@@ -448,6 +540,60 @@ export default function AdminShell({ children }: AdminShellProps) {
             <Head title={t(`nav_items.${titleKey}`)}>
                 {school?.favicon && <link rel="icon" href={school.favicon} />}
             </Head>
+
+            {canAccess('homework-submissions') && (
+                <AdminHomeworkSubmissionRealtime
+                    onAlert={handleHomeworkSubmissionAlert}
+                />
+            )}
+
+            <Dialog
+                open={homeworkAlert !== null}
+                onOpenChange={(open) => {
+                    if (!open) {
+                        setHomeworkAlert(null);
+                    }
+                }}
+            >
+                <DialogContent className="border-slate-200 bg-white text-slate-950 shadow-2xl sm:max-w-md">
+                    <DialogHeader className="gap-3">
+                        <div className="flex h-12 w-12 items-center justify-center rounded-full bg-blue-50 text-blue-600">
+                            <BellRing className="h-6 w-6" />
+                        </div>
+                        <div className="space-y-2">
+                            <DialogTitle className="text-xl font-bold tracking-normal text-slate-950">
+                                New homework submission
+                            </DialogTitle>
+                            <DialogDescription className="text-sm leading-6 text-slate-500">
+                                {homeworkAlert?.studentName} submitted{' '}
+                                {homeworkAlert?.assignmentTitle}.
+                            </DialogDescription>
+                        </div>
+                    </DialogHeader>
+                    {homeworkAlert && (
+                        <div className="rounded-lg border border-slate-200 bg-slate-50 p-4 text-sm">
+                            <div className="font-semibold text-slate-900">
+                                {homeworkAlert.assignmentTitle}
+                            </div>
+                            <div className="mt-1 text-slate-600">
+                                {homeworkAlert.className || 'Class'} -{' '}
+                                {homeworkAlert.submittedAt}
+                            </div>
+                        </div>
+                    )}
+                    <DialogFooter>
+                        <Button
+                            variant="outline"
+                            onClick={() => setHomeworkAlert(null)}
+                        >
+                            Close
+                        </Button>
+                        <Button onClick={openHomeworkSubmissions}>
+                            Open submissions
+                        </Button>
+                    </DialogFooter>
+                </DialogContent>
+            </Dialog>
 
             {mobileOpen && (
                 <div
@@ -796,6 +942,7 @@ export default function AdminShell({ children }: AdminShellProps) {
 
                     <button
                         className="admin-bell-button"
+                        onClick={openHomeworkSubmissions}
                         style={{
                             position: 'relative',
                             background: 'none',
@@ -808,27 +955,33 @@ export default function AdminShell({ children }: AdminShellProps) {
                             justifyContent: 'center',
                         }}
                         aria-label={t('ui.notifications')}
+                        title={t('nav_items.homework-submissions')}
                     >
                         <Bell size={20} />
-                        <span
-                            style={{
-                                position: 'absolute',
-                                top: 2,
-                                right: 2,
-                                width: 16,
-                                height: 16,
-                                background: '#ef4444',
-                                borderRadius: '50%',
-                                color: 'white',
-                                fontSize: 9,
-                                fontWeight: 700,
-                                display: 'flex',
-                                alignItems: 'center',
-                                justifyContent: 'center',
-                            }}
-                        >
-                            3
-                        </span>
+                        {homeworkUnreadCount > 0 && (
+                            <span
+                                style={{
+                                    position: 'absolute',
+                                    top: 2,
+                                    right: 2,
+                                    minWidth: 16,
+                                    height: 16,
+                                    padding: '0 4px',
+                                    background: '#ef4444',
+                                    borderRadius: 999,
+                                    color: 'white',
+                                    fontSize: 9,
+                                    fontWeight: 700,
+                                    display: 'flex',
+                                    alignItems: 'center',
+                                    justifyContent: 'center',
+                                }}
+                            >
+                                {homeworkUnreadCount > 99
+                                    ? '99+'
+                                    : homeworkUnreadCount}
+                            </span>
+                        )}
                     </button>
 
                     <DropdownMenu>

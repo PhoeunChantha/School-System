@@ -2,6 +2,7 @@
 
 namespace Tests\Feature\Auth;
 
+use App\Models\Student;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\RateLimiter;
@@ -49,6 +50,25 @@ class AuthenticationTest extends TestCase
         $response = $this->post(route('login.store'), [
             'email' => $user->email,
             'password' => 'password',
+        ]);
+
+        $this->assertAuthenticatedAs($user);
+        $response->assertRedirect(route('student.dashboard', absolute: false));
+    }
+
+    public function test_students_can_authenticate_using_student_code(): void
+    {
+        $user = User::factory()->withoutTwoFactor()->create([
+            'password' => 'STU-1001',
+        ]);
+        Student::factory()->for($user)->create([
+            'code' => 'STU-1001',
+        ]);
+        $this->assignRole($user, 'student');
+
+        $response = $this->post(route('login.store'), [
+            'email' => 'STU-1001',
+            'password' => 'STU-1001',
         ]);
 
         $this->assertAuthenticatedAs($user);

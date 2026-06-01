@@ -10,12 +10,10 @@ import {
     CalendarCheck2,
     ClipboardCheck,
     Clock,
-    DollarSign,
     GraduationCap,
     Plus,
     School,
     Sparkles,
-    TrendingUp,
     UserRound,
     Users,
 } from 'lucide-react';
@@ -213,7 +211,6 @@ function SectionCard({
 
 export default function Dashboard({
     stats,
-    revenueTrend,
     attendanceByClass,
     skillsAvg,
     atRiskStudents,
@@ -240,9 +237,9 @@ export default function Dashboard({
             iconClass: 'bg-violet-50 text-violet-600 dark:bg-violet-500/15 dark:text-violet-300',
         },
         {
-            icon: DollarSign,
-            label: 'Revenue',
-            value: formatMoney(stats.monthlyRevenue),
+            icon: School,
+            label: 'Classes',
+            value: classes.length,
             accent: '#059669',
             iconClass: 'bg-emerald-50 text-emerald-600 dark:bg-emerald-500/15 dark:text-emerald-300',
         },

@@ -4,8 +4,8 @@ import { Avatar, KH } from '@/pages/admin/ui';
 import { router, useForm } from '@inertiajs/react';
 import { Select, SelectTrigger, SelectContent, SelectItem, SelectValue } from '@/components/ui/select';
 import { DatePicker } from '@/components/ui/date-picker';
-import { FormEvent, useMemo } from 'react';
-import { ClipboardCheck, Edit3 } from 'lucide-react';
+import { FormEvent, useMemo, useState } from 'react';
+import { ClipboardCheck, Edit3, Search } from 'lucide-react';
 import { toast } from 'sonner';
 
 type AttendanceStatus = 'present' | 'absent' | 'late' | 'excused';
@@ -13,9 +13,11 @@ type AttendanceStatus = 'present' | 'absent' | 'late' | 'excused';
 interface AttendanceStudent {
     id: number;
     routeKey?: string;
+    code: string;
     nameKh: string;
     nameEn: string;
     province: string;
+    photo?: string | null;
 }
 
 interface AttendanceClass {
@@ -32,6 +34,7 @@ interface AttendanceRecordItem {
     studentNameKh: string;
     studentNameEn: string;
     province: string;
+    photo?: string | null;
     status: AttendanceStatus;
     note: string;
 }
@@ -68,6 +71,7 @@ interface AttendanceFormData {
 interface MarkAttendancePageProps {
     classes: AttendanceClass[];
     editingSession?: AttendanceSessionItem | null;
+    initialClassId?: number | null;
 }
 
 const PERIODS = [
@@ -117,9 +121,10 @@ function periodLabel(period: string): string {
     return PERIODS.find(item => item.value === period)?.label ?? period;
 }
 
-export default function MarkAttendancePage({ classes, editingSession }: MarkAttendancePageProps) {
+export default function MarkAttendancePage({ classes, editingSession, initialClassId }: MarkAttendancePageProps) {
     const isEdit = !!editingSession;
-    const firstClass = classes[0];
+    const firstClass = classes.find(schoolClass => schoolClass.id === initialClassId) ?? classes[0];
+    const [studentSearch, setStudentSearch] = useState('');
 
     const { data, setData, post, put, processing, errors } = useForm<AttendanceFormData>({
         school_class_id: editingSession?.schoolClassId ?? firstClass?.id ?? null,
@@ -140,6 +145,20 @@ export default function MarkAttendancePage({ classes, editingSession }: MarkAtte
         () => classes.find(schoolClass => schoolClass.id === data.school_class_id)?.students ?? [],
         [classes, data.school_class_id],
     );
+    const filteredClassStudents = useMemo(() => {
+        const query = studentSearch.trim().toLowerCase();
+
+        if (!query) {
+            return selectedClassStudents;
+        }
+
+        return selectedClassStudents.filter(student => [
+            student.code,
+            student.nameKh,
+            student.nameEn,
+            student.province,
+        ].some(value => value.toLowerCase().includes(query)));
+    }, [selectedClassStudents, studentSearch]);
 
     const changeClass = (classId: number) => {
         const schoolClass = classes.find(item => item.id === classId) ?? null;
@@ -153,6 +172,7 @@ export default function MarkAttendancePage({ classes, editingSession }: MarkAtte
                 note: '',
             })) ?? [],
         }));
+        setStudentSearch('');
     };
 
     const setRecordStatus = (studentId: number, status: AttendanceStatus) => {
@@ -272,18 +292,36 @@ export default function MarkAttendancePage({ classes, editingSession }: MarkAtte
                         </div>
                     </div>
 
+                    <div className="grid gap-2 rounded-[22px] border border-slate-200 bg-white p-3 dark:border-slate-700 dark:bg-slate-800/70 md:grid-cols-[minmax(220px,1fr)_auto] md:items-center">
+                        <label className="relative block">
+                            <Search className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" size={16} />
+                            <input
+                                className="min-h-11 w-full rounded-2xl border border-slate-200 bg-slate-50 px-3 py-2 pl-9 text-sm font-bold text-slate-900 outline-none transition placeholder:text-slate-400 focus:border-blue-400 focus:ring-2 focus:ring-blue-500/15 dark:border-slate-700 dark:bg-slate-950 dark:text-slate-100"
+                                placeholder="Search students in this class"
+                                type="search"
+                                value={studentSearch}
+                                onChange={event => setStudentSearch(event.target.value)}
+                            />
+                        </label>
+                        <div className="text-xs font-black text-slate-500 dark:text-slate-300">
+                            {filteredClassStudents.length} of {selectedClassStudents.length} students
+                        </div>
+                    </div>
+
                     <div className="grid gap-3 md:overflow-hidden md:rounded-[22px] md:border md:border-slate-200 md:bg-white dark:md:border-slate-700 dark:md:bg-slate-800/70">
                         {selectedClassStudents.length === 0 ? (
                             <div className="rounded-[22px] border border-dashed border-slate-300 bg-white/80 px-4 py-8 text-center text-sm font-bold text-slate-500 dark:border-slate-700 dark:bg-slate-800/80 dark:text-slate-400 md:border-0">Data not found</div>
-                        ) : selectedClassStudents.map(student => {
+                        ) : filteredClassStudents.length === 0 ? (
+                            <div className="rounded-[22px] border border-dashed border-slate-300 bg-white/80 px-4 py-8 text-center text-sm font-bold text-slate-500 dark:border-slate-700 dark:bg-slate-800/80 dark:text-slate-400 md:border-0">No students match this search</div>
+                        ) : filteredClassStudents.map(student => {
                             const record = data.records.find(item => item.student_id === student.id);
                             return (
                                 <div className="grid gap-3 rounded-[22px] border border-slate-200 bg-white p-3 shadow-[0_12px_30px_rgba(15,23,42,0.06)] dark:border-slate-700 dark:bg-slate-800 md:grid-cols-[minmax(210px,1fr)_minmax(280px,1.4fr)_minmax(160px,.8fr)] md:items-center md:rounded-none md:border-x-0 md:border-t-0 md:shadow-none" key={student.id}>
                                     <div className="flex min-w-0 items-center gap-2.5">
-                                        <Avatar name={student.nameEn} size={34} />
+                                        <Avatar name={student.nameEn} size={34} src={student.photo} />
                                         <div className="min-w-0">
                                             <KH className="block truncate text-[13px] font-black text-slate-900 dark:text-slate-50">{student.nameKh}</KH>
-                                            <div className="truncate text-[11px] font-bold text-slate-400">{student.nameEn}</div>
+                                            <div className="truncate text-[11px] font-bold text-slate-400">{student.code ? `${student.code} - ` : ''}{student.nameEn}</div>
                                         </div>
                                     </div>
                                     <div className="grid grid-cols-2 gap-2 md:grid-cols-4">

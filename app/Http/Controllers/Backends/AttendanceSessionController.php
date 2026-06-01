@@ -84,6 +84,7 @@ class AttendanceSessionController extends Controller
         return Inertia::render('admin/attendance/mark', [
             'classes' => $data['classes'],
             'editingSession' => $editing,
+            'initialClassId' => $request->integer('class_id') ?: null,
         ]);
     }
 

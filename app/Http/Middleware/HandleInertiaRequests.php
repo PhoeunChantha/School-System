@@ -2,7 +2,9 @@
 
 namespace App\Http\Middleware;
 
+use App\Models\HomeworkSubmission;
 use App\Models\SchoolSetting;
+use App\Support\HomeworkSubmissionAlerts;
 use App\Support\SchoolProfile;
 use Illuminate\Foundation\Inspiring;
 use Illuminate\Http\Request;
@@ -71,6 +73,15 @@ class HandleInertiaRequests extends Middleware
                 $path = Arr::get($value, 'notificationSound');
 
                 return filled($path) ? asset((string) $path) : null;
+            },
+            'homeworkSubmissionAlerts' => function () use ($user): array {
+                if (! $user || ! $user->can('view', HomeworkSubmission::class)) {
+                    return ['unreadCount' => 0];
+                }
+
+                return [
+                    'unreadCount' => app(HomeworkSubmissionAlerts::class)->unreadCount($user),
+                ];
             },
             'translations' => [
                 'admin' => [

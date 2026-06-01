@@ -37,6 +37,9 @@ export interface SharedData {
     sidebarOpen: boolean;
     school: SchoolSharedData;
     notificationSound?: string | null;
+    homeworkSubmissionAlerts?: {
+        unreadCount: number;
+    };
     translations?: {
         admin?: Record<'en' | 'kh', Record<string, unknown>>;
         student?: Record<'en' | 'kh', Record<string, unknown>>;

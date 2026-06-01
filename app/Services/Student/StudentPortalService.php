@@ -2,6 +2,7 @@
 
 namespace App\Services\Student;
 
+use App\Events\HomeworkSubmissionSubmitted;
 use App\Models\AttendanceRecord;
 use App\Models\Certificate;
 use App\Models\Exam;
@@ -14,12 +15,16 @@ use App\Models\LessonPlan;
 use App\Models\Notification;
 use App\Models\Student;
 use App\Models\User;
+use App\Support\HomeworkSubmissionAlerts;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Str;
 use Illuminate\Validation\ValidationException;
+use Throwable;
 
 class StudentPortalService
 {
+    public function __construct(private readonly HomeworkSubmissionAlerts $homeworkSubmissionAlerts) {}
+
     public function findStudent(User $user): ?Student
     {
         return Student::query()
@@ -290,7 +295,7 @@ class StudentPortalService
 
         $isLate = $homework->due_on !== null && now()->gt($homework->due_on->endOfDay());
 
-        return HomeworkSubmission::query()->updateOrCreate(
+        $submission = HomeworkSubmission::query()->updateOrCreate(
             [
                 'homework_assignment_id' => $homework->id,
                 'student_id' => $student->id,
@@ -305,6 +310,21 @@ class StudentPortalService
                 'updated_by' => $user->id,
             ],
         );
+
+        $submission->refresh();
+        $this->homeworkSubmissionAlerts->forgetReads($submission);
+        $this->broadcastHomeworkSubmission($submission);
+
+        return $submission;
+    }
+
+    private function broadcastHomeworkSubmission(HomeworkSubmission $submission): void
+    {
+        try {
+            HomeworkSubmissionSubmitted::dispatch($submission);
+        } catch (Throwable $exception) {
+            report($exception);
+        }
     }
 
     /**
