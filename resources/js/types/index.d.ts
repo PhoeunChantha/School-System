@@ -39,6 +39,14 @@ export interface SharedData {
     notificationSound?: string | null;
     homeworkSubmissionAlerts?: {
         unreadCount: number;
+        latest: {
+            id: number;
+            routeKey: string;
+            studentName: string;
+            assignmentTitle: string;
+            className: string;
+            submittedAt: string;
+        } | null;
     };
     translations?: {
         admin?: Record<'en' | 'kh', Record<string, unknown>>;

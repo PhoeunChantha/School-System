@@ -409,6 +409,9 @@ export default function AdminShell({ children }: AdminShellProps) {
     const active = activeItem?.id ?? 'dashboard';
     const activeMobileNavRef = useRef<HTMLAnchorElement | null>(null);
     const activeRef = useRef(active);
+    const latestUnreadAlertIdRef = useRef<number | null>(
+        props.homeworkSubmissionAlerts?.latest?.id ?? null,
+    );
     const [collapsed, setCollapsed] = useState(false);
     const [mobileOpen, setMobileOpen] = useState(false);
     const [mobileMoreOpen, setMobileMoreOpen] = useState(false);
@@ -450,6 +453,27 @@ export default function AdminShell({ children }: AdminShellProps) {
     }, [props.homeworkSubmissionAlerts?.unreadCount]);
 
     useEffect(() => {
+        const latest = props.homeworkSubmissionAlerts?.latest ?? null;
+
+        if (
+            !latest ||
+            latestUnreadAlertIdRef.current === latest.id ||
+            activeRef.current === 'homework-submissions'
+        ) {
+            latestUnreadAlertIdRef.current = latest?.id ?? null;
+            return;
+        }
+
+        latestUnreadAlertIdRef.current = latest.id;
+        setHomeworkAlert(latest);
+
+        if (notificationSoundRef.current) {
+            notificationSoundRef.current.currentTime = 0;
+            notificationSoundRef.current.play().catch(() => undefined);
+        }
+    }, [props.homeworkSubmissionAlerts?.latest]);
+
+    useEffect(() => {
         notificationSoundRef.current = notificationSound
             ? new Audio(notificationSound)
             : null;
@@ -464,6 +488,20 @@ export default function AdminShell({ children }: AdminShellProps) {
 
         return () => window.clearTimeout(timeout);
     }, [homeworkAlert]);
+
+    useEffect(() => {
+        if (!canAccess('homework-submissions')) {
+            return;
+        }
+
+        const interval = window.setInterval(() => {
+            router.reload({
+                only: ['homeworkSubmissionAlerts'],
+            });
+        }, 5000);
+
+        return () => window.clearInterval(interval);
+    }, [canAccess]);
 
     useEffect(() => {
         const activeMobileNav = activeMobileNavRef.current;
@@ -517,6 +555,7 @@ export default function AdminShell({ children }: AdminShellProps) {
     const handleHomeworkSubmissionAlert = (
         event: HomeworkSubmissionAlertEvent,
     ) => {
+        latestUnreadAlertIdRef.current = event.submission.id;
         setHomeworkUnreadCount((count) => count + 1);
         setHomeworkAlert(event.submission);
 
