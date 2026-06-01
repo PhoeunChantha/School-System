@@ -17,6 +17,7 @@ use App\Models\Student;
 use App\Models\User;
 use App\Support\HomeworkSubmissionAlerts;
 use Illuminate\Http\UploadedFile;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Str;
 use Illuminate\Validation\ValidationException;
 use Throwable;
@@ -312,6 +313,15 @@ class StudentPortalService
         );
 
         $submission->refresh();
+        Log::info('Homework submission saved from student portal', [
+            'submission_id' => $submission->id,
+            'homework_assignment_id' => $submission->homework_assignment_id,
+            'student_id' => $submission->student_id,
+            'student_user_id' => $user->id,
+            'status' => $submission->status,
+            'submitted_at' => $submission->submitted_at?->toDateTimeString(),
+        ]);
+
         $this->homeworkSubmissionAlerts->forgetReads($submission);
         $this->broadcastHomeworkSubmission($submission);
 
@@ -321,8 +331,23 @@ class StudentPortalService
     private function broadcastHomeworkSubmission(HomeworkSubmission $submission): void
     {
         try {
+            Log::info('Homework submission broadcast dispatching', [
+                'submission_id' => $submission->id,
+                'channel' => 'private-admin.homework-submissions',
+                'event' => 'homework.submission.submitted',
+            ]);
+
             HomeworkSubmissionSubmitted::dispatch($submission);
+
+            Log::info('Homework submission broadcast dispatched', [
+                'submission_id' => $submission->id,
+            ]);
         } catch (Throwable $exception) {
+            Log::error('Homework submission broadcast failed', [
+                'submission_id' => $submission->id,
+                'message' => $exception->getMessage(),
+            ]);
+
             report($exception);
         }
     }

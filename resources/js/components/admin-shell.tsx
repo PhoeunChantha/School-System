@@ -96,6 +96,13 @@ function AdminHomeworkSubmissionRealtime({
 }: {
     onAlert: (event: HomeworkSubmissionAlertEvent) => void;
 }) {
+    useEffect(() => {
+        console.info('[HomeworkAlert] Echo listener mounted', {
+            channel: 'private-admin.homework-submissions',
+            event: 'homework.submission.submitted',
+        });
+    }, []);
+
     useEcho<HomeworkSubmissionAlertEvent>(
         'admin.homework-submissions',
         '.homework.submission.submitted',
@@ -450,21 +457,47 @@ export default function AdminShell({ children }: AdminShellProps) {
         setHomeworkUnreadCount(
             props.homeworkSubmissionAlerts?.unreadCount ?? 0,
         );
-    }, [props.homeworkSubmissionAlerts?.unreadCount]);
+
+        console.info('[HomeworkAlert] unread count prop updated', {
+            unreadCount: props.homeworkSubmissionAlerts?.unreadCount ?? 0,
+            latestId: props.homeworkSubmissionAlerts?.latest?.id ?? null,
+            active,
+        });
+    }, [
+        active,
+        props.homeworkSubmissionAlerts?.latest?.id,
+        props.homeworkSubmissionAlerts?.unreadCount,
+    ]);
 
     useEffect(() => {
         const latest = props.homeworkSubmissionAlerts?.latest ?? null;
+        const previousLatestId = latestUnreadAlertIdRef.current;
 
         if (
             !latest ||
-            latestUnreadAlertIdRef.current === latest.id ||
+            previousLatestId === latest.id ||
             activeRef.current === 'homework-submissions'
         ) {
+            console.info('[HomeworkAlert] latest prop did not open modal', {
+                reason: !latest
+                    ? 'no-latest'
+                    : previousLatestId === latest.id
+                      ? 'same-latest'
+                      : 'on-homework-submissions-page',
+                latestId: latest?.id ?? null,
+                previousLatestId,
+                active: activeRef.current,
+            });
+
             latestUnreadAlertIdRef.current = latest?.id ?? null;
             return;
         }
 
         latestUnreadAlertIdRef.current = latest.id;
+        console.info('[HomeworkAlert] opening modal from polling props', {
+            submissionId: latest.id,
+            active: activeRef.current,
+        });
         setHomeworkAlert(latest);
 
         if (notificationSoundRef.current) {
@@ -477,6 +510,10 @@ export default function AdminShell({ children }: AdminShellProps) {
         notificationSoundRef.current = notificationSound
             ? new Audio(notificationSound)
             : null;
+
+        console.info('[HomeworkAlert] notification sound configured', {
+            hasSound: Boolean(notificationSound),
+        });
     }, [notificationSound]);
 
     useEffect(() => {
@@ -491,17 +528,25 @@ export default function AdminShell({ children }: AdminShellProps) {
 
     useEffect(() => {
         if (!canAccess('homework-submissions')) {
+            console.info('[HomeworkAlert] polling disabled, missing permission');
+
             return;
         }
 
+        console.info('[HomeworkAlert] polling enabled', {
+            intervalMs: 5000,
+            active,
+        });
+
         const interval = window.setInterval(() => {
+            console.info('[HomeworkAlert] polling reload requested');
             router.reload({
                 only: ['homeworkSubmissionAlerts'],
             });
         }, 5000);
 
         return () => window.clearInterval(interval);
-    }, [canAccess]);
+    }, [active, canAccess]);
 
     useEffect(() => {
         const activeMobileNav = activeMobileNavRef.current;
@@ -555,6 +600,11 @@ export default function AdminShell({ children }: AdminShellProps) {
     const handleHomeworkSubmissionAlert = (
         event: HomeworkSubmissionAlertEvent,
     ) => {
+        console.info('[HomeworkAlert] Echo event received', {
+            submissionId: event.submission.id,
+            active: activeRef.current,
+        });
+
         latestUnreadAlertIdRef.current = event.submission.id;
         setHomeworkUnreadCount((count) => count + 1);
         setHomeworkAlert(event.submission);
