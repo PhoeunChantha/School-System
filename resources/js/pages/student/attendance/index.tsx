@@ -234,7 +234,7 @@ export default function StudentAttendance({
                 ].map((tab) => (
                     <button
                         key={tab.key}
-                        className={`s-tab${filter === tab.key ? 'active' : ''}`}
+                        className={`s-tab${filter === tab.key ? ' active' : ''}`}
                         aria-selected={filter === tab.key}
                         onClick={() => setFilter(tab.key)}
                     >

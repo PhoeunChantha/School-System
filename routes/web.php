@@ -167,6 +167,7 @@ Route::middleware(['auth', 'verified'])->prefix('admin')->name('admin.')->group(
 
     // Homework Submissions
     Route::prefix('homework-submissions')->group(function () {
+        Route::get('/alerts', [HomeworkSubmissionController::class, 'alerts'])->can('view', HomeworkSubmission::class)->name('homework-submissions.alerts');
         Route::get('/create', [HomeworkSubmissionController::class, 'create'])->can('create', HomeworkSubmission::class)->name('homework-submissions.create');
         Route::get('/', [HomeworkSubmissionController::class, 'index'])->can('view', HomeworkSubmission::class)->name('homework-submissions');
         Route::post('/', [HomeworkSubmissionController::class, 'store'])->can('create', HomeworkSubmission::class)->name('homework-submissions.store');

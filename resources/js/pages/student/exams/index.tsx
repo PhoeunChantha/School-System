@@ -129,14 +129,14 @@ export default function StudentExams({ profile, exams }: Props) {
             {/* ── Tabs ── */}
             <div className="s-tabs s-fade-up s-delay-2">
                 <button
-                    className={`s-tab${tab === 'upcoming' ? 'active' : ''}`}
+                    className={`s-tab${tab === 'upcoming' ? ' active' : ''}`}
                     aria-selected={tab === 'upcoming'}
                     onClick={() => setTab('upcoming')}
                 >
                     Upcoming ({upcoming.length})
                 </button>
                 <button
-                    className={`s-tab${tab === 'past' ? 'active' : ''}`}
+                    className={`s-tab${tab === 'past' ? ' active' : ''}`}
                     aria-selected={tab === 'past'}
                     onClick={() => setTab('past')}
                 >

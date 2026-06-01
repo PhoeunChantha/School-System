@@ -22,6 +22,7 @@ import { cn } from '@/lib/utils';
 import '@/pages/admin/admin.css';
 import { Avatar, KH } from '@/pages/admin/ui';
 import { logout } from '@/routes';
+import { alerts as homeworkSubmissionAlertsRoute } from '@/routes/admin/homework-submissions';
 import { type BreadcrumbItem, type SharedData } from '@/types';
 import { Head, Link, router, usePage } from '@inertiajs/react';
 import { useEcho } from '@laravel/echo-react';
@@ -89,6 +90,11 @@ interface HomeworkSubmissionAlertEvent {
         className: string;
         submittedAt: string;
     };
+}
+
+interface HomeworkSubmissionAlertState {
+    unreadCount: number;
+    latest: HomeworkSubmissionAlertEvent['submission'] | null;
 }
 
 function AdminHomeworkSubmissionRealtime({
@@ -454,31 +460,32 @@ export default function AdminShell({ children }: AdminShellProps) {
     }, [active]);
 
     useEffect(() => {
-        setHomeworkUnreadCount(
-            props.homeworkSubmissionAlerts?.unreadCount ?? 0,
-        );
-
-        console.info('[HomeworkAlert] unread count prop updated', {
+        const source = 'inertia-props';
+        const alerts = {
             unreadCount: props.homeworkSubmissionAlerts?.unreadCount ?? 0,
-            latestId: props.homeworkSubmissionAlerts?.latest?.id ?? null,
-            active,
-        });
-    }, [
-        active,
-        props.homeworkSubmissionAlerts?.latest?.id,
-        props.homeworkSubmissionAlerts?.unreadCount,
-    ]);
+            latest: props.homeworkSubmissionAlerts?.latest ?? null,
+        } satisfies HomeworkSubmissionAlertState;
 
-    useEffect(() => {
-        const latest = props.homeworkSubmissionAlerts?.latest ?? null;
+        setHomeworkUnreadCount(alerts.unreadCount);
+
+        const latest = alerts.latest ?? null;
         const previousLatestId = latestUnreadAlertIdRef.current;
+
+        console.info('[HomeworkAlert] alert state received', {
+            source,
+            unreadCount: alerts.unreadCount,
+            latestId: latest?.id ?? null,
+            previousLatestId,
+            active: activeRef.current,
+        });
 
         if (
             !latest ||
             previousLatestId === latest.id ||
             activeRef.current === 'homework-submissions'
         ) {
-            console.info('[HomeworkAlert] latest prop did not open modal', {
+            console.info('[HomeworkAlert] latest did not open modal', {
+                source,
                 reason: !latest
                     ? 'no-latest'
                     : previousLatestId === latest.id
@@ -490,11 +497,13 @@ export default function AdminShell({ children }: AdminShellProps) {
             });
 
             latestUnreadAlertIdRef.current = latest?.id ?? null;
+
             return;
         }
 
         latestUnreadAlertIdRef.current = latest.id;
-        console.info('[HomeworkAlert] opening modal from polling props', {
+        console.info('[HomeworkAlert] opening modal', {
+            source,
             submissionId: latest.id,
             active: activeRef.current,
         });
@@ -504,7 +513,10 @@ export default function AdminShell({ children }: AdminShellProps) {
             notificationSoundRef.current.currentTime = 0;
             notificationSoundRef.current.play().catch(() => undefined);
         }
-    }, [props.homeworkSubmissionAlerts?.latest]);
+    }, [
+        props.homeworkSubmissionAlerts?.latest,
+        props.homeworkSubmissionAlerts?.unreadCount,
+    ]);
 
     useEffect(() => {
         notificationSoundRef.current = notificationSound
@@ -533,16 +545,96 @@ export default function AdminShell({ children }: AdminShellProps) {
             return;
         }
 
-        console.info('[HomeworkAlert] polling enabled', {
+        console.info('[HomeworkAlert] alert endpoint polling enabled', {
             intervalMs: 5000,
             active,
+            url: homeworkSubmissionAlertsRoute.url(),
         });
 
-        const interval = window.setInterval(() => {
-            console.info('[HomeworkAlert] polling reload requested');
-            router.reload({
-                only: ['homeworkSubmissionAlerts'],
+        const refreshHomeworkAlerts = async () => {
+            console.info('[HomeworkAlert] alert endpoint polling requested', {
+                active: activeRef.current,
             });
+
+            try {
+                const response = await fetch(homeworkSubmissionAlertsRoute.url(), {
+                    credentials: 'same-origin',
+                    headers: {
+                        Accept: 'application/json',
+                        'X-Requested-With': 'XMLHttpRequest',
+                    },
+                });
+
+                if (!response.ok) {
+                    console.warn('[HomeworkAlert] alert endpoint failed', {
+                        status: response.status,
+                        active: activeRef.current,
+                    });
+
+                    return;
+                }
+
+                const alerts =
+                    (await response.json()) as HomeworkSubmissionAlertState;
+                const latest = alerts.latest ?? null;
+                const previousLatestId = latestUnreadAlertIdRef.current;
+
+                setHomeworkUnreadCount(alerts.unreadCount);
+
+                console.info('[HomeworkAlert] alert state received', {
+                    source: 'alerts-endpoint',
+                    unreadCount: alerts.unreadCount,
+                    latestId: latest?.id ?? null,
+                    previousLatestId,
+                    active: activeRef.current,
+                });
+
+                if (
+                    !latest ||
+                    previousLatestId === latest.id ||
+                    activeRef.current === 'homework-submissions'
+                ) {
+                    console.info('[HomeworkAlert] latest did not open modal', {
+                        source: 'alerts-endpoint',
+                        reason: !latest
+                            ? 'no-latest'
+                            : previousLatestId === latest.id
+                              ? 'same-latest'
+                              : 'on-homework-submissions-page',
+                        latestId: latest?.id ?? null,
+                        previousLatestId,
+                        active: activeRef.current,
+                    });
+
+                    latestUnreadAlertIdRef.current = latest?.id ?? null;
+
+                    return;
+                }
+
+                latestUnreadAlertIdRef.current = latest.id;
+                console.info('[HomeworkAlert] opening modal', {
+                    source: 'alerts-endpoint',
+                    submissionId: latest.id,
+                    active: activeRef.current,
+                });
+                setHomeworkAlert(latest);
+
+                if (notificationSoundRef.current) {
+                    notificationSoundRef.current.currentTime = 0;
+                    notificationSoundRef.current.play().catch(() => undefined);
+                }
+            } catch (error) {
+                console.warn('[HomeworkAlert] alert endpoint error', {
+                    error,
+                    active: activeRef.current,
+                });
+            }
+        };
+
+        void refreshHomeworkAlerts();
+
+        const interval = window.setInterval(() => {
+            void refreshHomeworkAlerts();
         }, 5000);
 
         return () => window.clearInterval(interval);
