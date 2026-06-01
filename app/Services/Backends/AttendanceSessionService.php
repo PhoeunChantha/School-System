@@ -36,7 +36,7 @@ class AttendanceSessionService
             ->with([
                 'schoolClass:id,name',
                 'records:id,attendance_session_id,student_id,status,note',
-                'records.student:id,name_kh,name_en,school_class_id,province',
+                'records.student:id,name_kh,name_en,school_class_id,province,profile_photo',
             ])
             ->latest('attendance_date')
             ->latest('id')
@@ -47,7 +47,7 @@ class AttendanceSessionService
             'sessions' => $sessions,
             'classes' => SchoolClass::query()
                 ->active()
-                ->with(['students' => fn ($query) => $query->active()->orderBy('name_en')->select(['id', 'school_class_id', 'name_kh', 'name_en', 'province'])])
+                ->with(['students' => fn ($query) => $query->active()->orderBy('name_en')->select(['id', 'school_class_id', 'code', 'name_kh', 'name_en', 'province', 'profile_photo'])])
                 ->orderBy('name')
                 ->get(['id', 'name'])
                 ->map(fn (SchoolClass $schoolClass): array => [
@@ -57,9 +57,11 @@ class AttendanceSessionService
                     'students' => $schoolClass->students->map(fn ($student): array => [
                         'id' => $student->id,
                         'routeKey' => $student->routeKey(),
+                        'code' => $student->code ?? '',
                         'nameKh' => $student->name_kh,
                         'nameEn' => $student->name_en,
                         'province' => $student->province ?? '',
+                        'photo' => $student->profile_photo ? asset($student->profile_photo) : null,
                     ]),
                 ]),
             'summary' => [
@@ -272,6 +274,7 @@ class AttendanceSessionService
                 'studentNameKh' => $record->student?->name_kh ?? '',
                 'studentNameEn' => $record->student?->name_en ?? 'Unknown student',
                 'province' => $record->student?->province ?? '',
+                'photo' => $record->student?->profile_photo ? asset($record->student->profile_photo) : null,
                 'status' => $record->status,
                 'note' => $record->note ?? '',
             ]),

@@ -5,8 +5,11 @@ namespace App\Providers;
 use App\Actions\Fortify\CreateNewUser;
 use App\Actions\Fortify\ResetUserPassword;
 use App\Http\Responses\LoginResponse;
+use App\Models\Student;
+use App\Models\User;
 use Illuminate\Cache\RateLimiting\Limit;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\RateLimiter;
 use Illuminate\Support\ServiceProvider;
 use Illuminate\Support\Str;
@@ -32,6 +35,7 @@ class FortifyServiceProvider extends ServiceProvider
     {
         $this->configureActions();
         $this->configureViews();
+        $this->configureAuthentication();
         $this->configureRateLimiting();
     }
 
@@ -42,6 +46,40 @@ class FortifyServiceProvider extends ServiceProvider
     {
         Fortify::resetUserPasswordsUsing(ResetUserPassword::class);
         Fortify::createUsersUsing(CreateNewUser::class);
+    }
+
+    /**
+     * Configure Fortify authentication.
+     */
+    private function configureAuthentication(): void
+    {
+        Fortify::authenticateUsing(function (Request $request): ?User {
+            $identifier = trim((string) $request->input(Fortify::username()));
+            $password = (string) $request->input('password');
+
+            if ($identifier === '' || $password === '') {
+                return null;
+            }
+
+            $user = User::query()
+                ->where('email', $identifier)
+                ->first();
+
+            if (! $user instanceof User) {
+                $student = Student::query()
+                    ->with('user')
+                    ->where('code', $identifier)
+                    ->first();
+
+                $user = $student?->user;
+            }
+
+            if ($user instanceof User && Hash::check($password, $user->password)) {
+                return $user;
+            }
+
+            return null;
+        });
     }
 
     /**

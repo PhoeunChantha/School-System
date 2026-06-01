@@ -171,7 +171,7 @@ export default function Login({ status, canResetPassword }: LoginProps) {
                 >
                     {({ processing, errors }) => (
                         <>
-                            {/* Email */}
+                            {/* Email or student code */}
                             <div
                                 style={{
                                     display: 'flex',
@@ -187,17 +187,17 @@ export default function Login({ status, canResetPassword }: LoginProps) {
                                         color: hasBg ? 'white' : '#64748b',
                                     }}
                                 >
-                                    Email Address
+                                    Email Address / Student Code
                                 </label>
                                 <Input
                                     id="email"
-                                    type="email"
+                                    type="text"
                                     name="email"
                                     required
                                     autoFocus
                                     tabIndex={1}
-                                    autoComplete="email"
-                                    placeholder="email@example.com"
+                                    autoComplete="username"
+                                    placeholder="email@example.com or STU-1001"
                                     style={{
                                         background: hasBg
                                             ? 'transparent'

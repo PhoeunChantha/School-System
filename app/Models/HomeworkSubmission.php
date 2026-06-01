@@ -8,6 +8,7 @@ use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class HomeworkSubmission extends Model
 {
@@ -61,8 +62,20 @@ class HomeworkSubmission extends Model
         return $this->belongsTo(User::class, 'updated_by');
     }
 
+    public function reads(): HasMany
+    {
+        return $this->hasMany(HomeworkSubmissionRead::class);
+    }
+
     public function scopeStatus(Builder $query, string $status): Builder
     {
         return $query->where('status', $status);
+    }
+
+    public function scopeSubmittedForReview(Builder $query): Builder
+    {
+        return $query
+            ->whereNotNull('submitted_at')
+            ->whereIn('status', ['submitted', 'late']);
     }
 }

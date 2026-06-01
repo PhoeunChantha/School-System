@@ -5,6 +5,8 @@ namespace App\Services\Backends;
 use App\Models\HomeworkAssignment;
 use App\Models\HomeworkSubmission;
 use App\Models\Student;
+use App\Models\User;
+use App\Support\HomeworkSubmissionAlerts;
 use Illuminate\Database\QueryException;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\DB;
@@ -13,11 +15,17 @@ use Illuminate\Validation\ValidationException;
 
 class HomeworkSubmissionService
 {
+    public function __construct(private readonly HomeworkSubmissionAlerts $homeworkSubmissionAlerts) {}
+
     /**
      * @return array{submissions: mixed, assignments: mixed, students: mixed, summary: array<string, mixed>}
      */
-    public function indexData(): array
+    public function indexData(?User $user = null): array
     {
+        if ($user) {
+            $this->homeworkSubmissionAlerts->markAllRead($user);
+        }
+
         $submissions = HomeworkSubmission::query()
             ->with([
                 'homeworkAssignment:id,title_kh,title_en,points,due_on,school_class_id',

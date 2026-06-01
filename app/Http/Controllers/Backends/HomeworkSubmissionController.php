@@ -27,7 +27,7 @@ class HomeworkSubmissionController extends Controller
 
     public function index(): Response
     {
-        return Inertia::render('admin/homework-submissions/index', $this->homeworkSubmissionService->indexData());
+        return Inertia::render('admin/homework-submissions/index', $this->homeworkSubmissionService->indexData(request()->user()));
     }
 
     public function create(): Response
