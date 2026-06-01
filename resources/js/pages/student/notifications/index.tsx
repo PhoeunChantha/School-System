@@ -125,14 +125,14 @@ export default function StudentNotifications({
 
             <div className="s-tabs s-fade-up s-delay-1">
                 <button
-                    className={`s-tab${tab === 'all' ? 'active' : ''}`}
+                    className={`s-tab${tab === 'all' ? ' active' : ''}`}
                     aria-selected={tab === 'all'}
                     onClick={() => setTab('all')}
                 >
                     All ({notifications.length})
                 </button>
                 <button
-                    className={`s-tab${tab === 'unread' ? 'active' : ''}`}
+                    className={`s-tab${tab === 'unread' ? ' active' : ''}`}
                     aria-selected={tab === 'unread'}
                     onClick={() => setTab('unread')}
                 >

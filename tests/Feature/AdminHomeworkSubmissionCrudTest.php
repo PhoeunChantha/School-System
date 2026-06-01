@@ -218,6 +218,34 @@ class AdminHomeworkSubmissionCrudTest extends TestCase
         ]);
     }
 
+    public function test_homework_submission_alerts_endpoint_returns_unread_state(): void
+    {
+        $user = User::factory()->create();
+        $user->givePermissionTo(Permission::findOrCreate('homework-submissions.view'));
+        $assignment = HomeworkAssignment::factory()->create([
+            'title_en' => 'Reading Report',
+        ]);
+        $student = Student::factory()->create([
+            'name_en' => 'Sokha Chan',
+            'school_class_id' => $assignment->school_class_id,
+        ]);
+
+        HomeworkSubmission::factory()
+            ->for($assignment)
+            ->for($student)
+            ->create([
+                'status' => 'submitted',
+                'submitted_at' => now(),
+            ]);
+
+        $this->actingAs($user)
+            ->getJson(route('admin.homework-submissions.alerts'))
+            ->assertOk()
+            ->assertJsonPath('unreadCount', 1)
+            ->assertJsonPath('latest.studentName', 'Sokha Chan')
+            ->assertJsonPath('latest.assignmentTitle', 'Reading Report');
+    }
+
     /**
      * @return array<string, mixed>
      */

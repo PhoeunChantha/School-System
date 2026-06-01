@@ -7,7 +7,11 @@ use App\Http\Requests\Backends\StoreHomeworkSubmissionRequest;
 use App\Http\Requests\Backends\UpdateHomeworkSubmissionRequest;
 use App\Models\HomeworkSubmission;
 use App\Services\Backends\HomeworkSubmissionService;
+use App\Support\HomeworkSubmissionAlerts;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
+use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Validation\ValidationException;
 use Inertia\Inertia;
 use Inertia\Response;
@@ -20,8 +24,10 @@ class HomeworkSubmissionController extends Controller
      */
     public $homeworkSubmissionService;
 
-    public function __construct(HomeworkSubmissionService $homeworkSubmissionService)
-    {
+    public function __construct(
+        HomeworkSubmissionService $homeworkSubmissionService,
+        private readonly HomeworkSubmissionAlerts $homeworkSubmissionAlerts,
+    ) {
         $this->homeworkSubmissionService = $homeworkSubmissionService;
     }
 
@@ -33,6 +39,28 @@ class HomeworkSubmissionController extends Controller
     public function create(): Response
     {
         return Inertia::render('admin/homework-submissions/create', $this->homeworkSubmissionService->createData());
+    }
+
+    public function alerts(Request $request): JsonResponse
+    {
+        $user = $request->user();
+
+        abort_unless($user && $user->can('view', HomeworkSubmission::class), 403);
+
+        $unreadCount = $this->homeworkSubmissionAlerts->unreadCount($user);
+        $latest = $this->homeworkSubmissionAlerts->latestUnread($user);
+
+        Log::info('Homework submission alerts endpoint checked', [
+            'user_id' => $user->id,
+            'unread_count' => $unreadCount,
+            'latest_submission_id' => $latest['id'] ?? null,
+            'url' => $request->path(),
+        ]);
+
+        return response()->json([
+            'unreadCount' => $unreadCount,
+            'latest' => $latest,
+        ]);
     }
 
     public function store(StoreHomeworkSubmissionRequest $request): RedirectResponse

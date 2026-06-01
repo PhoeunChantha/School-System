@@ -204,7 +204,7 @@ export default function StudentHomework({ profile, homework }: Props) {
                 ].map((t) => (
                     <button
                         key={t.key}
-                        className={`s-tab${tab === t.key ? 'active' : ''}`}
+                        className={`s-tab${tab === t.key ? ' active' : ''}`}
                         aria-selected={tab === t.key}
                         onClick={() => setTab(t.key)}
                     >

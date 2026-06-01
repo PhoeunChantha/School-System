@@ -475,7 +475,7 @@ export default function StudentShell({
                     <Link
                         href={notifications()}
                         aria-label="Open notifications"
-                        className={`student-icon-btn${activePage === 'notifications' ? 'active' : ''}`}
+                        className={`student-icon-btn${activePage === 'notifications' ? ' active' : ''}`}
                     >
                         <Bell size={16} />
                         {unreadNotifications > 0 && (

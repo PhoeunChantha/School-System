@@ -3,7 +3,7 @@ import StudentShell, {
     SAvatar,
 } from '@/pages/student/shell';
 import { logout } from '@/routes';
-import { fees, notifications } from '@/routes/student';
+import { notifications } from '@/routes/student';
 import { Link, router } from '@inertiajs/react';
 import { BadgeCheck, ChevronRight, LogOut } from 'lucide-react';
 
@@ -250,7 +250,7 @@ export default function StudentProfile({ profile, student }: Props) {
 
                     <div
                         className="s-card s-fade-up s-delay-2"
-                        style={{ marginBottom: 12 }}
+                        style={{ display: 'none', marginBottom: 12 }}
                     >
                         <div
                             style={{
@@ -321,9 +321,9 @@ export default function StudentProfile({ profile, student }: Props) {
                 style={{ marginBottom: 16 }}
             >
                 <Link
-                    href={fees()}
+                    href="#"
                     style={{
-                        display: 'flex',
+                        display: 'none',
                         alignItems: 'center',
                         padding: '14px 20px',
                         textDecoration: 'none',
