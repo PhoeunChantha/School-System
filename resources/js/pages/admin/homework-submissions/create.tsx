@@ -258,7 +258,11 @@ function SearchablePicker({
                     <Search size={15} style={{ color: '#94a3b8', flexShrink: 0 }} />
                     <input value={search} onChange={event => onSearchChange(event.target.value)} placeholder={searchPlaceholder} autoFocus style={{ border: 'none', outline: 'none', width: '100%', fontSize: 13, background: 'transparent', color: '#1e293b' }} />
                 </div>
-                <div style={{ maxHeight: 280, overflowY: 'auto', padding: 6 }}>
+                <div
+                    style={{ maxHeight: 280, overflowY: 'auto', overscrollBehavior: 'contain', padding: 6 }}
+                    onWheelCapture={event => event.stopPropagation()}
+                    onTouchMoveCapture={event => event.stopPropagation()}
+                >
                     {hasOptions ? children : <div style={{ padding: '18px 10px', textAlign: 'center', color: '#94a3b8', fontSize: 13, fontWeight: 700 }}>{emptyLabel}</div>}
                 </div>
             </PopoverContent>

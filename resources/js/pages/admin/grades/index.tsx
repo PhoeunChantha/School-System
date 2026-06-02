@@ -651,7 +651,11 @@ export default function GradesPage({ records, periods, students, classes, summar
                                                 className="w-full border-0 bg-transparent text-[13px] font-bold text-slate-900 outline-none placeholder:text-slate-400 dark:text-slate-100"
                                             />
                                         </div>
-                                        <div className="max-h-[260px] overflow-y-auto p-1.5">
+                                        <div
+                                            className="max-h-[260px] overscroll-contain overflow-y-auto p-1.5"
+                                            onWheelCapture={(event) => event.stopPropagation()}
+                                            onTouchMoveCapture={(event) => event.stopPropagation()}
+                                        >
                                             {searchableStudents.length === 0 ? (
                                                 <div className="px-2.5 py-5 text-center text-[13px] font-bold text-slate-400">
                                                     No students found

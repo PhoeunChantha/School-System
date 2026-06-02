@@ -109,6 +109,7 @@ interface NotificationSettings {
     feeReminder: boolean;
     feeReminderDays: string;
     homeworkDue: boolean;
+    homeworkSubmissionAlert: boolean;
     systemUpdates: boolean;
     notificationSound: string | null;
 }
@@ -2230,6 +2231,12 @@ export default function SettingsPage({
                                             labelKh:
                                                 'ការជូនដំណឹងកិច្ចការ',
                                             label: 'Homework Due Alerts',
+                                        },
+                                        {
+                                            key: 'homeworkSubmissionAlert' as const,
+                                            labelKh:
+                                                'ការជូនដំណឹងពេលសិស្សបញ្ជូនកិច្ចការ',
+                                            label: 'Homework Submit Alerts',
                                         },
                                         {
                                             key: 'systemUpdates' as const,

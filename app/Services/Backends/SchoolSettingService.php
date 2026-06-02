@@ -348,6 +348,7 @@ class SchoolSettingService
                 'feeReminder' => true,
                 'feeReminderDays' => '3',
                 'homeworkDue' => true,
+                'homeworkSubmissionAlert' => true,
                 'systemUpdates' => true,
                 'notificationSound' => null,
             ],

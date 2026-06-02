@@ -1,5 +1,6 @@
 ﻿import { useEffect, useMemo, useRef, useState } from 'react';
 import { create as createStudent, destroy, downloadLayout as downloadStudentLayout, edit as editStudent, exportMethod as exportStudents, importMethod as importStudents, show as showStudent } from '@/actions/App/Http/Controllers/Backends/StudentController';
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { useAdminPermissions } from '@/hooks/use-admin-permissions';
 import AdminShell from '@/pages/admin/shell';
 import { AdminSelect, Avatar, Badge, FeeTag, KH, Pagination, PBar, RowActions, ScoreChip } from '@/pages/admin/ui';
@@ -417,45 +418,82 @@ export default function StudentsPage({ students }: StudentsPageProps) {
                     )}
                 </div>
 
-                {/* â”€â”€ Selected student detail panel â”€â”€ */}
-                {selected && (
-                    <div className="fade-in rounded-[24px] border border-slate-200 bg-white p-5 dark:border-slate-700 dark:bg-slate-800/90">
-                        <div className="mb-4 flex flex-wrap items-start justify-between gap-3 max-md:flex-col">
-                            <div className="flex flex-1 flex-wrap items-start gap-4">
-                                <Avatar name={selected.nameEn} src={selected.photo} size={56} />
-                                <div className="min-w-[180px] flex-1">
-                                    <KH className="mb-0.5 block text-xl font-black text-slate-900 dark:text-slate-50">{selected.nameKh}</KH>
-                                    <div className="mb-2.5 text-[13px] font-bold text-slate-500 dark:text-slate-400">{selected.nameEn} / {selected.level}</div>
-                                    <div className="flex flex-wrap gap-2">
-                                        <Badge type="blue">{selected.level}</Badge>
-                                        <FeeTag status={selected.fees} />
-                                        {selected.attendance < 70 && <Badge type="red">Low Attendance</Badge>}
+                <Dialog open={selected !== null} onOpenChange={(open) => !open && setSelected(null)}>
+                    <DialogContent className="max-h-[92vh] overflow-y-auto border-slate-200 bg-white p-0 text-slate-950 shadow-2xl sm:max-w-3xl dark:border-slate-700 dark:bg-slate-900 dark:text-slate-50">
+                        {selected && (
+                            <>
+                                <DialogHeader className="border-b border-slate-100 p-5 text-left dark:border-slate-800">
+                                    <div className="flex flex-wrap items-start gap-4 pr-8">
+                                        <Avatar name={selected.nameEn} src={selected.photo} size={64} />
+                                        <div className="min-w-0 flex-1">
+                                            <DialogTitle asChild>
+                                                <KH className="mb-1 block text-2xl font-black tracking-normal text-slate-950 dark:text-slate-50">
+                                                    {selected.nameKh}
+                                                </KH>
+                                            </DialogTitle>
+                                            <DialogDescription className="text-sm font-bold text-slate-500 dark:text-slate-400">
+                                                {selected.nameEn} / {selected.level}
+                                            </DialogDescription>
+                                            <div className="mt-3 flex flex-wrap gap-2">
+                                                <Badge type="blue">{selected.level}</Badge>
+                                                <FeeTag status={selected.fees} />
+                                                {selected.attendance < 70 && <Badge type="red">Low Attendance</Badge>}
+                                            </div>
+                                        </div>
+                                    </div>
+                                </DialogHeader>
+
+                                <div className="grid gap-4 p-5">
+                                    <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
+                                        <div className="rounded-2xl border border-slate-200 bg-slate-50 p-4 dark:border-slate-700 dark:bg-slate-950/70">
+                                            <div className="text-[11px] font-black uppercase text-slate-400">Attendance</div>
+                                            <div className={`mt-2 text-3xl font-black ${selected.attendance >= 80 ? 'text-emerald-500' : 'text-red-500'}`}>
+                                                {selected.attendance}%
+                                            </div>
+                                            <PBar value={selected.attendance} color={selected.attendance >= 80 ? 'green' : 'red'} />
+                                        </div>
+                                        <div className="rounded-2xl border border-slate-200 bg-slate-50 p-4 dark:border-slate-700 dark:bg-slate-950/70">
+                                            <div className="text-[11px] font-black uppercase text-slate-400">Average Score</div>
+                                            <div className="mt-2 text-3xl font-black text-slate-950 dark:text-slate-50">{avg(selected)}</div>
+                                        </div>
+                                        <div className="rounded-2xl border border-slate-200 bg-slate-50 p-4 dark:border-slate-700 dark:bg-slate-950/70">
+                                            <div className="text-[11px] font-black uppercase text-slate-400">Location</div>
+                                            <div className="mt-2 text-sm font-black text-slate-700 dark:text-slate-200">{selected.province || 'Unknown'}</div>
+                                            {selected.village && <div className="mt-1 text-xs font-bold text-slate-400">{selected.village}</div>}
+                                        </div>
+                                    </div>
+
+                                    <div className="grid grid-cols-2 gap-2.5 sm:grid-cols-4">
+                                        {(['speaking', 'listening', 'reading', 'writing'] as const).map(skill => (
+                                            <div key={skill} className="rounded-2xl border border-slate-200 bg-white px-3 py-4 text-center dark:border-slate-700 dark:bg-slate-950/70">
+                                                <div className="mb-2 text-[10px] font-black uppercase text-slate-400">{skill}</div>
+                                                <ScoreChip score={selected.grade[skill]} />
+                                            </div>
+                                        ))}
                                     </div>
                                 </div>
-                            </div>
-                            <div className="flex shrink-0 gap-2 max-md:w-full max-md:[&>*]:flex-1">
-                                {canUpdate && <Link href={editStudent.url((selected.routeKey ?? selected.id) as never)} className="inline-flex items-center justify-center gap-1.5 rounded-xl border border-blue-200 bg-blue-50 px-4 py-2 text-center text-[13px] font-bold text-blue-600 no-underline dark:border-blue-400/40 dark:bg-blue-500/15 dark:text-blue-300"><Edit3 size={14} /> Edit</Link>}
-                                {canDelete && <button onClick={() => setDeleteTarget(selected)} className="inline-flex items-center justify-center gap-1.5 rounded-xl border border-red-200 bg-red-50 px-4 py-2 text-[13px] font-bold text-red-500 dark:border-red-400/40 dark:bg-red-500/15 dark:text-red-300"><Trash2 size={14} /> Delete</button>}
-                            </div>
-                        </div>
 
-                        {/* Score grid on detail panel */}
-                        <div className="mb-3 grid grid-cols-[repeat(auto-fit,minmax(90px,1fr))] gap-2.5">
-                            {(['speaking', 'listening', 'reading', 'writing'] as const).map(skill => (
-                                <div key={skill} className="rounded-xl border border-slate-200 bg-slate-50 px-3 py-2.5 text-center dark:border-slate-700 dark:bg-slate-950/70">
-                                    <div className="mb-1.5 text-[10px] font-black capitalize text-slate-400">{skill}</div>
-                                    <ScoreChip score={selected.grade[skill]} />
-                                </div>
-                            ))}
-                        </div>
-
-                        <div className="flex flex-wrap gap-4 border-t border-slate-100 py-3 text-[13px] font-bold text-slate-500 dark:border-slate-700 dark:text-slate-400">
-                            <span>{selected.village}, {selected.province}</span>
-                            <span>Attendance: <strong className={selected.attendance >= 80 ? 'text-emerald-500' : 'text-red-500'}>{selected.attendance}%</strong></span>
-                            <span>Avg Score: <strong>{avg(selected)}</strong></span>
-                        </div>
-                    </div>
-                )}
+                                <DialogFooter className="border-t border-slate-100 p-5 dark:border-slate-800 sm:justify-between">
+                                    <div className="text-xs font-bold text-slate-400">
+                                        Class: <span className="text-slate-600 dark:text-slate-300">{selected.cls}</span>
+                                    </div>
+                                    <div className="flex w-full gap-2 sm:w-auto">
+                                        {canUpdate && (
+                                            <Link href={editStudent.url((selected.routeKey ?? selected.id) as never)} className="inline-flex flex-1 items-center justify-center gap-1.5 rounded-xl border border-blue-200 bg-blue-50 px-4 py-2 text-center text-[13px] font-bold text-blue-600 no-underline dark:border-blue-400/40 dark:bg-blue-500/15 dark:text-blue-300 sm:flex-none">
+                                                <Edit3 size={14} /> Edit
+                                            </Link>
+                                        )}
+                                        {canDelete && (
+                                            <button onClick={() => setDeleteTarget(selected)} className="inline-flex flex-1 items-center justify-center gap-1.5 rounded-xl border border-red-200 bg-red-50 px-4 py-2 text-[13px] font-bold text-red-500 dark:border-red-400/40 dark:bg-red-500/15 dark:text-red-300 sm:flex-none">
+                                                <Trash2 size={14} /> Delete
+                                            </button>
+                                        )}
+                                    </div>
+                                </DialogFooter>
+                            </>
+                        )}
+                    </DialogContent>
+                </Dialog>
             </div>
 
             {/* â”€â”€ Delete confirmation modal â”€â”€ */}

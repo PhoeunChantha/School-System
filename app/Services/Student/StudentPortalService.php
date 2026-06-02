@@ -322,8 +322,16 @@ class StudentPortalService
             'submitted_at' => $submission->submitted_at?->toDateTimeString(),
         ]);
 
-        $this->homeworkSubmissionAlerts->forgetReads($submission);
-        $this->broadcastHomeworkSubmission($submission);
+        if ($this->homeworkSubmissionAlerts->enabled()) {
+            $this->homeworkSubmissionAlerts->forgetReads($submission);
+            $this->broadcastHomeworkSubmission($submission);
+        } else {
+            Log::info('Homework submission admin alert skipped by settings', [
+                'submission_id' => $submission->id,
+                'homework_assignment_id' => $submission->homework_assignment_id,
+                'student_id' => $submission->student_id,
+            ]);
+        }
 
         return $submission;
     }

@@ -704,7 +704,7 @@ function ExamBuilder({
             </div>
 
             <div className="grid min-h-[calc(100dvh-58px)] grid-cols-1 md:grid-cols-[minmax(260px,320px)_minmax(0,1fr)]">
-                <aside className="grid gap-3 border-b border-slate-200 bg-white p-3 dark:border-slate-700 dark:bg-slate-900 md:border-b-0 md:border-r md:p-4">
+                <aside className="grid content-start gap-4 overflow-y-auto border-b border-slate-200 bg-white p-3 dark:border-slate-700 dark:bg-slate-900 md:border-b-0 md:border-r md:p-4">
                     <Field label="Subject" error={errors.subject}>
                         <input value={meta.subject} onChange={event => setMeta(current => ({ ...current, subject: event.target.value }))} className={builderInputClass} />
                     </Field>
