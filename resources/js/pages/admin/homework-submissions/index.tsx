@@ -649,7 +649,11 @@ function SearchablePicker({
                     <Search size={15} className="shrink-0 text-slate-400" />
                     <input value={search} onChange={event => onSearchChange(event.target.value)} placeholder={searchPlaceholder} autoFocus className="w-full border-0 bg-transparent text-[13px] font-bold text-slate-900 outline-none placeholder:text-slate-400 dark:text-slate-100" />
                 </div>
-                <div className="max-h-[280px] overflow-y-auto p-1.5">
+                <div
+                    className="max-h-[280px] overscroll-contain overflow-y-auto p-1.5"
+                    onWheelCapture={event => event.stopPropagation()}
+                    onTouchMoveCapture={event => event.stopPropagation()}
+                >
                     {hasOptions ? children : <div className="px-2.5 py-5 text-center text-[13px] font-bold text-slate-400">{emptyLabel}</div>}
                 </div>
             </PopoverContent>
