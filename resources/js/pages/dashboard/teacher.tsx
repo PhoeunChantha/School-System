@@ -1,8 +1,11 @@
 ﻿import '@/pages/admin/admin.css';
 import AdminShell from '@/pages/admin/shell';
 import { Avatar, Badge, KH } from '@/pages/admin/ui';
+import { create as createHomework } from '@/routes/admin/homework';
+import { alerts as homeworkSubmissionAlerts } from '@/routes/admin/homework-submissions';
+import { create as createLessonPlan } from '@/routes/admin/lesson-plans';
 import { Head, Link } from '@inertiajs/react';
-import { BookOpen, ClipboardCheck, GraduationCap, NotebookPen, Users } from 'lucide-react';
+import { BookOpen, CalendarCheck2, ClipboardCheck, NotebookPen, Users } from 'lucide-react';
 import type { ReactNode } from 'react';
 
 interface TeacherDashboardProps {
@@ -15,20 +18,25 @@ interface TeacherDashboardProps {
     stats: {
         classes: number;
         students: number;
+        todayClasses: number;
         lessonPlansThisWeek: number;
+        plannedLessonPlans: number;
+        homeworkDueToday: number;
         pendingSubmissions: number;
     };
     classes: Array<{
         id: number;
-    routeKey?: string;
+        routeKey?: string;
         name: string;
         room: string;
         time: string;
+        days: string;
+        isToday: boolean;
         students: number;
     }>;
     lessonPlans: Array<{
         id: number;
-    routeKey?: string;
+        routeKey?: string;
         title: string;
         className: string;
         date: string;
@@ -36,7 +44,7 @@ interface TeacherDashboardProps {
     }>;
     homework: Array<{
         id: number;
-    routeKey?: string;
+        routeKey?: string;
         title: string;
         className: string;
         due: string;
@@ -46,6 +54,8 @@ interface TeacherDashboardProps {
 }
 
 export default function TeacherDashboard({ profile, stats, classes, lessonPlans, homework }: TeacherDashboardProps) {
+    const todaysClasses = classes.filter(item => item.isToday);
+
     return (
         <AdminShell>
             <Head title="Teacher Dashboard" />
@@ -59,24 +69,30 @@ export default function TeacherDashboard({ profile, stats, classes, lessonPlans,
                                 <div style={{ color: '#64748b', fontSize: 13, fontWeight: 700 }}>{profile.subject}</div>
                             </div>
                         </div>
-                        <Link href="/admin/lesson-plans/create" className="admin-quick-link">
+                        <Link href={createLessonPlan.url()} className="admin-quick-link">
                             <BookOpen size={16} />
                             New Lesson Plan
                         </Link>
                     </div>
 
                     <div className="stat-grid-4" style={{ display: 'grid', gridTemplateColumns: 'repeat(4, minmax(0, 1fr))', gap: 14 }}>
-                        <Stat icon={<GraduationCap size={21} />} label="Assigned Classes" value={stats.classes} />
+                        <Stat icon={<CalendarCheck2 size={21} />} label="Today Classes" value={stats.todayClasses} />
                         <Stat icon={<Users size={21} />} label="Students" value={stats.students} />
                         <Stat icon={<BookOpen size={21} />} label="Plans This Week" value={stats.lessonPlansThisWeek} />
                         <Stat icon={<ClipboardCheck size={21} />} label="Pending Reviews" value={stats.pendingSubmissions} />
                     </div>
 
+                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: 12 }}>
+                        <QuickAction href={createLessonPlan.url()} icon={<NotebookPen size={16} />} label="Plan lesson" value={`${stats.plannedLessonPlans} planned`} />
+                        <QuickAction href={createHomework.url()} icon={<BookOpen size={16} />} label="Assign homework" value={`${stats.homeworkDueToday} due today`} />
+                        <QuickAction href={homeworkSubmissionAlerts.url()} icon={<ClipboardCheck size={16} />} label="Review submissions" value={`${stats.pendingSubmissions} waiting`} />
+                    </div>
+
                     <div className="dashboard-main-grid" style={{ display: 'grid', gridTemplateColumns: 'minmax(0, 1fr) 360px', gap: 16 }}>
-                        <Panel title="My Classes">
-                            {classes.length === 0 ? (
-                                <EmptyState>No classes assigned to this teacher account.</EmptyState>
-                            ) : classes.map(item => (
+                        <Panel title="Today's Classes">
+                            {todaysClasses.length === 0 ? (
+                                <EmptyState>No classes scheduled for today.</EmptyState>
+                            ) : todaysClasses.map(item => (
                                 <div key={item.id} className="dashboard-soft-tile" style={{ display: 'flex', justifyContent: 'space-between', gap: 12, padding: 14, border: '1px solid #e8edf5', borderRadius: 12, background: '#f8fafc' }}>
                                     <div>
                                         <div style={{ fontWeight: 900, color: '#1e293b' }}>{item.name}</div>
@@ -97,6 +113,16 @@ export default function TeacherDashboard({ profile, stats, classes, lessonPlans,
                             ))}
                         </Panel>
                     </div>
+
+                    <Panel title="All Assigned Classes">
+                        {classes.length === 0 ? (
+                            <EmptyState>No classes assigned to this teacher account.</EmptyState>
+                        ) : classes.map(item => (
+                            <CompactRow key={item.id} title={item.name} meta={`${item.days || 'No days'} - ${item.room || 'No room'} ${item.time ? `- ${item.time}` : ''}`}>
+                                <Badge type={item.isToday ? 'green' : 'blue'}>{item.students} students</Badge>
+                            </CompactRow>
+                        ))}
+                    </Panel>
 
                     <Panel title="Homework Activity">
                         {homework.length === 0 ? (
@@ -125,6 +151,20 @@ function Stat({ icon, label, value }: { icon: ReactNode; label: string; value: n
             <div style={{ color: '#1e293b', fontSize: 24, fontWeight: 900 }}>{value}</div>
             <div style={{ color: '#64748b', fontSize: 12, fontWeight: 800 }}>{label}</div>
         </div>
+    );
+}
+
+function QuickAction({ href, icon, label, value }: { href: string; icon: ReactNode; label: string; value: string }) {
+    return (
+        <Link href={href} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12, border: '1px solid #e2e8f0', borderRadius: 16, background: 'white', padding: 14, textDecoration: 'none', boxShadow: '0 10px 28px rgba(15,23,42,.06)' }}>
+            <span style={{ display: 'flex', alignItems: 'center', gap: 10, minWidth: 0 }}>
+                <span style={{ width: 36, height: 36, borderRadius: 12, background: '#ecfeff', color: '#0891b2', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>{icon}</span>
+                <span style={{ minWidth: 0 }}>
+                    <span style={{ display: 'block', color: '#1e293b', fontSize: 13, fontWeight: 900 }}>{label}</span>
+                    <span style={{ display: 'block', color: '#94a3b8', fontSize: 11, fontWeight: 800 }}>{value}</span>
+                </span>
+            </span>
+        </Link>
     );
 }
 

@@ -135,6 +135,7 @@ class AdminSchoolSettingCrudTest extends TestCase
                 'feeReminder' => false,
                 'feeReminderDays' => '3',
                 'homeworkDue' => true,
+                'lessonPlanAlert' => false,
                 'homeworkSubmissionAlert' => false,
                 'systemUpdates' => true,
                 'notificationSound' => 'uploads/school/alert.mp3',
@@ -151,6 +152,7 @@ class AdminSchoolSettingCrudTest extends TestCase
 
         $this->assertSame('75', $setting->value['lowAttendanceThreshold']);
         $this->assertFalse($setting->value['feeReminder']);
+        $this->assertFalse($setting->value['lessonPlanAlert']);
         $this->assertFalse($setting->value['homeworkSubmissionAlert']);
         $this->assertSame('uploads/school/alert.mp3', $setting->value['notificationSound']);
     }
