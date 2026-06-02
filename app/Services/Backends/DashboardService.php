@@ -48,10 +48,26 @@ class DashboardService
             'stats' => [
                 'classes' => $classIds->count(),
                 'students' => $classIds->isEmpty() ? 0 : Student::active()->whereIn('school_class_id', $classIds)->count(),
+                'todayClasses' => $classIds->isEmpty()
+                    ? 0
+                    : SchoolClass::query()
+                        ->whereIn('id', $classIds)
+                        ->whereJsonContains('days', strtolower(now()->format('D')))
+                        ->count(),
                 'lessonPlansThisWeek' => LessonPlan::query()
                     ->when($teacher, fn ($query) => $query->where('teacher_id', $teacher->id), fn ($query) => $query->where('created_by', $user->id))
                     ->whereBetween('lesson_date', [now()->startOfWeek()->toDateString(), now()->endOfWeek()->toDateString()])
                     ->count(),
+                'plannedLessonPlans' => LessonPlan::query()
+                    ->when($teacher, fn ($query) => $query->where('teacher_id', $teacher->id), fn ($query) => $query->where('created_by', $user->id))
+                    ->where('status', 'planned')
+                    ->count(),
+                'homeworkDueToday' => $classIds->isEmpty()
+                    ? 0
+                    : HomeworkAssignment::query()
+                        ->whereIn('school_class_id', $classIds)
+                        ->whereDate('due_on', today())
+                        ->count(),
                 'pendingSubmissions' => $classIds->isEmpty()
                     ? 0
                     : HomeworkSubmission::query()
@@ -389,12 +405,15 @@ class DashboardService
             ->withCount('students')
             ->whereIn('id', $classIds)
             ->orderBy('name')
-            ->get(['id', 'name', 'room', 'starts_at', 'ends_at'])
+            ->get(['id', 'name', 'room', 'starts_at', 'ends_at', 'days'])
             ->map(fn (SchoolClass $schoolClass): array => [
                 'id' => $schoolClass->id,
+                'routeKey' => $schoolClass->routeKey(),
                 'name' => $schoolClass->name,
                 'room' => $schoolClass->room ?? '',
                 'time' => collect([$schoolClass->starts_at, $schoolClass->ends_at])->filter()->implode(' - '),
+                'days' => implode(' ', array_map('ucfirst', $schoolClass->days ?? [])),
+                'isToday' => in_array(strtolower(now()->format('D')), $schoolClass->days ?? [], true),
                 'students' => $schoolClass->students_count,
             ])
             ->all();

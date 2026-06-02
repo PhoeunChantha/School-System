@@ -5,6 +5,7 @@ namespace Tests\Feature;
 use App\Models\LessonPlan;
 use App\Models\Notification;
 use App\Models\SchoolClass;
+use App\Models\SchoolSetting;
 use App\Models\Student;
 use App\Models\Teacher;
 use App\Models\User;
@@ -115,6 +116,45 @@ class AdminLessonPlanCrudTest extends TestCase
             'title' => 'Conversation Practice',
             'status' => 'taught',
             'updated_by' => $user->id,
+        ]);
+    }
+
+    public function test_lesson_plan_notification_rule_can_disable_student_notifications(): void
+    {
+        $user = User::factory()->create();
+        $teacher = Teacher::factory()->create();
+        $schoolClass = SchoolClass::factory()->for($teacher)->create();
+        Student::factory()->for($schoolClass)->create(['user_id' => User::factory()->create()->id]);
+
+        SchoolSetting::query()->create([
+            'group' => 'notifications',
+            'key' => 'preferences',
+            'value' => [
+                'lessonPlanAlert' => false,
+            ],
+        ]);
+
+        $this->actingAs($user)
+            ->post(route('admin.lesson-plans.store'), [
+                'teacher_id' => $teacher->id,
+                'school_class_id' => $schoolClass->id,
+                'lesson_date' => today()->toDateString(),
+                'title' => 'Present Simple Tense',
+                'objective' => 'Students can write positive and negative sentences.',
+                'content' => 'Warm-up, examples, guided practice.',
+                'materials' => 'Workbook page 12',
+                'homework' => 'Exercise A and B',
+                'status' => 'planned',
+            ])
+            ->assertRedirect(route('admin.lesson-plans'));
+
+        $this->assertDatabaseHas('lesson_plans', [
+            'school_class_id' => $schoolClass->id,
+            'title' => 'Present Simple Tense',
+        ]);
+
+        $this->assertDatabaseMissing('notifications', [
+            'title' => 'Class message',
         ]);
     }
 

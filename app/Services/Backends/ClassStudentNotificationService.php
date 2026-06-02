@@ -6,6 +6,7 @@ use App\Events\StudentNotificationCreated;
 use App\Models\HomeworkAssignment;
 use App\Models\LessonPlan;
 use App\Models\Notification;
+use App\Models\SchoolSetting;
 use App\Models\Student;
 use App\Services\WebPushService;
 use Illuminate\Support\Facades\DB;
@@ -16,6 +17,10 @@ class ClassStudentNotificationService
 
     public function homeworkAssigned(HomeworkAssignment $homeworkAssignment, ?int $userId): void
     {
+        if (! $this->ruleEnabled('homeworkDue')) {
+            return;
+        }
+
         $this->createForClass(
             schoolClassId: $homeworkAssignment->school_class_id,
             userId: $userId,
@@ -32,6 +37,10 @@ class ClassStudentNotificationService
 
     public function lessonPlanCreated(LessonPlan $lessonPlan, ?int $userId): void
     {
+        if (! $this->ruleEnabled('lessonPlanAlert')) {
+            return;
+        }
+
         $this->createForClass(
             schoolClassId: $lessonPlan->school_class_id,
             userId: $userId,
@@ -97,5 +106,21 @@ class ClassStudentNotificationService
                     ->orWhereNull('student_id');
             })
             ->count();
+    }
+
+    private function ruleEnabled(string $key): bool
+    {
+        $setting = SchoolSetting::query()
+            ->where('group', 'notifications')
+            ->where('key', SchoolSettingService::GROUP_KEYS['notifications'])
+            ->first(['value']);
+
+        $value = $setting?->value;
+
+        if (! is_array($value)) {
+            return true;
+        }
+
+        return (bool) ($value[$key] ?? true);
     }
 }

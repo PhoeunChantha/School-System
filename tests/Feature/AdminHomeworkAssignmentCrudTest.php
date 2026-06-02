@@ -6,6 +6,7 @@ use App\Events\StudentNotificationCreated;
 use App\Models\HomeworkAssignment;
 use App\Models\Notification;
 use App\Models\SchoolClass;
+use App\Models\SchoolSetting;
 use App\Models\Student;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -115,6 +116,34 @@ class AdminHomeworkAssignmentCrudTest extends TestCase
         $this->assertFileExists(public_path($homework->attachment_path));
 
         unlink(public_path($homework->attachment_path));
+    }
+
+    public function test_homework_due_notification_rule_can_disable_student_notifications(): void
+    {
+        $user = User::factory()->create();
+        $schoolClass = SchoolClass::factory()->create();
+        Student::factory()->for($schoolClass)->create(['user_id' => User::factory()->create()->id]);
+
+        SchoolSetting::query()->create([
+            'group' => 'notifications',
+            'key' => 'preferences',
+            'value' => [
+                'homeworkDue' => false,
+            ],
+        ]);
+
+        $this->actingAs($user)
+            ->post(route('admin.homework.store'), $this->validPayload($schoolClass->id))
+            ->assertRedirect(route('admin.homework'));
+
+        $this->assertDatabaseHas('homework_assignments', [
+            'school_class_id' => $schoolClass->id,
+            'title_en' => 'Write about family',
+        ]);
+
+        $this->assertDatabaseMissing('notifications', [
+            'title' => 'Homework update',
+        ]);
     }
 
     public function test_admin_can_view_edit_homework_page(): void
