@@ -33,6 +33,7 @@ class AdminSchoolSettingCrudTest extends TestCase
                 ->component('admin/settings/index')
                 ->where('settings.school.nameEn', 'Testing School')
                 ->where('settings.seo.title', 'Frania English School')
+                ->has('settings.mail.mailHost')
                 ->has('settings.database.databaseName')
                 ->has('settings.searchConsole.verificationFile')
                 ->where('settings.school.nameKh', 'សាលា សាកល្បង'));
@@ -184,6 +185,63 @@ class AdminSchoolSettingCrudTest extends TestCase
         $this->assertSame('security@example.test', $setting->value['alertEmail']);
     }
 
+    public function test_mail_setting_updates_environment_file(): void
+    {
+        $path = storage_path('framework/testing/mail-env');
+        file_put_contents($path, "APP_NAME=Testing\nMAIL_PASSWORD=old-password\n");
+
+        try {
+            (new SchoolSettingService($path))->updateMailSettings([
+                'mailHost' => 'smtp.gmail.com',
+                'mailPort' => '587',
+                'mailScheme' => 'smtp',
+                'mailUsername' => 'sender@example.test',
+                'mailPassword' => 'new-app-password',
+                'mailFromAddress' => 'sender@example.test',
+            ]);
+
+            $contents = file_get_contents($path);
+
+            $this->assertStringContainsString('MAIL_MAILER=smtp', $contents);
+            $this->assertStringContainsString('MAIL_HOST=smtp.gmail.com', $contents);
+            $this->assertStringContainsString('MAIL_PORT=587', $contents);
+            $this->assertStringContainsString('MAIL_SCHEME=smtp', $contents);
+            $this->assertStringContainsString('MAIL_USERNAME=sender@example.test', $contents);
+            $this->assertStringContainsString('MAIL_PASSWORD=new-app-password', $contents);
+            $this->assertStringContainsString('MAIL_FROM_ADDRESS=sender@example.test', $contents);
+        } finally {
+            if (file_exists($path)) {
+                unlink($path);
+            }
+        }
+    }
+
+    public function test_mail_setting_keeps_existing_environment_password_when_blank(): void
+    {
+        $path = storage_path('framework/testing/mail-env-blank-password');
+        file_put_contents($path, "APP_NAME=Testing\nMAIL_PASSWORD=old-password\n");
+
+        try {
+            (new SchoolSettingService($path))->updateMailSettings([
+                'mailHost' => 'smtp.gmail.com',
+                'mailPort' => '587',
+                'mailScheme' => 'smtp',
+                'mailUsername' => 'sender@example.test',
+                'mailPassword' => '',
+                'mailFromAddress' => 'sender@example.test',
+            ]);
+
+            $this->assertStringContainsString(
+                'MAIL_PASSWORD=old-password',
+                file_get_contents($path),
+            );
+        } finally {
+            if (file_exists($path)) {
+                unlink($path);
+            }
+        }
+    }
+
     public function test_admin_can_upload_notification_sound(): void
     {
         $this->actingAs(User::factory()->create());
@@ -209,6 +267,35 @@ class AdminSchoolSettingCrudTest extends TestCase
 
             if ($setting && ! empty($setting->value['notificationSound'])) {
                 @unlink(public_path($setting->value['notificationSound']));
+            }
+        }
+    }
+
+    public function test_admin_can_upload_school_logo(): void
+    {
+        $this->actingAs(User::factory()->create());
+
+        try {
+            $this->post(route('admin.settings.upload-image'), [
+                'type' => 'logo',
+                'image' => UploadedFile::fake()->image('logo.png'),
+            ])->assertRedirect();
+
+            $setting = SchoolSetting::query()
+                ->where('group', 'school')
+                ->where('key', 'profile')
+                ->firstOrFail();
+
+            $this->assertStringStartsWith('uploads/school/logo_', $setting->value['logo']);
+            $this->assertFileExists(public_path($setting->value['logo']));
+        } finally {
+            $setting = SchoolSetting::query()
+                ->where('group', 'school')
+                ->where('key', 'profile')
+                ->first();
+
+            if ($setting && ! empty($setting->value['logo'])) {
+                @unlink(public_path($setting->value['logo']));
             }
         }
     }

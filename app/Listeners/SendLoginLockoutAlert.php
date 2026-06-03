@@ -36,7 +36,7 @@ class SendLoginLockoutAlert
         $availableIn = $this->limiter->availableIn($request);
         $cacheKey = 'login-lockout-alert:'.sha1($identifier.'|'.$ip);
 
-        if (! Cache::add($cacheKey, true, max(1, $availableIn))) {
+        if (Cache::has($cacheKey)) {
             return;
         }
 
@@ -48,6 +48,8 @@ class SendLoginLockoutAlert
                 'availableIn' => $availableIn,
                 'occurredAt' => now()->format('Y-m-d H:i:s'),
             ]));
+
+            Cache::put($cacheKey, true, max(1, $availableIn));
         } catch (Throwable $exception) {
             report($exception);
         }

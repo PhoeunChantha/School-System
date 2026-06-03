@@ -34,6 +34,18 @@ class UpdateSchoolSettingRequest extends FormRequest
             ];
         }
 
+        if ($this->route('group') === 'mail') {
+            return [
+                'value' => ['required', 'array'],
+                'value.mailHost' => ['required', 'string', 'max:255'],
+                'value.mailPort' => ['required', 'integer', 'min:1', 'max:65535'],
+                'value.mailScheme' => ['nullable', 'string', 'in:smtp,smtps'],
+                'value.mailUsername' => ['required', 'email', 'max:255'],
+                'value.mailPassword' => ['nullable', 'string', 'max:255'],
+                'value.mailFromAddress' => ['required', 'email', 'max:255'],
+            ];
+        }
+
         return [
             'value' => ['required', 'array'],
         ];

@@ -7,7 +7,7 @@ import { request } from '@/routes/password';
 import type { SharedData } from '@/types';
 
 import { Form, Head, usePage } from '@inertiajs/react';
-import { ArrowRight, Building2 } from 'lucide-react';
+import { ArrowRight, Building2, Eye, EyeOff } from 'lucide-react';
 import {
     useEffect,
     useRef,
@@ -249,6 +249,7 @@ function LoginFormFields({
     const showError =
         errorMessage && (parsedLockoutSeconds === 0 || lockoutActive);
     const handledLockoutMessage = useRef<string | null>(null);
+    const [showPassword, setShowPassword] = useState(false);
 
     useEffect(() => {
         if (processing) {
@@ -354,26 +355,59 @@ function LoginFormFields({
                         </TextLink>
                     )}
                 </div>
-                <Input
-                    id="password"
-                    type="password"
-                    name="password"
-                    required
-                    disabled={lockoutActive}
-                    tabIndex={2}
-                    autoComplete="current-password"
-                    placeholder="Password"
-                    style={{
-                        background: hasBg ? 'transparent' : '#f8fafc',
-                        border: hasBg
-                            ? '1.5px solid rgba(255,255,255,0.35)'
-                            : '1.5px solid #e2e8f0',
-                        borderRadius: 10,
-                        padding: '10px 14px',
-                        fontSize: 14,
-                        color: hasBg ? 'white' : '#1e293b',
-                    }}
-                />
+                <div style={{ position: 'relative' }}>
+                    <Input
+                        id="password"
+                        type={showPassword ? 'text' : 'password'}
+                        name="password"
+                        required
+                        disabled={lockoutActive}
+                        tabIndex={2}
+                        autoComplete="current-password"
+                        placeholder="Password"
+                        style={{
+                            background: hasBg ? 'transparent' : '#f8fafc',
+                            border: hasBg
+                                ? '1.5px solid rgba(255,255,255,0.35)'
+                                : '1.5px solid #e2e8f0',
+                            borderRadius: 10,
+                            padding: '10px 44px 10px 14px',
+                            fontSize: 14,
+                            color: hasBg ? 'white' : '#1e293b',
+                        }}
+                    />
+                    <button
+                        type="button"
+                        aria-label={
+                            showPassword ? 'Hide password' : 'Show password'
+                        }
+                        title={showPassword ? 'Hide password' : 'Show password'}
+                        disabled={lockoutActive}
+                        onClick={() => setShowPassword((current) => !current)}
+                        style={{
+                            position: 'absolute',
+                            right: 10,
+                            top: '50%',
+                            transform: 'translateY(-50%)',
+                            width: 28,
+                            height: 28,
+                            border: 'none',
+                            borderRadius: 8,
+                            background: 'transparent',
+                            color: hasBg ? 'rgba(255,255,255,0.78)' : '#64748b',
+                            cursor: lockoutActive ? 'not-allowed' : 'pointer',
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'center',
+                        }}
+                    >
+                        {showPassword ? (
+                            <EyeOff size={18} strokeWidth={2.2} />
+                        ) : (
+                            <Eye size={18} strokeWidth={2.2} />
+                        )}
+                    </button>
+                </div>
             </div>
 
             <div
