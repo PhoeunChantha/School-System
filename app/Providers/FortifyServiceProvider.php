@@ -2,21 +2,31 @@
 
 namespace App\Providers;
 
+use App\Actions\Fortify\AttemptLoginWithConfiguredLockout;
 use App\Actions\Fortify\CreateNewUser;
+use App\Actions\Fortify\RedirectIfTwoFactorAuthenticatableWithConfiguredLockout;
 use App\Actions\Fortify\ResetUserPassword;
 use App\Http\Responses\LoginResponse;
+use App\Listeners\SendLoginLockoutAlert;
 use App\Models\Student;
 use App\Models\User;
+use App\Support\ConfigurableLoginRateLimiter;
+use Illuminate\Auth\Events\Lockout;
 use Illuminate\Cache\RateLimiting\Limit;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Event;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\RateLimiter;
 use Illuminate\Support\ServiceProvider;
 use Illuminate\Support\Str;
 use Inertia\Inertia;
+use Laravel\Fortify\Actions\CanonicalizeUsername;
+use Laravel\Fortify\Actions\EnsureLoginIsNotThrottled;
+use Laravel\Fortify\Actions\PrepareAuthenticatedSession;
 use Laravel\Fortify\Contracts\LoginResponse as LoginResponseContract;
 use Laravel\Fortify\Features;
 use Laravel\Fortify\Fortify;
+use Laravel\Fortify\LoginRateLimiter;
 
 class FortifyServiceProvider extends ServiceProvider
 {
@@ -26,6 +36,7 @@ class FortifyServiceProvider extends ServiceProvider
     public function register(): void
     {
         $this->app->singleton(LoginResponseContract::class, LoginResponse::class);
+        $this->app->singleton(LoginRateLimiter::class, ConfigurableLoginRateLimiter::class);
     }
 
     /**
@@ -37,6 +48,7 @@ class FortifyServiceProvider extends ServiceProvider
         $this->configureViews();
         $this->configureAuthentication();
         $this->configureRateLimiting();
+        $this->configureEvents();
     }
 
     /**
@@ -53,6 +65,18 @@ class FortifyServiceProvider extends ServiceProvider
      */
     private function configureAuthentication(): void
     {
+        Fortify::authenticateThrough(function (Request $request): array {
+            return array_filter([
+                config('fortify.lowercase_usernames') ? CanonicalizeUsername::class : null,
+                config('fortify.limiters.login') ? null : EnsureLoginIsNotThrottled::class,
+                Features::enabled(Features::twoFactorAuthentication())
+                    ? RedirectIfTwoFactorAuthenticatableWithConfiguredLockout::class
+                    : null,
+                AttemptLoginWithConfiguredLockout::class,
+                PrepareAuthenticatedSession::class,
+            ]);
+        });
+
         Fortify::authenticateUsing(function (Request $request): ?User {
             $identifier = trim((string) $request->input(Fortify::username()));
             $password = (string) $request->input('password');
@@ -127,5 +151,10 @@ class FortifyServiceProvider extends ServiceProvider
 
             return Limit::perMinute(5)->by($throttleKey);
         });
+    }
+
+    private function configureEvents(): void
+    {
+        Event::listen(Lockout::class, SendLoginLockoutAlert::class);
     }
 }

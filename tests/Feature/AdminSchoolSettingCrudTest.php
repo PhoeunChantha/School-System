@@ -157,6 +157,33 @@ class AdminSchoolSettingCrudTest extends TestCase
         $this->assertSame('uploads/school/alert.mp3', $setting->value['notificationSound']);
     }
 
+    public function test_admin_can_update_login_security_settings(): void
+    {
+        $this->actingAs(User::factory()->create());
+
+        $payload = [
+            'value' => [
+                'maxAttempts' => '5',
+                'decaySeconds' => '15',
+                'alertEnabled' => true,
+                'alertEmail' => 'security@example.test',
+            ],
+        ];
+
+        $this->put(route('admin.settings.update', 'login'), $payload)
+            ->assertRedirect(route('admin.settings'));
+
+        $setting = SchoolSetting::query()
+            ->where('group', 'login')
+            ->where('key', 'security')
+            ->firstOrFail();
+
+        $this->assertSame('5', $setting->value['maxAttempts']);
+        $this->assertSame('15', $setting->value['decaySeconds']);
+        $this->assertTrue($setting->value['alertEnabled']);
+        $this->assertSame('security@example.test', $setting->value['alertEmail']);
+    }
+
     public function test_admin_can_upload_notification_sound(): void
     {
         $this->actingAs(User::factory()->create());

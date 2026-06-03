@@ -50,6 +50,7 @@ type SettingsTab =
     | 'fees'
     | 'classes'
     | 'notifications'
+    | 'login'
     | 'database'
     | 'search-console'
     | 'sidebar'
@@ -115,6 +116,13 @@ interface NotificationSettings {
     notificationSound: string | null;
 }
 
+interface LoginSecuritySettings {
+    maxAttempts: string;
+    decaySeconds: string;
+    alertEnabled: boolean;
+    alertEmail: string;
+}
+
 interface DatabaseSettings {
     databaseName: string;
 }
@@ -131,6 +139,7 @@ interface SettingsPageProps {
         fees: FeeSettings;
         classes: ClassSettings;
         notifications: NotificationSettings;
+        login: LoginSecuritySettings;
         database: DatabaseSettings;
         searchConsole: SearchConsoleSettings;
     };
@@ -146,6 +155,7 @@ const tabs: { id: SettingsTab; label: string; icon: ElementType }[] = [
     { id: 'fees', label: 'Fee Settings', icon: CreditCard },
     { id: 'classes', label: 'Class Schedule', icon: CalendarDays },
     { id: 'notifications', label: 'Notifications', icon: Bell },
+    { id: 'login', label: 'Login', icon: ShieldBan },
     { id: 'database', label: 'Database', icon: Database },
     { id: 'search-console', label: 'Search Console', icon: FileCheck2 },
     { id: 'sidebar', label: 'Sidebar', icon: PanelLeft },
@@ -265,6 +275,9 @@ export default function SettingsPage({
     const [classes, setClasses] = useState<ClassSettings>(settings.classes);
     const [notifications, setNotifications] = useState<NotificationSettings>(
         settings.notifications,
+    );
+    const [loginSecurity, setLoginSecurity] = useState<LoginSecuritySettings>(
+        settings.login,
     );
     const [database, setDatabase] = useState<DatabaseSettings>(
         settings.database,
@@ -412,9 +425,9 @@ export default function SettingsPage({
 
     const handleSearchConsoleUpload = async (file: File) => {
         const contents = await file.text();
-        const verificationFilename = contents.match(
-            /google-site-verification:\s*(google[a-z0-9]+\.html)/i,
-        )?.[1]?.toLowerCase();
+        const verificationFilename = contents
+            .match(/google-site-verification:\s*(google[a-z0-9]+\.html)/i)?.[1]
+            ?.toLowerCase();
 
         if (!verificationFilename) {
             toast.error(
@@ -450,11 +463,17 @@ export default function SettingsPage({
 
     return (
         <AdminShell>
-            <div className="fade-in flex flex-col gap-3 bg-slate-50 p-4 dark:bg-slate-950 max-md:bg-[radial-gradient(circle_at_100%_0,rgba(37,99,235,0.12),transparent_34%),linear-gradient(180deg,#f7f9fc_0%,#eef3f8_100%)] max-md:px-2.5 max-md:py-3 max-md:pb-[calc(104px+env(safe-area-inset-bottom))] dark:max-md:bg-[radial-gradient(circle_at_100%_0,rgba(96,165,250,0.14),transparent_34%),linear-gradient(180deg,#0f172a_0%,#111827_100%)]">
+            <div className="flex flex-col gap-3 bg-slate-50 p-4 fade-in max-md:bg-[radial-gradient(circle_at_100%_0,rgba(37,99,235,0.12),transparent_34%),linear-gradient(180deg,#f7f9fc_0%,#eef3f8_100%)] max-md:px-2.5 max-md:py-3 max-md:pb-[calc(104px+env(safe-area-inset-bottom))] dark:bg-slate-950 dark:max-md:bg-[radial-gradient(circle_at_100%_0,rgba(96,165,250,0.14),transparent_34%),linear-gradient(180deg,#0f172a_0%,#111827_100%)]">
                 <section className="rounded-[26px] border border-slate-200 bg-white p-4 shadow-[0_18px_42px_rgba(15,23,42,0.08)] dark:border-slate-700 dark:bg-slate-800/90">
-                    <p className="text-xs font-black text-blue-500">System configuration</p>
-                    <h1 className="mt-1 text-xl font-black text-slate-900 dark:text-slate-50">Settings</h1>
-                    <KH className="mt-1 block truncate text-xs font-bold text-slate-400">កំណត់ - Manage school preferences</KH>
+                    <p className="text-xs font-black text-blue-500">
+                        System configuration
+                    </p>
+                    <h1 className="mt-1 text-xl font-black text-slate-900 dark:text-slate-50">
+                        Settings
+                    </h1>
+                    <KH className="mt-1 block truncate text-xs font-bold text-slate-400">
+                        កំណត់ - Manage school preferences
+                    </KH>
                 </section>
 
                 <div className="grid gap-3 lg:grid-cols-[260px_minmax(0,1fr)]">
@@ -469,7 +488,9 @@ export default function SettingsPage({
                                         className={`flex min-h-11 min-w-0 items-center gap-2 rounded-2xl px-3 text-left text-xs font-black transition ${tab === item.id ? 'bg-blue-600 text-white shadow-[0_12px_24px_rgba(37,99,235,0.22)]' : 'text-slate-500 hover:bg-slate-100 dark:text-slate-300 dark:hover:bg-slate-950'}`}
                                     >
                                         <Icon size={16} className="shrink-0" />
-                                        <span className="truncate">{item.label}</span>
+                                        <span className="truncate">
+                                            {item.label}
+                                        </span>
                                     </button>
                                 );
                             })}
@@ -1498,7 +1519,9 @@ export default function SettingsPage({
                                     ))}
                                 </div>
 
-                                <ClassScheduleCalendar schedule={classes.schedule} />
+                                <ClassScheduleCalendar
+                                    schedule={classes.schedule}
+                                />
                             </SettingsPanel>
                         )}
 
@@ -2144,7 +2167,8 @@ export default function SettingsPage({
                                                         color: '#64748b',
                                                     }}
                                                 >
-                                                    Reverb alert sound while the student portal is open
+                                                    Reverb alert sound while the
+                                                    student portal is open
                                                 </div>
                                             </div>
                                             <button
@@ -2219,26 +2243,22 @@ export default function SettingsPage({
                                     {[
                                         {
                                             key: 'attendanceAlert' as const,
-                                            labelKh:
-                                                'ការជូនដំណឹងវត្តមាន',
+                                            labelKh: 'ការជូនដំណឹងវត្តមាន',
                                             label: 'Low Attendance Alerts',
                                         },
                                         {
                                             key: 'feeReminder' as const,
-                                            labelKh:
-                                                'រំលឹកការទូទាត់',
+                                            labelKh: 'រំលឹកការទូទាត់',
                                             label: 'Fee Payment Reminders',
                                         },
                                         {
                                             key: 'homeworkDue' as const,
-                                            labelKh:
-                                                'ការជូនដំណឹងកិច្ចការ',
+                                            labelKh: 'ការជូនដំណឹងកិច្ចការ',
                                             label: 'Homework Due Alerts',
                                         },
                                         {
                                             key: 'lessonPlanAlert' as const,
-                                            labelKh:
-                                                'ការជូនដំណឹងផែនការមេរៀន',
+                                            labelKh: 'ការជូនដំណឹងផែនការមេរៀន',
                                             label: 'Lesson Plan Student Alerts',
                                         },
                                         {
@@ -2249,8 +2269,7 @@ export default function SettingsPage({
                                         },
                                         {
                                             key: 'systemUpdates' as const,
-                                            labelKh:
-                                                'ការធ្វើបច្ចុប្បន្នភាព',
+                                            labelKh: 'ការធ្វើបច្ចុប្បន្នភាព',
                                             label: 'System Updates',
                                         },
                                     ].map((item) => (
@@ -2366,6 +2385,98 @@ export default function SettingsPage({
                                 </div>
                             </SettingsPanel>
                         )}
+
+                        {tab === 'login' && (
+                            <SettingsPanel
+                                title="Login Security"
+                                onSave={() => saveGroup('login', loginSecurity)}
+                                saving={savingGroup === 'login'}
+                            >
+                                <div className="grid gap-3 md:grid-cols-2">
+                                    <Field label="Failed Attempts Before Lockout">
+                                        <input
+                                            className={inputClass}
+                                            type="number"
+                                            min="1"
+                                            max="20"
+                                            value={loginSecurity.maxAttempts}
+                                            onChange={(event) =>
+                                                setLoginSecurity((current) => ({
+                                                    ...current,
+                                                    maxAttempts:
+                                                        event.target.value,
+                                                }))
+                                            }
+                                        />
+                                    </Field>
+                                    <Field label="Lockout Seconds">
+                                        <input
+                                            className={inputClass}
+                                            type="number"
+                                            min="1"
+                                            max="3600"
+                                            value={loginSecurity.decaySeconds}
+                                            onChange={(event) =>
+                                                setLoginSecurity((current) => ({
+                                                    ...current,
+                                                    decaySeconds:
+                                                        event.target.value,
+                                                }))
+                                            }
+                                        />
+                                    </Field>
+                                    <Field label="Alert Email" wide>
+                                        <input
+                                            className={inputClass}
+                                            type="email"
+                                            value={loginSecurity.alertEmail}
+                                            placeholder="security@example.com"
+                                            onChange={(event) =>
+                                                setLoginSecurity((current) => ({
+                                                    ...current,
+                                                    alertEmail:
+                                                        event.target.value,
+                                                }))
+                                            }
+                                        />
+                                    </Field>
+                                    <div className="md:col-span-2">
+                                        <div className="flex items-center justify-between gap-3 rounded-2xl bg-slate-50 p-4 dark:bg-slate-950">
+                                            <div>
+                                                <div className="text-sm font-black text-slate-900 dark:text-slate-50">
+                                                    Send Email On Login Lockout
+                                                </div>
+                                                <div className="text-xs font-bold text-slate-400">
+                                                    Sends one email per locked
+                                                    identifier and IP window.
+                                                </div>
+                                            </div>
+                                            <button
+                                                type="button"
+                                                onClick={() =>
+                                                    setLoginSecurity(
+                                                        (current) => ({
+                                                            ...current,
+                                                            alertEnabled:
+                                                                !current.alertEnabled,
+                                                        }),
+                                                    )
+                                                }
+                                                style={toggleStyle(
+                                                    loginSecurity.alertEnabled,
+                                                )}
+                                            >
+                                                <span
+                                                    style={toggleKnobStyle(
+                                                        loginSecurity.alertEnabled,
+                                                    )}
+                                                />
+                                            </button>
+                                        </div>
+                                    </div>
+                                </div>
+                            </SettingsPanel>
+                        )}
                     </div>
                 </div>
             </div>
@@ -2387,7 +2498,9 @@ function SettingsPanel({
     return (
         <div className="rounded-[24px] border border-slate-200 bg-white p-3 shadow-[0_14px_36px_rgba(15,23,42,0.07)] dark:border-slate-700 dark:bg-slate-800/90">
             <div className="mb-4 flex items-center justify-between gap-3">
-                <div className="text-base font-black text-slate-900 dark:text-slate-50">{title}</div>
+                <div className="text-base font-black text-slate-900 dark:text-slate-50">
+                    {title}
+                </div>
                 <button
                     disabled={saving}
                     onClick={onSave}
@@ -2413,7 +2526,9 @@ function Field({
 }) {
     return (
         <div className={wide ? 'md:col-span-2' : undefined}>
-            <label className="mb-1.5 block text-[11px] font-black uppercase tracking-wide text-slate-400">{label}</label>
+            <label className="mb-1.5 block text-[11px] font-black tracking-wide text-slate-400 uppercase">
+                {label}
+            </label>
             {children}
         </div>
     );
@@ -2442,8 +2557,12 @@ function ClassScheduleCalendar({ schedule }: { schedule: ScheduleSetting[] }) {
         <div className="mt-5 rounded-[22px] border border-slate-200 bg-slate-50 p-3 dark:border-slate-700 dark:bg-slate-950/70">
             <div className="mb-3 flex items-center justify-between gap-3">
                 <div>
-                    <div className="text-sm font-black text-slate-900 dark:text-slate-50">Weekly Calendar</div>
-                    <div className="text-[11px] font-bold text-slate-400">Generated from active class schedule data</div>
+                    <div className="text-sm font-black text-slate-900 dark:text-slate-50">
+                        Weekly Calendar
+                    </div>
+                    <div className="text-[11px] font-bold text-slate-400">
+                        Generated from active class schedule data
+                    </div>
                 </div>
                 <CalendarDays size={18} className="text-blue-500" />
             </div>
@@ -2454,15 +2573,29 @@ function ClassScheduleCalendar({ schedule }: { schedule: ScheduleSetting[] }) {
                     );
 
                     return (
-                        <div key={day.key} className="min-h-32 rounded-2xl border border-slate-200 bg-white p-2 dark:border-slate-700 dark:bg-slate-900">
-                            <div className="mb-2 text-[11px] font-black uppercase tracking-wide text-slate-400">{day.label}</div>
+                        <div
+                            key={day.key}
+                            className="min-h-32 rounded-2xl border border-slate-200 bg-white p-2 dark:border-slate-700 dark:bg-slate-900"
+                        >
+                            <div className="mb-2 text-[11px] font-black tracking-wide text-slate-400 uppercase">
+                                {day.label}
+                            </div>
                             <div className="grid gap-1.5">
                                 {dayClasses.length > 0 ? (
                                     dayClasses.map((item, index) => (
-                                        <div key={`${day.key}-${item.label}-${index}`} className="rounded-xl bg-blue-50 p-2 text-blue-950 dark:bg-blue-500/15 dark:text-blue-100">
-                                            <div className="truncate text-[12px] font-black">{item.label}</div>
-                                            <div className="mt-0.5 text-[10px] font-bold text-blue-500 dark:text-blue-300">{item.time || 'No time'}</div>
-                                            <div className="text-[10px] font-bold text-slate-400">{item.room || 'No room'}</div>
+                                        <div
+                                            key={`${day.key}-${item.label}-${index}`}
+                                            className="rounded-xl bg-blue-50 p-2 text-blue-950 dark:bg-blue-500/15 dark:text-blue-100"
+                                        >
+                                            <div className="truncate text-[12px] font-black">
+                                                {item.label}
+                                            </div>
+                                            <div className="mt-0.5 text-[10px] font-bold text-blue-500 dark:text-blue-300">
+                                                {item.time || 'No time'}
+                                            </div>
+                                            <div className="text-[10px] font-bold text-slate-400">
+                                                {item.room || 'No room'}
+                                            </div>
                                         </div>
                                     ))
                                 ) : (
