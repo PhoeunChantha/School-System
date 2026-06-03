@@ -1,4 +1,3 @@
-import InputError from '@/components/input-error';
 import TextLink from '@/components/text-link';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Input } from '@/components/ui/input';
@@ -9,6 +8,13 @@ import type { SharedData } from '@/types';
 
 import { Form, Head, usePage } from '@inertiajs/react';
 import { ArrowRight, Building2 } from 'lucide-react';
+import {
+    useEffect,
+    useRef,
+    useState,
+    type Dispatch,
+    type SetStateAction,
+} from 'react';
 
 interface LoginProps {
     status?: string;
@@ -20,6 +26,20 @@ export default function Login({ status, canResetPassword }: LoginProps) {
     const { props } = usePage<SharedData>();
     const school = props.school;
     const hasBg = !!school?.loginBg;
+    const [lockoutSeconds, setLockoutSeconds] = useState(0);
+
+    useEffect(() => {
+        if (lockoutSeconds <= 0) {
+            return;
+        }
+
+        const timer = window.setTimeout(() => {
+            setLockoutSeconds((current) => Math.max(0, current - 1));
+        }, 1000);
+
+        return () => window.clearTimeout(timer);
+    }, [lockoutSeconds]);
+
     return (
         <div
             style={{
@@ -162,6 +182,7 @@ export default function Login({ status, canResetPassword }: LoginProps) {
                 {/* Auth form */}
                 <Form
                     {...store.form()}
+                    resetOnError={['password']}
                     resetOnSuccess={['password']}
                     style={{
                         display: 'flex',
@@ -170,184 +191,14 @@ export default function Login({ status, canResetPassword }: LoginProps) {
                     }}
                 >
                     {({ processing, errors }) => (
-                        <>
-                            {/* Email or student code */}
-                            <div
-                                style={{
-                                    display: 'flex',
-                                    flexDirection: 'column',
-                                    gap: 6,
-                                }}
-                            >
-                                <label
-                                    htmlFor="email"
-                                    style={{
-                                        fontSize: 12,
-                                        fontWeight: 700,
-                                        color: hasBg ? 'white' : '#64748b',
-                                    }}
-                                >
-                                    Email Address / Student Code
-                                </label>
-                                <Input
-                                    id="email"
-                                    type="text"
-                                    name="email"
-                                    required
-                                    autoFocus
-                                    tabIndex={1}
-                                    autoComplete="username"
-                                    placeholder="email@example.com or STU-1001"
-                                    style={{
-                                        background: hasBg
-                                            ? 'transparent'
-                                            : '#f8fafc',
-                                        border: hasBg
-                                            ? '1.5px solid rgba(255,255,255,0.35)'
-                                            : '1.5px solid #e2e8f0',
-                                        borderRadius: 10,
-                                        padding: '10px 14px',
-                                        fontSize: 14,
-                                        color: hasBg ? 'white' : '#1e293b',
-                                    }}
-                                />
-                                <InputError message={errors.email} />
-                            </div>
-
-                            {/* Password */}
-                            <div
-                                style={{
-                                    display: 'flex',
-                                    flexDirection: 'column',
-                                    gap: 6,
-                                }}
-                            >
-                                <div
-                                    style={{
-                                        display: 'flex',
-                                        alignItems: 'center',
-                                        justifyContent: 'space-between',
-                                    }}
-                                >
-                                    <label
-                                        htmlFor="password"
-                                        style={{
-                                            fontSize: 12,
-                                            fontWeight: 700,
-                                            color: hasBg ? 'white' : '#64748b',
-                                        }}
-                                    >
-                                        Password
-                                    </label>
-                                    {canResetPassword && (
-                                        <TextLink
-                                            href={request()}
-                                            tabIndex={5}
-                                            className={
-                                                hasBg
-                                                    ? 'text-xs text-white/80 hover:text-white'
-                                                    : 'text-xs text-blue-600 hover:text-blue-700'
-                                            }
-                                        >
-                                            Forgot password?
-                                        </TextLink>
-                                    )}
-                                </div>
-                                <Input
-                                    id="password"
-                                    type="password"
-                                    name="password"
-                                    required
-                                    tabIndex={2}
-                                    autoComplete="current-password"
-                                    placeholder="Password"
-                                    style={{
-                                        background: hasBg
-                                            ? 'transparent'
-                                            : '#f8fafc',
-                                        border: hasBg
-                                            ? '1.5px solid rgba(255,255,255,0.35)'
-                                            : '1.5px solid #e2e8f0',
-                                        borderRadius: 10,
-                                        padding: '10px 14px',
-                                        fontSize: 14,
-                                        color: hasBg ? 'white' : '#1e293b',
-                                    }}
-                                />
-                                <InputError message={errors.password} />
-                            </div>
-
-                            {/* Remember me */}
-                            <div
-                                style={{
-                                    display: 'flex',
-                                    alignItems: 'center',
-                                    gap: 8,
-                                }}
-                            >
-                                <Checkbox
-                                    id="remember"
-                                    name="remember"
-                                    tabIndex={3}
-                                />
-                                <label
-                                    htmlFor="remember"
-                                    style={{
-                                        fontSize: 13,
-                                        color: hasBg
-                                            ? 'rgba(255,255,255,0.85)'
-                                            : '#64748b',
-                                        cursor: 'pointer',
-                                    }}
-                                >
-                                    Remember me
-                                </label>
-                            </div>
-
-                            {/* Submit */}
-                            <button
-                                type="submit"
-                                tabIndex={4}
-                                disabled={processing}
-                                data-test="login-button"
-                                style={{
-                                    width: '100%',
-                                    padding: '13px',
-                                    borderRadius: 14,
-                                    border: 'none',
-                                    fontWeight: 800,
-                                    fontSize: 15,
-                                    cursor: processing
-                                        ? 'not-allowed'
-                                        : 'pointer',
-                                    background: processing
-                                        ? '#e2e8f0'
-                                        : 'linear-gradient(135deg,#2563eb,#4f46e5)',
-                                    color: processing ? '#94a3b8' : 'white',
-                                    boxShadow: processing
-                                        ? 'none'
-                                        : '0 8px 24px rgba(37,99,235,0.3)',
-                                    display: 'flex',
-                                    alignItems: 'center',
-                                    justifyContent: 'center',
-                                    gap: 8,
-                                    transition: 'all 0.2s',
-                                    fontFamily:
-                                        "'Noto Sans Khmer','Plus Jakarta Sans',sans-serif",
-                                    marginTop: 4,
-                                }}
-                            >
-                                {processing && <Spinner />}
-                                {processing ? (
-                                    'Signing in...'
-                                ) : (
-                                    <>
-                                        <span>Log in</span>
-                                        <ArrowRight size={16} />
-                                    </>
-                                )}
-                            </button>
-                        </>
+                        <LoginFormFields
+                            canResetPassword={canResetPassword}
+                            errors={errors}
+                            hasBg={hasBg}
+                            lockoutSeconds={lockoutSeconds}
+                            processing={processing}
+                            setLockoutSeconds={setLockoutSeconds}
+                        />
                     )}
                 </Form>
 
@@ -375,4 +226,266 @@ export default function Login({ status, canResetPassword }: LoginProps) {
             </div>
         </div>
     );
+}
+
+function LoginFormFields({
+    canResetPassword,
+    errors,
+    hasBg,
+    lockoutSeconds,
+    processing,
+    setLockoutSeconds,
+}: {
+    canResetPassword: boolean;
+    errors: Partial<Record<'email' | 'password', string>>;
+    hasBg: boolean;
+    lockoutSeconds: number;
+    processing: boolean;
+    setLockoutSeconds: Dispatch<SetStateAction<number>>;
+}) {
+    const errorMessage = errors.email ?? errors.password;
+    const parsedLockoutSeconds = lockoutSecondsFromMessage(errorMessage);
+    const lockoutActive = lockoutSeconds > 0;
+    const showError =
+        errorMessage && (parsedLockoutSeconds === 0 || lockoutActive);
+    const handledLockoutMessage = useRef<string | null>(null);
+
+    useEffect(() => {
+        if (processing) {
+            handledLockoutMessage.current = null;
+
+            return;
+        }
+
+        if (
+            errorMessage &&
+            parsedLockoutSeconds > 0 &&
+            handledLockoutMessage.current !== errorMessage
+        ) {
+            setLockoutSeconds(parsedLockoutSeconds);
+            handledLockoutMessage.current = errorMessage;
+        }
+    }, [errorMessage, parsedLockoutSeconds, processing, setLockoutSeconds]);
+
+    return (
+        <>
+            {showError && (
+                <LoginErrorMessage
+                    lockoutSeconds={lockoutSeconds}
+                    message={errorMessage}
+                />
+            )}
+
+            <div
+                style={{
+                    display: 'flex',
+                    flexDirection: 'column',
+                    gap: 6,
+                }}
+            >
+                <label
+                    htmlFor="email"
+                    style={{
+                        fontSize: 12,
+                        fontWeight: 700,
+                        color: hasBg ? 'white' : '#64748b',
+                    }}
+                >
+                    Email Address / Student Code
+                </label>
+                <Input
+                    id="email"
+                    type="text"
+                    name="email"
+                    required
+                    disabled={lockoutActive}
+                    autoFocus
+                    tabIndex={1}
+                    autoComplete="username"
+                    placeholder="email@example.com or STU-1001"
+                    style={{
+                        background: hasBg ? 'transparent' : '#f8fafc',
+                        border: hasBg
+                            ? '1.5px solid rgba(255,255,255,0.35)'
+                            : '1.5px solid #e2e8f0',
+                        borderRadius: 10,
+                        padding: '10px 14px',
+                        fontSize: 14,
+                        color: hasBg ? 'white' : '#1e293b',
+                    }}
+                />
+            </div>
+
+            <div
+                style={{
+                    display: 'flex',
+                    flexDirection: 'column',
+                    gap: 6,
+                }}
+            >
+                <div
+                    style={{
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'space-between',
+                    }}
+                >
+                    <label
+                        htmlFor="password"
+                        style={{
+                            fontSize: 12,
+                            fontWeight: 700,
+                            color: hasBg ? 'white' : '#64748b',
+                        }}
+                    >
+                        Password
+                    </label>
+                    {canResetPassword && (
+                        <TextLink
+                            href={request()}
+                            tabIndex={5}
+                            className={
+                                hasBg
+                                    ? 'text-xs text-white/80 hover:text-white'
+                                    : 'text-xs text-blue-600 hover:text-blue-700'
+                            }
+                        >
+                            Forgot password?
+                        </TextLink>
+                    )}
+                </div>
+                <Input
+                    id="password"
+                    type="password"
+                    name="password"
+                    required
+                    disabled={lockoutActive}
+                    tabIndex={2}
+                    autoComplete="current-password"
+                    placeholder="Password"
+                    style={{
+                        background: hasBg ? 'transparent' : '#f8fafc',
+                        border: hasBg
+                            ? '1.5px solid rgba(255,255,255,0.35)'
+                            : '1.5px solid #e2e8f0',
+                        borderRadius: 10,
+                        padding: '10px 14px',
+                        fontSize: 14,
+                        color: hasBg ? 'white' : '#1e293b',
+                    }}
+                />
+            </div>
+
+            <div
+                style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: 8,
+                }}
+            >
+                <Checkbox
+                    id="remember"
+                    name="remember"
+                    disabled={lockoutActive}
+                    tabIndex={3}
+                />
+                <label
+                    htmlFor="remember"
+                    style={{
+                        fontSize: 13,
+                        color: hasBg ? 'rgba(255,255,255,0.85)' : '#64748b',
+                        cursor: 'pointer',
+                    }}
+                >
+                    Remember me
+                </label>
+            </div>
+
+            <button
+                type="submit"
+                tabIndex={4}
+                disabled={processing || lockoutActive}
+                data-test="login-button"
+                style={{
+                    width: '100%',
+                    padding: '13px',
+                    borderRadius: 14,
+                    border: 'none',
+                    fontWeight: 800,
+                    fontSize: 15,
+                    cursor:
+                        processing || lockoutActive ? 'not-allowed' : 'pointer',
+                    background:
+                        processing || lockoutActive
+                            ? '#e2e8f0'
+                            : 'linear-gradient(135deg,#2563eb,#4f46e5)',
+                    color: processing || lockoutActive ? '#94a3b8' : 'white',
+                    boxShadow:
+                        processing || lockoutActive
+                            ? 'none'
+                            : '0 8px 24px rgba(37,99,235,0.3)',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    gap: 8,
+                    transition: 'all 0.2s',
+                    fontFamily:
+                        "'Noto Sans Khmer','Plus Jakarta Sans',sans-serif",
+                    marginTop: 4,
+                }}
+            >
+                {processing && <Spinner />}
+                {processing ? (
+                    'Signing in...'
+                ) : lockoutActive ? (
+                    `Wait ${lockoutSeconds}s`
+                ) : (
+                    <>
+                        <span>Log in</span>
+                        <ArrowRight size={16} />
+                    </>
+                )}
+            </button>
+        </>
+    );
+}
+
+function LoginErrorMessage({
+    message,
+    lockoutSeconds,
+}: {
+    message: string;
+    lockoutSeconds: number;
+}) {
+    const initialSeconds = lockoutSecondsFromMessage(message);
+
+    if (initialSeconds > 0 && lockoutSeconds <= 0) {
+        return null;
+    }
+
+    return (
+        <div
+            style={{
+                border: '1px solid #fecaca',
+                borderRadius: 12,
+                background: '#fef2f2',
+                color: '#b91c1c',
+                fontSize: 13,
+                fontWeight: 800,
+                lineHeight: 1.5,
+                padding: '11px 14px',
+            }}
+            role="alert"
+        >
+            {initialSeconds > 0
+                ? `Too many login attempts. Please try again in ${lockoutSeconds} seconds.`
+                : message}
+        </div>
+    );
+}
+
+function lockoutSecondsFromMessage(message?: string): number {
+    const match = message?.match(/try again in (\d+) seconds/i);
+
+    return match ? Number(match[1]) : 0;
 }

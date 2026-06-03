@@ -19,6 +19,7 @@ class SchoolSettingService
         'fees' => 'policy',
         'classes' => 'schedule',
         'notifications' => 'preferences',
+        'login' => 'security',
     ];
 
     public function __construct(private readonly ?string $environmentPath = null) {}
@@ -35,6 +36,7 @@ class SchoolSettingService
                 'fees' => $this->settingValue('fees'),
                 'classes' => $this->settingValue('classes'),
                 'notifications' => $this->settingValue('notifications'),
+                'login' => $this->settingValue('login'),
                 'database' => [
                     'databaseName' => $this->environmentValue('DB_DATABASE')
                         ?? (string) config('database.connections.'.config('database.default').'.database', ''),
@@ -352,6 +354,12 @@ class SchoolSettingService
                 'homeworkSubmissionAlert' => true,
                 'systemUpdates' => true,
                 'notificationSound' => null,
+            ],
+            'login' => [
+                'maxAttempts' => '5',
+                'decaySeconds' => '15',
+                'alertEnabled' => true,
+                'alertEmail' => '',
             ],
             default => [],
         };

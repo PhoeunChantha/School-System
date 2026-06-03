@@ -2,9 +2,12 @@
 
 namespace Tests\Feature\Auth;
 
+use App\Mail\LoginLockoutAlert;
+use App\Models\SchoolSetting;
 use App\Models\Student;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Facades\RateLimiter;
 use Laravel\Fortify\Features;
 use Spatie\Permission\Models\Role;
@@ -146,14 +149,49 @@ class AuthenticationTest extends TestCase
     {
         $user = User::factory()->create();
 
-        RateLimiter::increment(md5('login'.implode('|', [$user->email, '127.0.0.1'])), amount: 5);
+        RateLimiter::increment(strtolower($user->email).'|127.0.0.1', 15, 5);
 
         $response = $this->post(route('login.store'), [
             'email' => $user->email,
             'password' => 'wrong-password',
         ]);
 
-        $response->assertTooManyRequests();
+        $response->assertRedirect();
+        $response->assertSessionHasErrors('email');
+    }
+
+    public function test_login_lockout_sends_alert_email(): void
+    {
+        Mail::fake();
+
+        $user = User::factory()->create();
+
+        SchoolSetting::query()->create([
+            'group' => 'login',
+            'key' => 'security',
+            'value' => [
+                'maxAttempts' => '2',
+                'decaySeconds' => '15',
+                'alertEnabled' => true,
+                'alertEmail' => 'security@example.test',
+            ],
+        ]);
+
+        $this->post(route('login.store'), [
+            'email' => $user->email,
+            'password' => 'wrong-password',
+        ])->assertSessionHasErrors('email');
+
+        $this->post(route('login.store'), [
+            'email' => $user->email,
+            'password' => 'wrong-password',
+        ])->assertRedirect()->assertSessionHasErrors('email');
+
+        Mail::assertSent(LoginLockoutAlert::class, function (LoginLockoutAlert $mail): bool {
+            return $mail->hasTo('security@example.test')
+                && $mail->details['identifier'] !== ''
+                && $mail->details['availableIn'] > 0;
+        });
     }
 
     private function assignRole(User $user, string $roleName): void
