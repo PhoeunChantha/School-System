@@ -17,16 +17,13 @@ class UploadSchoolImageRequest extends FormRequest
      */
     public function rules(): array
     {
+        $fileRules = $this->input('type') === 'notificationSound'
+            ? ['mimes:mp3,wav,ogg']
+            : ['image', 'mimes:jpg,jpeg,png,gif,webp,svg'];
+
         return [
             'type' => ['required', 'in:logo,favicon,loginBg,seoImage,notificationSound'],
-            'image' => [
-                'required',
-                'file',
-                'max:5120',
-                $this->input('type') === 'notificationSound'
-                    ? 'mimes:mp3,wav,ogg'
-                    : 'image|mimes:jpg,jpeg,png,gif,webp,svg',
-            ],
+            'image' => ['required', 'file', 'max:5120', ...$fileRules],
         ];
     }
 }

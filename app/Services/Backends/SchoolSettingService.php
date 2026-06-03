@@ -37,6 +37,7 @@ class SchoolSettingService
                 'classes' => $this->settingValue('classes'),
                 'notifications' => $this->settingValue('notifications'),
                 'login' => $this->settingValue('login'),
+                'mail' => $this->mailSettings(),
                 'database' => [
                     'databaseName' => $this->environmentValue('DB_DATABASE')
                         ?? (string) config('database.connections.'.config('database.default').'.database', ''),
@@ -83,6 +84,17 @@ class SchoolSettingService
                 'group' => 'database',
                 'key' => 'environment',
                 'value' => ['databaseName' => $value['databaseName'] ?? ''],
+                'updated_by' => $userId,
+            ]);
+        }
+
+        if ($group === 'mail') {
+            $this->updateMailSettings($value);
+
+            return new SchoolSetting([
+                'group' => 'mail',
+                'key' => 'environment',
+                'value' => $this->mailSettings(),
                 'updated_by' => $userId,
             ]);
         }
@@ -139,6 +151,35 @@ class SchoolSettingService
         Artisan::call('config:clear');
     }
 
+    /**
+     * @param  array<string, mixed>  $settings
+     */
+    public function updateMailSettings(array $settings): void
+    {
+        $currentPassword = $this->environmentValue('MAIL_PASSWORD') ?? '';
+        $password = trim((string) ($settings['mailPassword'] ?? ''));
+
+        $values = [
+            'MAIL_MAILER' => 'smtp',
+            'MAIL_HOST' => trim((string) ($settings['mailHost'] ?? '')),
+            'MAIL_PORT' => trim((string) ($settings['mailPort'] ?? '')),
+            'MAIL_SCHEME' => $this->normalizeMailScheme((string) ($settings['mailScheme'] ?? '')),
+            'MAIL_USERNAME' => trim((string) ($settings['mailUsername'] ?? '')),
+            'MAIL_PASSWORD' => $password !== '' ? $password : $currentPassword,
+            'MAIL_FROM_ADDRESS' => trim((string) ($settings['mailFromAddress'] ?? '')),
+        ];
+
+        foreach (['MAIL_HOST', 'MAIL_PORT', 'MAIL_USERNAME', 'MAIL_FROM_ADDRESS'] as $key) {
+            if ($values[$key] === '') {
+                throw new InvalidArgumentException(str_replace('_', ' ', $key).' is required.');
+            }
+        }
+
+        $this->updateEnvironmentValues($values);
+
+        Artisan::call('config:clear');
+    }
+
     private function environmentFilePath(): string
     {
         return $this->environmentPath ?? base_path('.env');
@@ -163,11 +204,67 @@ class SchoolSettingService
 
     private function formatEnvironmentValue(string $value): string
     {
-        if (preg_match('/^[A-Za-z0-9_.-]+$/', $value)) {
+        if ($value === '') {
+            return '';
+        }
+
+        if (preg_match('/^[A-Za-z0-9_.@-]+$/', $value)) {
             return $value;
         }
 
         return '"'.str_replace('"', '\"', $value).'"';
+    }
+
+    private function normalizeMailScheme(string $scheme): string
+    {
+        return match (trim($scheme)) {
+            'tls' => 'smtp',
+            'ssl' => 'smtps',
+            default => trim($scheme),
+        };
+    }
+
+    /**
+     * @param  array<string, string>  $values
+     */
+    private function updateEnvironmentValues(array $values): void
+    {
+        $path = $this->environmentFilePath();
+        $contents = File::exists($path) ? File::get($path) : '';
+
+        foreach ($values as $key => $value) {
+            $line = $key.'='.$this->formatEnvironmentValue($value);
+
+            if (preg_match('/^'.preg_quote($key, '/').'=.*$/m', $contents)) {
+                $contents = preg_replace('/^'.preg_quote($key, '/').'=.*$/m', $line, $contents) ?? $contents;
+            } else {
+                $contents = rtrim($contents, "\r\n").PHP_EOL.$line.PHP_EOL;
+            }
+        }
+
+        File::put($path, $contents);
+    }
+
+    /**
+     * @return array<string, string>
+     */
+    private function mailSettings(): array
+    {
+        return [
+            'mailHost' => $this->environmentValue('MAIL_HOST')
+                ?? (string) config('mail.mailers.smtp.host', 'smtp.gmail.com'),
+            'mailPort' => $this->environmentValue('MAIL_PORT')
+                ?? (string) config('mail.mailers.smtp.port', 587),
+            'mailScheme' => $this->normalizeMailScheme(
+                $this->environmentValue('MAIL_SCHEME')
+                    ?? (string) config('mail.mailers.smtp.scheme', 'smtp'),
+            ),
+            'mailUsername' => $this->environmentValue('MAIL_USERNAME')
+                ?? (string) config('mail.mailers.smtp.username', ''),
+            'mailPassword' => '',
+            'mailFromAddress' => $this->environmentValue('MAIL_FROM_ADDRESS')
+                ?? (string) config('mail.from.address', ''),
+        ];
     }
 
     private function databaseExists(string $databaseName): bool

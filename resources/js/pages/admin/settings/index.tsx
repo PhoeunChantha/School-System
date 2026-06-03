@@ -30,6 +30,7 @@ import {
     FileCheck2,
     Globe2,
     KeyRound,
+    Mail,
     Palette,
     PanelLeft,
     Save,
@@ -51,6 +52,7 @@ type SettingsTab =
     | 'classes'
     | 'notifications'
     | 'login'
+    | 'mail'
     | 'database'
     | 'search-console'
     | 'sidebar'
@@ -123,6 +125,15 @@ interface LoginSecuritySettings {
     alertEmail: string;
 }
 
+interface MailSettings {
+    mailHost: string;
+    mailPort: string;
+    mailScheme: string;
+    mailUsername: string;
+    mailPassword: string;
+    mailFromAddress: string;
+}
+
 interface DatabaseSettings {
     databaseName: string;
 }
@@ -140,6 +151,7 @@ interface SettingsPageProps {
         classes: ClassSettings;
         notifications: NotificationSettings;
         login: LoginSecuritySettings;
+        mail: MailSettings;
         database: DatabaseSettings;
         searchConsole: SearchConsoleSettings;
     };
@@ -156,6 +168,7 @@ const tabs: { id: SettingsTab; label: string; icon: ElementType }[] = [
     { id: 'classes', label: 'Class Schedule', icon: CalendarDays },
     { id: 'notifications', label: 'Notifications', icon: Bell },
     { id: 'login', label: 'Login', icon: ShieldBan },
+    { id: 'mail', label: 'Mail', icon: Mail },
     { id: 'database', label: 'Database', icon: Database },
     { id: 'search-console', label: 'Search Console', icon: FileCheck2 },
     { id: 'sidebar', label: 'Sidebar', icon: PanelLeft },
@@ -279,6 +292,9 @@ export default function SettingsPage({
     const [loginSecurity, setLoginSecurity] = useState<LoginSecuritySettings>(
         settings.login,
     );
+    const [mailSettings, setMailSettings] = useState<MailSettings>(
+        settings.mail,
+    );
     const [database, setDatabase] = useState<DatabaseSettings>(
         settings.database,
     );
@@ -367,7 +383,6 @@ export default function SettingsPage({
             },
         );
     };
-
     const handleImageUpload = (
         type: 'logo' | 'favicon' | 'loginBg' | 'seoImage' | 'notificationSound',
         file: File,
@@ -2474,6 +2489,111 @@ export default function SettingsPage({
                                             </button>
                                         </div>
                                     </div>
+                                </div>
+                            </SettingsPanel>
+                        )}
+
+                        {tab === 'mail' && (
+                            <SettingsPanel
+                                title="Mail Settings"
+                                onSave={() => saveGroup('mail', mailSettings)}
+                                saving={savingGroup === 'mail'}
+                            >
+                                <div className="grid gap-3 md:grid-cols-2">
+                                    <Field label="Mail Host">
+                                        <input
+                                            className={inputClass}
+                                            value={mailSettings.mailHost}
+                                            placeholder="smtp.gmail.com"
+                                            onChange={(event) =>
+                                                setMailSettings((current) => ({
+                                                    ...current,
+                                                    mailHost:
+                                                        event.target.value,
+                                                }))
+                                            }
+                                        />
+                                    </Field>
+                                    <Field label="Mail Port">
+                                        <input
+                                            className={inputClass}
+                                            type="number"
+                                            min="1"
+                                            max="65535"
+                                            value={mailSettings.mailPort}
+                                            placeholder="587"
+                                            onChange={(event) =>
+                                                setMailSettings((current) => ({
+                                                    ...current,
+                                                    mailPort:
+                                                        event.target.value,
+                                                }))
+                                            }
+                                        />
+                                    </Field>
+                                    <Field label="Mail Scheme">
+                                        <select
+                                            className={inputClass}
+                                            value={mailSettings.mailScheme}
+                                            onChange={(event) =>
+                                                setMailSettings((current) => ({
+                                                    ...current,
+                                                    mailScheme:
+                                                        event.target.value,
+                                                }))
+                                            }
+                                        >
+                                            <option value="smtp">smtp</option>
+                                            <option value="smtps">smtps</option>
+                                            <option value="">none</option>
+                                        </select>
+                                    </Field>
+                                    <Field label="Mail Username">
+                                        <input
+                                            className={inputClass}
+                                            type="email"
+                                            value={mailSettings.mailUsername}
+                                            placeholder="your@gmail.com"
+                                            onChange={(event) =>
+                                                setMailSettings((current) => ({
+                                                    ...current,
+                                                    mailUsername:
+                                                        event.target.value,
+                                                }))
+                                            }
+                                        />
+                                    </Field>
+                                    <Field label="Google App Password">
+                                        <input
+                                            className={inputClass}
+                                            type="password"
+                                            value={mailSettings.mailPassword}
+                                            placeholder="Leave blank to keep current .env password"
+                                            autoComplete="new-password"
+                                            onChange={(event) =>
+                                                setMailSettings((current) => ({
+                                                    ...current,
+                                                    mailPassword:
+                                                        event.target.value,
+                                                }))
+                                            }
+                                        />
+                                    </Field>
+                                    <Field label="Mail From Address">
+                                        <input
+                                            className={inputClass}
+                                            type="email"
+                                            value={mailSettings.mailFromAddress}
+                                            placeholder="your@gmail.com"
+                                            onChange={(event) =>
+                                                setMailSettings((current) => ({
+                                                    ...current,
+                                                    mailFromAddress:
+                                                        event.target.value,
+                                                }))
+                                            }
+                                        />
+                                    </Field>
                                 </div>
                             </SettingsPanel>
                         )}
