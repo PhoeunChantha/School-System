@@ -23,7 +23,7 @@ class StudentPwaController extends Controller
                 'description' => 'Student portal for grades, attendance, homework, and school notifications.',
                 'id' => '/student/',
                 'start_url' => '/student/dashboard',
-                'scope' => '/student/',
+                'scope' => '/',
                 'display' => 'standalone',
                 'display_override' => ['standalone', 'browser'],
                 'background_color' => '#f8fafc',
@@ -58,7 +58,7 @@ class StudentPwaController extends Controller
         return response($this->serviceWorkerScript($this->schoolProfile->pwaCachePaths()), 200, [
             'Content-Type' => 'text/javascript; charset=UTF-8',
             'Cache-Control' => 'no-cache, no-store, must-revalidate',
-            'Service-Worker-Allowed' => '/student/',
+            'Service-Worker-Allowed' => '/',
         ]);
     }
 
@@ -150,7 +150,7 @@ class StudentPwaController extends Controller
                     return;
                 }
 
-                if (request.mode === 'navigate' && url.pathname.startsWith('/student')) {
+                if (request.mode === 'navigate' && (url.pathname.startsWith('/student') || url.pathname === '/login')) {
                     event.respondWith(networkFirstStudentNavigation(request));
 
                     return;

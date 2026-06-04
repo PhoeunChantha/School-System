@@ -6,11 +6,25 @@ use App\Mail\LoginLockoutAlert;
 use App\Models\SchoolSetting;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Mail;
+use Inertia\Testing\AssertableInertia as Assert;
 use Tests\TestCase;
 
 class LoginLockoutTest extends TestCase
 {
     use RefreshDatabase;
+
+    public function test_login_screen_shares_configured_lockout_settings(): void
+    {
+        $this->configureLoginSecurity(decaySeconds: '30');
+
+        $this->get(route('login'))
+            ->assertOk()
+            ->assertInertia(fn (Assert $page) => $page
+                ->component('auth/login')
+                ->where('loginSecurity.maxAttempts', 2)
+                ->where('loginSecurity.decaySeconds', 30)
+            );
+    }
 
     public function test_failed_login_shows_lockout_countdown_after_configured_attempts(): void
     {

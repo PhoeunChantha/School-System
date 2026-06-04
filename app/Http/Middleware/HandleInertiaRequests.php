@@ -65,6 +65,17 @@ class HandleInertiaRequests extends Middleware
             ],
             'sidebarOpen' => ! $request->hasCookie('sidebar_state') || $request->cookie('sidebar_state') === 'true',
             'school' => fn (): array => Arr::only(app(SchoolProfile::class)->data(), ['nameEn', 'logo', 'favicon', 'loginBg']),
+            'loginSecurity' => function (): array {
+                $value = SchoolSetting::query()
+                    ->where('group', 'login')
+                    ->where('key', 'security')
+                    ->value('value') ?? [];
+
+                return [
+                    'maxAttempts' => max(1, min(20, (int) Arr::get($value, 'maxAttempts', 5))),
+                    'decaySeconds' => max(1, min(3600, (int) Arr::get($value, 'decaySeconds', 15))),
+                ];
+            },
             'notificationSound' => function (): ?string {
                 $value = SchoolSetting::query()
                     ->where('group', 'notifications')

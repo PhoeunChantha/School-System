@@ -25,8 +25,19 @@ interface LoginProps {
 export default function Login({ status, canResetPassword }: LoginProps) {
     const { props } = usePage<SharedData>();
     const school = props.school;
+    const loginSecurity = props.loginSecurity;
     const hasBg = !!school?.loginBg;
     const [lockoutSeconds, setLockoutSeconds] = useState(0);
+
+    useEffect(() => {
+        if (!('serviceWorker' in navigator)) {
+            return;
+        }
+
+        navigator.serviceWorker
+            .register('/student/service-worker.js', { scope: '/' })
+            .catch(() => undefined);
+    }, []);
 
     useEffect(() => {
         if (lockoutSeconds <= 0) {
@@ -66,6 +77,24 @@ export default function Login({ status, canResetPassword }: LoginProps) {
                 />
             )}
             <Head title="Log in" />
+            <Head>
+                <link rel="manifest" href="/student/manifest.webmanifest" />
+                <meta name="theme-color" content="#009c7f" />
+                <meta name="mobile-web-app-capable" content="yes" />
+                <meta name="apple-mobile-web-app-capable" content="yes" />
+                <meta
+                    name="apple-mobile-web-app-title"
+                    content={`${school?.nameEn ?? 'Frania English School'} Student`}
+                />
+                <link
+                    rel="apple-touch-icon"
+                    href={
+                        school?.logo ??
+                        school?.favicon ??
+                        '/apple-touch-icon.png'
+                    }
+                />
+            </Head>
 
             <div
                 style={{
@@ -195,6 +224,9 @@ export default function Login({ status, canResetPassword }: LoginProps) {
                             canResetPassword={canResetPassword}
                             errors={errors}
                             hasBg={hasBg}
+                            configuredLockoutSeconds={
+                                loginSecurity?.decaySeconds ?? 15
+                            }
                             lockoutSeconds={lockoutSeconds}
                             processing={processing}
                             setLockoutSeconds={setLockoutSeconds}
@@ -230,6 +262,7 @@ export default function Login({ status, canResetPassword }: LoginProps) {
 
 function LoginFormFields({
     canResetPassword,
+    configuredLockoutSeconds,
     errors,
     hasBg,
     lockoutSeconds,
@@ -237,6 +270,7 @@ function LoginFormFields({
     setLockoutSeconds,
 }: {
     canResetPassword: boolean;
+    configuredLockoutSeconds: number;
     errors: Partial<Record<'email' | 'password', string>>;
     hasBg: boolean;
     lockoutSeconds: number;
@@ -244,7 +278,9 @@ function LoginFormFields({
     setLockoutSeconds: Dispatch<SetStateAction<number>>;
 }) {
     const errorMessage = errors.email ?? errors.password;
-    const parsedLockoutSeconds = lockoutSecondsFromMessage(errorMessage);
+    const parsedLockoutSeconds =
+        lockoutSecondsFromMessage(errorMessage) ||
+        (isLockoutMessage(errorMessage) ? configuredLockoutSeconds : 0);
     const lockoutActive = lockoutSeconds > 0;
     const showError =
         errorMessage && (parsedLockoutSeconds === 0 || lockoutActive);
@@ -522,4 +558,8 @@ function lockoutSecondsFromMessage(message?: string): number {
     const match = message?.match(/try again in (\d+) seconds/i);
 
     return match ? Number(match[1]) : 0;
+}
+
+function isLockoutMessage(message?: string): boolean {
+    return !!message?.match(/too many login attempts|throttle/i);
 }

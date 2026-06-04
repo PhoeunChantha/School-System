@@ -30,12 +30,18 @@ export interface SchoolSharedData {
     loginBg: string | null;
 }
 
+export interface LoginSecuritySharedData {
+    maxAttempts: number;
+    decaySeconds: number;
+}
+
 export interface SharedData {
     name: string;
     quote: { message: string; author: string };
     auth: Auth;
     sidebarOpen: boolean;
     school: SchoolSharedData;
+    loginSecurity: LoginSecuritySharedData;
     notificationSound?: string | null;
     homeworkSubmissionAlerts?: {
         unreadCount: number;
