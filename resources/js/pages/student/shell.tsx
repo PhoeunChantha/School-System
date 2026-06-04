@@ -1,10 +1,10 @@
-import '@/pages/student/student.css';
 import { useStudentDomTranslations } from '@/hooks/use-student-dom-translations';
 import { useStudentTranslation } from '@/hooks/use-student-translation';
-import type { SharedData } from '@/types';
+import '@/pages/student/student.css';
+import { logout } from '@/routes';
 import {
-    attendanceCalendar,
     attendance,
+    attendanceCalendar,
     certificates,
     classSchedule,
     dashboard,
@@ -19,12 +19,12 @@ import {
 } from '@/routes/student';
 import { publicKey as pushPublicKey } from '@/routes/student/push-notifications/index';
 import { store as storePushSubscription } from '@/routes/student/push-notifications/subscriptions/index';
-import { logout } from '@/routes';
+import type { SharedData } from '@/types';
 import { Head, Link, router, usePage } from '@inertiajs/react';
 import { useEcho } from '@laravel/echo-react';
 import {
-    BarChart2,
     Award,
+    BarChart2,
     Bell,
     BookOpen,
     CalendarCheck,
@@ -38,7 +38,13 @@ import {
     MoreHorizontal,
     X,
 } from 'lucide-react';
-import { type ReactNode, useCallback, useEffect, useRef, useState } from 'react';
+import {
+    type ReactNode,
+    useCallback,
+    useEffect,
+    useRef,
+    useState,
+} from 'react';
 import { toast } from 'sonner';
 
 export interface StudentProfile {
@@ -352,7 +358,7 @@ export default function StudentShell({
         }
 
         navigator.serviceWorker
-            .register('/student/service-worker.js', { scope: '/student/' })
+            .register('/student/service-worker.js', { scope: '/' })
             .then(() => registerStudentPushSubscription())
             .catch(() => undefined);
     }, []);
@@ -419,7 +425,9 @@ export default function StudentShell({
                 <link
                     head-key="student-pwa-apple-touch-icon"
                     rel="apple-touch-icon"
-                    href={school.logo ?? school.favicon ?? '/apple-touch-icon.png'}
+                    href={
+                        school.logo ?? school.favicon ?? '/apple-touch-icon.png'
+                    }
                 />
             </Head>
             {profile.studentId ? (
@@ -475,7 +483,7 @@ export default function StudentShell({
                     <Link
                         href={notifications()}
                         aria-label="Open notifications"
-                        className={`student-icon-btn${activePage === 'notifications' ? ' active' : ''}`}
+                        className={`student-icon-btn${activePage === 'notifications' ? 'active' : ''}`}
                     >
                         <Bell size={16} />
                         {unreadNotifications > 0 && (
@@ -533,7 +541,9 @@ export default function StudentShell({
                         <MoreHorizontal
                             size={18}
                             color={
-                                MORE_ITEMS.some((item) => item.id === activePage)
+                                MORE_ITEMS.some(
+                                    (item) => item.id === activePage,
+                                )
                                     ? '#ffffff'
                                     : '#71809a'
                             }

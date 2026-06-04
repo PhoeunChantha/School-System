@@ -12,6 +12,8 @@ use Illuminate\Support\Facades\Mail;
 use Laravel\Fortify\Fortify;
 use Throwable;
 
+use function Illuminate\Support\defer;
+
 class SendLoginLockoutAlert
 {
     public function __construct(private readonly ConfigurableLoginRateLimiter $limiter) {}
@@ -40,19 +42,23 @@ class SendLoginLockoutAlert
             return;
         }
 
-        try {
-            Mail::to($email)->send(new LoginLockoutAlert([
-                'identifier' => $identifier,
-                'ip' => $ip,
-                'userAgent' => (string) $request->userAgent(),
-                'availableIn' => $availableIn,
-                'occurredAt' => now()->format('Y-m-d H:i:s'),
-            ]));
+        $details = [
+            'identifier' => $identifier,
+            'ip' => $ip,
+            'userAgent' => (string) $request->userAgent(),
+            'availableIn' => $availableIn,
+            'occurredAt' => now()->format('Y-m-d H:i:s'),
+        ];
 
-            Cache::put($cacheKey, true, max(1, $availableIn));
-        } catch (Throwable $exception) {
-            report($exception);
-        }
+        defer(function () use ($availableIn, $cacheKey, $details, $email): void {
+            try {
+                Mail::to($email)->send(new LoginLockoutAlert($details));
+
+                Cache::put($cacheKey, true, max(1, $availableIn));
+            } catch (Throwable $exception) {
+                report($exception);
+            }
+        })->always();
     }
 
     /**

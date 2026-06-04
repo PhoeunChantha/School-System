@@ -10,7 +10,7 @@ class StudentPortalPwaTest extends TestCase
 {
     use RefreshDatabase;
 
-    public function test_student_manifest_is_scoped_to_student_portal(): void
+    public function test_student_manifest_covers_login_and_student_portal(): void
     {
         SchoolSetting::factory()->create([
             'group' => 'school',
@@ -29,7 +29,7 @@ class StudentPortalPwaTest extends TestCase
             ->assertJsonPath('short_name', 'Configured English School')
             ->assertJsonPath('id', '/student/')
             ->assertJsonPath('start_url', '/student/dashboard')
-            ->assertJsonPath('scope', '/student/')
+            ->assertJsonPath('scope', '/')
             ->assertJsonPath('display', 'standalone')
             ->assertJsonPath('icons.0.src', asset('uploads/school/logo.png'))
             ->assertJsonPath('icons.0.sizes', 'any')
@@ -51,8 +51,8 @@ class StudentPortalPwaTest extends TestCase
         $this->get(route('student.service-worker'))
             ->assertOk()
             ->assertHeaderContains('Content-Type', 'text/javascript')
-            ->assertHeader('Service-Worker-Allowed', '/student/')
-            ->assertSee('/student/', false)
+            ->assertHeader('Service-Worker-Allowed', '/')
+            ->assertSee("url.pathname === '/login'", false)
             ->assertSee("url.pathname.startsWith('/admin')", false)
             ->assertSee("url.pathname.startsWith('/teacher')", false)
             ->assertSee("request.method !== 'GET'", false)
