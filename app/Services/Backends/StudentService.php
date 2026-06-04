@@ -518,6 +518,7 @@ class StudentService
         return [
             'id' => $student->id,
             'routeKey' => $student->routeKey(),
+            'code' => $student->code,
             'nameKh' => $student->name_kh,
             'nameEn' => $student->name_en,
             'photo' => $student->profile_photo ? asset($student->profile_photo) : null,

@@ -20,13 +20,14 @@ class AdminStudentCrudTest extends TestCase
     {
         $this->actingAs(User::factory()->create());
 
-        Student::factory()->create(['name_en' => 'Sokh Dara']);
+        Student::factory()->create(['code' => 'STU-1001', 'name_en' => 'Sokh Dara']);
 
         $this->get(route('admin.students'))
             ->assertOk()
             ->assertInertia(fn ($page) => $page
                 ->component('admin/students/index')
                 ->has('students', 1)
+                ->where('students.0.code', 'STU-1001')
                 ->where('students.0.nameEn', 'Sokh Dara'));
     }
 
