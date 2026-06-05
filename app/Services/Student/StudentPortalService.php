@@ -106,6 +106,23 @@ class StudentPortalService
         ];
     }
 
+    public function examDetailData(User $user, Exam $exam): array
+    {
+        $student = $this->findStudent($user);
+
+        abort_unless($student && $student->school_class_id === $exam->school_class_id, 404);
+
+        $result = ExamResult::query()
+            ->where('student_id', $student->id)
+            ->where('exam_id', $exam->id)
+            ->first(['score', 'max_score', 'status', 'note']);
+
+        return [
+            'profile' => $this->profile($user, $student),
+            'exam' => $this->examPayload($exam, $result),
+        ];
+    }
+
     public function examResultsData(User $user): array
     {
         $student = $this->findStudent($user);
@@ -692,21 +709,33 @@ class StudentPortalService
             ->where('school_class_id', $student->school_class_id)
             ->orderByDesc('exam_date')
             ->get(['id', 'title', 'subject', 'exam_date', 'duration_minutes', 'status'])
-            ->map(fn (Exam $e) => [
-                'id' => $e->id,
-                'title' => $e->title,
-                'subject' => $e->subject ?? '',
-                'date' => $e->exam_date?->format('Y-m-d') ?? '',
-                'duration' => $e->duration_minutes ?? 0,
-                'status' => $e->status,
-                'result' => isset($results[$e->id]) ? [
-                    'score' => (float) $results[$e->id]->score,
-                    'maxScore' => (float) $results[$e->id]->max_score,
-                    'status' => $results[$e->id]->status,
-                    'note' => $results[$e->id]->note ?? '',
-                ] : null,
-            ])
+            ->map(fn (Exam $e): array => $this->examPayload($e, $results[$e->id] ?? null))
             ->all();
+    }
+
+    private function examPayload(Exam $exam, ?ExamResult $result = null): array
+    {
+        $content = is_array($exam->content) ? $exam->content : [];
+
+        return [
+            'id' => $exam->id,
+            'routeKey' => $exam->routeKey(),
+            'title' => $exam->title,
+            'subject' => $exam->subject ?? '',
+            'academicYear' => $exam->academic_year ?? '',
+            'date' => $exam->exam_date?->format('Y-m-d') ?? '',
+            'duration' => $exam->duration_minutes ?? 0,
+            'status' => $exam->status,
+            'content' => (string) ($content['html'] ?? $content['text'] ?? ''),
+            'attachmentUrl' => filled($exam->attachment_path) ? asset((string) $exam->attachment_path) : '',
+            'attachmentName' => filled($exam->attachment_path) ? basename((string) $exam->attachment_path) : '',
+            'result' => $result ? [
+                'score' => (float) $result->score,
+                'maxScore' => (float) $result->max_score,
+                'status' => $result->status,
+                'note' => $result->note ?? '',
+            ] : null,
+        ];
     }
 
     private function allExamResults(?Student $student): array
