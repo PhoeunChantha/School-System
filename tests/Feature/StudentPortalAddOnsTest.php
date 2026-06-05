@@ -3,6 +3,9 @@
 namespace Tests\Feature;
 
 use App\Models\Certificate;
+use App\Models\Exam;
+use App\Models\ExamResult;
+use App\Models\SchoolClass;
 use App\Models\Student;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -18,6 +21,7 @@ class StudentPortalAddOnsTest extends TestCase
         Student::factory()->create(['user_id' => $user->id]);
 
         $pages = [
+            ['student.exams', 'student/exams/index'],
             ['student.exam-results', 'student/exam-results/index'],
             ['student.class-schedule', 'student/class-schedule/index'],
             ['student.learning-materials', 'student/learning-materials/index'],
@@ -55,5 +59,53 @@ class StudentPortalAddOnsTest extends TestCase
                 ->where('translations.student.en.content_text.Welcome back', 'Welcome back')
                 ->where('translations.student.kh.content_text.Welcome back', 'សូមស្វាគមន៍')
                 ->missing('stats.unpaidFees'));
+    }
+
+    public function test_student_can_view_exam_detail_for_own_class(): void
+    {
+        $user = User::factory()->create();
+        $student = Student::factory()->create(['user_id' => $user->id]);
+        $exam = Exam::factory()->create([
+            'school_class_id' => $student->school_class_id,
+            'title' => 'Monthly English Test',
+            'subject' => 'English',
+            'exam_date' => now()->subDay()->format('Y-m-d'),
+            'duration_minutes' => 60,
+            'content' => ['html' => '<p>Read all questions carefully.</p>'],
+        ]);
+
+        ExamResult::factory()
+            ->for($exam)
+            ->for($student)
+            ->create([
+                'score' => 85,
+                'max_score' => 100,
+                'status' => 'passed',
+                'note' => 'Strong result.',
+            ]);
+
+        $this->actingAs($user)
+            ->get(route('student.exams.show', $exam))
+            ->assertOk()
+            ->assertInertia(fn ($page) => $page
+                ->component('student/exams/show')
+                ->where('exam.title', 'Monthly English Test')
+                ->where('exam.routeKey', fn (string $routeKey): bool => filled($routeKey))
+                ->where('exam.subject', 'English')
+                ->where('exam.result.score', 85)
+                ->where('exam.result.status', 'passed'));
+    }
+
+    public function test_student_cannot_view_exam_detail_for_another_class(): void
+    {
+        $user = User::factory()->create();
+        Student::factory()->create(['user_id' => $user->id]);
+        $exam = Exam::factory()->create([
+            'school_class_id' => SchoolClass::factory(),
+        ]);
+
+        $this->actingAs($user)
+            ->get(route('student.exams.show', $exam))
+            ->assertNotFound();
     }
 }

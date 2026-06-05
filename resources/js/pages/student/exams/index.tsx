@@ -1,4 +1,6 @@
 import StudentShell, { type StudentProfile } from '@/pages/student/shell';
+import { show as examShow } from '@/routes/student/exams';
+import { Link } from '@inertiajs/react';
 import { Clock, FileText } from 'lucide-react';
 import { useState } from 'react';
 
@@ -11,6 +13,7 @@ interface ExamResult {
 
 interface Exam {
     id: number;
+    routeKey: string;
     title: string;
     subject: string;
     date: string;
@@ -173,7 +176,20 @@ export default function StudentExams({ profile, exams }: Props) {
                             : '#9ca3af';
 
                         return (
-                            <div key={exam.id} className="s-card s-card-pad">
+                            <Link
+                                key={exam.id}
+                                href={examShow(
+                                    exam.routeKey as unknown as number,
+                                )}
+                                className="s-card s-card-pad"
+                                style={{
+                                    color: 'inherit',
+                                    textDecoration: 'none',
+                                    transition:
+                                        'transform 0.16s ease, box-shadow 0.16s ease',
+                                }}
+                                aria-label={`Open ${exam.title} details`}
+                            >
                                 {/* Header row */}
                                 <div
                                     style={{
@@ -343,7 +359,7 @@ export default function StudentExams({ profile, exams }: Props) {
                                         </div>
                                     </div>
                                 )}
-                            </div>
+                            </Link>
                         );
                     })}
                 </div>

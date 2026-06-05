@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Student;
 
 use App\Http\Controllers\Controller;
+use App\Models\Exam;
 use App\Models\HomeworkAssignment;
 use App\Models\Notification;
 use App\Services\Student\StudentPortalService;
@@ -55,6 +56,11 @@ class StudentPortalController extends Controller
     public function exams(Request $request): Response
     {
         return Inertia::render('student/exams/index', $this->service->examsData($request->user()));
+    }
+
+    public function examShow(Request $request, Exam $exam): Response
+    {
+        return Inertia::render('student/exams/show', $this->service->examDetailData($request->user(), $exam));
     }
 
     public function examResults(Request $request): Response
