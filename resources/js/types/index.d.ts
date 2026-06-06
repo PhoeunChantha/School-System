@@ -35,6 +35,10 @@ export interface LoginSecuritySharedData {
     decaySeconds: number;
 }
 
+export interface ParentAccessSharedData {
+    enabled: boolean;
+}
+
 export interface SharedData {
     name: string;
     quote: { message: string; author: string };
@@ -42,6 +46,7 @@ export interface SharedData {
     sidebarOpen: boolean;
     school: SchoolSharedData;
     loginSecurity: LoginSecuritySharedData;
+    parentAccess: ParentAccessSharedData;
     notificationSound?: string | null;
     homeworkSubmissionAlerts?: {
         unreadCount: number;

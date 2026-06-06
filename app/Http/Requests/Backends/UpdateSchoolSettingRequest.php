@@ -4,6 +4,7 @@ namespace App\Http\Requests\Backends;
 
 use Illuminate\Contracts\Validation\ValidationRule;
 use Illuminate\Foundation\Http\FormRequest;
+use Illuminate\Validation\Validator;
 
 class UpdateSchoolSettingRequest extends FormRequest
 {
@@ -46,6 +47,24 @@ class UpdateSchoolSettingRequest extends FormRequest
             ];
         }
 
+        if ($this->route('group') === 'login') {
+            return [
+                'value' => ['required', 'array'],
+                'value.maxAttempts' => ['required', 'integer', 'min:1', 'max:20'],
+                'value.decaySeconds' => ['required', 'integer', 'min:1', 'max:3600'],
+                'value.alertEnabled' => ['required', 'boolean'],
+                'value.alertEmail' => ['nullable', 'email', 'max:255'],
+                'value.parentAccessEnabled' => ['required', 'boolean'],
+                'value.parentAccessExpiresMinutes' => ['required', 'integer', 'min:1', 'max:60'],
+                'value.parentSmsProvider' => ['required', 'string', 'in:plasgate'],
+                'value.plasgateEndpoint' => ['required', 'url', 'max:255'],
+                'value.plasgateSecret' => ['nullable', 'string', 'max:255'],
+                'value.plasgatePrivate' => ['nullable', 'string', 'max:255'],
+                'value.plasgateSender' => ['nullable', 'string', 'max:11'],
+                'value.parentSmsTemplate' => ['required', 'string', 'max:320'],
+            ];
+        }
+
         return [
             'value' => ['required', 'array'],
         ];
@@ -58,6 +77,29 @@ class UpdateSchoolSettingRequest extends FormRequest
     {
         return [
             'value.databaseName.regex' => 'The database name may only contain letters, numbers, dots, underscores, and hyphens.',
+        ];
+    }
+
+    /**
+     * @return array<int, callable(Validator): void>
+     */
+    public function after(): array
+    {
+        if ($this->route('group') !== 'login') {
+            return [];
+        }
+
+        return [
+            function (Validator $validator): void {
+                $endpoint = trim((string) $this->input('value.plasgateEndpoint'));
+
+                if ($endpoint !== 'https://cloudapi.plasgate.com/rest/send') {
+                    $validator->errors()->add(
+                        'value.plasgateEndpoint',
+                        'PlasGate API Keys must use https://cloudapi.plasgate.com/rest/send.',
+                    );
+                }
+            },
         ];
     }
 }

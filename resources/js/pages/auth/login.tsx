@@ -6,13 +6,14 @@ import { store } from '@/routes/login';
 import { request } from '@/routes/password';
 import type { SharedData } from '@/types';
 
-import { Form, Head, usePage } from '@inertiajs/react';
-import { ArrowRight, Building2, Eye, EyeOff } from 'lucide-react';
+import { Form, Head, useForm, usePage } from '@inertiajs/react';
+import { ArrowRight, Building2, Eye, EyeOff, Phone, X } from 'lucide-react';
 import {
     useEffect,
     useRef,
     useState,
     type Dispatch,
+    type FormEvent,
     type SetStateAction,
 } from 'react';
 
@@ -26,8 +27,10 @@ export default function Login({ status, canResetPassword }: LoginProps) {
     const { props } = usePage<SharedData>();
     const school = props.school;
     const loginSecurity = props.loginSecurity;
+    const parentAccess = props.parentAccess;
     const hasBg = !!school?.loginBg;
     const [lockoutSeconds, setLockoutSeconds] = useState(0);
+    const [parentModalOpen, setParentModalOpen] = useState(false);
 
     useEffect(() => {
         if (!('serviceWorker' in navigator)) {
@@ -234,6 +237,36 @@ export default function Login({ status, canResetPassword }: LoginProps) {
                     )}
                 </Form>
 
+                {parentAccess?.enabled && (
+                    <button
+                        type="button"
+                        onClick={() => setParentModalOpen(true)}
+                        style={{
+                            width: '100%',
+                            marginTop: 14,
+                            padding: '12px 14px',
+                            borderRadius: 14,
+                            border: hasBg
+                                ? '1px solid rgba(255,255,255,0.32)'
+                                : '1px solid #dbeafe',
+                            background: hasBg
+                                ? 'rgba(255,255,255,0.13)'
+                                : '#eff6ff',
+                            color: hasBg ? 'white' : '#1d4ed8',
+                            fontSize: 14,
+                            fontWeight: 900,
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'center',
+                            gap: 8,
+                            cursor: 'pointer',
+                        }}
+                    >
+                        <Phone size={16} />
+                        Parent Portal
+                    </button>
+                )}
+
                 {/* Footer */}
                 <div
                     style={{
@@ -255,6 +288,225 @@ export default function Login({ status, canResetPassword }: LoginProps) {
                         Cambodia
                     </div>
                 </div>
+            </div>
+
+            {parentAccess?.enabled && (
+                <ParentAccessModal
+                    hasBg={hasBg}
+                    open={parentModalOpen}
+                    onClose={() => setParentModalOpen(false)}
+                />
+            )}
+        </div>
+    );
+}
+
+function ParentAccessModal({
+    hasBg,
+    open,
+    onClose,
+}: {
+    hasBg: boolean;
+    open: boolean;
+    onClose: () => void;
+}) {
+    const { data, setData, post, processing, errors, recentlySuccessful, reset } =
+        useForm({
+            phone: '',
+        });
+
+    if (!open) {
+        return null;
+    }
+
+    const submit = (event: FormEvent<HTMLFormElement>) => {
+        event.preventDefault();
+        post('/parent/access-link', {
+            preserveScroll: true,
+            onSuccess: () => reset('phone'),
+        });
+    };
+
+    return (
+        <div
+            style={{
+                position: 'fixed',
+                inset: 0,
+                zIndex: 50,
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                padding: 20,
+                background: 'rgba(15,23,42,0.46)',
+                backdropFilter: 'blur(10px)',
+            }}
+            role="dialog"
+            aria-modal="true"
+        >
+            <div
+                style={{
+                    width: '100%',
+                    maxWidth: 420,
+                    borderRadius: 24,
+                    background: 'white',
+                    boxShadow: '0 26px 70px rgba(15,23,42,0.24)',
+                    overflow: 'hidden',
+                }}
+            >
+                <div
+                    style={{
+                        padding: 20,
+                        borderBottom: '1px solid #e2e8f0',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'space-between',
+                        gap: 16,
+                    }}
+                >
+                    <div>
+                        <div
+                            style={{
+                                fontSize: 18,
+                                fontWeight: 900,
+                                color: '#0f172a',
+                            }}
+                        >
+                            Parent Portal Access
+                        </div>
+                        <div
+                            style={{
+                                marginTop: 4,
+                                fontSize: 13,
+                                fontWeight: 700,
+                                color: '#64748b',
+                            }}
+                        >
+                            Enter the phone number saved in student profile.
+                        </div>
+                    </div>
+                    <button
+                        type="button"
+                        onClick={onClose}
+                        aria-label="Close parent access"
+                        style={{
+                            width: 36,
+                            height: 36,
+                            borderRadius: 999,
+                            border: '1px solid #e2e8f0',
+                            background: '#f8fafc',
+                            color: '#475569',
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'center',
+                            cursor: 'pointer',
+                        }}
+                    >
+                        <X size={18} />
+                    </button>
+                </div>
+
+                <form
+                    onSubmit={submit}
+                    style={{
+                        padding: 20,
+                        display: 'flex',
+                        flexDirection: 'column',
+                        gap: 14,
+                    }}
+                >
+                    {recentlySuccessful && (
+                        <div
+                            style={{
+                                borderRadius: 14,
+                                border: '1px solid #bbf7d0',
+                                background: '#f0fdf4',
+                                color: '#15803d',
+                                fontSize: 13,
+                                fontWeight: 800,
+                                padding: '11px 13px',
+                            }}
+                        >
+                            If this phone exists, we sent a parent access link.
+                        </div>
+                    )}
+
+                    <label
+                        htmlFor="parent-phone"
+                        style={{
+                            fontSize: 12,
+                            fontWeight: 900,
+                            color: '#64748b',
+                        }}
+                    >
+                        Parent Phone
+                    </label>
+                    <Input
+                        id="parent-phone"
+                        value={data.phone}
+                        onChange={(event) => setData('phone', event.target.value)}
+                        placeholder="012 345 678"
+                        autoFocus
+                        inputMode="tel"
+                        autoComplete="tel"
+                        style={{
+                            minHeight: 48,
+                            borderRadius: 14,
+                            border: '1.5px solid #e2e8f0',
+                            background: '#f8fafc',
+                            padding: '11px 14px',
+                            fontSize: 15,
+                            color: '#0f172a',
+                        }}
+                    />
+                    {errors.phone && (
+                        <div
+                            style={{
+                                color: '#dc2626',
+                                fontSize: 12,
+                                fontWeight: 800,
+                            }}
+                        >
+                            {errors.phone}
+                        </div>
+                    )}
+
+                    <button
+                        type="submit"
+                        disabled={processing}
+                        style={{
+                            minHeight: 48,
+                            border: 'none',
+                            borderRadius: 16,
+                            background: processing
+                                ? '#cbd5e1'
+                                : 'linear-gradient(135deg,#0f766e,#2563eb)',
+                            color: 'white',
+                            fontSize: 15,
+                            fontWeight: 900,
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'center',
+                            gap: 8,
+                            cursor: processing ? 'not-allowed' : 'pointer',
+                        }}
+                    >
+                        {processing && <Spinner />}
+                        Send SMS Link
+                    </button>
+
+                    <p
+                        style={{
+                            margin: 0,
+                            color: hasBg ? '#64748b' : '#64748b',
+                            fontSize: 12,
+                            lineHeight: 1.55,
+                            fontWeight: 700,
+                        }}
+                    >
+                        The SMS link is private and expires automatically. Do not
+                        share it with anyone.
+                    </p>
+                </form>
             </div>
         </div>
     );

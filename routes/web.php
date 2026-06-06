@@ -22,6 +22,9 @@ use App\Http\Controllers\Backends\StudentController;
 use App\Http\Controllers\Backends\TeacherController;
 use App\Http\Controllers\Backends\TeacherGradeController;
 use App\Http\Controllers\Backends\UserController;
+use App\Http\Controllers\Parent\ParentAccessController;
+use App\Http\Controllers\Parent\ParentPortalController;
+use App\Http\Controllers\Parent\ParentPwaController;
 use App\Http\Controllers\Student\StudentPortalController;
 use App\Http\Controllers\Student\StudentPushSubscriptionController;
 use App\Http\Controllers\Student\StudentPwaController;
@@ -284,6 +287,21 @@ Route::middleware(['auth', 'verified'])->prefix('admin')->name('admin.')->group(
         Route::post('/upload-image', [SchoolSettingController::class, 'uploadImage'])->can('update', SchoolSetting::class)->name('settings.upload-image');
         Route::post('/search-console-file', [SchoolSettingController::class, 'uploadSearchConsoleFile'])->can('update', SchoolSetting::class)->name('settings.search-console-file');
     });
+});
+
+// Parent Portal PWA
+Route::prefix('parent')->name('parent.')->controller(ParentPwaController::class)->group(function () {
+    Route::get('/manifest.webmanifest', 'manifest')->name('manifest');
+    Route::get('/service-worker.js', 'serviceWorker')->name('service-worker');
+    Route::get('/offline', 'offline')->name('offline');
+});
+
+// Parent Portal
+Route::prefix('parent')->name('parent.')->group(function () {
+    Route::redirect('/', '/parent/dashboard')->name('home');
+    Route::post('/access-link', [ParentAccessController::class, 'sendLink'])->name('access-link');
+    Route::get('/access/{token}', [ParentAccessController::class, 'verify'])->name('access.verify');
+    Route::get('/dashboard', [ParentPortalController::class, 'dashboard'])->name('dashboard');
 });
 
 // Student Portal PWA

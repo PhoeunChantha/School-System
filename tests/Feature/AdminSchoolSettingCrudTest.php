@@ -168,6 +168,14 @@ class AdminSchoolSettingCrudTest extends TestCase
                 'decaySeconds' => '15',
                 'alertEnabled' => true,
                 'alertEmail' => 'security@example.test',
+                'parentAccessEnabled' => true,
+                'parentAccessExpiresMinutes' => '10',
+                'parentSmsProvider' => 'plasgate',
+                'plasgateEndpoint' => 'https://cloudapi.plasgate.com/rest/send',
+                'plasgateSecret' => 'secret-key',
+                'plasgatePrivate' => 'private-key',
+                'plasgateSender' => 'Frania',
+                'parentSmsTemplate' => 'Parent link: {link}. Expires in {minutes} minutes.',
             ],
         ];
 
@@ -183,6 +191,90 @@ class AdminSchoolSettingCrudTest extends TestCase
         $this->assertSame('15', $setting->value['decaySeconds']);
         $this->assertTrue($setting->value['alertEnabled']);
         $this->assertSame('security@example.test', $setting->value['alertEmail']);
+        $this->assertSame('https://cloudapi.plasgate.com/rest/send', $setting->value['plasgateEndpoint']);
+        $this->assertSame('secret-key', $setting->value['plasgateSecret']);
+    }
+
+    public function test_admin_can_save_plasgate_secret_that_looks_like_a_hash(): void
+    {
+        $this->actingAs(User::factory()->create());
+
+        $payload = [
+            'value' => [
+                'maxAttempts' => '5',
+                'decaySeconds' => '15',
+                'alertEnabled' => true,
+                'alertEmail' => 'security@example.test',
+                'parentAccessEnabled' => true,
+                'parentAccessExpiresMinutes' => '10',
+                'parentSmsProvider' => 'plasgate',
+                'plasgateEndpoint' => 'https://cloudapi.plasgate.com/rest/send',
+                'plasgateSecret' => '$5$rounds=535000$plasgate-secret',
+                'plasgatePrivate' => 'private-key',
+                'plasgateSender' => 'Frania',
+                'parentSmsTemplate' => 'Parent link: {link}. Expires in {minutes} minutes.',
+            ],
+        ];
+
+        $this->put(route('admin.settings.update', 'login'), $payload)
+            ->assertRedirect(route('admin.settings'));
+
+        $setting = SchoolSetting::query()
+            ->where('group', 'login')
+            ->where('key', 'security')
+            ->firstOrFail();
+
+        $this->assertSame('$5$rounds=535000$plasgate-secret', $setting->value['plasgateSecret']);
+    }
+
+    public function test_admin_cannot_save_login_settings_with_plasgate_http_api_endpoint(): void
+    {
+        $this->actingAs(User::factory()->create());
+
+        $payload = [
+            'value' => [
+                'maxAttempts' => '5',
+                'decaySeconds' => '15',
+                'alertEnabled' => true,
+                'alertEmail' => 'security@example.test',
+                'parentAccessEnabled' => true,
+                'parentAccessExpiresMinutes' => '10',
+                'parentSmsProvider' => 'plasgate',
+                'plasgateEndpoint' => 'https://cloudapi.plasgate.com/api/send',
+                'plasgateSecret' => '$5$rounds=535000$plasgate-secret',
+                'plasgatePrivate' => 'private-key',
+                'plasgateSender' => 'Frania',
+                'parentSmsTemplate' => 'Parent link: {link}. Expires in {minutes} minutes.',
+            ],
+        ];
+
+        $this->put(route('admin.settings.update', 'login'), $payload)
+            ->assertInvalid(['value.plasgateEndpoint']);
+    }
+
+    public function test_admin_cannot_save_login_settings_with_long_plasgate_sender_id(): void
+    {
+        $this->actingAs(User::factory()->create());
+
+        $payload = [
+            'value' => [
+                'maxAttempts' => '5',
+                'decaySeconds' => '15',
+                'alertEnabled' => true,
+                'alertEmail' => 'security@example.test',
+                'parentAccessEnabled' => true,
+                'parentAccessExpiresMinutes' => '10',
+                'parentSmsProvider' => 'plasgate',
+                'plasgateEndpoint' => 'https://cloudapi.plasgate.com/rest/send',
+                'plasgateSecret' => '$5$rounds=535000$plasgate-secret',
+                'plasgatePrivate' => 'private-key',
+                'plasgateSender' => 'Frania Foundation School',
+                'parentSmsTemplate' => 'Parent link: {link}. Expires in {minutes} minutes.',
+            ],
+        ];
+
+        $this->put(route('admin.settings.update', 'login'), $payload)
+            ->assertInvalid(['value.plasgateSender']);
     }
 
     public function test_mail_setting_updates_environment_file(): void
