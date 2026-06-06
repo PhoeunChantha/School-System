@@ -90,12 +90,12 @@ class HandleInertiaRequests extends Middleware
 
                 return filled($path) ? asset((string) $path) : null;
             },
-            'homeworkSubmissionAlerts' => function () use ($request, $user): array {
+            'homeworkSubmissionAlerts' => function () use ($user): array {
                 if (! $user || ! $user->can('view', HomeworkSubmission::class)) {
-                    Log::info('Homework submission alerts shared without permission', [
-                        'user_id' => $user?->id,
-                        'partial_data' => $request->header('X-Inertia-Partial-Data'),
-                    ]);
+                    // Log::info('Homework submission alerts shared without permission', [
+                    //     'user_id' => $user?->id,
+                    //     'partial_data' => $request->header('X-Inertia-Partial-Data'),
+                    // ]);
 
                     return ['unreadCount' => 0, 'latest' => null];
                 }
@@ -104,14 +104,14 @@ class HandleInertiaRequests extends Middleware
                 $unreadCount = $alerts->unreadCount($user);
                 $latest = $alerts->latestUnread($user);
 
-                Log::info('Homework submission alerts shared', [
-                    'user_id' => $user->id,
-                    'unread_count' => $unreadCount,
-                    'latest_submission_id' => $latest['id'] ?? null,
-                    'partial_data' => $request->header('X-Inertia-Partial-Data'),
-                    'page_component' => $request->header('X-Inertia-Partial-Component'),
-                    'url' => $request->path(),
-                ]);
+                // Log::info('Homework submission alerts shared', [
+                //     'user_id' => $user->id,
+                //     'unread_count' => $unreadCount,
+                //     'latest_submission_id' => $latest['id'] ?? null,
+                //     'partial_data' => $request->header('X-Inertia-Partial-Data'),
+                //     'page_component' => $request->header('X-Inertia-Partial-Component'),
+                //     'url' => $request->path(),
+                // ]);
 
                 return [
                     'unreadCount' => $unreadCount,

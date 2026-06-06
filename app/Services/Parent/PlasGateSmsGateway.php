@@ -31,9 +31,19 @@ class PlasGateSmsGateway
             'private_key_length' => strlen($settings['plasgatePrivate']),
         ]);
 
+        $options = [];
+
+        if (defined('CURLOPT_IPRESOLVE') && defined('CURL_IPRESOLVE_V4')) {
+            $options['curl'] = [
+                CURLOPT_IPRESOLVE => CURL_IPRESOLVE_V4,
+            ];
+        }
+
         $response = Http::withHeaders([
+            'Accept' => 'application/json',
             'X-Secret' => $settings['plasgateSecret'],
         ])
+            ->withOptions($options)
             ->asJson()
             ->timeout(15)
             ->post($endpoint, [
