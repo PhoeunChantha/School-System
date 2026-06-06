@@ -1,4 +1,10 @@
 import type { SharedData } from '@/types';
+import {
+    attendance,
+    dashboard,
+    grades,
+    homework,
+} from '@/routes/parent';
 import { Head, Link, usePage, type InertiaLinkProps } from '@inertiajs/react';
 import {
     BarChart3,
@@ -6,7 +12,6 @@ import {
     BookOpenCheck,
     CalendarCheck2,
     ChevronRight,
-    CreditCard,
     GraduationCap,
     ShieldCheck,
     Sparkles,
@@ -45,13 +50,6 @@ interface Homework {
     status: string;
 }
 
-interface Fee {
-    month: string;
-    amount: number;
-    paid: number;
-    status: string;
-}
-
 interface Exam {
     title: string;
     subject: string;
@@ -72,7 +70,6 @@ interface Props {
     stats: Stats;
     recentGrades: Grade[];
     recentHomework: Homework[];
-    recentFees: Fee[];
     upcomingExams: Exam[];
 }
 
@@ -105,10 +102,6 @@ function formatDate(value: string): string {
         month: 'short',
         day: 'numeric',
     });
-}
-
-function formatCurrency(value: number): string {
-    return `$${value.toFixed(2)}`;
 }
 
 function daysUntil(value: string): string {
@@ -157,10 +150,6 @@ function latestPendingHomework(homeworkItems: Homework[]): Homework | undefined 
     return homeworkItems.find((item) => !['submitted', 'graded'].includes(item.status));
 }
 
-function latestUnpaidFee(feesItems: Fee[]): Fee | undefined {
-    return feesItems.find((fee) => fee.status !== 'paid');
-}
-
 function childContext(profile: ParentProfile): string {
     return [profile.level, profile.className]
         .filter(Boolean)
@@ -185,34 +174,26 @@ export default function ParentDashboard({
     stats,
     recentGrades,
     recentHomework,
-    recentFees,
     upcomingExams,
 }: Props) {
     const { school } = usePage<SharedData>().props;
     const pendingHomework = latestPendingHomework(recentHomework);
-    const unpaidFee = latestUnpaidFee(recentFees);
     const upcomingExam = upcomingExams[0];
     const latestGrade = recentGrades[0];
     const childMeta = childContext(profile);
     const notificationCount = profile.unreadNotifications ?? 0;
-    const parentDashboardHref = '/parent/dashboard';
+    const parentDashboardHref = dashboard();
+    const parentAttendanceHref = attendance();
+    const parentGradesHref = grades();
+    const parentHomeworkHref = homework();
     const urgentItems = [
         pendingHomework
             ? {
                   label: 'Homework',
                   value: pendingHomework.title,
                   meta: `${daysUntil(pendingHomework.due)} / ${pendingHomework.points} pts`,
-                  href: parentDashboardHref,
+                  href: parentHomeworkHref,
                   tone: 'from-amber-50 to-orange-50 text-amber-700',
-              }
-            : null,
-        unpaidFee
-            ? {
-                  label: 'Payment',
-                  value: unpaidFee.month,
-                  meta: `${formatCurrency(Math.max(unpaidFee.amount - unpaidFee.paid, 0))} balance`,
-                  href: parentDashboardHref,
-                  tone: 'from-rose-50 to-pink-50 text-rose-700',
               }
             : null,
         upcomingExam
@@ -325,9 +306,9 @@ export default function ParentDashboard({
                         </div>
 
                         <div className="mt-5 grid grid-cols-3 gap-3">
-                            <QuickAction href={parentDashboardHref} icon={CalendarCheck2} label="Attendance" />
-                            <QuickAction href={parentDashboardHref} icon={BarChart3} label="Grades" />
-                            <QuickAction href={parentDashboardHref} icon={BookOpenCheck} label="Homework" />
+                            <QuickAction href={parentAttendanceHref} icon={CalendarCheck2} label="Attendance" />
+                            <QuickAction href={parentGradesHref} icon={BarChart3} label="Grades" />
+                            <QuickAction href={parentHomeworkHref} icon={BookOpenCheck} label="Homework" />
                         </div>
 
                         <SectionTitle title="Needs Attention" action={urgentItems.length ? `${urgentItems.length} open` : 'Clear'} />
@@ -359,7 +340,7 @@ export default function ParentDashboard({
                             </div>
                         ) : (
                             <div className="rounded-[24px] bg-white p-4 text-sm font-bold text-[#64736e] ring-1 ring-[#e4ebe6]">
-                                No urgent homework, payment, or exam items.
+                                No urgent homework or exam items.
                             </div>
                         )}
 
@@ -407,36 +388,6 @@ export default function ParentDashboard({
                             )}
                         </div>
 
-                        <SectionTitle title="Fees" action={unpaidFee ? 'Balance due' : 'Paid'} />
-                        <div className="rounded-[28px] bg-white p-4 shadow-[0_16px_38px_rgba(16,32,28,0.07)] ring-1 ring-[#e4ebe6]">
-                            {recentFees.length > 0 ? (
-                                <div className="flex items-center justify-between gap-4">
-                                    <div className="flex min-w-0 items-center gap-3">
-                                        <div className="grid h-12 w-12 shrink-0 place-items-center rounded-2xl bg-[#eef7f4] text-[#0e9f7c]">
-                                            <CreditCard size={20} />
-                                        </div>
-                                        <div className="min-w-0">
-                                            <p className="truncate text-sm font-black">
-                                                {recentFees[0].month}
-                                            </p>
-                                            <p className="text-xs font-bold text-[#7b8c86]">
-                                                Paid {formatCurrency(recentFees[0].paid)}
-                                            </p>
-                                        </div>
-                                    </div>
-                                    <div className="text-right">
-                                        <p className="text-lg font-black">
-                                            {formatCurrency(Math.max(recentFees[0].amount - recentFees[0].paid, 0))}
-                                        </p>
-                                        <p className="text-[11px] font-black text-[#7b8c86] uppercase">
-                                            Balance
-                                        </p>
-                                    </div>
-                                </div>
-                            ) : (
-                                <EmptyLine icon={CreditCard} text="No fee records available." />
-                            )}
-                        </div>
                     </section>
                 </div>
             </main>

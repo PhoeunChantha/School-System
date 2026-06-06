@@ -302,6 +302,9 @@ Route::prefix('parent')->name('parent.')->group(function () {
     Route::post('/access-link', [ParentAccessController::class, 'sendLink'])->name('access-link');
     Route::get('/access/{token}', [ParentAccessController::class, 'verify'])->name('access.verify');
     Route::get('/dashboard', [ParentPortalController::class, 'dashboard'])->name('dashboard');
+    Route::get('/attendance', [ParentPortalController::class, 'attendance'])->name('attendance');
+    Route::get('/grades', [ParentPortalController::class, 'grades'])->name('grades');
+    Route::get('/homework', [ParentPortalController::class, 'homework'])->name('homework');
 });
 
 // Student Portal PWA
