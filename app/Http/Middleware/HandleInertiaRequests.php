@@ -5,6 +5,7 @@ namespace App\Http\Middleware;
 use App\Models\HomeworkSubmission;
 use App\Models\SchoolSetting;
 use App\Support\HomeworkSubmissionAlerts;
+use App\Support\ParentAccessSettings;
 use App\Support\SchoolProfile;
 use Illuminate\Foundation\Inspiring;
 use Illuminate\Http\Request;
@@ -76,6 +77,9 @@ class HandleInertiaRequests extends Middleware
                     'decaySeconds' => max(1, min(3600, (int) Arr::get($value, 'decaySeconds', 15))),
                 ];
             },
+            'parentAccess' => fn (): array => [
+                'enabled' => app(ParentAccessSettings::class)->enabled(),
+            ],
             'notificationSound' => function (): ?string {
                 $value = SchoolSetting::query()
                     ->where('group', 'notifications')

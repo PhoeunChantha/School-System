@@ -123,6 +123,14 @@ interface LoginSecuritySettings {
     decaySeconds: string;
     alertEnabled: boolean;
     alertEmail: string;
+    parentAccessEnabled: boolean;
+    parentAccessExpiresMinutes: string;
+    parentSmsProvider: string;
+    plasgateEndpoint: string;
+    plasgateSecret: string;
+    plasgatePrivate: string;
+    plasgateSender: string;
+    parentSmsTemplate: string;
 }
 
 interface MailSettings {
@@ -246,6 +254,7 @@ const SIDEBAR_ITEMS: {
 const LOCKED_SIDEBAR_ITEMS = new Set(['dashboard']);
 const inputClass =
     'min-h-12 w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm font-bold text-slate-900 outline-none transition placeholder:text-slate-400 focus:border-blue-400 focus:ring-2 focus:ring-blue-500/15 dark:border-slate-700 dark:bg-slate-950 dark:text-slate-100';
+type SettingsErrors = Record<string, string>;
 
 export default function SettingsPage({
     settings,
@@ -305,6 +314,7 @@ export default function SettingsPage({
         settings.searchConsole.verificationUrl,
     );
     const [savingGroup, setSavingGroup] = useState<SettingsTab | null>(null);
+    const [settingsErrors, setSettingsErrors] = useState<SettingsErrors>({});
     const [hiddenItems, setHiddenItems] = useState<Set<string>>(() => {
         try {
             const stored = window.localStorage.getItem('admin-sidebar-hidden');
@@ -373,12 +383,23 @@ export default function SettingsPage({
 
     const saveGroup = (group: SettingsTab, value: object) => {
         setSavingGroup(group);
+        setSettingsErrors({});
         router.put(
             update.url(group),
             { value: value as unknown as string },
             {
                 preserveScroll: true,
-                onSuccess: () => toast.success('Settings saved.'),
+                onSuccess: () => {
+                    setSettingsErrors({});
+                    toast.success('Settings saved.');
+                },
+                onError: (errors) => {
+                    setSettingsErrors(errors);
+                    toast.error(
+                        Object.values(errors)[0] ??
+                            'Unable to save settings. Please check the fields.',
+                    );
+                },
                 onFinish: () => setSavingGroup(null),
             },
         );
@@ -2408,7 +2429,10 @@ export default function SettingsPage({
                                 saving={savingGroup === 'login'}
                             >
                                 <div className="grid gap-3 md:grid-cols-2">
-                                    <Field label="Failed Attempts Before Lockout">
+                                    <Field
+                                        label="Failed Attempts Before Lockout"
+                                        error={settingsErrors['value.maxAttempts']}
+                                    >
                                         <input
                                             className={inputClass}
                                             type="number"
@@ -2424,7 +2448,10 @@ export default function SettingsPage({
                                             }
                                         />
                                     </Field>
-                                    <Field label="Lockout Seconds">
+                                    <Field
+                                        label="Lockout Seconds"
+                                        error={settingsErrors['value.decaySeconds']}
+                                    >
                                         <input
                                             className={inputClass}
                                             type="number"
@@ -2440,7 +2467,11 @@ export default function SettingsPage({
                                             }
                                         />
                                     </Field>
-                                    <Field label="Alert Email" wide>
+                                    <Field
+                                        label="Alert Email"
+                                        wide
+                                        error={settingsErrors['value.alertEmail']}
+                                    >
                                         <input
                                             className={inputClass}
                                             type="email"
@@ -2489,6 +2520,215 @@ export default function SettingsPage({
                                             </button>
                                         </div>
                                     </div>
+                                    <div className="md:col-span-2">
+                                        <div className="flex items-center justify-between gap-3 rounded-2xl bg-slate-50 p-4 dark:bg-slate-950">
+                                            <div>
+                                                <div className="text-sm font-black text-slate-900 dark:text-slate-50">
+                                                    Parent Portal SMS Access
+                                                </div>
+                                                <div className="text-xs font-bold text-slate-400">
+                                                    Shows the parent button on
+                                                    login and sends PlasGate SMS
+                                                    access links.
+                                                </div>
+                                            </div>
+                                            <button
+                                                type="button"
+                                                onClick={() =>
+                                                    setLoginSecurity(
+                                                        (current) => ({
+                                                            ...current,
+                                                            parentAccessEnabled:
+                                                                !current.parentAccessEnabled,
+                                                        }),
+                                                    )
+                                                }
+                                                style={toggleStyle(
+                                                    loginSecurity.parentAccessEnabled,
+                                                )}
+                                            >
+                                                <span
+                                                    style={toggleKnobStyle(
+                                                        loginSecurity.parentAccessEnabled,
+                                                    )}
+                                                />
+                                            </button>
+                                        </div>
+                                    </div>
+                                    <Field
+                                        label="Access Link Expiry Minutes"
+                                        error={
+                                            settingsErrors[
+                                                'value.parentAccessExpiresMinutes'
+                                            ]
+                                        }
+                                    >
+                                        <input
+                                            className={inputClass}
+                                            type="number"
+                                            min="1"
+                                            max="60"
+                                            value={
+                                                loginSecurity.parentAccessExpiresMinutes
+                                            }
+                                            onChange={(event) =>
+                                                setLoginSecurity((current) => ({
+                                                    ...current,
+                                                    parentAccessExpiresMinutes:
+                                                        event.target.value,
+                                                }))
+                                            }
+                                        />
+                                    </Field>
+                                    <Field
+                                        label="SMS Provider"
+                                        error={
+                                            settingsErrors[
+                                                'value.parentSmsProvider'
+                                            ]
+                                        }
+                                    >
+                                        <select
+                                            className={inputClass}
+                                            value={
+                                                loginSecurity.parentSmsProvider
+                                            }
+                                            onChange={(event) =>
+                                                setLoginSecurity((current) => ({
+                                                    ...current,
+                                                    parentSmsProvider:
+                                                        event.target.value,
+                                                }))
+                                            }
+                                        >
+                                            <option value="plasgate">
+                                                PlasGate
+                                            </option>
+                                        </select>
+                                    </Field>
+                                    <Field
+                                        label="PlasGate Endpoint"
+                                        wide
+                                        error={
+                                            settingsErrors[
+                                                'value.plasgateEndpoint'
+                                            ]
+                                        }
+                                    >
+                                        <input
+                                            className={inputClass}
+                                            value={
+                                                loginSecurity.plasgateEndpoint
+                                            }
+                                            placeholder="https://cloudapi.plasgate.com/rest/send"
+                                            autoComplete="off"
+                                            onChange={(event) =>
+                                                setLoginSecurity((current) => ({
+                                                    ...current,
+                                                    plasgateEndpoint:
+                                                        event.target.value,
+                                                }))
+                                            }
+                                        />
+                                    </Field>
+                                    <Field
+                                        label="PlasGate Secret"
+                                        error={
+                                            settingsErrors[
+                                                'value.plasgateSecret'
+                                            ]
+                                        }
+                                    >
+                                        <input
+                                            className={inputClass}
+                                            autoComplete="new-password"
+                                            data-1p-ignore="true"
+                                            data-lpignore="true"
+                                            value={loginSecurity.plasgateSecret}
+                                            placeholder="Secret key"
+                                            onChange={(event) =>
+                                                setLoginSecurity((current) => ({
+                                                    ...current,
+                                                    plasgateSecret:
+                                                        event.target.value,
+                                                }))
+                                            }
+                                        />
+                                    </Field>
+                                    <Field
+                                        label="PlasGate Private"
+                                        error={
+                                            settingsErrors[
+                                                'value.plasgatePrivate'
+                                            ]
+                                        }
+                                    >
+                                        <input
+                                            className={inputClass}
+                                            type="password"
+                                            autoComplete="new-password"
+                                            data-1p-ignore="true"
+                                            data-lpignore="true"
+                                            value={loginSecurity.plasgatePrivate}
+                                            placeholder="Private key"
+                                            onChange={(event) =>
+                                                setLoginSecurity((current) => ({
+                                                    ...current,
+                                                    plasgatePrivate:
+                                                        event.target.value,
+                                                }))
+                                            }
+                                        />
+                                    </Field>
+                                    <Field
+                                        label="PlasGate Sender"
+                                        error={
+                                            settingsErrors[
+                                                'value.plasgateSender'
+                                            ]
+                                        }
+                                    >
+                                        <input
+                                            className={inputClass}
+                                            value={loginSecurity.plasgateSender}
+                                            placeholder="SMS Info"
+                                            onChange={(event) =>
+                                                setLoginSecurity((current) => ({
+                                                    ...current,
+                                                    plasgateSender:
+                                                        event.target.value,
+                                                }))
+                                            }
+                                        />
+                                    </Field>
+                                    <Field
+                                        label="SMS Text Template"
+                                        wide
+                                        error={
+                                            settingsErrors[
+                                                'value.parentSmsTemplate'
+                                            ]
+                                        }
+                                    >
+                                        <textarea
+                                            className={inputClass}
+                                            rows={3}
+                                            value={
+                                                loginSecurity.parentSmsTemplate
+                                            }
+                                            onChange={(event) =>
+                                                setLoginSecurity((current) => ({
+                                                    ...current,
+                                                    parentSmsTemplate:
+                                                        event.target.value,
+                                                }))
+                                            }
+                                        />
+                                        <p className="mt-2 text-xs font-bold text-slate-400">
+                                            Use {'{link}'} and {'{minutes}'} in
+                                            the SMS text.
+                                        </p>
+                                    </Field>
                                 </div>
                             </SettingsPanel>
                         )}
@@ -2639,10 +2879,12 @@ function Field({
     label,
     children,
     wide = false,
+    error,
 }: {
     label: string;
     children: ReactNode;
     wide?: boolean;
+    error?: string;
 }) {
     return (
         <div className={wide ? 'md:col-span-2' : undefined}>
@@ -2650,6 +2892,7 @@ function Field({
                 {label}
             </label>
             {children}
+            <InputError message={error} className="mt-2" />
         </div>
     );
 }
