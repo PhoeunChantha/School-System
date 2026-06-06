@@ -50,12 +50,12 @@ class HomeworkSubmissionController extends Controller
         $unreadCount = $this->homeworkSubmissionAlerts->unreadCount($user);
         $latest = $this->homeworkSubmissionAlerts->latestUnread($user);
 
-        Log::info('Homework submission alerts endpoint checked', [
-            'user_id' => $user->id,
-            'unread_count' => $unreadCount,
-            'latest_submission_id' => $latest['id'] ?? null,
-            'url' => $request->path(),
-        ]);
+        // Log::info('Homework submission alerts endpoint checked', [
+        //     'user_id' => $user->id,
+        //     'unread_count' => $unreadCount,
+        //     'latest_submission_id' => $latest['id'] ?? null,
+        //     'url' => $request->path(),
+        // ]);
 
         return response()->json([
             'unreadCount' => $unreadCount,
