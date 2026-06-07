@@ -10,6 +10,7 @@ use App\Models\ExamResult;
 use App\Models\Expense;
 use App\Models\ExpenseCategory;
 use App\Models\FeeCharge;
+use App\Models\GradePeriod;
 use App\Models\GradeRecord;
 use App\Models\HomeworkAssignment;
 use App\Models\HomeworkSubmission;
@@ -72,6 +73,7 @@ class AppServiceProvider extends ServiceProvider
             Teacher::class,
             SchoolClass::class,
             AttendanceSession::class,
+            GradePeriod::class,
             GradeRecord::class,
             HomeworkAssignment::class,
             HomeworkSubmission::class,

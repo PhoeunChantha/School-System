@@ -37,7 +37,7 @@ class GradeRecordService
             ->orderByDesc('is_current')
             ->latest('starts_on')
             ->latest('id')
-            ->get(['id', 'name', 'type', 'academic_year', 'is_current']);
+            ->get(['id', 'name', 'type', 'academic_year', 'starts_on', 'ends_on', 'is_current']);
 
         $currentPeriod = $periods->firstWhere('is_current', true) ?? $periods->first();
 
@@ -58,9 +58,12 @@ class GradeRecordService
             'records' => $records,
             'periods' => $periods->map(fn (GradePeriod $period): array => [
                 'id' => $period->id,
+                'routeKey' => $period->getRouteKey(),
                 'name' => $period->name,
                 'type' => $period->type,
                 'academicYear' => $period->academic_year ?? '',
+                'startsOn' => $period->starts_on?->format('Y-m-d') ?? '',
+                'endsOn' => $period->ends_on?->format('Y-m-d') ?? '',
                 'isCurrent' => $period->is_current,
             ]),
             'students' => $this->studentOptions(),

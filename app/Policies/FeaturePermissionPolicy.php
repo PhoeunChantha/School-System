@@ -10,6 +10,7 @@ use App\Models\ExamResult;
 use App\Models\Expense;
 use App\Models\ExpenseCategory;
 use App\Models\FeeCharge;
+use App\Models\GradePeriod;
 use App\Models\GradeRecord;
 use App\Models\HomeworkAssignment;
 use App\Models\HomeworkSubmission;
@@ -35,6 +36,7 @@ class FeaturePermissionPolicy
         Teacher::class => 'teachers',
         SchoolClass::class => 'classes',
         AttendanceSession::class => 'attendance',
+        GradePeriod::class => 'grade-periods',
         GradeRecord::class => 'grades',
         HomeworkAssignment::class => 'homework',
         HomeworkSubmission::class => 'homework-submissions',
@@ -62,6 +64,7 @@ class FeaturePermissionPolicy
         'teachers' => 'teachers',
         'classes' => 'classes',
         'attendance' => 'attendance',
+        'grade-periods' => 'grade-periods',
         'grades' => 'grades',
         'homework' => 'homework',
         'homework-submissions' => 'homework-submissions',

@@ -20,6 +20,7 @@ class PermissionSeeder extends Seeder
         'teacher-grades' => ['view', 'update'],
         'classes' => ['view', 'create', 'update', 'delete'],
         'attendance' => ['view', 'mark', 'create', 'update', 'delete', 'import', 'export', 'download-layout'],
+        'grade-periods' => ['view', 'create', 'update', 'delete'],
         'grades' => ['view', 'create', 'update', 'delete', 'import', 'export', 'download-layout'],
         'homework' => ['view', 'create', 'update', 'delete'],
         'homework-submissions' => ['view', 'create', 'update', 'delete'],
