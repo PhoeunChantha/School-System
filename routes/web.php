@@ -8,6 +8,7 @@ use App\Http\Controllers\Backends\ExamController;
 use App\Http\Controllers\Backends\ExamResultController;
 use App\Http\Controllers\Backends\ExpenseController;
 use App\Http\Controllers\Backends\FeeChargeController;
+use App\Http\Controllers\Backends\GradePeriodController;
 use App\Http\Controllers\Backends\GradeRecordController;
 use App\Http\Controllers\Backends\HomeworkAssignmentController;
 use App\Http\Controllers\Backends\HomeworkSubmissionController;
@@ -36,6 +37,7 @@ use App\Models\ExamResult;
 use App\Models\Expense;
 use App\Models\ExpenseCategory;
 use App\Models\FeeCharge;
+use App\Models\GradePeriod;
 use App\Models\GradeRecord;
 use App\Models\HomeworkAssignment;
 use App\Models\HomeworkSubmission;
@@ -135,6 +137,16 @@ Route::middleware(['auth', 'verified'])->prefix('admin')->name('admin.')->group(
         Route::post('/', [AttendanceSessionController::class, 'store'])->can('create', AttendanceSession::class)->name('attendance.store');
         Route::put('/{attendanceSession}', [AttendanceSessionController::class, 'update'])->can('update', 'attendanceSession')->name('attendance.update');
         Route::delete('/{attendanceSession}', [AttendanceSessionController::class, 'destroy'])->can('delete', 'attendanceSession')->name('attendance.destroy');
+    });
+
+    // Grade Periods
+    Route::prefix('grade-periods')->group(function () {
+        Route::get('/create', [GradePeriodController::class, 'create'])->can('create', GradePeriod::class)->name('grade-periods.create');
+        Route::get('/{gradePeriod}/edit', [GradePeriodController::class, 'edit'])->can('update', 'gradePeriod')->name('grade-periods.edit');
+        Route::get('/', [GradePeriodController::class, 'index'])->can('view', GradePeriod::class)->name('grade-periods');
+        Route::post('/', [GradePeriodController::class, 'store'])->can('create', GradePeriod::class)->name('grade-periods.store');
+        Route::put('/{gradePeriod}', [GradePeriodController::class, 'update'])->can('update', 'gradePeriod')->name('grade-periods.update');
+        Route::delete('/{gradePeriod}', [GradePeriodController::class, 'destroy'])->can('delete', 'gradePeriod')->name('grade-periods.destroy');
     });
 
     // Grades
@@ -302,6 +314,9 @@ Route::prefix('parent')->name('parent.')->group(function () {
     Route::post('/access-link', [ParentAccessController::class, 'sendLink'])->name('access-link');
     Route::get('/access/{token}', [ParentAccessController::class, 'verify'])->name('access.verify');
     Route::get('/dashboard', [ParentPortalController::class, 'dashboard'])->name('dashboard');
+    Route::get('/attendance', [ParentPortalController::class, 'attendance'])->name('attendance');
+    Route::get('/grades', [ParentPortalController::class, 'grades'])->name('grades');
+    Route::get('/homework', [ParentPortalController::class, 'homework'])->name('homework');
 });
 
 // Student Portal PWA

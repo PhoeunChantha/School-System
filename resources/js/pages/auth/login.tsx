@@ -263,7 +263,7 @@ export default function Login({ status, canResetPassword }: LoginProps) {
                         }}
                     >
                         <Phone size={16} />
-                        Parent Portal
+                        My Student
                     </button>
                 )}
 
@@ -310,10 +310,22 @@ function ParentAccessModal({
     open: boolean;
     onClose: () => void;
 }) {
-    const { data, setData, post, processing, errors, recentlySuccessful, reset } =
-        useForm({
-            phone: '',
-        });
+    const { data, setData, post, processing, errors, reset } = useForm({
+        phone: '',
+    });
+    const [noticeVisible, setNoticeVisible] = useState(false);
+
+    useEffect(() => {
+        if (!noticeVisible) {
+            return;
+        }
+
+        const timer = window.setTimeout(() => {
+            setNoticeVisible(false);
+        }, 60000);
+
+        return () => window.clearTimeout(timer);
+    }, [noticeVisible]);
 
     if (!open) {
         return null;
@@ -323,7 +335,10 @@ function ParentAccessModal({
         event.preventDefault();
         post('/parent/access-link', {
             preserveScroll: true,
-            onSuccess: () => reset('phone'),
+            onSuccess: () => {
+                reset('phone');
+                setNoticeVisible(true);
+            },
         });
     };
 
@@ -371,7 +386,7 @@ function ParentAccessModal({
                                 color: '#0f172a',
                             }}
                         >
-                            Parent Portal Access
+                            Parent Portal Access / ចូលប្រើគណនីឪពុកម្តាយ
                         </div>
                         <div
                             style={{
@@ -381,7 +396,8 @@ function ParentAccessModal({
                                 color: '#64748b',
                             }}
                         >
-                            Enter the phone number saved in student profile.
+                            Enter the phone number saved in student profile. /
+                            បញ្ចូលលេខទូរស័ព្ទដែលបានរក្សាទុកក្នុងប្រវត្តិរូបសិស្ស។
                         </div>
                     </div>
                     <button
@@ -414,7 +430,7 @@ function ParentAccessModal({
                         gap: 14,
                     }}
                 >
-                    {recentlySuccessful && (
+                    {noticeVisible && (
                         <div
                             style={{
                                 borderRadius: 14,
@@ -426,7 +442,9 @@ function ParentAccessModal({
                                 padding: '11px 13px',
                             }}
                         >
-                            If this phone exists, we sent a parent access link.
+                            If this phone exists, we sent a parent access link. /
+                            ប្រសិនបើលេខទូរស័ព្ទនេះមានក្នុងប្រព័ន្ធ
+                            យើងបានផ្ញើតំណចូលប្រើ។
                         </div>
                     )}
 
@@ -438,7 +456,7 @@ function ParentAccessModal({
                             color: '#64748b',
                         }}
                     >
-                        Parent Phone
+                        Parent Phone / ទូរស័ព្ទឪពុកម្តាយ
                     </label>
                     <Input
                         id="parent-phone"
@@ -491,7 +509,7 @@ function ParentAccessModal({
                         }}
                     >
                         {processing && <Spinner />}
-                        Send SMS Link
+                        Send SMS Link / ផ្ញើតំណតាម SMS
                     </button>
 
                     <p
@@ -504,7 +522,9 @@ function ParentAccessModal({
                         }}
                     >
                         The SMS link is private and expires automatically. Do not
-                        share it with anyone.
+                        share it with anyone. /
+                        តំណ SMS នេះជាព័ត៌មានឯកជន និងផុតកំណត់ដោយស្វ័យប្រវត្តិ។
+                        សូមកុំចែករំលែកទៅអ្នកផ្សេង។
                     </p>
                 </form>
             </div>

@@ -75,7 +75,43 @@ class ParentPortalPwaTest extends TestCase
                 ->has('stats')
                 ->has('recentGrades')
                 ->has('recentHomework')
-                ->has('recentFees')
+                ->missing('recentFees')
                 ->has('upcomingExams'));
+    }
+
+    public function test_parent_detail_pages_render_for_linked_student_account(): void
+    {
+        $this->withoutVite();
+
+        Student::factory()->create([
+            'parent_phone' => '012345678',
+            'name_en' => 'Dara Keo',
+            'code' => 'STU-1001',
+        ]);
+
+        $this->withSession(['parent_access_phone' => '85512345678'])
+            ->get(route('parent.attendance'))
+            ->assertOk()
+            ->assertInertia(fn ($page) => $page
+                ->component('parent/attendance/index')
+                ->where('profile.name', 'Dara Keo')
+                ->has('summary')
+                ->has('records'));
+
+        $this->withSession(['parent_access_phone' => '85512345678'])
+            ->get(route('parent.grades'))
+            ->assertOk()
+            ->assertInertia(fn ($page) => $page
+                ->component('parent/grades/index')
+                ->where('profile.name', 'Dara Keo')
+                ->has('grades'));
+
+        $this->withSession(['parent_access_phone' => '85512345678'])
+            ->get(route('parent.homework'))
+            ->assertOk()
+            ->assertInertia(fn ($page) => $page
+                ->component('parent/homework/index')
+                ->where('profile.name', 'Dara Keo')
+                ->has('homework'));
     }
 }

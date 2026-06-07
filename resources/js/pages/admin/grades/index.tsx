@@ -22,6 +22,8 @@ interface GradePeriodOption {
     name: string;
     type: string;
     academicYear: string;
+    startsOn: string;
+    endsOn: string;
     isCurrent: boolean;
 }
 
@@ -129,7 +131,6 @@ function sortRecords(list: GradeRecordItem[], order: OrderKey): GradeRecordItem[
 
 const controlInputClass = 'min-h-9 rounded-xl border border-slate-200 bg-white px-3 py-1 text-xs font-bold text-slate-900 dark:border-slate-700 dark:bg-slate-950 dark:text-slate-100';
 const ghostButtonClass = 'inline-flex min-h-9 items-center justify-center gap-1.5 rounded-xl border border-slate-200 bg-white px-3 py-2 text-xs font-black text-slate-700 shadow-sm transition hover:bg-slate-50 dark:border-slate-700 dark:bg-slate-950 dark:text-slate-200 dark:hover:bg-slate-900';
-const primaryButtonClass = 'inline-flex min-h-9 items-center justify-center gap-1.5 rounded-xl bg-blue-600 px-3 py-2 text-xs font-black text-white shadow-[0_12px_24px_rgba(37,99,235,0.22)] transition hover:bg-blue-500';
 const mobileCardClass = 'rounded-[22px] border border-slate-200/80 bg-white/95 p-3 shadow-[0_14px_34px_rgba(15,23,42,0.07)] dark:border-slate-700 dark:bg-slate-800/90';
 const fieldGroupClass = 'grid gap-1.5';
 const fieldLabelClass = 'text-[11px] font-black uppercase text-slate-500 dark:text-slate-400';
@@ -391,9 +392,11 @@ export default function GradesPage({ records, periods, students, classes, summar
                         <p className="mt-1 text-xs font-extrabold text-slate-400">{visibleAverage} average - {filtered.filter(record => record.average < 50).length} need work</p>
                     </div>
                     {canCreate && (
-                        <button type="button" onClick={openCreateDrawer} aria-label="Add grade" className="inline-flex h-11 w-11 items-center justify-center rounded-2xl bg-blue-600 text-xl font-black text-white shadow-[0_14px_26px_rgba(37,99,235,0.28)] transition hover:bg-blue-500">
-                            +
-                        </button>
+                        <div className="flex items-center gap-2">
+                            <button type="button" onClick={openCreateDrawer} aria-label="Add grade" className="inline-flex h-11 w-11 items-center justify-center rounded-2xl bg-blue-600 text-xl font-black text-white shadow-[0_14px_26px_rgba(37,99,235,0.28)] transition hover:bg-blue-500">
+                                +
+                            </button>
+                        </div>
                     )}
                 </div>
 

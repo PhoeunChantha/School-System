@@ -18,6 +18,7 @@ return [
         'levels' => 'Levels',
         'attendance' => 'Attendance',
         'grades' => 'Grades',
+        'grade-periods' => 'Grade Periods',
         'homework' => 'Homework',
         'lesson-plans' => 'Lesson Plans',
         'homework-submissions' => 'Homework Submissions',

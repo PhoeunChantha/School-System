@@ -20,12 +20,12 @@ Broadcast::channel('students.{studentId}', function (User $user, int $studentId)
 Broadcast::channel('admin.homework-submissions', function (User $user): bool {
     $allowed = $user->can('view', HomeworkSubmission::class);
 
-    Log::info('Homework submission broadcast channel auth', [
-        'user_id' => $user->id,
-        'email' => $user->email,
-        'allowed' => $allowed,
-        'channel' => 'private-admin.homework-submissions',
-    ]);
+    // Log::info('Homework submission broadcast channel auth', [
+    //     'user_id' => $user->id,
+    //     'email' => $user->email,
+    //     'allowed' => $allowed,
+    //     'channel' => 'private-admin.homework-submissions',
+    // ]);
 
     return $allowed;
 });

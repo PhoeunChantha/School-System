@@ -2,10 +2,11 @@
 
 namespace App\Services\Parent;
 
+use App\Models\AttendanceRecord;
 use App\Models\Certificate;
 use App\Models\Exam;
-use App\Models\FeeCharge;
 use App\Models\GradeRecord;
+use App\Models\HomeworkAssignment;
 use App\Models\HomeworkSubmission;
 use App\Models\Notification;
 use App\Models\Student;
@@ -29,8 +30,50 @@ class ParentPortalService
             'stats' => $this->stats($student),
             'recentGrades' => $this->recentGrades($student, 3),
             'recentHomework' => $this->recentHomework($student, 4),
-            'recentFees' => $this->recentFees($student, 3),
             'upcomingExams' => $this->upcomingExams($student, 3),
+        ];
+    }
+
+    /**
+     * @return array<string, mixed>
+     */
+    public function attendanceData(string $phone): array
+    {
+        $students = $this->studentsForPhone($phone);
+        $student = $students->first();
+
+        return [
+            'profile' => $this->profile($student, $students->count()),
+            'summary' => $this->attendanceSummary($student),
+            'records' => $this->attendanceRecords($student),
+        ];
+    }
+
+    /**
+     * @return array<string, mixed>
+     */
+    public function gradesData(string $phone): array
+    {
+        $students = $this->studentsForPhone($phone);
+        $student = $students->first();
+
+        return [
+            'profile' => $this->profile($student, $students->count()),
+            'grades' => $this->allGrades($student),
+        ];
+    }
+
+    /**
+     * @return array<string, mixed>
+     */
+    public function homeworkData(string $phone): array
+    {
+        $students = $this->studentsForPhone($phone);
+        $student = $students->first();
+
+        return [
+            'profile' => $this->profile($student, $students->count()),
+            'homework' => $this->allHomework($student),
         ];
     }
 
@@ -160,29 +203,6 @@ class ParentPortalService
     /**
      * @return array<int, array<string, mixed>>
      */
-    private function recentFees(?Student $student, int $limit): array
-    {
-        if (! $student) {
-            return [];
-        }
-
-        return FeeCharge::query()
-            ->where('student_id', $student->id)
-            ->latest('billing_month')
-            ->take($limit)
-            ->get()
-            ->map(fn (FeeCharge $feeCharge): array => [
-                'month' => $feeCharge->billing_month?->format('M Y') ?? '',
-                'amount' => (float) $feeCharge->amount,
-                'paid' => (float) $feeCharge->paid_amount,
-                'status' => $feeCharge->status,
-            ])
-            ->all();
-    }
-
-    /**
-     * @return array<int, array<string, mixed>>
-     */
     private function upcomingExams(?Student $student, int $limit): array
     {
         if (! $student || ! $student->school_class_id) {
@@ -201,6 +221,110 @@ class ParentPortalService
                 'date' => $exam->exam_date?->format('Y-m-d') ?? '',
                 'duration' => $exam->duration_minutes ?? 0,
                 'status' => $exam->status,
+            ])
+            ->all();
+    }
+
+    /**
+     * @return array<string, int>
+     */
+    private function attendanceSummary(?Student $student): array
+    {
+        if (! $student) {
+            return ['total' => 0, 'present' => 0, 'absent' => 0, 'late' => 0, 'excused' => 0, 'rate' => 0];
+        }
+
+        $counts = $student->attendanceRecords()
+            ->selectRaw('status, COUNT(*) as count')
+            ->groupBy('status')
+            ->pluck('count', 'status');
+
+        $present = (int) ($counts['present'] ?? 0);
+        $absent = (int) ($counts['absent'] ?? 0);
+        $late = (int) ($counts['late'] ?? 0);
+        $excused = (int) ($counts['excused'] ?? 0);
+        $total = (int) $counts->sum();
+
+        return [
+            'total' => $total,
+            'present' => $present,
+            'absent' => $absent,
+            'late' => $late,
+            'excused' => $excused,
+            'rate' => $total > 0 ? (int) round((($present + $late + $excused) / $total) * 100) : 0,
+        ];
+    }
+
+    /**
+     * @return array<int, array<string, string>>
+     */
+    private function attendanceRecords(?Student $student): array
+    {
+        if (! $student) {
+            return [];
+        }
+
+        return AttendanceRecord::query()
+            ->join('attendance_sessions', 'attendance_records.attendance_session_id', '=', 'attendance_sessions.id')
+            ->where('attendance_records.student_id', $student->id)
+            ->orderByDesc('attendance_sessions.attendance_date')
+            ->get([
+                'attendance_records.status',
+                'attendance_records.note',
+                'attendance_sessions.attendance_date',
+                'attendance_sessions.period',
+            ])
+            ->map(fn ($record): array => [
+                'date' => (string) $record->attendance_date,
+                'period' => $record->period ?? 'AM',
+                'status' => $record->status,
+                'note' => $record->note ?? '',
+            ])
+            ->all();
+    }
+
+    /**
+     * @return array<int, array<string, mixed>>
+     */
+    private function allGrades(?Student $student): array
+    {
+        return $this->recentGrades($student, 50);
+    }
+
+    /**
+     * @return array<int, array<string, mixed>>
+     */
+    private function allHomework(?Student $student): array
+    {
+        if (! $student || ! $student->school_class_id) {
+            return [];
+        }
+
+        $submissions = HomeworkSubmission::query()
+            ->where('student_id', $student->id)
+            ->get(['homework_assignment_id', 'submitted_at', 'score', 'status', 'note', 'attachment_path', 'attachment_name'])
+            ->keyBy('homework_assignment_id');
+
+        return HomeworkAssignment::query()
+            ->where('school_class_id', $student->school_class_id)
+            ->latest('due_on')
+            ->get(['id', 'title_en', 'title_kh', 'instructions', 'points', 'due_on', 'status'])
+            ->map(fn (HomeworkAssignment $homework): array => [
+                'id' => $homework->id,
+                'title' => $homework->title_en,
+                'titleKh' => $homework->title_kh,
+                'instructions' => $homework->instructions ?? '',
+                'points' => $homework->points ?? 0,
+                'due' => $homework->due_on?->format('Y-m-d') ?? '',
+                'status' => $homework->status,
+                'submission' => isset($submissions[$homework->id]) ? [
+                    'submitted' => $submissions[$homework->id]->submitted_at?->format('Y-m-d') ?? '',
+                    'score' => $submissions[$homework->id]->score,
+                    'status' => $submissions[$homework->id]->status,
+                    'note' => $submissions[$homework->id]->note ?? '',
+                    'attachmentName' => $submissions[$homework->id]->attachment_name ?? '',
+                    'attachmentUrl' => $submissions[$homework->id]->attachment_path ? asset($submissions[$homework->id]->attachment_path) : '',
+                ] : null,
             ])
             ->all();
     }

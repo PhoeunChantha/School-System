@@ -23,6 +23,7 @@ class RoleSeeder extends Seeder
             'attendance.mark',
             'attendance.create',
             'attendance.update',
+            'grade-periods.view',
             'grades.view',
             'grades.create',
             'grades.update',
@@ -52,6 +53,7 @@ class RoleSeeder extends Seeder
         'student' => [
             'dashboard.view',
             'attendance.view',
+            'grade-periods.view',
             'grades.view',
             'homework.view',
             'homework-submissions.view',

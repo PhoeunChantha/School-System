@@ -18,6 +18,7 @@ return [
         'levels' => 'កម្រិត',
         'attendance' => 'វត្តមាន',
         'grades' => 'ពិន្ទុ',
+        'grade-periods' => 'វគ្គពិន្ទុ',
         'homework' => 'កិច្ចការ',
         'lesson-plans' => 'ផែនការមេរៀន',
         'homework-submissions' => 'ការដាក់បញ្ជូន',
