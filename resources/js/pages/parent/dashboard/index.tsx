@@ -1,3 +1,5 @@
+import { useParentDomTranslations } from '@/hooks/use-parent-dom-translations';
+import { useParentTranslation } from '@/hooks/use-parent-translation';
 import type { SharedData } from '@/types';
 import {
     attendance,
@@ -8,7 +10,6 @@ import {
 import { Head, Link, usePage, type InertiaLinkProps } from '@inertiajs/react';
 import {
     BarChart3,
-    Bell,
     BookOpenCheck,
     CalendarCheck2,
     ChevronRight,
@@ -29,7 +30,6 @@ interface ParentProfile {
     level: string;
     gender: string;
     childrenCount?: number;
-    unreadNotifications?: number;
 }
 
 interface Grade {
@@ -177,11 +177,11 @@ export default function ParentDashboard({
     upcomingExams,
 }: Props) {
     const { school } = usePage<SharedData>().props;
+    const { lang, setLang } = useParentTranslation();
     const pendingHomework = latestPendingHomework(recentHomework);
     const upcomingExam = upcomingExams[0];
     const latestGrade = recentGrades[0];
     const childMeta = childContext(profile);
-    const notificationCount = profile.unreadNotifications ?? 0;
     const parentDashboardHref = dashboard();
     const parentAttendanceHref = attendance();
     const parentGradesHref = grades();
@@ -214,6 +214,7 @@ export default function ParentDashboard({
     }>;
 
     useEffect(registerParentServiceWorker, []);
+    useParentDomTranslations();
 
     return (
         <>
@@ -224,7 +225,7 @@ export default function ParentDashboard({
                 <meta name="apple-mobile-web-app-title" content="Parent Portal" />
             </Head>
 
-            <main className="min-h-dvh bg-[#dfe3dc] text-[#10201c]">
+            <main className="parent-wrap min-h-dvh bg-[#dfe3dc] text-[#10201c]">
                 <div className="mx-auto flex min-h-dvh w-full max-w-[430px] flex-col overflow-hidden bg-[#f8faf5] shadow-[0_26px_70px_rgba(16,32,28,0.22)]">
                     <header className="sticky top-0 z-20 border-b border-white/70 bg-white/80 px-5 pt-4 pb-3 backdrop-blur-2xl">
                         <div className="flex items-center justify-between gap-3">
@@ -249,19 +250,25 @@ export default function ParentDashboard({
                                     </h1>
                                 </div>
                             </div>
-
-                            <Link
-                                href={parentDashboardHref}
-                                className="relative flex h-11 w-11 shrink-0 items-center justify-center rounded-full border border-[#e1e9e4] bg-white text-[#30443e] shadow-[0_10px_24px_rgba(16,32,28,0.08)]"
-                                aria-label="Notifications"
+                            <div
+                                className="flex shrink-0 rounded-full border border-[#e1e9e4] bg-white p-1 text-[11px] font-black text-[#64736e] shadow-[0_10px_24px_rgba(16,32,28,0.08)]"
+                                aria-label="Switch language"
                             >
-                                <Bell size={19} />
-                                {notificationCount > 0 && (
-                                    <span className="absolute -top-1 -right-1 grid h-5 min-w-5 place-items-center rounded-full bg-[#ff4d5f] px-1 text-[10px] font-black text-white ring-2 ring-white">
-                                        {notificationCount}
-                                    </span>
-                                )}
-                            </Link>
+                                {(['kh', 'en'] as const).map((language) => (
+                                    <button
+                                        key={language}
+                                        type="button"
+                                        onClick={() => setLang(language)}
+                                        className={`min-h-8 rounded-full px-3 transition ${
+                                            lang === language
+                                                ? 'bg-[#10201c] text-white shadow-[0_8px_16px_rgba(16,32,28,0.18)]'
+                                                : 'text-[#64736e]'
+                                        }`}
+                                    >
+                                        {language === 'kh' ? 'ខ្មែរ' : 'EN'}
+                                    </button>
+                                ))}
+                            </div>
                         </div>
                     </header>
 

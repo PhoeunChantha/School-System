@@ -62,6 +62,7 @@ export interface SharedData {
     translations?: {
         admin?: Record<'en' | 'kh', Record<string, unknown>>;
         student?: Record<'en' | 'kh', Record<string, unknown>>;
+        parent?: Record<'en' | 'kh', Record<string, unknown>>;
     };
     [key: string]: unknown;
 }

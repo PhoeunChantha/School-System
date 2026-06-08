@@ -127,6 +127,10 @@ class HandleInertiaRequests extends Middleware
                     'en' => Lang::get('student', [], 'en'),
                     'kh' => Lang::get('student', [], 'kh'),
                 ],
+                'parent' => [
+                    'en' => Lang::get('parent', [], 'en'),
+                    'kh' => Lang::get('parent', [], 'kh'),
+                ],
             ],
         ];
     }
