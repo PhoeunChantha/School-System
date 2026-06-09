@@ -77,6 +77,22 @@ class LoginLockoutTest extends TestCase
         });
     }
 
+    public function test_login_lockout_alert_email_is_sent_once_per_lockout_window(): void
+    {
+        Mail::fake();
+
+        $this->configureLoginSecurity(alertEmail: 'security@example.test', decaySeconds: '30');
+
+        foreach (range(1, 4) as $attempt) {
+            $this->post(route('login.store'), [
+                'email' => 'duplicate-lockout@example.test',
+                'password' => 'wrong-password',
+            ]);
+        }
+
+        Mail::assertSent(LoginLockoutAlert::class, 1);
+    }
+
     private function configureLoginSecurity(string $alertEmail = '', string $decaySeconds = '15'): void
     {
         SchoolSetting::query()->create([

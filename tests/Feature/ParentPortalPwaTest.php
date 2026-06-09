@@ -79,6 +79,27 @@ class ParentPortalPwaTest extends TestCase
                 ->has('upcomingExams'));
     }
 
+    public function test_parent_developer_access_sets_parent_session_in_non_production(): void
+    {
+        $this->withoutVite();
+
+        $student = Student::factory()->create([
+            'parent_phone' => '012 345 678',
+            'name_en' => 'Dara Keo',
+            'code' => 'STU-1001',
+        ]);
+
+        $this->get(route('parent.developer-access', ['student' => $student]))
+            ->assertRedirect(route('parent.dashboard', absolute: false));
+
+        $this->get(route('parent.dashboard'))
+            ->assertOk()
+            ->assertInertia(fn ($page) => $page
+                ->component('parent/dashboard/index')
+                ->where('profile.name', 'Dara Keo')
+                ->where('profile.code', 'STU-1001'));
+    }
+
     public function test_parent_detail_pages_render_for_linked_student_account(): void
     {
         $this->withoutVite();
