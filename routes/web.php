@@ -313,6 +313,11 @@ Route::prefix('parent')->name('parent.')->group(function () {
     Route::redirect('/', '/parent/dashboard')->name('home');
     Route::post('/access-link', [ParentAccessController::class, 'sendLink'])->name('access-link');
     Route::get('/access/{token}', [ParentAccessController::class, 'verify'])->name('access.verify');
+
+    if (app()->environment(['local', 'testing'])) {
+        Route::get('/developer-access/{student?}', [ParentPortalController::class, 'developerAccess'])->name('developer-access');
+    }
+
     Route::get('/dashboard', [ParentPortalController::class, 'dashboard'])->name('dashboard');
     Route::get('/attendance', [ParentPortalController::class, 'attendance'])->name('attendance');
     Route::get('/grades', [ParentPortalController::class, 'grades'])->name('grades');

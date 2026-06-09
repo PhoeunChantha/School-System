@@ -847,6 +847,36 @@ body:has(.student-wrap) {
     font-weight: 400;
 }
 
+.s-avatar-wrap {
+    position: relative;
+    display: inline-flex;
+    flex-shrink: 0;
+    border-radius: 50%;
+}
+
+.s-avatar-wrap .s-avatar {
+    width: 100% !important;
+    height: 100% !important;
+}
+
+.s-avatar-online-dot {
+    position: absolute;
+    right: 1px;
+    bottom: 1px;
+    width: 26%;
+    height: 26%;
+    min-width: 10px;
+    min-height: 10px;
+    max-width: 22px;
+    max-height: 22px;
+    border: 3px solid #fff;
+    border-radius: 999px;
+    background: #12b76a;
+    box-shadow:
+        0 0 0 2px rgba(18, 183, 106, 0.18),
+        0 8px 16px rgba(18, 183, 106, 0.28);
+}
+
 .s-empty {
     padding: 48px 24px;
     color: #9aa8ba;

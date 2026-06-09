@@ -193,10 +193,12 @@ function SAvatar({
     photo,
     name,
     size,
+    showOnline = false,
 }: {
     photo: string | null;
     name: string;
     size: number;
+    showOnline?: boolean;
 }) {
     const initials = name
         .split(' ')
@@ -205,18 +207,14 @@ function SAvatar({
         .join('')
         .toUpperCase();
 
-    if (photo) {
-        return (
-            <img
-                src={photo}
-                alt={name}
-                className="s-avatar"
-                style={{ width: size, height: size, fontSize: size * 0.36 }}
-            />
-        );
-    }
-
-    return (
+    const avatar = photo ? (
+        <img
+            src={photo}
+            alt={name}
+            className="s-avatar"
+            style={{ width: size, height: size, fontSize: size * 0.36 }}
+        />
+    ) : (
         <div
             className="s-avatar"
             style={{
@@ -229,6 +227,23 @@ function SAvatar({
         >
             {initials}
         </div>
+    );
+
+    if (!showOnline) {
+        return avatar;
+    }
+
+    return (
+        <span
+            className="s-avatar-wrap"
+            style={{ width: size, height: size }}
+        >
+            {avatar}
+            <span
+                className="s-avatar-online-dot"
+                aria-label="Student portal is open"
+            />
+        </span>
     );
 }
 
@@ -449,6 +464,7 @@ export default function StudentShell({
                         photo={profile.photo}
                         name={profile.name}
                         size={42}
+                        showOnline
                     />
                     <div>
                         <div className="student-header-eyebrow">
@@ -483,7 +499,7 @@ export default function StudentShell({
                     <Link
                         href={notifications()}
                         aria-label="Open notifications"
-                        className={`student-icon-btn${activePage === 'notifications' ? 'active' : ''}`}
+                        className={`student-icon-btn${activePage === 'notifications' ? ' active' : ''}`}
                     >
                         <Bell size={16} />
                         {unreadNotifications > 0 && (

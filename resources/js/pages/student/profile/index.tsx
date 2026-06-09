@@ -107,39 +107,12 @@ export default function StudentProfile({ profile, student }: Props) {
             >
                 {/* Big avatar */}
                 <div style={{ position: 'relative', marginBottom: 14 }}>
-                    {student.photo ? (
-                        <img
-                            src={student.photo}
-                            alt={profile.name}
-                            className="s-avatar"
-                            style={{
-                                width: 88,
-                                height: 88,
-                                border: '3px solid white',
-                                boxShadow: '0 4px 16px rgba(26,26,46,0.12)',
-                            }}
-                        />
-                    ) : (
-                        <SAvatar
-                            photo={profile.photo}
-                            name={profile.name}
-                            size={88}
-                        />
-                    )}
-                    {student.status === 'active' && (
-                        <div
-                            style={{
-                                position: 'absolute',
-                                bottom: 4,
-                                right: 4,
-                                width: 20,
-                                height: 20,
-                                borderRadius: '50%',
-                                background: '#059669',
-                                border: '3px solid white',
-                            }}
-                        />
-                    )}
+                    <SAvatar
+                        photo={student.photo ?? profile.photo}
+                        name={profile.name}
+                        size={88}
+                        showOnline
+                    />
                 </div>
 
                 <div
