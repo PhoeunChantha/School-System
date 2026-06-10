@@ -1,9 +1,7 @@
-import TextLink from '@/components/text-link';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Input } from '@/components/ui/input';
 import { Spinner } from '@/components/ui/spinner';
 import { store } from '@/routes/login';
-import { request } from '@/routes/password';
 import type { SharedData } from '@/types';
 
 import { Form, Head, useForm, usePage } from '@inertiajs/react';
@@ -23,7 +21,7 @@ interface LoginProps {
     canRegister: boolean;
 }
 
-export default function Login({ status, canResetPassword }: LoginProps) {
+export default function Login({ status }: LoginProps) {
     const { props } = usePage<SharedData>();
     const school = props.school;
     const loginSecurity = props.loginSecurity;
@@ -224,7 +222,6 @@ export default function Login({ status, canResetPassword }: LoginProps) {
                 >
                     {({ processing, errors }) => (
                         <LoginFormFields
-                            canResetPassword={canResetPassword}
                             errors={errors}
                             hasBg={hasBg}
                             configuredLockoutSeconds={
@@ -533,7 +530,6 @@ function ParentAccessModal({
 }
 
 function LoginFormFields({
-    canResetPassword,
     configuredLockoutSeconds,
     errors,
     hasBg,
@@ -541,7 +537,6 @@ function LoginFormFields({
     processing,
     setLockoutSeconds,
 }: {
-    canResetPassword: boolean;
     configuredLockoutSeconds: number;
     errors: Partial<Record<'email' | 'password', string>>;
     hasBg: boolean;
@@ -632,13 +627,7 @@ function LoginFormFields({
                     gap: 6,
                 }}
             >
-                <div
-                    style={{
-                        display: 'flex',
-                        alignItems: 'center',
-                        justifyContent: 'space-between',
-                    }}
-                >
+                <div>
                     <label
                         htmlFor="password"
                         style={{
@@ -649,19 +638,6 @@ function LoginFormFields({
                     >
                         Password
                     </label>
-                    {canResetPassword && (
-                        <TextLink
-                            href={request()}
-                            tabIndex={5}
-                            className={
-                                hasBg
-                                    ? 'text-xs text-white/80 hover:text-white'
-                                    : 'text-xs text-blue-600 hover:text-blue-700'
-                            }
-                        >
-                            Forgot password?
-                        </TextLink>
-                    )}
                 </div>
                 <div style={{ position: 'relative' }}>
                     <Input

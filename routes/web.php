@@ -357,6 +357,7 @@ Route::middleware(['auth', 'verified'])->prefix('student')->name('student.')->gr
     Route::get('/notifications', [StudentPortalController::class, 'notifications'])->name('notifications');
     Route::get('/notifications/{notification}', [StudentPortalController::class, 'notificationShow'])->name('notifications.show');
     Route::get('/profile', [StudentPortalController::class, 'profile'])->name('profile');
+    Route::put('/profile', [StudentPortalController::class, 'updateProfile'])->name('profile.update');
 });
 
 require __DIR__.'/settings.php';
