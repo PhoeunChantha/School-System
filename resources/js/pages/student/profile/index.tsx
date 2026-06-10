@@ -1,11 +1,30 @@
+import InputError from '@/components/input-error';
+import {
+    Dialog,
+    DialogContent,
+    DialogDescription,
+    DialogFooter,
+    DialogHeader,
+    DialogTitle,
+} from '@/components/ui/dialog';
 import StudentShell, {
     type StudentProfile,
     SAvatar,
 } from '@/pages/student/shell';
 import { logout } from '@/routes';
 import { notifications } from '@/routes/student';
-import { Link, router } from '@inertiajs/react';
-import { BadgeCheck, ChevronRight, LogOut } from 'lucide-react';
+import { update as updateStudentProfile } from '@/routes/student/profile';
+import { Link, router, useForm } from '@inertiajs/react';
+import {
+    BadgeCheck,
+    ChevronRight,
+    LogOut,
+    Pencil,
+    Save,
+    Upload,
+    X,
+} from 'lucide-react';
+import { type FormEvent, useState } from 'react';
 
 interface StudentDetail {
     nameEn: string;
@@ -32,6 +51,14 @@ interface StudentDetail {
 interface Props {
     profile: StudentProfile;
     student: StudentDetail;
+}
+
+interface ProfileFormData {
+    _method: 'put';
+    profile_photo: File | null;
+    date_of_birth: string;
+    province: string;
+    district: string;
 }
 
 function formatDate(d: string) {
@@ -86,11 +113,65 @@ function InfoSection({
 }
 
 export default function StudentProfile({ profile, student }: Props) {
+    const [isEditOpen, setIsEditOpen] = useState(false);
+    const [photoPreview, setPhotoPreview] = useState<string | null>(null);
+    const { data, setData, post, processing, errors, reset } =
+        useForm<ProfileFormData>({
+            _method: 'put',
+            profile_photo: null,
+            date_of_birth: student.dateOfBirth || '',
+            province: student.province || '',
+            district: student.district || '',
+        });
+
     function handleLogout() {
         router.post(logout());
     }
 
     const hasStudent = !!student.nameEn;
+
+    function openEditProfile() {
+        setData({
+            _method: 'put',
+            profile_photo: null,
+            date_of_birth: student.dateOfBirth || '',
+            province: student.province || '',
+            district: student.district || '',
+        });
+        setPhotoPreview(null);
+        setIsEditOpen(true);
+    }
+
+    function closeEditProfile() {
+        reset();
+        setPhotoPreview(null);
+        setIsEditOpen(false);
+    }
+
+    function updateProfilePhoto(file: File | null) {
+        setData('profile_photo', file);
+
+        if (!file) {
+            setPhotoPreview(null);
+
+            return;
+        }
+
+        setPhotoPreview(URL.createObjectURL(file));
+    }
+
+    function submitProfile(event: FormEvent<HTMLFormElement>) {
+        event.preventDefault();
+
+        post(updateStudentProfile.url(), {
+            forceFormData: true,
+            preserveScroll: true,
+            onSuccess: () => {
+                setPhotoPreview(null);
+                setIsEditOpen(false);
+            },
+        });
+    }
 
     return (
         <StudentShell profile={profile} activePage="profile" title="My Profile">
@@ -161,10 +242,182 @@ export default function StudentProfile({ profile, student }: Props) {
                             {profile.className}
                         </span>
                     )}
+                    {hasStudent && (
+                        <button
+                            type="button"
+                            onClick={openEditProfile}
+                            style={{
+                                display: 'inline-flex',
+                                flexBasis: '100%',
+                                alignItems: 'center',
+                                justifyContent: 'center',
+                                gap: 8,
+                                marginTop: 16,
+                                padding: '10px 16px',
+                                borderRadius: 999,
+                                border: '1px solid rgba(16,185,129,0.22)',
+                                background: 'rgba(236,253,245,0.92)',
+                                color: '#047857',
+                                fontSize: 13,
+                                fontWeight: 800,
+                                boxShadow:
+                                    '0 10px 24px rgba(16,185,129,0.12)',
+                            }}
+                        >
+                            <Pencil size={14} />
+                            Edit Profile
+                        </button>
+                    )}
                 </div>
             </div>
 
             {/* ── Personal info ── */}
+            <Dialog open={isEditOpen} onOpenChange={setIsEditOpen}>
+                <DialogContent className="!left-1/2 !w-[400px] !max-w-[calc(100vw-50px)] !translate-x-[-52%] overflow-hidden rounded-[22px] border-slate-200 bg-white p-0 text-slate-950 shadow-2xl sm:!max-w-[calc(100vw-50px)]">
+                    <form onSubmit={submitProfile}>
+                        <DialogHeader className="border-b border-slate-100 px-5 py-4 text-left">
+                            <DialogTitle className="text-xl font-black tracking-normal text-slate-950">
+                                Edit Profile
+                            </DialogTitle>
+                            <DialogDescription className="text-xs font-bold text-slate-500">
+                                Update your personal information.
+                            </DialogDescription>
+                        </DialogHeader>
+
+                        <div className="space-y-4 px-5 py-4">
+                            <div className="flex items-center gap-3 rounded-[18px] bg-slate-50 p-3">
+                                <SAvatar
+                                    photo={
+                                        photoPreview ??
+                                        student.photo ??
+                                        profile.photo
+                                    }
+                                    name={profile.name}
+                                    size={52}
+                                />
+                                <div className="min-w-0 flex-1">
+                                    <div className="text-xs font-black uppercase text-slate-500">
+                                        Profile Image
+                                    </div>
+                                    <label
+                                        htmlFor="student-profile-photo"
+                                        className="mt-1 inline-flex h-9 cursor-pointer items-center justify-center gap-2 rounded-[12px] bg-white px-3 text-xs font-black text-emerald-700 shadow-sm ring-1 ring-slate-200"
+                                    >
+                                        <Upload size={14} />
+                                        Change Photo
+                                    </label>
+                                    <input
+                                        id="student-profile-photo"
+                                        type="file"
+                                        accept="image/jpeg,image/png,image/jpg,image/webp"
+                                        className="sr-only"
+                                        onChange={(event) =>
+                                            updateProfilePhoto(
+                                                event.target.files?.[0] ?? null,
+                                            )
+                                        }
+                                    />
+                                    <InputError
+                                        message={errors.profile_photo}
+                                        className="mt-1.5"
+                                    />
+                                </div>
+                            </div>
+
+                            <div>
+                                <label
+                                    htmlFor="student-date-of-birth"
+                                    className="mb-1.5 block text-[11px] font-black uppercase tracking-normal text-slate-500"
+                                >
+                                    Date of Birth
+                                </label>
+                                <input
+                                    id="student-date-of-birth"
+                                    type="date"
+                                    value={data.date_of_birth}
+                                    onChange={(event) =>
+                                        setData(
+                                            'date_of_birth',
+                                            event.target.value,
+                                        )
+                                    }
+                                    className="h-11 w-full rounded-[14px] border border-slate-200 bg-slate-50 px-3 text-sm font-bold text-slate-950 outline-none transition focus:border-emerald-300 focus:bg-white focus:ring-3 focus:ring-emerald-100"
+                                />
+                                <InputError
+                                    message={errors.date_of_birth}
+                                    className="mt-1.5"
+                                />
+                            </div>
+
+                            <div>
+                                <label
+                                    htmlFor="student-province"
+                                    className="mb-1.5 block text-[11px] font-black uppercase tracking-normal text-slate-500"
+                                >
+                                    Province
+                                </label>
+                                <input
+                                    id="student-province"
+                                    type="text"
+                                    value={data.province}
+                                    onChange={(event) =>
+                                        setData('province', event.target.value)
+                                    }
+                                    className="h-11 w-full rounded-[14px] border border-slate-200 bg-slate-50 px-3 text-sm font-bold text-slate-950 outline-none transition focus:border-emerald-300 focus:bg-white focus:ring-3 focus:ring-emerald-100"
+                                    placeholder="Enter province"
+                                />
+                                <InputError
+                                    message={errors.province}
+                                    className="mt-1.5"
+                                />
+                            </div>
+
+                            <div>
+                                <label
+                                    htmlFor="student-district"
+                                    className="mb-1.5 block text-[11px] font-black uppercase tracking-normal text-slate-500"
+                                >
+                                    District
+                                </label>
+                                <input
+                                    id="student-district"
+                                    type="text"
+                                    value={data.district}
+                                    onChange={(event) =>
+                                        setData('district', event.target.value)
+                                    }
+                                    className="h-11 w-full rounded-[14px] border border-slate-200 bg-slate-50 px-3 text-sm font-bold text-slate-950 outline-none transition focus:border-emerald-300 focus:bg-white focus:ring-3 focus:ring-emerald-100"
+                                    placeholder="Enter district"
+                                />
+                                <InputError
+                                    message={errors.district}
+                                    className="mt-1.5"
+                                />
+                            </div>
+                        </div>
+
+                        <DialogFooter className="grid grid-cols-2 gap-3 border-t border-slate-100 px-5 py-4 sm:grid-cols-2">
+                            <button
+                                type="button"
+                                onClick={closeEditProfile}
+                                className="inline-flex h-11 items-center justify-center gap-2 rounded-[14px] bg-slate-100 text-sm font-black text-slate-600 transition hover:bg-slate-200"
+                            >
+                                <X size={16} />
+                                Cancel
+                            </button>
+                            <button
+                                type="submit"
+                                disabled={processing}
+                                className="inline-flex h-11 items-center justify-center gap-2 rounded-[14px] bg-blue-600 text-sm font-black text-white shadow-xl shadow-blue-600/20 transition hover:bg-blue-700 disabled:cursor-not-allowed disabled:opacity-60"
+                            >
+                                <Save size={16} />
+                                Save
+                            </button>
+                        </DialogFooter>
+                    </form>
+                </DialogContent>
+            </Dialog>
+
             {hasStudent && (
                 <>
                     <InfoSection

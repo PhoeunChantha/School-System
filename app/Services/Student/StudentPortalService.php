@@ -3,6 +3,7 @@
 namespace App\Services\Student;
 
 use App\Events\HomeworkSubmissionSubmitted;
+use App\Models\ActivityLog;
 use App\Models\AttendanceRecord;
 use App\Models\Certificate;
 use App\Models\Exam;
@@ -17,6 +18,7 @@ use App\Models\Student;
 use App\Models\User;
 use App\Support\HomeworkSubmissionAlerts;
 use Illuminate\Http\UploadedFile;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Str;
 use Illuminate\Validation\ValidationException;
@@ -280,6 +282,78 @@ class StudentPortalService
     }
 
     /**
+     * @param  array{profile_photo?: UploadedFile|null, date_of_birth?: string|null, province?: string|null, district?: string|null}  $data
+     */
+    public function updateProfile(User $user, array $data, ?string $ipAddress, ?string $userAgent): Student
+    {
+        $student = $this->findStudent($user);
+
+        if (! $student) {
+            throw ValidationException::withMessages(['profile' => 'No student profile linked to your account.']);
+        }
+
+        $photoPath = $student->profile_photo;
+
+        if (($data['profile_photo'] ?? null) instanceof UploadedFile) {
+            $this->deletePhoto($student->profile_photo);
+            $photoPath = $this->storePhoto($data['profile_photo']);
+        }
+
+        $payload = [
+            'profile_photo' => $photoPath,
+            'date_of_birth' => $data['date_of_birth'] ?? null,
+            'province' => $this->nullableString($data['province'] ?? null),
+            'district' => $this->nullableString($data['district'] ?? null),
+            'updated_by' => $user->id,
+        ];
+
+        $before = [
+            'profile_photo' => $student->profile_photo,
+            'date_of_birth' => $student->date_of_birth?->format('Y-m-d'),
+            'province' => $student->province,
+            'district' => $student->district,
+        ];
+
+        return DB::transaction(function () use ($student, $user, $payload, $before, $ipAddress, $userAgent): Student {
+            $student->update($payload);
+            $student->refresh();
+
+            $after = [
+                'profile_photo' => $student->profile_photo,
+                'date_of_birth' => $student->date_of_birth?->format('Y-m-d'),
+                'province' => $student->province,
+                'district' => $student->district,
+            ];
+
+            $changes = collect($after)
+                ->filter(fn (?string $value, string $key): bool => ($before[$key] ?? null) !== $value)
+                ->keys()
+                ->values()
+                ->all();
+
+            if ($changes !== []) {
+                ActivityLog::create([
+                    'user_id' => $user->id,
+                    'event' => 'student_profile_updated',
+                    'subject_type' => Student::class,
+                    'subject_id' => $student->id,
+                    'description' => 'Student updated their profile from the student portal.',
+                    'properties' => [
+                        'changed_fields' => $changes,
+                        'before' => array_intersect_key($before, array_flip($changes)),
+                        'after' => array_intersect_key($after, array_flip($changes)),
+                        'source' => 'student_portal',
+                    ],
+                    'ip_address' => $ipAddress,
+                    'user_agent' => $userAgent,
+                ]);
+            }
+
+            return $student;
+        });
+    }
+
+    /**
      * @param  array{note?: string|null, attachment?: UploadedFile|null}  $data
      */
     public function submitHomework(User $user, HomeworkAssignment $homework, array $data): HomeworkSubmission
@@ -403,6 +477,34 @@ class StudentPortalService
     }
 
     // ── Private helpers ──────────────────────────────────────────────────────
+
+    private function nullableString(?string $value): ?string
+    {
+        $value = trim((string) $value);
+
+        return $value === '' ? null : $value;
+    }
+
+    private function storePhoto(UploadedFile $file): string
+    {
+        $filename = Str::uuid().'.'.$file->getClientOriginalExtension();
+        $destination = public_path('uploads/students');
+
+        if (! is_dir($destination)) {
+            mkdir($destination, 0755, true);
+        }
+
+        $file->move($destination, $filename);
+
+        return 'uploads/students/'.$filename;
+    }
+
+    private function deletePhoto(?string $path): void
+    {
+        if ($path && file_exists(public_path($path))) {
+            unlink(public_path($path));
+        }
+    }
 
     private function profile(User $user, ?Student $student): array
     {

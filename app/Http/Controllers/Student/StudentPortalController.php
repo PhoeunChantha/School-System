@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Student;
 
 use App\Http\Controllers\Controller;
+use App\Http\Requests\Student\UpdateStudentProfileRequest;
 use App\Models\Exam;
 use App\Models\HomeworkAssignment;
 use App\Models\Notification;
@@ -118,5 +119,17 @@ class StudentPortalController extends Controller
     public function profile(Request $request): Response
     {
         return Inertia::render('student/profile/index', $this->service->profileData($request->user()));
+    }
+
+    public function updateProfile(UpdateStudentProfileRequest $request): RedirectResponse
+    {
+        $this->service->updateProfile(
+            $request->user(),
+            $request->validated(),
+            $request->ip(),
+            $request->userAgent(),
+        );
+
+        return back()->with('success', 'Profile updated.');
     }
 }
