@@ -126,6 +126,10 @@ Route::middleware(['auth', 'verified'])->prefix('admin')->name('admin.')->group(
         Route::delete('/{schoolClass}', [SchoolClassController::class, 'destroy'])->can('delete', 'schoolClass')->name('classes.destroy');
     });
 
+    Route::get('/weekly-calendar', [SchoolClassController::class, 'weeklyCalendar'])
+        ->can('view', SchoolClass::class)
+        ->name('weekly-calendar');
+
     // Attendance
     Route::prefix('attendance')->group(function () {
         Route::get('/layout', [AttendanceSessionController::class, 'downloadLayout'])->can('downloadLayout', AttendanceSession::class)->name('attendance.layout');

@@ -63,6 +63,7 @@ class FeaturePermissionPolicy
         'students' => 'students',
         'teachers' => 'teachers',
         'classes' => 'classes',
+        'weekly-calendar' => 'classes',
         'attendance' => 'attendance',
         'grade-periods' => 'grade-periods',
         'grades' => 'grades',

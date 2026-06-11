@@ -19,6 +19,7 @@ return [
         'attendance' => 'វត្តមាន',
         'grades' => 'ពិន្ទុ',
         'grade-periods' => 'វគ្គពិន្ទុ',
+        'weekly-calendar' => 'ប្រតិទិនប្រចាំសប្តាហ៍',
         'homework' => 'កិច្ចការ',
         'lesson-plans' => 'ផែនការមេរៀន',
         'homework-submissions' => 'ការដាក់បញ្ជូន',
