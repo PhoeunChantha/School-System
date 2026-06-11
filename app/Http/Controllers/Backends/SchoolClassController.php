@@ -30,6 +30,11 @@ class SchoolClassController extends Controller
         return Inertia::render('admin/classes/index', $this->schoolClassService->indexData());
     }
 
+    public function weeklyCalendar(): Response
+    {
+        return Inertia::render('admin/weekly-calendar/index', $this->schoolClassService->weeklyCalendarData());
+    }
+
     public function store(StoreSchoolClassRequest $request): RedirectResponse
     {
         try {

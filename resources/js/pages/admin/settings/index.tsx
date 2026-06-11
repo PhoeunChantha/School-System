@@ -1555,9 +1555,6 @@ export default function SettingsPage({
                                     ))}
                                 </div>
 
-                                <ClassScheduleCalendar
-                                    schedule={classes.schedule}
-                                />
                             </SettingsPanel>
                         )}
 
@@ -2897,83 +2894,6 @@ function Field({
     );
 }
 
-const scheduleDays = [
-    { key: 'mon', label: 'Mon' },
-    { key: 'tue', label: 'Tue' },
-    { key: 'wed', label: 'Wed' },
-    { key: 'thu', label: 'Thu' },
-    { key: 'fri', label: 'Fri' },
-    { key: 'sat', label: 'Sat' },
-    { key: 'sun', label: 'Sun' },
-] as const;
-
-function ClassScheduleCalendar({ schedule }: { schedule: ScheduleSetting[] }) {
-    const normalized = schedule.map((item) => ({
-        ...item,
-        dayKeys: item.days
-            .toLowerCase()
-            .split(/[\s,]+/)
-            .filter(Boolean),
-    }));
-
-    return (
-        <div className="mt-5 rounded-[22px] border border-slate-200 bg-slate-50 p-3 dark:border-slate-700 dark:bg-slate-950/70">
-            <div className="mb-3 flex items-center justify-between gap-3">
-                <div>
-                    <div className="text-sm font-black text-slate-900 dark:text-slate-50">
-                        Weekly Calendar
-                    </div>
-                    <div className="text-[11px] font-bold text-slate-400">
-                        Generated from active class schedule data
-                    </div>
-                </div>
-                <CalendarDays size={18} className="text-blue-500" />
-            </div>
-            <div className="grid gap-2 md:grid-cols-7">
-                {scheduleDays.map((day) => {
-                    const dayClasses = normalized.filter((item) =>
-                        item.dayKeys.includes(day.key),
-                    );
-
-                    return (
-                        <div
-                            key={day.key}
-                            className="min-h-32 rounded-2xl border border-slate-200 bg-white p-2 dark:border-slate-700 dark:bg-slate-900"
-                        >
-                            <div className="mb-2 text-[11px] font-black tracking-wide text-slate-400 uppercase">
-                                {day.label}
-                            </div>
-                            <div className="grid gap-1.5">
-                                {dayClasses.length > 0 ? (
-                                    dayClasses.map((item, index) => (
-                                        <div
-                                            key={`${day.key}-${item.label}-${index}`}
-                                            className="rounded-xl bg-blue-50 p-2 text-blue-950 dark:bg-blue-500/15 dark:text-blue-100"
-                                        >
-                                            <div className="truncate text-[12px] font-black">
-                                                {item.label}
-                                            </div>
-                                            <div className="mt-0.5 text-[10px] font-bold text-blue-500 dark:text-blue-300">
-                                                {item.time || 'No time'}
-                                            </div>
-                                            <div className="text-[10px] font-bold text-slate-400">
-                                                {item.room || 'No room'}
-                                            </div>
-                                        </div>
-                                    ))
-                                ) : (
-                                    <div className="rounded-xl border border-dashed border-slate-200 px-2 py-4 text-center text-[11px] font-bold text-slate-400 dark:border-slate-700">
-                                        No class
-                                    </div>
-                                )}
-                            </div>
-                        </div>
-                    );
-                })}
-            </div>
-        </div>
-    );
-}
 
 function updateSchedule(
     settings: ClassSettings,
@@ -2985,27 +2905,6 @@ function updateSchedule(
         schedule: settings.schedule.map((item, itemIndex) =>
             itemIndex === index ? { ...item, [key]: value } : item,
         ),
-    };
-}
-
-function tabButton(active: boolean): CSSProperties {
-    return {
-        display: 'flex',
-        alignItems: 'center',
-        gap: 10,
-        width: '100%',
-        minWidth: 0,
-        padding: '10px 14px',
-        borderRadius: 10,
-        border: 'none',
-        cursor: 'pointer',
-        fontWeight: 800,
-        fontSize: 13,
-        textAlign: 'left',
-        whiteSpace: 'nowrap',
-        background: active ? '#eff6ff' : 'transparent',
-        color: active ? '#2563eb' : '#64748b',
-        marginBottom: 2,
     };
 }
 

@@ -124,6 +124,7 @@ const NAV_PERMISSIONS: Record<string, string[]> = {
     students: ['students.view'],
     teachers: ['teachers.view'],
     classes: ['classes.view'],
+    'weekly-calendar': ['classes.view'],
     levels: ['levels.view'],
     attendance: ['attendance.view'],
     grades: ['grades.view'],
@@ -185,6 +186,12 @@ const NAV: NavEntry[] = [
         icon: ClipboardCheck,
         labelKey: 'attendance',
         href: '/admin/attendance',
+    },
+    {
+        id: 'weekly-calendar',
+        icon: CalendarDays,
+        labelKey: 'weekly-calendar',
+        href: '/admin/weekly-calendar',
     },
     {
         id: 'grades',
@@ -301,6 +308,7 @@ const PAGE_TITLE_KEYS: Record<string, string> = {
     classes: 'classes',
     levels: 'levels',
     attendance: 'attendance',
+    'weekly-calendar': 'weekly-calendar',
     grades: 'grades',
     'grade-periods': 'grade-periods',
     homework: 'homework',
@@ -875,17 +883,11 @@ export default function AdminShell({ children }: AdminShellProps) {
                         )}
                         <button
                             onClick={() => setCollapsed((c) => !c)}
+                            className="sidebar-collapse-toggle"
                             style={{
                                 marginLeft: 'auto',
-                                background: 'none',
-                                border: 'none',
-                                color: 'rgba(255,255,255,0.4)',
                                 cursor: 'pointer',
-                                padding: '4px',
                                 flexShrink: 0,
-                                display: 'inline-flex',
-                                alignItems: 'center',
-                                justifyContent: 'center',
                             }}
                             aria-label={
                                 collapsed

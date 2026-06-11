@@ -10,6 +10,31 @@ use Illuminate\Support\Facades\DB;
 class SchoolClassService
 {
     /**
+     * @return array{schedule: array<int, array{id: int, name: string, teacher: string, room: string, startsAt: string|null, endsAt: string|null, days: array<int, string>}>}
+     */
+    public function weeklyCalendarData(): array
+    {
+        return [
+            'schedule' => SchoolClass::query()
+                ->with('teacher:id,name_en')
+                ->active()
+                ->orderBy('starts_at')
+                ->orderBy('name')
+                ->get(['id', 'teacher_id', 'name', 'room', 'starts_at', 'ends_at', 'days'])
+                ->map(fn (SchoolClass $schoolClass): array => [
+                    'id' => $schoolClass->id,
+                    'name' => $schoolClass->name,
+                    'teacher' => $schoolClass->teacher?->name_en ?? 'No teacher',
+                    'room' => $schoolClass->room ?? '',
+                    'startsAt' => $schoolClass->starts_at,
+                    'endsAt' => $schoolClass->ends_at,
+                    'days' => array_values($schoolClass->days ?? []),
+                ])
+                ->all(),
+        ];
+    }
+
+    /**
      * @return array{classes: mixed, levels: mixed, teachers: mixed}
      */
     public function indexData(): array
