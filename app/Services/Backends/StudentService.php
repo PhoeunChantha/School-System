@@ -15,6 +15,10 @@ use Spatie\Permission\Models\Role;
 
 class StudentService
 {
+    public function __construct(
+        private readonly StudentEnrollmentHistoryService $enrollmentHistoryService,
+    ) {}
+
     /**
      * @var array<int, string>
      */
@@ -170,6 +174,7 @@ class StudentService
                 'issuedOn' => $c->issued_on?->format('Y-m-d'),
                 'status' => $c->status,
             ])->all(),
+            'enrollmentHistory' => $this->enrollmentHistoryService->forStudent($student),
         ];
     }
 

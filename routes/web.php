@@ -19,7 +19,9 @@ use App\Http\Controllers\Backends\ReportController;
 use App\Http\Controllers\Backends\RolePermissionController;
 use App\Http\Controllers\Backends\SchoolClassController;
 use App\Http\Controllers\Backends\SchoolSettingController;
+use App\Http\Controllers\Backends\SmsCommunicationController;
 use App\Http\Controllers\Backends\StudentController;
+use App\Http\Controllers\Backends\StudentEnrollmentHistoryController;
 use App\Http\Controllers\Backends\TeacherController;
 use App\Http\Controllers\Backends\TeacherGradeController;
 use App\Http\Controllers\Backends\UserController;
@@ -46,7 +48,9 @@ use App\Models\Level;
 use App\Models\Notification;
 use App\Models\SchoolClass;
 use App\Models\SchoolSetting;
+use App\Models\SmsCommunication;
 use App\Models\Student;
+use App\Models\StudentEnrollmentHistory;
 use App\Models\Teacher;
 use App\Models\User;
 use App\Support\RoleRedirect;
@@ -100,6 +104,19 @@ Route::middleware(['auth', 'verified'])->prefix('admin')->name('admin.')->group(
         Route::get('/{student}', [StudentController::class, 'show'])->can('show', 'student')->name('students.show');
         Route::put('/{student}', [StudentController::class, 'update'])->can('update', 'student')->name('students.update');
         Route::delete('/{student}', [StudentController::class, 'destroy'])->can('delete', 'student')->name('students.destroy');
+    });
+
+    Route::get('/enrollment-history', [StudentEnrollmentHistoryController::class, 'index'])
+        ->can('view', StudentEnrollmentHistory::class)
+        ->name('enrollment-history');
+
+    Route::prefix('sms-communications')->group(function () {
+        Route::get('/', [SmsCommunicationController::class, 'index'])
+            ->can('view', SmsCommunication::class)
+            ->name('sms-communications');
+        Route::post('/{smsCommunication}/retry', [SmsCommunicationController::class, 'retry'])
+            ->can('update', 'smsCommunication')
+            ->name('sms-communications.retry');
     });
 
     // Teachers

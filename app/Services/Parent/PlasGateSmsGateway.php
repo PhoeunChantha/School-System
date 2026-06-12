@@ -2,20 +2,20 @@
 
 namespace App\Services\Parent;
 
+use App\Exceptions\PlasGateSmsException;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
-use RuntimeException;
 
 class PlasGateSmsGateway
 {
     /**
      * @param  array{plasgateEndpoint: string, plasgateSecret: string, plasgatePrivate: string, plasgateSender: string}  $settings
      */
-    public function send(string $phone, string $message, array $settings): void
+    public function send(string $phone, string $message, array $settings): array
     {
         foreach (['plasgateEndpoint', 'plasgateSecret', 'plasgatePrivate', 'plasgateSender'] as $key) {
             if (trim((string) ($settings[$key] ?? '')) === '') {
-                throw new RuntimeException('PlasGate SMS settings are incomplete.');
+                throw new PlasGateSmsException('PlasGate SMS settings are incomplete.');
             }
         }
 
@@ -54,10 +54,23 @@ class PlasGateSmsGateway
 
         if ($response->failed()) {
             if ($response->status() === 403) {
-                throw new RuntimeException('PlasGate rejected the SMS request with 403 Forbidden. Check API key trusted IP/domain allowance, enabled key status, account balance, and approved sender ID.');
+                throw new PlasGateSmsException(
+                    'PlasGate rejected the SMS request with 403 Forbidden. Check API key trusted IP/domain allowance, enabled key status, account balance, and approved sender ID.',
+                    $response->status(),
+                    $response->body(),
+                );
             }
 
-            throw new RuntimeException('PlasGate SMS request failed: '.$response->body());
+            throw new PlasGateSmsException(
+                'PlasGate SMS request failed: '.$response->body(),
+                $response->status(),
+                $response->body(),
+            );
         }
+
+        return [
+            'statusCode' => $response->status(),
+            'responseBody' => $response->body(),
+        ];
     }
 }

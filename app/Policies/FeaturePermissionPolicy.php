@@ -19,7 +19,9 @@ use App\Models\Level;
 use App\Models\Notification;
 use App\Models\SchoolClass;
 use App\Models\SchoolSetting;
+use App\Models\SmsCommunication;
 use App\Models\Student;
+use App\Models\StudentEnrollmentHistory;
 use App\Models\Teacher;
 use App\Models\User;
 use Spatie\Permission\Models\Permission;
@@ -33,6 +35,8 @@ class FeaturePermissionPolicy
     private array $featureMap = [
         Level::class => 'levels',
         Student::class => 'students',
+        SmsCommunication::class => 'sms-communications',
+        StudentEnrollmentHistory::class => 'enrollment-history',
         Teacher::class => 'teachers',
         SchoolClass::class => 'classes',
         AttendanceSession::class => 'attendance',
@@ -61,6 +65,8 @@ class FeaturePermissionPolicy
     private array $routeFeatureMap = [
         'levels' => 'levels',
         'students' => 'students',
+        'sms-communications' => 'sms-communications',
+        'enrollment-history' => 'enrollment-history',
         'teachers' => 'teachers',
         'classes' => 'classes',
         'weekly-calendar' => 'classes',
