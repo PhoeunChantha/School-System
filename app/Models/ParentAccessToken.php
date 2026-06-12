@@ -3,6 +3,7 @@
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class ParentAccessToken extends Model
 {
@@ -26,5 +27,10 @@ class ParentAccessToken extends Model
             'expires_at' => 'datetime',
             'used_at' => 'datetime',
         ];
+    }
+
+    public function smsCommunications(): HasMany
+    {
+        return $this->hasMany(SmsCommunication::class);
     }
 }

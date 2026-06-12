@@ -112,6 +112,16 @@ class Student extends Model
         return $this->hasMany(Certificate::class);
     }
 
+    public function enrollmentHistories(): HasMany
+    {
+        return $this->hasMany(StudentEnrollmentHistory::class);
+    }
+
+    public function smsCommunications(): HasMany
+    {
+        return $this->hasMany(SmsCommunication::class);
+    }
+
     public function scopeActive(Builder $query): Builder
     {
         return $query->where('status', 'active');

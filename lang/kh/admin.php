@@ -13,6 +13,7 @@ return [
     'nav_items' => [
         'dashboard' => 'ទំព័រដើម',
         'students' => 'សិស្ស',
+        'enrollment-history' => 'ប្រវត្តិការសិក្សា',
         'teachers' => 'គ្រូ',
         'classes' => 'ថ្នាក់',
         'levels' => 'កម្រិត',
@@ -32,6 +33,7 @@ return [
         'honor-roll' => 'តារាងកិត្តិយស',
         'notifications' => 'ការជូនដំណឹង',
         'activity-logs' => 'កត់ត្រា',
+        'sms-communications' => 'ប្រវត្តិសារ SMS',
         'users' => 'អ្នកប្រើប្រាស់',
         'roles-permissions' => 'តួនាទី និងសិទ្ធិ',
         'settings' => 'កំណត់',

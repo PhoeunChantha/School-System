@@ -6,7 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Http\Requests\ParentAccessLinkRequest;
 use App\Models\ParentAccessToken;
 use App\Models\Student;
-use App\Services\Parent\PlasGateSmsGateway;
+use App\Services\Backends\SmsCommunicationService;
 use App\Support\ParentAccessSettings;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -20,7 +20,7 @@ class ParentAccessController extends Controller
 {
     public function __construct(
         private readonly ParentAccessSettings $parentAccessSettings,
-        private readonly PlasGateSmsGateway $smsGateway,
+        private readonly SmsCommunicationService $smsCommunicationService,
     ) {}
 
     public function sendLink(ParentAccessLinkRequest $request): RedirectResponse
@@ -44,7 +44,9 @@ class ParentAccessController extends Controller
 
         RateLimiter::hit($rateLimitKey, 900);
 
-        if (! $this->phoneExists($phone)) {
+        $student = $this->studentForPhone($phone);
+
+        if (! $student) {
             return back()->with('status', 'If this phone exists, we sent a parent access link.');
         }
 
@@ -68,9 +70,8 @@ class ParentAccessController extends Controller
         ]);
 
         try {
-            $this->smsGateway->send($phone, $message, $settings);
+            $this->smsCommunicationService->send($student, $accessToken, $phone, $message, $settings);
         } catch (Throwable $exception) {
-            $accessToken->delete();
             RateLimiter::clear($rateLimitKey);
 
             Log::error('Parent access SMS failed', [
@@ -108,11 +109,11 @@ class ParentAccessController extends Controller
         return to_route('parent.dashboard');
     }
 
-    private function phoneExists(string $phone): bool
+    private function studentForPhone(string $phone): ?Student
     {
         return Student::query()
             ->whereNotNull('parent_phone')
-            ->get(['parent_phone'])
-            ->contains(fn (Student $student): bool => $this->parentAccessSettings->normalizePhone((string) $student->parent_phone) === $phone);
+            ->get(['id', 'parent_phone'])
+            ->first(fn (Student $student): bool => $this->parentAccessSettings->normalizePhone((string) $student->parent_phone) === $phone);
     }
 }

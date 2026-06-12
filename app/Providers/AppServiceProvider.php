@@ -19,9 +19,12 @@ use App\Models\Level;
 use App\Models\Notification;
 use App\Models\SchoolClass;
 use App\Models\SchoolSetting;
+use App\Models\SmsCommunication;
 use App\Models\Student;
+use App\Models\StudentEnrollmentHistory;
 use App\Models\Teacher;
 use App\Models\User;
+use App\Observers\StudentObserver;
 use App\Policies\FeaturePermissionPolicy;
 use App\Support\EncryptedRouteKey;
 use App\Support\SchoolProfile;
@@ -70,6 +73,8 @@ class AppServiceProvider extends ServiceProvider
         $policyModels = [
             Level::class,
             Student::class,
+            SmsCommunication::class,
+            StudentEnrollmentHistory::class,
             Teacher::class,
             SchoolClass::class,
             AttendanceSession::class,
@@ -95,6 +100,8 @@ class AppServiceProvider extends ServiceProvider
         foreach ($policyModels as $modelClass) {
             Gate::policy($modelClass, FeaturePermissionPolicy::class);
         }
+
+        Student::observe(StudentObserver::class);
 
         Gate::define('viewDashboard', fn ($user): bool => $user->can('dashboard.view'));
         Gate::define('viewReports', fn ($user): bool => $user->can('reports.view'));

@@ -3,7 +3,7 @@ import { edit as editStudent, index as studentIndex } from '@/actions/App/Http/C
 import AdminShell from '@/pages/admin/shell';
 import { Badge, KH, ScoreChip } from '@/pages/admin/ui';
 import { Head, Link } from '@inertiajs/react';
-import { ArrowLeft, Award, CalendarDays, Edit3, TriangleAlert } from 'lucide-react';
+import { ArrowLeft, ArrowRight, Award, CalendarDays, Edit3, History, TriangleAlert } from 'lucide-react';
 
 //  Types â”€
 
@@ -101,6 +101,20 @@ interface Certificate {
     status: string;
 }
 
+interface EnrollmentHistoryItem {
+    id: number;
+    eventType: string;
+    fromLevel: string;
+    toLevel: string;
+    fromClass: string;
+    toClass: string;
+    fromStatus: string;
+    toStatus: string;
+    effectiveOn: string;
+    note: string;
+    changedBy: string;
+}
+
 interface ShowStudentProps {
     student: StudentDetail;
     grades: GradeRecord[];
@@ -108,11 +122,12 @@ interface ShowStudentProps {
     fees: FeeCharge[];
     homework: HomeworkRecord[];
     certificates: Certificate[];
+    enrollmentHistory: EnrollmentHistoryItem[];
 }
 
 //  Helpers 
 
-type Tab = 'overview' | 'grades' | 'attendance' | 'fees' | 'homework';
+type Tab = 'overview' | 'grades' | 'attendance' | 'fees' | 'homework' | 'history';
 
 const feeColor = (status: string) =>
     status === 'paid' || status === 'Paid' ? '#10b981' : status === 'partial' || status === 'Partial' ? '#f59e0b' : '#ef4444';
@@ -125,7 +140,7 @@ const attBg = (status: string) => ({
     present: '#f0fdf4', late: '#fffbeb', excused: '#eff6ff', absent: '#fef2f2',
 } as Record<string, string>)[status] ?? '#f8fafc';
 
-export default function ShowStudentPage({ student, grades, attendance, fees, homework, certificates }: ShowStudentProps) {
+export default function ShowStudentPage({ student, grades, attendance, fees, homework, certificates, enrollmentHistory }: ShowStudentProps) {
     const [tab, setTab] = useState<Tab>('overview');
 
     const tabs: { id: Tab; label: string; count?: number }[] = [
@@ -134,6 +149,7 @@ export default function ShowStudentPage({ student, grades, attendance, fees, hom
         { id: 'attendance', label: 'Attendance', count: attendance.length },
         // { id: 'fees',       label: 'Fees',       count: fees.length },
         { id: 'homework',   label: 'Homework',   count: homework.length },
+        { id: 'history', label: 'Enrollment History', count: enrollmentHistory.length },
     ];
 
     return (
@@ -480,6 +496,29 @@ export default function ShowStudentPage({ student, grades, attendance, fees, hom
                                 </table>
                             )
                         }
+                    </div>
+                )}
+
+                {tab === 'history' && (
+                    <div className="grid gap-3">
+                        {enrollmentHistory.length === 0 ? (
+                            <div className="card p-10 text-center text-sm font-bold text-slate-400">No enrollment history yet.</div>
+                        ) : enrollmentHistory.map((item) => (
+                            <article key={item.id} className="card p-4">
+                                <div className="flex flex-wrap items-start justify-between gap-3">
+                                    <div className="flex items-center gap-2">
+                                        <span className="flex h-9 w-9 items-center justify-center rounded-lg bg-blue-50 text-blue-600"><History size={17} /></span>
+                                        <div><strong className="block text-sm capitalize text-slate-900">{item.eventType.replace('-', ' ')}</strong><span className="text-xs font-bold text-slate-400">{item.effectiveOn} · {item.changedBy}</span></div>
+                                    </div>
+                                </div>
+                                <div className="mt-3 grid items-center gap-3 rounded-lg bg-slate-50 p-3 md:grid-cols-[1fr_auto_1fr]">
+                                    <div><span className="text-[10px] font-black text-slate-400 uppercase">Previous</span><p className="mt-1 text-sm font-bold">{item.fromLevel || '—'} · {item.fromClass || '—'}</p><p className="text-xs font-semibold text-slate-500">{item.fromStatus || '—'}</p></div>
+                                    <ArrowRight size={17} className="text-slate-400" />
+                                    <div><span className="text-[10px] font-black text-slate-400 uppercase">New</span><p className="mt-1 text-sm font-bold">{item.toLevel || '—'} · {item.toClass || '—'}</p><p className="text-xs font-semibold text-slate-500">{item.toStatus || '—'}</p></div>
+                                </div>
+                                {item.note && <p className="mt-2 text-xs font-semibold text-slate-500">{item.note}</p>}
+                            </article>
+                        ))}
                     </div>
                 )}
 

@@ -45,6 +45,7 @@ import {
     LogOut,
     Medal,
     Menu,
+    MessageSquareText,
     Moon,
     MoreHorizontal,
     NotebookPen,
@@ -54,6 +55,7 @@ import {
     School,
     ScrollText,
     Send,
+    Workflow,
     Settings,
     ShieldCheck,
     Star,
@@ -122,6 +124,8 @@ function AdminHomeworkSubmissionRealtime({
 const NAV_PERMISSIONS: Record<string, string[]> = {
     dashboard: ['dashboard.view'],
     students: ['students.view'],
+    'enrollment-history': ['enrollment-history.view'],
+    'sms-communications': ['sms-communications.view'],
     teachers: ['teachers.view'],
     classes: ['classes.view'],
     'weekly-calendar': ['classes.view'],
@@ -161,6 +165,12 @@ const NAV: NavEntry[] = [
         icon: Users,
         labelKey: 'students',
         href: '/admin/students',
+    },
+    {
+        id: 'enrollment-history',
+        icon: Workflow,
+        labelKey: 'enrollment-history',
+        href: '/admin/enrollment-history',
     },
     {
         id: 'teachers',
@@ -282,6 +292,12 @@ const NAV: NavEntry[] = [
         href: '/admin/activity-logs',
     },
     {
+        id: 'sms-communications',
+        icon: MessageSquareText,
+        labelKey: 'sms-communications',
+        href: '/admin/sms-communications',
+    },
+    {
         id: 'users',
         icon: UserCog,
         labelKey: 'users',
@@ -304,6 +320,8 @@ const NAV: NavEntry[] = [
 const PAGE_TITLE_KEYS: Record<string, string> = {
     dashboard: 'dashboard',
     students: 'students',
+    'enrollment-history': 'enrollment-history',
+    'sms-communications': 'sms-communications',
     teachers: 'teachers',
     classes: 'classes',
     levels: 'levels',

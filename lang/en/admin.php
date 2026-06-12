@@ -13,6 +13,7 @@ return [
     'nav_items' => [
         'dashboard' => 'Dashboard',
         'students' => 'Students',
+        'enrollment-history' => 'Enrollment History',
         'teachers' => 'Teachers',
         'classes' => 'Classes',
         'levels' => 'Levels',
@@ -32,6 +33,7 @@ return [
         'honor-roll' => 'Honor Roll',
         'notifications' => 'Notifications',
         'activity-logs' => 'Activity Logs',
+        'sms-communications' => 'SMS Communications',
         'users' => 'Users',
         'roles-permissions' => 'Roles & Permissions',
         'settings' => 'Settings',

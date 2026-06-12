@@ -195,6 +195,11 @@ const SIDEBAR_ITEMS: {
         items: [
             { id: 'dashboard', label: 'ទំព័រដើម', sub: 'Dashboard' },
             { id: 'students', label: 'សិស្ស', sub: 'Students' },
+            {
+                id: 'enrollment-history',
+                label: 'ប្រវត្តិការសិក្សា',
+                sub: 'Enrollment History',
+            },
             { id: 'teachers', label: 'គ្រូ', sub: 'Teachers' },
             { id: 'classes', label: 'ថ្នាក់', sub: 'Classes' },
             { id: 'levels', label: 'កម្រិត', sub: 'Levels' },
@@ -241,6 +246,11 @@ const SIDEBAR_ITEMS: {
         items: [
             { id: 'notifications', label: 'ការជូនដំណឹង', sub: 'Notifications' },
             { id: 'activity-logs', label: 'កត់ត្រា', sub: 'Activity Logs' },
+            {
+                id: 'sms-communications',
+                label: 'ប្រវត្តិសារ SMS',
+                sub: 'SMS Communications',
+            },
             { id: 'users', label: 'Users', sub: 'User Accounts' },
             {
                 id: 'roles-permissions',
