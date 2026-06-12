@@ -4,6 +4,7 @@ import { CalendarDays, Clock, MapPin, UserRound } from 'lucide-react';
 interface Schedule {
     className: string;
     teacher: string;
+    teacherPhoto: string | null;
     room: string;
     startsAt: string;
     endsAt: string;
@@ -19,6 +20,20 @@ const DAYS = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
 
 function isActiveDay(days: string[], day: string) {
     return days.map((d) => d.toLowerCase().slice(0, 3)).includes(day.toLowerCase());
+}
+
+function formatTime(value: string): string {
+    const [hoursValue, minutesValue = '00'] = value.split(':');
+    const hours = Number(hoursValue);
+
+    if (!Number.isInteger(hours) || hours < 0 || hours > 23) {
+        return value;
+    }
+
+    const period = hours >= 12 ? 'PM' : 'AM';
+    const displayHours = hours % 12 || 12;
+
+    return `${displayHours}:${minutesValue.padStart(2, '0')} ${period}`;
 }
 
 export default function StudentClassSchedule({ profile, schedule }: Props) {
@@ -57,24 +72,40 @@ export default function StudentClassSchedule({ profile, schedule }: Props) {
                             {item.className}
                         </div>
                         <div style={{ display: 'grid', gap: 10, marginTop: 16 }}>
-                            {[
-                                { icon: Clock, label: `${item.startsAt} - ${item.endsAt}` },
-                                { icon: UserRound, label: item.teacher || 'No teacher assigned' },
-                                { icon: MapPin, label: item.room || 'No room assigned' },
-                            ].map((row) => {
-                                const Icon = row.icon;
+                            <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                                <span style={{ width: 34, height: 34, borderRadius: 12, background: '#eff6ff', color: '#2563eb', display: 'grid', placeItems: 'center' }}>
+                                    <Clock size={16} />
+                                </span>
+                                <span style={{ color: '#334155', fontSize: 13, fontWeight: 800 }}>
+                                    {formatTime(item.startsAt)} - {formatTime(item.endsAt)}
+                                </span>
+                            </div>
 
-                                return (
-                                    <div key={row.label} style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-                                        <span style={{ width: 34, height: 34, borderRadius: 12, background: '#eff6ff', color: '#2563eb', display: 'grid', placeItems: 'center' }}>
-                                            <Icon size={16} />
-                                        </span>
-                                        <span style={{ color: '#334155', fontSize: 13, fontWeight: 800 }}>
-                                            {row.label}
-                                        </span>
-                                    </div>
-                                );
-                            })}
+                            <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                                <span style={{ width: 34, height: 34, flexShrink: 0, overflow: 'hidden', borderRadius: 12, background: '#eff6ff', color: '#2563eb', display: 'grid', placeItems: 'center' }}>
+                                    {item.teacherPhoto ? (
+                                        <img
+                                            src={item.teacherPhoto}
+                                            alt={item.teacher || 'Teacher'}
+                                            style={{ width: '100%', height: '100%', objectFit: 'cover' }}
+                                        />
+                                    ) : (
+                                        <UserRound size={16} />
+                                    )}
+                                </span>
+                                <span style={{ color: '#334155', fontSize: 13, fontWeight: 800 }}>
+                                    {item.teacher || 'No teacher assigned'}
+                                </span>
+                            </div>
+
+                            <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                                <span style={{ width: 34, height: 34, borderRadius: 12, background: '#eff6ff', color: '#2563eb', display: 'grid', placeItems: 'center' }}>
+                                    <MapPin size={16} />
+                                </span>
+                                <span style={{ color: '#334155', fontSize: 13, fontWeight: 800 }}>
+                                    {item.room || 'No room assigned'}
+                                </span>
+                            </div>
                         </div>
                     </div>
 

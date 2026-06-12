@@ -821,6 +821,187 @@ body:has(.student-wrap) {
     animation-delay: 0.3s;
 }
 
+.student-more-backdrop {
+    position: fixed;
+    inset: 0;
+    z-index: 90;
+    display: flex;
+    align-items: flex-end;
+    justify-content: center;
+    padding: 18px 14px;
+    background: rgba(15, 23, 42, 0);
+    backdrop-filter: blur(0);
+    transition:
+        background-color 0.28s ease,
+        backdrop-filter 0.28s ease;
+}
+
+.student-more-backdrop.open {
+    background: rgba(15, 23, 42, 0.42);
+    backdrop-filter: blur(5px);
+}
+
+.student-more-sheet {
+    width: min(100%, 420px);
+    max-height: min(78dvh, 720px);
+    padding: 10px 16px 16px;
+    overflow-y: auto;
+    overscroll-behavior: contain;
+    border: 1px solid rgba(226, 232, 240, 0.92);
+    border-radius: 28px;
+    background: rgba(255, 255, 255, 0.98);
+    box-shadow: 0 30px 80px rgba(15, 23, 42, 0.3);
+    opacity: 0;
+    transform: translateY(42px) scale(0.96);
+    transform-origin: bottom center;
+    transition:
+        opacity 0.24s ease,
+        transform 0.34s cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.student-more-backdrop.open .student-more-sheet {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+}
+
+.student-more-handle {
+    width: 42px;
+    height: 4px;
+    margin: 0 auto 9px;
+    border-radius: 999px;
+    background: #dbe3ed;
+}
+
+.student-more-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 12px;
+}
+
+.student-more-close {
+    width: 36px;
+    height: 36px;
+    border: 0;
+    border-radius: 999px;
+    background: #f1f5f9;
+    color: #64748b;
+    display: grid;
+    place-items: center;
+    transition:
+        transform 0.2s ease,
+        background-color 0.2s ease;
+}
+
+.student-more-close:active {
+    background: #e2e8f0;
+    transform: scale(0.9) rotate(8deg);
+}
+
+.student-more-list {
+    display: grid;
+    gap: 8px;
+}
+
+.student-more-item,
+.student-more-logout {
+    width: 100%;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 12px 14px;
+    border: 0;
+    border-radius: 18px;
+    text-align: left;
+    text-decoration: none;
+    opacity: 1;
+    transform: translateY(0);
+}
+
+.student-more-backdrop.open .student-more-item,
+.student-more-backdrop.open .student-more-logout {
+    animation: studentMoreItemIn 0.34s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+.student-more-item {
+    background: #f8fafc;
+    color: #0f172a;
+    transition:
+        transform 0.2s ease,
+        background-color 0.2s ease,
+        box-shadow 0.2s ease;
+}
+
+.student-more-item.active {
+    background: #eff6ff;
+}
+
+.student-more-item:active {
+    transform: scale(0.975);
+    background: #eef4fa;
+}
+
+.student-more-item-icon {
+    width: 38px;
+    height: 38px;
+    flex-shrink: 0;
+    border-radius: 14px;
+    display: grid;
+    place-items: center;
+    background: #e2e8f0;
+    color: #64748b;
+    transition:
+        transform 0.24s cubic-bezier(0.22, 1, 0.36, 1),
+        background-color 0.2s ease;
+}
+
+.student-more-item.active .student-more-item-icon {
+    background: #2563eb;
+    color: #fff;
+}
+
+.student-more-item:active .student-more-item-icon {
+    transform: scale(0.9);
+}
+
+.student-more-logout {
+    margin-top: 4px;
+    background: #fee2e2;
+    color: #b91c1c;
+    font-size: 13px;
+    font-weight: 900;
+}
+
+@keyframes studentMoreItemIn {
+    from {
+        opacity: 0;
+        transform: translateY(12px);
+    }
+
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .student-more-backdrop,
+    .student-more-sheet,
+    .student-more-close,
+    .student-more-item,
+    .student-more-item-icon,
+    .student-more-logout {
+        animation: none !important;
+        transition-duration: 0.01ms !important;
+    }
+
+    .student-more-backdrop.open .student-more-item,
+    .student-more-backdrop.open .student-more-logout {
+        opacity: 1;
+        transform: none;
+    }
+}
+
 @keyframes sFadeUp {
     from {
         opacity: 0;

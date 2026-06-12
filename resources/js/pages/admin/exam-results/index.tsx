@@ -1,11 +1,12 @@
-import { destroy, store, update } from '@/actions/App/Http/Controllers/Backends/ExamResultController';
+﻿import { destroy, store, update } from '@/actions/App/Http/Controllers/Backends/ExamResultController';
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle } from '@/components/ui/sheet';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { useAdminPermissions } from '@/hooks/use-admin-permissions';
 import AdminShell from '@/pages/admin/shell';
 import { Avatar, Badge, KH, Pagination, PBar, RowActions } from '@/pages/admin/ui';
 import { router, useForm } from '@inertiajs/react';
-import { CheckCircle2, Edit3, Plus, Trash2, X } from 'lucide-react';
+import { Check, CheckCircle2, ChevronsUpDown, Edit3, Plus, Search, Trash2, X } from 'lucide-react';
 import { FormEvent, ReactNode, useEffect, useMemo, useState } from 'react';
 import { toast } from 'sonner';
 
@@ -131,6 +132,10 @@ export default function ExamResultsPage({ results, exams, students, summary }: E
     const [drawerMode, setDrawerMode] = useState<DrawerMode | null>(null);
     const [editingResult, setEditingResult] = useState<ExamResultItem | null>(null);
     const [deleteTarget, setDeleteTarget] = useState<ExamResultItem | null>(null);
+    const [examPickerOpen, setExamPickerOpen] = useState(false);
+    const [examSearch, setExamSearch] = useState('');
+    const [studentPickerOpen, setStudentPickerOpen] = useState(false);
+    const [studentSearch, setStudentSearch] = useState('');
 
     const { data, setData, post, put, processing, errors, reset } = useForm<ExamResultFormData>(emptyForm(exams, students));
 
@@ -158,6 +163,17 @@ export default function ExamResultsPage({ results, exams, students, summary }: E
         () => filtered.slice((page - 1) * perPage, page * perPage),
         [filtered, page, perPage],
     );
+
+    const selectedFormExam = exams.find(exam => exam.id === data.exam_id);
+    const selectedFormStudent = students.find(student => student.id === data.student_id);
+    const searchableExams = useMemo(() => {
+        const query = examSearch.trim().toLowerCase();
+        return exams.filter(exam => !query || exam.title.toLowerCase().includes(query) || exam.subject.toLowerCase().includes(query) || exam.examDate.toLowerCase().includes(query));
+    }, [examSearch, exams]);
+    const searchableStudents = useMemo(() => {
+        const query = studentSearch.trim().toLowerCase();
+        return students.filter(student => !query || student.nameKh.toLowerCase().includes(query) || student.nameEn.toLowerCase().includes(query) || student.className.toLowerCase().includes(query) || student.level.toLowerCase().includes(query));
+    }, [studentSearch, students]);
 
     const openCreateDrawer = () => {
         if (!canCreate) return;
@@ -187,6 +203,10 @@ export default function ExamResultsPage({ results, exams, students, summary }: E
     const closeDrawer = () => {
         setDrawerMode(null);
         setEditingResult(null);
+        setExamPickerOpen(false);
+        setStudentPickerOpen(false);
+        setExamSearch('');
+        setStudentSearch('');
     };
 
     const submitResult = (event: FormEvent<HTMLFormElement>) => {
@@ -408,24 +428,24 @@ export default function ExamResultsPage({ results, exams, students, summary }: E
 
                             <div className="grid grid-cols-1 gap-3 p-4 md:grid-cols-2 md:p-5">
                                 <Field label="Exam" error={errors.exam_id} wide>
-                                    <Select value={data.exam_id ? String(data.exam_id) : ''} onValueChange={value => setData('exam_id', Number(value) || null)}>
-                                        <SelectTrigger className={inputClass}>
-                                            <SelectValue placeholder="Select exam" />
-                                        </SelectTrigger>
-                                        <SelectContent>
-                                            {exams.map(exam => <SelectItem key={exam.id} value={String(exam.id)}>{exam.title}</SelectItem>)}
-                                        </SelectContent>
-                                    </Select>
+                                    <SearchablePicker open={examPickerOpen} onOpenChange={setExamPickerOpen} search={examSearch} onSearchChange={setExamSearch} placeholder="Select exam" searchPlaceholder="Search exams..." selectedLabel={selectedFormExam?.title ?? null} emptyLabel="No exams found">
+                                        {searchableExams.map(exam => (
+                                            <PickerOption key={exam.id} selected={exam.id === data.exam_id} onClick={() => { setData('exam_id', exam.id); setExamPickerOpen(false); setExamSearch(''); }}>
+                                                <span className="block text-sm font-black text-slate-900 dark:text-slate-50">{exam.title}</span>
+                                                <span className="mt-0.5 block text-xs font-bold text-slate-400">{exam.subject || 'No subject'}{exam.examDate ? ` - ${exam.examDate}` : ''}</span>
+                                            </PickerOption>
+                                        ))}
+                                    </SearchablePicker>
                                 </Field>
                                 <Field label="Student" error={errors.student_id} wide>
-                                    <Select value={data.student_id ? String(data.student_id) : ''} onValueChange={value => setData('student_id', Number(value) || null)}>
-                                        <SelectTrigger className={inputClass}>
-                                            <SelectValue placeholder="Select student" />
-                                        </SelectTrigger>
-                                        <SelectContent>
-                                            {students.map(student => <SelectItem key={student.id} value={String(student.id)}>{student.nameEn} - {student.className || student.level}</SelectItem>)}
-                                        </SelectContent>
-                                    </Select>
+                                    <SearchablePicker open={studentPickerOpen} onOpenChange={setStudentPickerOpen} search={studentSearch} onSearchChange={setStudentSearch} placeholder="Select student" searchPlaceholder="Search students..." selectedLabel={selectedFormStudent ? `${selectedFormStudent.nameEn} - ${selectedFormStudent.className || selectedFormStudent.level}` : null} emptyLabel="No students found">
+                                        {searchableStudents.map(student => (
+                                            <PickerOption key={student.id} selected={student.id === data.student_id} onClick={() => { setData('student_id', student.id); setStudentPickerOpen(false); setStudentSearch(''); }}>
+                                                <span className="block text-sm font-black text-slate-900 dark:text-slate-50">{student.nameEn}</span>
+                                                <span className="mt-0.5 block text-xs font-bold text-slate-400">{student.nameKh} - {student.className || student.level}</span>
+                                            </PickerOption>
+                                        ))}
+                                    </SearchablePicker>
                                 </Field>
                                 <Field label="Score" error={errors.score}>
                                     <input type="number" step="0.01" min={0} className={inputClass} value={data.score ?? ''} onChange={event => setData('score', event.target.value === '' ? null : Number(event.target.value))} />
@@ -496,6 +516,39 @@ function Field({ label, error, children, wide = false }: { label: string; error?
             {children}
             {error && <div className="mt-1.5 text-xs font-bold text-red-500">{error}</div>}
         </div>
+    );
+}
+
+function SearchablePicker({ open, onOpenChange, search, onSearchChange, placeholder, searchPlaceholder, selectedLabel, emptyLabel, children }: { open: boolean; onOpenChange: (open: boolean) => void; search: string; onSearchChange: (value: string) => void; placeholder: string; searchPlaceholder: string; selectedLabel: string | null; emptyLabel: string; children: ReactNode }) {
+    const hasOptions = Array.isArray(children) ? children.length > 0 : Boolean(children);
+
+    return (
+        <Popover open={open} onOpenChange={onOpenChange}>
+            <PopoverTrigger asChild>
+                <button type="button" className={`${inputClass} flex items-center justify-between gap-3 text-left`}>
+                    <span className="min-w-0 truncate">{selectedLabel ?? placeholder}</span>
+                    <ChevronsUpDown size={16} className="shrink-0 text-slate-400" />
+                </button>
+            </PopoverTrigger>
+            <PopoverContent align="start" className="w-[var(--radix-popover-trigger-width)] overflow-hidden p-0">
+                <div className="flex items-center gap-2 border-b border-slate-200 px-3 py-2.5 dark:border-slate-700">
+                    <Search size={16} className="shrink-0 text-slate-400" />
+                    <input value={search} onChange={event => onSearchChange(event.target.value)} placeholder={searchPlaceholder} autoFocus className="w-full bg-transparent text-sm font-semibold text-slate-900 outline-none placeholder:text-slate-400 dark:text-slate-100" />
+                </div>
+                <div className="max-h-72 overflow-y-auto overscroll-contain p-1.5" onWheelCapture={event => event.stopPropagation()} onTouchMoveCapture={event => event.stopPropagation()}>
+                    {hasOptions ? children : <div className="px-3 py-6 text-center text-sm font-bold text-slate-400">{emptyLabel}</div>}
+                </div>
+            </PopoverContent>
+        </Popover>
+    );
+}
+
+function PickerOption({ selected, onClick, children }: { selected: boolean; onClick: () => void; children: ReactNode }) {
+    return (
+        <button type="button" onClick={onClick} className={`flex w-full items-center gap-2.5 rounded-lg px-2.5 py-2 text-left transition ${selected ? 'bg-blue-50 dark:bg-blue-500/15' : 'hover:bg-slate-50 dark:hover:bg-slate-800'}`}>
+            <Check size={15} className={`shrink-0 ${selected ? 'text-blue-600' : 'text-transparent'}`} />
+            <span className="min-w-0 flex-1">{children}</span>
+        </button>
     );
 }
 

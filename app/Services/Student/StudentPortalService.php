@@ -541,7 +541,7 @@ class StudentPortalService
     private function stats(?Student $student): array
     {
         if (! $student) {
-            return ['attendanceRate' => 0, 'latestAverage' => 0, 'homeworkSubmitted' => 0, 'certificatesIssued' => 0];
+            return ['attendanceRate' => 0, 'latestAverage' => 0, 'homeworkTotal' => 0, 'certificatesIssued' => 0];
         }
 
         $total = $student->attendanceRecords()->count();
@@ -552,7 +552,9 @@ class StudentPortalService
         return [
             'attendanceRate' => $total > 0 ? (int) round(($present / $total) * 100) : 0,
             'latestAverage' => (int) round((float) ($student->gradeRecords()->latest('graded_at')->value('average') ?? 0)),
-            'homeworkSubmitted' => $student->homeworkSubmissions()->whereIn('status', ['submitted', 'graded'])->count(),
+            'homeworkTotal' => $student->school_class_id
+                ? HomeworkAssignment::query()->where('school_class_id', $student->school_class_id)->count()
+                : 0,
             'certificatesIssued' => $student->certificates()->where('status', 'issued')->count(),
         ];
     }
@@ -876,7 +878,7 @@ class StudentPortalService
             return [];
         }
 
-        $class = $student->schoolClass()->with('teacher:id,name_en,name_kh')->first();
+        $class = $student->schoolClass()->with('teacher:id,name_en,name_kh,profile_photo')->first();
 
         if (! $class) {
             return [];
@@ -885,6 +887,7 @@ class StudentPortalService
         return [
             'className' => $class->name,
             'teacher' => $class->teacher?->name_en ?? $class->teacher?->name_kh ?? '',
+            'teacherPhoto' => $class->teacher?->profile_photo ? asset($class->teacher->profile_photo) : null,
             'room' => $class->room ?? '',
             'startsAt' => $class->starts_at ?? '',
             'endsAt' => $class->ends_at ?? '',
