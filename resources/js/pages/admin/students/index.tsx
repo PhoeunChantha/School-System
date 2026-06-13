@@ -58,6 +58,7 @@ export interface Student {
     photo: string | null;
     level: string;
     cls: string;
+    status: 'active' | 'inactive';
     attendance: number;
     fees: 'Paid' | 'Unpaid' | 'Partial';
     amt: number;
@@ -293,8 +294,7 @@ export default function StudentsPage({ students }: StudentsPageProps) {
                 student.province.toLowerCase().includes(query);
             const matchesFilter =
                 filter === 'all' ||
-                (filter === 'atrisk' &&
-                    (student.attendance < 70 || student.fees === 'Unpaid')) ||
+                (filter === 'atrisk' && student.attendance < 70) ||
                 student.level.toLowerCase().includes(filter.toLowerCase());
             return matchesSearch && matchesFilter;
         });
@@ -387,24 +387,21 @@ export default function StudentsPage({ students }: StudentsPageProps) {
                     <div className="flex flex-wrap gap-3 max-md:grid max-md:grid-cols-3 max-md:gap-2">
                         {[
                             {
-                                l: 'Paid',
-                                v: students.filter((s) => s.fees === 'Paid')
+                                l: 'Active',
+                                v: students.filter((s) => s.status === 'active')
                                     .length,
                                 dot: 'bg-emerald-500',
                             },
                             {
-                                l: 'Unpaid',
-                                v: students.filter((s) => s.fees === 'Unpaid')
+                                l: 'Inactive',
+                                v: students.filter((s) => s.status === 'inactive')
                                     .length,
-                                dot: 'bg-red-500',
+                                dot: 'bg-slate-400',
                             },
                             {
                                 l: 'At-Risk',
-                                v: students.filter(
-                                    (s) =>
-                                        s.attendance < 70 ||
-                                        s.fees === 'Unpaid',
-                                ).length,
+                                v: students.filter((s) => s.attendance < 70)
+                                    .length,
                                 dot: 'bg-amber-500',
                             },
                         ].map((stat) => (

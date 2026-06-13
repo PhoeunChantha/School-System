@@ -190,9 +190,6 @@ export default function ShowStudentPage({ student, grades, attendance, fees, hom
                                 <Badge type="blue">{student.level}</Badge>
                                 <Badge type="purple">{student.class}</Badge>
                                 <Badge type={student.status === 'active' ? 'green' : 'gray'}>{student.status}</Badge>
-                                <Badge type={student.feeStatus === 'Paid' ? 'green' : student.feeStatus === 'Partial' ? 'amber' : 'red'}>
-                                    {student.feeStatus}
-                                </Badge>
                                 {student.attendanceRate < 70 && (
                                     <Badge type="red">
                                         <span style={{ display: 'inline-flex', alignItems: 'center', gap: 4 }}>

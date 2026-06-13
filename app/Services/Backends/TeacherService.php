@@ -93,9 +93,29 @@ class TeacherService
         $teacher->load([
             'schoolClasses' => fn ($q) => $q
                 ->withCount('students')
-                ->with(['students:id,school_class_id,name_kh,name_en,profile_photo,fee_status,status'])
+                ->with(['students:id,school_class_id,name_kh,name_en,profile_photo,status'])
                 ->orderBy('name'),
         ]);
+
+        $studentIds = $teacher->schoolClasses
+            ->flatMap(fn (SchoolClass $schoolClass) => $schoolClass->students->pluck('id'))
+            ->unique()
+            ->values();
+
+        $attendanceRates = $studentIds->isEmpty()
+            ? collect()
+            : DB::table('attendance_records')
+                ->whereIn('student_id', $studentIds)
+                ->select('student_id')
+                ->selectRaw('COUNT(*) as total_records')
+                ->selectRaw("SUM(CASE WHEN status IN ('present', 'late', 'excused') THEN 1 ELSE 0 END) as attended_records")
+                ->groupBy('student_id')
+                ->get()
+                ->mapWithKeys(fn (object $record): array => [
+                    (int) $record->student_id => (int) round(
+                        ((int) $record->attended_records / (int) $record->total_records) * 100
+                    ),
+                ]);
 
         return [
             'teacher' => [
@@ -126,9 +146,7 @@ class TeacherService
                     'nameKh' => $s->name_kh,
                     'nameEn' => $s->name_en,
                     'photo' => $s->profile_photo ? asset($s->profile_photo) : null,
-                    'fees' => match ($s->fee_status) {
-                        'paid' => 'Paid', 'partial' => 'Partial', default => 'Unpaid'
-                    },
+                    'attendanceRate' => $attendanceRates->get($s->id, 100),
                     'status' => $s->status,
                 ])->all(),
             ])->all(),
