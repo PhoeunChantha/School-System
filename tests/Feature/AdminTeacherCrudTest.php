@@ -2,6 +2,7 @@
 
 namespace Tests\Feature;
 
+use App\Models\AttendanceRecord;
 use App\Models\LessonPlan;
 use App\Models\Notification;
 use App\Models\SchoolClass;
@@ -43,6 +44,28 @@ class AdminTeacherCrudTest extends TestCase
                 ->where('teachers.0.classes', 1)
                 ->where('teachers.0.lessons.0.title', 'Present Simple Tense')
                 ->has('teachers.0.schedule', 1));
+    }
+
+    public function test_teacher_detail_shows_student_attendance_instead_of_fee_status(): void
+    {
+        $this->actingAs(User::factory()->create());
+
+        $teacher = Teacher::factory()->create();
+        $schoolClass = SchoolClass::factory()->for($teacher)->create();
+        $student = Student::factory()->for($schoolClass)->create();
+
+        AttendanceRecord::factory()->for($student)->create(['status' => 'present']);
+        AttendanceRecord::factory()->for($student)->create(['status' => 'late']);
+        AttendanceRecord::factory()->for($student)->create(['status' => 'absent']);
+        AttendanceRecord::factory()->for($student)->create(['status' => 'absent']);
+
+        $this->get(route('admin.teachers.show', $teacher))
+            ->assertOk()
+            ->assertInertia(fn ($page) => $page
+                ->component('admin/teachers/show')
+                ->where('classes.0.students.0.id', $student->id)
+                ->where('classes.0.students.0.attendanceRate', 50)
+                ->missing('classes.0.students.0.fees'));
     }
 
     public function test_admin_can_create_teacher(): void

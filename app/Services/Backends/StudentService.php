@@ -529,6 +529,7 @@ class StudentService
             'photo' => $student->profile_photo ? asset($student->profile_photo) : null,
             'level' => $student->level?->name ?? '',
             'cls' => $student->schoolClass?->name ?? '',
+            'status' => $student->status,
             'attendance' => $attendance,
             'fees' => match ($student->fee_status) {
                 'paid' => 'Paid',

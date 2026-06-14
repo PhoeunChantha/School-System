@@ -122,6 +122,11 @@ class Student extends Model
         return $this->hasMany(SmsCommunication::class);
     }
 
+    public function appInstallationLinks(): HasMany
+    {
+        return $this->hasMany(AppInstallationLink::class);
+    }
+
     public function scopeActive(Builder $query): Builder
     {
         return $query->where('status', 'active');

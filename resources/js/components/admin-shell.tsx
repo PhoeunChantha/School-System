@@ -55,13 +55,14 @@ import {
     School,
     ScrollText,
     Send,
-    Workflow,
     Settings,
     ShieldCheck,
+    Smartphone,
     Star,
     Sun,
     UserCog,
     Users,
+    Workflow,
 } from 'lucide-react';
 import {
     useCallback,
@@ -106,10 +107,10 @@ function AdminHomeworkSubmissionRealtime({
     onAlert: (event: HomeworkSubmissionAlertEvent) => void;
 }) {
     useEffect(() => {
-        console.info('[HomeworkAlert] Echo listener mounted', {
-            channel: 'private-admin.homework-submissions',
-            event: 'homework.submission.submitted',
-        });
+        // console.info('[HomeworkAlert] Echo listener mounted', {
+        //     channel: 'private-admin.homework-submissions',
+        //     event: 'homework.submission.submitted',
+        // });
     }, []);
 
     useEcho<HomeworkSubmissionAlertEvent>(
@@ -126,6 +127,7 @@ const NAV_PERMISSIONS: Record<string, string[]> = {
     students: ['students.view'],
     'enrollment-history': ['enrollment-history.view'],
     'sms-communications': ['sms-communications.view'],
+    'app-installations': ['app-installations.view'],
     teachers: ['teachers.view'],
     classes: ['classes.view'],
     'weekly-calendar': ['classes.view'],
@@ -297,6 +299,13 @@ const NAV: NavEntry[] = [
         labelKey: 'sms-communications',
         href: '/admin/sms-communications',
     },
+    { groupKey: 'system' },
+    {
+        id: 'app-installations',
+        icon: Smartphone,
+        labelKey: 'app-installations',
+        href: '/admin/app-installations',
+    },
     {
         id: 'users',
         icon: UserCog,
@@ -322,6 +331,7 @@ const PAGE_TITLE_KEYS: Record<string, string> = {
     students: 'students',
     'enrollment-history': 'enrollment-history',
     'sms-communications': 'sms-communications',
+    'app-installations': 'app-installations',
     teachers: 'teachers',
     classes: 'classes',
     levels: 'levels',
@@ -506,30 +516,30 @@ export default function AdminShell({ children }: AdminShellProps) {
         const latest = alerts.latest ?? null;
         const previousLatestId = latestUnreadAlertIdRef.current;
 
-        console.info('[HomeworkAlert] alert state received', {
-            source,
-            unreadCount: alerts.unreadCount,
-            latestId: latest?.id ?? null,
-            previousLatestId,
-            active: activeRef.current,
-        });
+        // console.info('[HomeworkAlert] alert state received', {
+        //     source,
+        //     unreadCount: alerts.unreadCount,
+        //     latestId: latest?.id ?? null,
+        //     previousLatestId,
+        //     active: activeRef.current,
+        // });
 
         if (
             !latest ||
             previousLatestId === latest.id ||
             activeRef.current === 'homework-submissions'
         ) {
-            console.info('[HomeworkAlert] latest did not open modal', {
-                source,
-                reason: !latest
-                    ? 'no-latest'
-                    : previousLatestId === latest.id
-                      ? 'same-latest'
-                      : 'on-homework-submissions-page',
-                latestId: latest?.id ?? null,
-                previousLatestId,
-                active: activeRef.current,
-            });
+            // console.info('[HomeworkAlert] latest did not open modal', {
+            //     source,
+            //     reason: !latest
+            //         ? 'no-latest'
+            //         : previousLatestId === latest.id
+            //           ? 'same-latest'
+            //           : 'on-homework-submissions-page',
+            //     latestId: latest?.id ?? null,
+            //     previousLatestId,
+            //     active: activeRef.current,
+            // });
 
             latestUnreadAlertIdRef.current = latest?.id ?? null;
 
@@ -537,11 +547,11 @@ export default function AdminShell({ children }: AdminShellProps) {
         }
 
         latestUnreadAlertIdRef.current = latest.id;
-        console.info('[HomeworkAlert] opening modal', {
-            source,
-            submissionId: latest.id,
-            active: activeRef.current,
-        });
+        // console.info('[HomeworkAlert] opening modal', {
+        //     source,
+        //     submissionId: latest.id,
+        //     active: activeRef.current,
+        // });
         setHomeworkAlert(latest);
 
         if (notificationSoundRef.current) {
@@ -558,9 +568,9 @@ export default function AdminShell({ children }: AdminShellProps) {
             ? new Audio(notificationSound)
             : null;
 
-        console.info('[HomeworkAlert] notification sound configured', {
-            hasSound: Boolean(notificationSound),
-        });
+        // console.info('[HomeworkAlert] notification sound configured', {
+        //     hasSound: Boolean(notificationSound),
+        // });
     }, [notificationSound]);
 
     useEffect(() => {
@@ -575,30 +585,35 @@ export default function AdminShell({ children }: AdminShellProps) {
 
     useEffect(() => {
         if (!canAccess('homework-submissions')) {
-            console.info('[HomeworkAlert] polling disabled, missing permission');
+            // console.info(
+            //     '[HomeworkAlert] polling disabled, missing permission',
+            // );
 
             return;
         }
 
-        console.info('[HomeworkAlert] alert endpoint polling enabled', {
-            intervalMs: 5000,
-            active,
-            url: homeworkSubmissionAlertsRoute.url(),
-        });
+        // console.info('[HomeworkAlert] alert endpoint polling enabled', {
+        //     intervalMs: 5000,
+        //     active,
+        //     url: homeworkSubmissionAlertsRoute.url(),
+        // });
 
         const refreshHomeworkAlerts = async () => {
-            console.info('[HomeworkAlert] alert endpoint polling requested', {
-                active: activeRef.current,
-            });
+            // console.info('[HomeworkAlert] alert endpoint polling requested', {
+            //     active: activeRef.current,
+            // });
 
             try {
-                const response = await fetch(homeworkSubmissionAlertsRoute.url(), {
-                    credentials: 'same-origin',
-                    headers: {
-                        Accept: 'application/json',
-                        'X-Requested-With': 'XMLHttpRequest',
+                const response = await fetch(
+                    homeworkSubmissionAlertsRoute.url(),
+                    {
+                        credentials: 'same-origin',
+                        headers: {
+                            Accept: 'application/json',
+                            'X-Requested-With': 'XMLHttpRequest',
+                        },
                     },
-                });
+                );
 
                 if (!response.ok) {
                     console.warn('[HomeworkAlert] alert endpoint failed', {
@@ -616,30 +631,30 @@ export default function AdminShell({ children }: AdminShellProps) {
 
                 setHomeworkUnreadCount(alerts.unreadCount);
 
-                console.info('[HomeworkAlert] alert state received', {
-                    source: 'alerts-endpoint',
-                    unreadCount: alerts.unreadCount,
-                    latestId: latest?.id ?? null,
-                    previousLatestId,
-                    active: activeRef.current,
-                });
+                // console.info('[HomeworkAlert] alert state received', {
+                //     source: 'alerts-endpoint',
+                //     unreadCount: alerts.unreadCount,
+                //     latestId: latest?.id ?? null,
+                //     previousLatestId,
+                //     active: activeRef.current,
+                // });
 
                 if (
                     !latest ||
                     previousLatestId === latest.id ||
                     activeRef.current === 'homework-submissions'
                 ) {
-                    console.info('[HomeworkAlert] latest did not open modal', {
-                        source: 'alerts-endpoint',
-                        reason: !latest
-                            ? 'no-latest'
-                            : previousLatestId === latest.id
-                              ? 'same-latest'
-                              : 'on-homework-submissions-page',
-                        latestId: latest?.id ?? null,
-                        previousLatestId,
-                        active: activeRef.current,
-                    });
+                    // console.info('[HomeworkAlert] latest did not open modal', {
+                    //     source: 'alerts-endpoint',
+                    //     reason: !latest
+                    //         ? 'no-latest'
+                    //         : previousLatestId === latest.id
+                    //           ? 'same-latest'
+                    //           : 'on-homework-submissions-page',
+                    //     latestId: latest?.id ?? null,
+                    //     previousLatestId,
+                    //     active: activeRef.current,
+                    // });
 
                     latestUnreadAlertIdRef.current = latest?.id ?? null;
 
@@ -647,11 +662,11 @@ export default function AdminShell({ children }: AdminShellProps) {
                 }
 
                 latestUnreadAlertIdRef.current = latest.id;
-                console.info('[HomeworkAlert] opening modal', {
-                    source: 'alerts-endpoint',
-                    submissionId: latest.id,
-                    active: activeRef.current,
-                });
+                // console.info('[HomeworkAlert] opening modal', {
+                //     source: 'alerts-endpoint',
+                //     submissionId: latest.id,
+                //     active: activeRef.current,
+                // });
                 setHomeworkAlert(latest);
 
                 if (notificationSoundRef.current) {
@@ -701,11 +716,15 @@ export default function AdminShell({ children }: AdminShellProps) {
         Array<{ group: NavGroup; items: NavItem[] }>
     >((groups, item) => {
         const groupIndex = [...NAV]
-            .slice(0, NAV.findIndex((entry) => isItem(entry) && entry.id === item.id))
+            .slice(
+                0,
+                NAV.findIndex((entry) => isItem(entry) && entry.id === item.id),
+            )
             .findLastIndex((entry) => !isItem(entry));
-        const group = NAV[groupIndex] && !isItem(NAV[groupIndex])
-            ? (NAV[groupIndex] as NavGroup)
-            : { groupKey: 'other' };
+        const group =
+            NAV[groupIndex] && !isItem(NAV[groupIndex])
+                ? (NAV[groupIndex] as NavGroup)
+                : { groupKey: 'other' };
         const lastGroup = groups.at(-1);
 
         if (lastGroup?.group.groupKey === group.groupKey) {
@@ -727,10 +746,10 @@ export default function AdminShell({ children }: AdminShellProps) {
     const handleHomeworkSubmissionAlert = (
         event: HomeworkSubmissionAlertEvent,
     ) => {
-        console.info('[HomeworkAlert] Echo event received', {
-            submissionId: event.submission.id,
-            active: activeRef.current,
-        });
+        // console.info('[HomeworkAlert] Echo event received', {
+        //     submissionId: event.submission.id,
+        //     active: activeRef.current,
+        // });
 
         latestUnreadAlertIdRef.current = event.submission.id;
         setHomeworkUnreadCount((count) => count + 1);
@@ -1384,7 +1403,9 @@ export default function AdminShell({ children }: AdminShellProps) {
                     </span>
                     <KH
                         className="mnl"
-                        style={{ color: mobileMoreOpen ? '#eaf2ff' : '#b8c2d8' }}
+                        style={{
+                            color: mobileMoreOpen ? '#eaf2ff' : '#b8c2d8',
+                        }}
                     >
                         More
                     </KH>
@@ -1407,7 +1428,9 @@ export default function AdminShell({ children }: AdminShellProps) {
                         />
                         <div>
                             <strong>{user?.name ?? 'Admin'}</strong>
-                            <span>{user?.email ?? school?.nameEn ?? 'School'}</span>
+                            <span>
+                                {user?.email ?? school?.nameEn ?? 'School'}
+                            </span>
                         </div>
                     </div>
                     <button
@@ -1433,18 +1456,20 @@ export default function AdminShell({ children }: AdminShellProps) {
                     </div>
                     <div className="admin-mobile-setting-row">
                         <span>Language</span>
-                    <div className="admin-mobile-lang">
-                        {(['kh', 'en'] as const).map((language) => (
-                            <button
-                                key={language}
-                                type="button"
-                                className={lang === language ? 'active' : ''}
-                                onClick={() => setLang(language)}
-                            >
-                                {language === 'kh' ? 'ខ្មែរ' : 'EN'}
-                            </button>
-                        ))}
-                    </div>
+                        <div className="admin-mobile-lang">
+                            {(['kh', 'en'] as const).map((language) => (
+                                <button
+                                    key={language}
+                                    type="button"
+                                    className={
+                                        lang === language ? 'active' : ''
+                                    }
+                                    onClick={() => setLang(language)}
+                                >
+                                    {language === 'kh' ? 'ខ្មែរ' : 'EN'}
+                                </button>
+                            ))}
+                        </div>
                     </div>
                 </div>
 
@@ -1467,12 +1492,21 @@ export default function AdminShell({ children }: AdminShellProps) {
                                                 'admin-mobile-more-item',
                                                 active === item.id && 'active',
                                             )}
-                                            onClick={() => setMobileMoreOpen(false)}
+                                            onClick={() =>
+                                                setMobileMoreOpen(false)
+                                            }
                                         >
                                             <span>
-                                                <Icon size={17} strokeWidth={2.2} />
+                                                <Icon
+                                                    size={17}
+                                                    strokeWidth={2.2}
+                                                />
                                             </span>
-                                            <KH>{t(`nav_items.${item.labelKey}`)}</KH>
+                                            <KH>
+                                                {t(
+                                                    `nav_items.${item.labelKey}`,
+                                                )}
+                                            </KH>
                                             <i>›</i>
                                         </Link>
                                     );

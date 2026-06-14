@@ -8,6 +8,7 @@ return [
         'exam' => 'ការប្រឡង',
         'reports' => 'របាយការណ៍',
         'other' => 'ផ្សេងៗ',
+        'system' => 'ប្រព័ន្ធ',
     ],
 
     'nav_items' => [
@@ -34,6 +35,7 @@ return [
         'notifications' => 'ការជូនដំណឹង',
         'activity-logs' => 'កត់ត្រា',
         'sms-communications' => 'ប្រវត្តិសារ SMS',
+        'app-installations' => 'ការដំឡើងកម្មវិធី',
         'users' => 'អ្នកប្រើប្រាស់',
         'roles-permissions' => 'តួនាទី និងសិទ្ធិ',
         'settings' => 'កំណត់',

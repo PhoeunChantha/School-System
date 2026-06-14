@@ -37,10 +37,13 @@ class SchoolProfile
     public function pwaIcons(): array
     {
         $data = $this->data();
+        $paths = collect([$data['logoPath'], $data['faviconPath']])->filter()->unique();
 
-        return collect([$data['logoPath'], $data['faviconPath']])
-            ->filter()
-            ->unique()
+        if ($paths->isEmpty()) {
+            $paths->push('frania.png');
+        }
+
+        return $paths
             ->map(fn (string $path): array => [
                 'src' => asset($path),
                 'sizes' => $this->imageSizes($path),
@@ -57,9 +60,13 @@ class SchoolProfile
     public function pwaCachePaths(): array
     {
         $data = $this->data();
+        $paths = collect([$data['logoPath'], $data['faviconPath']])->filter();
 
-        return collect([$data['logoPath'], $data['faviconPath']])
-            ->filter()
+        if ($paths->isEmpty()) {
+            $paths->push('frania.png');
+        }
+
+        return $paths
             ->map(fn (string $path): string => '/'.ltrim($path, '/'))
             ->unique()
             ->values()

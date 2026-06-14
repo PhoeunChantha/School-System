@@ -58,7 +58,7 @@ interface Exam {
 interface Stats {
     attendanceRate: number;
     latestAverage: number;
-    homeworkSubmitted: number;
+    homeworkTotal: number;
     certificatesIssued: number;
 }
 
@@ -260,7 +260,7 @@ export default function StudentDashboard({
                         }}
                     />
                     <div className="s-stat-value" style={{ color: '#071827' }}>
-                        {stats.homeworkSubmitted}
+                        {stats.homeworkTotal}
                     </div>
                     <div className="s-stat-label">Homework</div>
                 </div>

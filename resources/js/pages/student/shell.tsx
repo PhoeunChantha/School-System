@@ -1,7 +1,9 @@
+import { SchoolAppInstallBanner } from '@/components/school-app-install-banner';
 import { useStudentDomTranslations } from '@/hooks/use-student-dom-translations';
 import { useStudentTranslation } from '@/hooks/use-student-translation';
 import '@/pages/student/student.css';
 import { logout } from '@/routes';
+import { manifest, serviceWorker } from '@/routes/school-app';
 import {
     attendance,
     attendanceCalendar,
@@ -234,10 +236,7 @@ function SAvatar({
     }
 
     return (
-        <span
-            className="s-avatar-wrap"
-            style={{ width: size, height: size }}
-        >
+        <span className="s-avatar-wrap" style={{ width: size, height: size }}>
             {avatar}
             <span
                 className="s-avatar-online-dot"
@@ -366,6 +365,27 @@ export default function StudentShell({
         profile.unreadNotifications ?? 0,
     );
     const [moreOpen, setMoreOpen] = useState(false);
+    const [moreMounted, setMoreMounted] = useState(false);
+    const moreCloseTimerRef = useRef<ReturnType<typeof setTimeout> | null>(
+        null,
+    );
+
+    const openMore = useCallback(() => {
+        if (moreCloseTimerRef.current) {
+            clearTimeout(moreCloseTimerRef.current);
+        }
+
+        setMoreMounted(true);
+        requestAnimationFrame(() => setMoreOpen(true));
+    }, []);
+
+    const closeMore = useCallback(() => {
+        setMoreOpen(false);
+        moreCloseTimerRef.current = setTimeout(
+            () => setMoreMounted(false),
+            280,
+        );
+    }, []);
 
     useEffect(() => {
         if (!('serviceWorker' in navigator)) {
@@ -373,7 +393,7 @@ export default function StudentShell({
         }
 
         navigator.serviceWorker
-            .register('/student/service-worker.js', { scope: '/' })
+            .register(serviceWorker.url(), { scope: '/' })
             .then(() => registerStudentPushSubscription())
             .catch(() => undefined);
     }, []);
@@ -387,6 +407,36 @@ export default function StudentShell({
             ? new Audio(notificationSound)
             : null;
     }, [notificationSound]);
+
+    useEffect(() => {
+        if (!moreMounted) {
+            return;
+        }
+
+        const closeOnEscape = (event: KeyboardEvent) => {
+            if (event.key === 'Escape') {
+                closeMore();
+            }
+        };
+
+        const previousOverflow = document.body.style.overflow;
+        document.body.style.overflow = 'hidden';
+        window.addEventListener('keydown', closeOnEscape);
+
+        return () => {
+            document.body.style.overflow = previousOverflow;
+            window.removeEventListener('keydown', closeOnEscape);
+        };
+    }, [closeMore, moreMounted]);
+
+    useEffect(
+        () => () => {
+            if (moreCloseTimerRef.current) {
+                clearTimeout(moreCloseTimerRef.current);
+            }
+        },
+        [],
+    );
 
     const handleRealtimeNotification = useCallback(
         (event: StudentNotificationEvent) => {
@@ -415,7 +465,7 @@ export default function StudentShell({
                 <link
                     head-key="student-pwa-manifest"
                     rel="manifest"
-                    href="/student/manifest.webmanifest"
+                    href={manifest.url()}
                 />
                 <meta
                     head-key="student-pwa-theme-color"
@@ -499,7 +549,7 @@ export default function StudentShell({
                     <Link
                         href={notifications()}
                         aria-label="Open notifications"
-                        className={`student-icon-btn${activePage === 'notifications' ? ' active' : ''}`}
+                        className={`student-icon-btn${activePage === 'notifications' ? 'active' : ''}`}
                     >
                         <Bell size={16} />
                         {unreadNotifications > 0 && (
@@ -546,7 +596,7 @@ export default function StudentShell({
                     type="button"
                     aria-label="Open more student menu"
                     aria-expanded={moreOpen}
-                    onClick={() => setMoreOpen(true)}
+                    onClick={openMore}
                     className={
                         MORE_ITEMS.some((item) => item.id === activePage)
                             ? 'student-nav-btn active'
@@ -569,43 +619,23 @@ export default function StudentShell({
                 </button>
             </nav>
 
-            {moreOpen && (
+            {moreMounted && (
                 <div
                     role="dialog"
                     aria-modal="true"
                     aria-label="More student actions"
-                    onClick={() => setMoreOpen(false)}
-                    style={{
-                        position: 'fixed',
-                        inset: 0,
-                        zIndex: 90,
-                        background: 'rgba(15, 23, 42, 0.34)',
-                        display: 'flex',
-                        justifyContent: 'center',
-                        alignItems: 'flex-end',
-                        padding: '18px 14px',
-                    }}
+                    onClick={closeMore}
+                    className={`student-more-backdrop${moreOpen ? 'open' : ''}`}
                 >
                     <div
                         onClick={(event) => event.stopPropagation()}
-                        style={{
-                            width: 'min(100%, 420px)',
-                            maxHeight: 'min(78dvh, 720px)',
-                            overflowY: 'auto',
-                            borderRadius: 28,
-                            background: '#ffffff',
-                            boxShadow: '0 24px 60px rgba(15,23,42,0.26)',
-                            padding: 16,
-                        }}
+                        className="student-more-sheet"
                     >
                         <div
-                            style={{
-                                display: 'flex',
-                                alignItems: 'center',
-                                justifyContent: 'space-between',
-                                marginBottom: 12,
-                            }}
-                        >
+                            className="student-more-handle"
+                            aria-hidden="true"
+                        />
+                        <div className="student-more-header">
                             <div
                                 style={{
                                     display: 'flex',
@@ -642,29 +672,15 @@ export default function StudentShell({
                             <button
                                 type="button"
                                 aria-label="Close more menu"
-                                onClick={() => setMoreOpen(false)}
-                                style={{
-                                    width: 36,
-                                    height: 36,
-                                    borderRadius: 999,
-                                    border: 'none',
-                                    background: '#f1f5f9',
-                                    color: '#64748b',
-                                    display: 'grid',
-                                    placeItems: 'center',
-                                }}
+                                onClick={closeMore}
+                                className="student-more-close"
                             >
                                 <X size={17} />
                             </button>
                         </div>
 
-                        <div
-                            style={{
-                                display: 'grid',
-                                gap: 8,
-                            }}
-                        >
-                            {MORE_ITEMS.map((item) => {
+                        <div className="student-more-list">
+                            {MORE_ITEMS.map((item, index) => {
                                 const Icon = item.icon;
                                 const active = item.id === activePage;
 
@@ -672,36 +688,13 @@ export default function StudentShell({
                                     <Link
                                         key={item.id}
                                         href={item.href}
-                                        onClick={() => setMoreOpen(false)}
+                                        onClick={closeMore}
+                                        className={`student-more-item${active ? 'active' : ''}`}
                                         style={{
-                                            display: 'flex',
-                                            alignItems: 'center',
-                                            gap: 12,
-                                            padding: '12px 14px',
-                                            borderRadius: 18,
-                                            textDecoration: 'none',
-                                            background: active
-                                                ? '#eff6ff'
-                                                : '#f8fafc',
-                                            color: '#0f172a',
+                                            animationDelay: `${90 + index * 42}ms`,
                                         }}
                                     >
-                                        <span
-                                            style={{
-                                                width: 38,
-                                                height: 38,
-                                                borderRadius: 14,
-                                                display: 'grid',
-                                                placeItems: 'center',
-                                                background: active
-                                                    ? '#2563eb'
-                                                    : '#e2e8f0',
-                                                color: active
-                                                    ? '#ffffff'
-                                                    : '#64748b',
-                                                flexShrink: 0,
-                                            }}
-                                        >
+                                        <span className="student-more-item-icon">
                                             <Icon size={17} />
                                         </span>
                                         <span style={{ minWidth: 0, flex: 1 }}>
@@ -734,20 +727,9 @@ export default function StudentShell({
                                 href={logout()}
                                 method="post"
                                 as="button"
+                                className="student-more-logout"
                                 style={{
-                                    width: '100%',
-                                    marginTop: 4,
-                                    display: 'flex',
-                                    alignItems: 'center',
-                                    gap: 12,
-                                    padding: '12px 14px',
-                                    borderRadius: 18,
-                                    border: 'none',
-                                    background: '#fee2e2',
-                                    color: '#b91c1c',
-                                    fontSize: 13,
-                                    fontWeight: 900,
-                                    textAlign: 'left',
+                                    animationDelay: `${90 + MORE_ITEMS.length * 42}ms`,
                                 }}
                             >
                                 <span
@@ -768,6 +750,7 @@ export default function StudentShell({
                     </div>
                 </div>
             )}
+            <SchoolAppInstallBanner />
         </div>
     );
 }

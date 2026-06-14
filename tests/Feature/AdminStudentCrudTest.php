@@ -28,7 +28,8 @@ class AdminStudentCrudTest extends TestCase
                 ->component('admin/students/index')
                 ->has('students', 1)
                 ->where('students.0.code', 'STU-1001')
-                ->where('students.0.nameEn', 'Sokh Dara'));
+                ->where('students.0.nameEn', 'Sokh Dara')
+                ->where('students.0.status', 'active'));
     }
 
     public function test_admin_can_view_create_student_page(): void

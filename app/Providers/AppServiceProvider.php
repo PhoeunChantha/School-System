@@ -3,6 +3,7 @@
 namespace App\Providers;
 
 use App\Models\ActivityLog;
+use App\Models\AppInstallationLink;
 use App\Models\AttendanceSession;
 use App\Models\Certificate;
 use App\Models\Exam;
@@ -71,6 +72,7 @@ class AppServiceProvider extends ServiceProvider
         });
 
         $policyModels = [
+            AppInstallationLink::class,
             Level::class,
             Student::class,
             SmsCommunication::class,

@@ -8,6 +8,7 @@ return [
         'exam' => 'Exam',
         'reports' => 'Reports',
         'other' => 'Other',
+        'system' => 'System',
     ],
 
     'nav_items' => [
@@ -34,6 +35,7 @@ return [
         'notifications' => 'Notifications',
         'activity-logs' => 'Activity Logs',
         'sms-communications' => 'SMS Communications',
+        'app-installations' => 'App Installations',
         'users' => 'Users',
         'roles-permissions' => 'Roles & Permissions',
         'settings' => 'Settings',

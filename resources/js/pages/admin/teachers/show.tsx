@@ -12,7 +12,7 @@ interface StudentSummary {
     nameKh: string;
     nameEn: string;
     photo: string | null;
-    fees: 'Paid' | 'Unpaid' | 'Partial';
+    attendanceRate: number;
     status: string;
 }
 
@@ -116,7 +116,14 @@ function useInjectCSS(css: string) {
         el.textContent = css;
         document.head.appendChild(el);
         return () => { document.getElementById(id)?.remove(); };
-    }, []);
+    }, [css]);
+}
+
+function attendanceBadgeType(rate: number): 'green' | 'amber' | 'red' {
+    if (rate >= 80) return 'green';
+    if (rate >= 70) return 'amber';
+
+    return 'red';
 }
 
 /* â”€â”€â”€ Mobile student card â”€â”€â”€ */
@@ -134,7 +141,7 @@ function StudentMobileCard({ s }: { s: StudentSummary }) {
                 <KH style={{ fontWeight: 700, fontSize: 13, display: 'block', lineHeight: 1.3 }}>{s.nameKh}</KH>
                 <div style={{ fontSize: 11, color: '#94a3b8', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{s.nameEn}</div>
                 <div style={{ display: 'flex', gap: 6, marginTop: 5, flexWrap: 'wrap' }}>
-                    <Badge type={s.fees === 'Paid' ? 'green' : s.fees === 'Partial' ? 'amber' : 'red'}>{s.fees}</Badge>
+                    <Badge type={attendanceBadgeType(s.attendanceRate)}>{s.attendanceRate}% attendance</Badge>
                     <Badge type={s.status === 'active' ? 'green' : 'gray'}>{s.status}</Badge>
                 </div>
             </div>
@@ -309,7 +316,7 @@ export default function ShowTeacherPage({ teacher, classes }: ShowTeacherProps) 
                                                 <thead>
                                                     <tr>
                                                         <th>Student</th>
-                                                        <th>Fee Status</th>
+                                                        <th>Attendance</th>
                                                         <th>Status</th>
                                                         <th></th>
                                                     </tr>
@@ -327,8 +334,8 @@ export default function ShowTeacherPage({ teacher, classes }: ShowTeacherProps) 
                                                                 </div>
                                                             </td>
                                                             <td>
-                                                                <Badge type={s.fees === 'Paid' ? 'green' : s.fees === 'Partial' ? 'amber' : 'red'}>
-                                                                    {s.fees}
+                                                                <Badge type={attendanceBadgeType(s.attendanceRate)}>
+                                                                    {s.attendanceRate}%
                                                                 </Badge>
                                                             </td>
                                                             <td>
