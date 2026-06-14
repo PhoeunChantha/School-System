@@ -1,7 +1,9 @@
+import { SchoolAppInstallBanner } from '@/components/school-app-install-banner';
 import { useStudentDomTranslations } from '@/hooks/use-student-dom-translations';
 import { useStudentTranslation } from '@/hooks/use-student-translation';
 import '@/pages/student/student.css';
 import { logout } from '@/routes';
+import { manifest, serviceWorker } from '@/routes/school-app';
 import {
     attendance,
     attendanceCalendar,
@@ -234,10 +236,7 @@ function SAvatar({
     }
 
     return (
-        <span
-            className="s-avatar-wrap"
-            style={{ width: size, height: size }}
-        >
+        <span className="s-avatar-wrap" style={{ width: size, height: size }}>
             {avatar}
             <span
                 className="s-avatar-online-dot"
@@ -367,7 +366,9 @@ export default function StudentShell({
     );
     const [moreOpen, setMoreOpen] = useState(false);
     const [moreMounted, setMoreMounted] = useState(false);
-    const moreCloseTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+    const moreCloseTimerRef = useRef<ReturnType<typeof setTimeout> | null>(
+        null,
+    );
 
     const openMore = useCallback(() => {
         if (moreCloseTimerRef.current) {
@@ -380,7 +381,10 @@ export default function StudentShell({
 
     const closeMore = useCallback(() => {
         setMoreOpen(false);
-        moreCloseTimerRef.current = setTimeout(() => setMoreMounted(false), 280);
+        moreCloseTimerRef.current = setTimeout(
+            () => setMoreMounted(false),
+            280,
+        );
     }, []);
 
     useEffect(() => {
@@ -389,7 +393,7 @@ export default function StudentShell({
         }
 
         navigator.serviceWorker
-            .register('/student/service-worker.js', { scope: '/' })
+            .register(serviceWorker.url(), { scope: '/' })
             .then(() => registerStudentPushSubscription())
             .catch(() => undefined);
     }, []);
@@ -425,11 +429,14 @@ export default function StudentShell({
         };
     }, [closeMore, moreMounted]);
 
-    useEffect(() => () => {
-        if (moreCloseTimerRef.current) {
-            clearTimeout(moreCloseTimerRef.current);
-        }
-    }, []);
+    useEffect(
+        () => () => {
+            if (moreCloseTimerRef.current) {
+                clearTimeout(moreCloseTimerRef.current);
+            }
+        },
+        [],
+    );
 
     const handleRealtimeNotification = useCallback(
         (event: StudentNotificationEvent) => {
@@ -458,7 +465,7 @@ export default function StudentShell({
                 <link
                     head-key="student-pwa-manifest"
                     rel="manifest"
-                    href="/student/manifest.webmanifest"
+                    href={manifest.url()}
                 />
                 <meta
                     head-key="student-pwa-theme-color"
@@ -542,7 +549,7 @@ export default function StudentShell({
                     <Link
                         href={notifications()}
                         aria-label="Open notifications"
-                        className={`student-icon-btn${activePage === 'notifications' ? ' active' : ''}`}
+                        className={`student-icon-btn${activePage === 'notifications' ? 'active' : ''}`}
                     >
                         <Bell size={16} />
                         {unreadNotifications > 0 && (
@@ -618,13 +625,16 @@ export default function StudentShell({
                     aria-modal="true"
                     aria-label="More student actions"
                     onClick={closeMore}
-                    className={`student-more-backdrop${moreOpen ? ' open' : ''}`}
+                    className={`student-more-backdrop${moreOpen ? 'open' : ''}`}
                 >
                     <div
                         onClick={(event) => event.stopPropagation()}
                         className="student-more-sheet"
                     >
-                        <div className="student-more-handle" aria-hidden="true" />
+                        <div
+                            className="student-more-handle"
+                            aria-hidden="true"
+                        />
                         <div className="student-more-header">
                             <div
                                 style={{
@@ -679,8 +689,10 @@ export default function StudentShell({
                                         key={item.id}
                                         href={item.href}
                                         onClick={closeMore}
-                                        className={`student-more-item${active ? ' active' : ''}`}
-                                        style={{ animationDelay: `${90 + index * 42}ms` }}
+                                        className={`student-more-item${active ? 'active' : ''}`}
+                                        style={{
+                                            animationDelay: `${90 + index * 42}ms`,
+                                        }}
                                     >
                                         <span className="student-more-item-icon">
                                             <Icon size={17} />
@@ -738,6 +750,7 @@ export default function StudentShell({
                     </div>
                 </div>
             )}
+            <SchoolAppInstallBanner />
         </div>
     );
 }

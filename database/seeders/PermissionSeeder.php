@@ -17,6 +17,7 @@ class PermissionSeeder extends Seeder
         'students' => ['view', 'show', 'create', 'update', 'delete', 'import', 'export', 'download-layout'],
         'enrollment-history' => ['view'],
         'sms-communications' => ['view', 'update'],
+        'app-installations' => ['view', 'create', 'update'],
         'teachers' => ['view', 'show', 'create', 'update', 'delete', 'import', 'export', 'download-layout'],
         'teacher-lesson-plans' => ['create'],
         'teacher-grades' => ['view', 'update'],

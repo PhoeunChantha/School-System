@@ -3,6 +3,7 @@
 namespace App\Policies;
 
 use App\Models\ActivityLog;
+use App\Models\AppInstallationLink;
 use App\Models\AttendanceSession;
 use App\Models\Certificate;
 use App\Models\Exam;
@@ -33,6 +34,7 @@ class FeaturePermissionPolicy
      * @var array<class-string, string>
      */
     private array $featureMap = [
+        AppInstallationLink::class => 'app-installations',
         Level::class => 'levels',
         Student::class => 'students',
         SmsCommunication::class => 'sms-communications',
@@ -63,6 +65,7 @@ class FeaturePermissionPolicy
      * @var array<string, string>
      */
     private array $routeFeatureMap = [
+        'app-installations' => 'app-installations',
         'levels' => 'levels',
         'students' => 'students',
         'sms-communications' => 'sms-communications',

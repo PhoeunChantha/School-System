@@ -1,12 +1,9 @@
+import { SchoolAppInstallBanner } from '@/components/school-app-install-banner';
 import { useParentDomTranslations } from '@/hooks/use-parent-dom-translations';
 import { useParentTranslation } from '@/hooks/use-parent-translation';
+import { attendance, dashboard, grades, homework } from '@/routes/parent';
+import { manifest, serviceWorker } from '@/routes/school-app';
 import type { SharedData } from '@/types';
-import {
-    attendance,
-    dashboard,
-    grades,
-    homework,
-} from '@/routes/parent';
 import { Head, Link, usePage, type InertiaLinkProps } from '@inertiajs/react';
 import {
     BarChart3,
@@ -146,8 +143,12 @@ function gradeTone(value: number): string {
     return 'text-rose-600';
 }
 
-function latestPendingHomework(homeworkItems: Homework[]): Homework | undefined {
-    return homeworkItems.find((item) => !['submitted', 'graded'].includes(item.status));
+function latestPendingHomework(
+    homeworkItems: Homework[],
+): Homework | undefined {
+    return homeworkItems.find(
+        (item) => !['submitted', 'graded'].includes(item.status),
+    );
 }
 
 function childContext(profile: ParentProfile): string {
@@ -162,11 +163,16 @@ function registerParentServiceWorker(): void {
         return;
     }
 
-    if (!window.isSecureContext && !['localhost', '127.0.0.1'].includes(window.location.hostname)) {
+    if (
+        !window.isSecureContext &&
+        !['localhost', '127.0.0.1'].includes(window.location.hostname)
+    ) {
         return;
     }
 
-    navigator.serviceWorker.register('/parent/service-worker.js', { scope: '/parent/' }).catch(() => {});
+    navigator.serviceWorker
+        .register(serviceWorker.url(), { scope: '/' })
+        .catch(() => {});
 }
 
 export default function ParentDashboard({
@@ -219,10 +225,13 @@ export default function ParentDashboard({
     return (
         <>
             <Head title="Parent Portal">
-                <link rel="manifest" href="/parent/manifest.webmanifest" />
+                <link rel="manifest" href={manifest.url()} />
                 <meta name="theme-color" content="#0f2f2a" />
                 <meta name="apple-mobile-web-app-capable" content="yes" />
-                <meta name="apple-mobile-web-app-title" content="Parent Portal" />
+                <meta
+                    name="apple-mobile-web-app-title"
+                    content="Parent Portal"
+                />
             </Head>
 
             <main className="parent-wrap min-h-dvh bg-[#dfe3dc] text-[#10201c]">
@@ -286,7 +295,8 @@ export default function ParentDashboard({
                                         {stats.attendanceRate}% present
                                     </h2>
                                     <p className="mt-3 max-w-[230px] text-sm font-semibold text-white/70">
-                                        {childMeta || 'Class details will appear here.'}
+                                        {childMeta ||
+                                            'Class details will appear here.'}
                                     </p>
                                 </div>
 
@@ -306,19 +316,47 @@ export default function ParentDashboard({
                             </div>
 
                             <div className="relative mt-5 grid grid-cols-3 gap-2">
-                                <MetricPill label="Average" value={stats.latestAverage.toString()} />
-                                <MetricPill label="Homework" value={stats.homeworkSubmitted.toString()} />
-                                <MetricPill label="Awards" value={stats.certificatesIssued.toString()} />
+                                <MetricPill
+                                    label="Average"
+                                    value={stats.latestAverage.toString()}
+                                />
+                                <MetricPill
+                                    label="Homework"
+                                    value={stats.homeworkSubmitted.toString()}
+                                />
+                                <MetricPill
+                                    label="Awards"
+                                    value={stats.certificatesIssued.toString()}
+                                />
                             </div>
                         </div>
 
                         <div className="mt-5 grid grid-cols-3 gap-3">
-                            <QuickAction href={parentAttendanceHref} icon={CalendarCheck2} label="Attendance" />
-                            <QuickAction href={parentGradesHref} icon={BarChart3} label="Grades" />
-                            <QuickAction href={parentHomeworkHref} icon={BookOpenCheck} label="Homework" />
+                            <QuickAction
+                                href={parentAttendanceHref}
+                                icon={CalendarCheck2}
+                                label="Attendance"
+                            />
+                            <QuickAction
+                                href={parentGradesHref}
+                                icon={BarChart3}
+                                label="Grades"
+                            />
+                            <QuickAction
+                                href={parentHomeworkHref}
+                                icon={BookOpenCheck}
+                                label="Homework"
+                            />
                         </div>
 
-                        <SectionTitle title="Needs Attention" action={urgentItems.length ? `${urgentItems.length} open` : 'Clear'} />
+                        <SectionTitle
+                            title="Needs Attention"
+                            action={
+                                urgentItems.length
+                                    ? `${urgentItems.length} open`
+                                    : 'Clear'
+                            }
+                        />
                         {urgentItems.length > 0 ? (
                             <div className="flex flex-col gap-3">
                                 {urgentItems.map((item) => (
@@ -351,7 +389,14 @@ export default function ParentDashboard({
                             </div>
                         )}
 
-                        <SectionTitle title="Learning" action={latestGrade ? `${latestGrade.average} avg` : 'No grades'} />
+                        <SectionTitle
+                            title="Learning"
+                            action={
+                                latestGrade
+                                    ? `${latestGrade.average} avg`
+                                    : 'No grades'
+                            }
+                        />
                         <div className="rounded-[28px] bg-white p-4 shadow-[0_16px_38px_rgba(16,32,28,0.07)] ring-1 ring-[#e4ebe6]">
                             {latestGrade ? (
                                 <>
@@ -364,40 +409,72 @@ export default function ParentDashboard({
                                                 Last grade record
                                             </p>
                                         </div>
-                                        <div className={`text-3xl font-black ${gradeTone(latestGrade.average)}`}>
+                                        <div
+                                            className={`text-3xl font-black ${gradeTone(latestGrade.average)}`}
+                                        >
                                             {latestGrade.average}
                                         </div>
                                     </div>
                                     <div className="mt-4 grid gap-3">
-                                        <SkillBar label="Speaking" value={latestGrade.speaking} />
-                                        <SkillBar label="Listening" value={latestGrade.listening} />
-                                        <SkillBar label="Reading" value={latestGrade.reading} />
-                                        <SkillBar label="Writing" value={latestGrade.writing} />
+                                        <SkillBar
+                                            label="Speaking"
+                                            value={latestGrade.speaking}
+                                        />
+                                        <SkillBar
+                                            label="Listening"
+                                            value={latestGrade.listening}
+                                        />
+                                        <SkillBar
+                                            label="Reading"
+                                            value={latestGrade.reading}
+                                        />
+                                        <SkillBar
+                                            label="Writing"
+                                            value={latestGrade.writing}
+                                        />
                                     </div>
                                 </>
                             ) : (
-                                <EmptyLine icon={GraduationCap} text="Grades will show after teacher records scores." />
+                                <EmptyLine
+                                    icon={GraduationCap}
+                                    text="Grades will show after teacher records scores."
+                                />
                             )}
                         </div>
 
-                        <SectionTitle title="Recent Homework" action={`${recentHomework.length} items`} />
+                        <SectionTitle
+                            title="Recent Homework"
+                            action={`${recentHomework.length} items`}
+                        />
                         <div className="rounded-[28px] bg-white shadow-[0_16px_38px_rgba(16,32,28,0.07)] ring-1 ring-[#e4ebe6]">
                             {recentHomework.length > 0 ? (
-                                recentHomework.slice(0, 4).map((item, index) => (
-                                    <HomeworkRow
-                                        key={`${item.title}-${index}`}
-                                        item={item}
-                                        isLast={index === Math.min(recentHomework.length, 4) - 1}
-                                    />
-                                ))
+                                recentHomework
+                                    .slice(0, 4)
+                                    .map((item, index) => (
+                                        <HomeworkRow
+                                            key={`${item.title}-${index}`}
+                                            item={item}
+                                            isLast={
+                                                index ===
+                                                Math.min(
+                                                    recentHomework.length,
+                                                    4,
+                                                ) -
+                                                    1
+                                            }
+                                        />
+                                    ))
                             ) : (
-                                <EmptyLine icon={BookOpenCheck} text="No homework has been assigned yet." />
+                                <EmptyLine
+                                    icon={BookOpenCheck}
+                                    text="No homework has been assigned yet."
+                                />
                             )}
                         </div>
-
                     </section>
                 </div>
             </main>
+            <SchoolAppInstallBanner />
         </>
     );
 }
@@ -467,7 +544,9 @@ function HomeworkRow({ item, isLast }: { item: Homework; isLast: boolean }) {
     const statusClass = statusClasses[item.status] ?? statusClasses.pending;
 
     return (
-        <div className={`flex items-center gap-3 p-4 ${isLast ? '' : 'border-b border-[#edf2ee]'}`}>
+        <div
+            className={`flex items-center gap-3 p-4 ${isLast ? '' : 'border-b border-[#edf2ee]'}`}
+        >
             <div className="grid h-12 w-12 shrink-0 place-items-center rounded-2xl bg-[#fff5df] text-[#c27a00]">
                 <BookOpenCheck size={20} />
             </div>
@@ -477,23 +556,21 @@ function HomeworkRow({ item, isLast }: { item: Homework; isLast: boolean }) {
                 </p>
                 <p className="mt-1 text-xs font-bold text-[#7b8c86]">
                     Due {formatDate(item.due)}
-                    {item.score !== null ? ` / ${item.score}/${item.points}` : ''}
+                    {item.score !== null
+                        ? ` / ${item.score}/${item.points}`
+                        : ''}
                 </p>
             </div>
-            <span className={`shrink-0 rounded-full px-2.5 py-1 text-[10px] font-black uppercase ring-1 ${statusClass}`}>
+            <span
+                className={`shrink-0 rounded-full px-2.5 py-1 text-[10px] font-black uppercase ring-1 ${statusClass}`}
+            >
                 {item.status}
             </span>
         </div>
     );
 }
 
-function EmptyLine({
-    icon: Icon,
-    text,
-}: {
-    icon: LucideIcon;
-    text: string;
-}) {
+function EmptyLine({ icon: Icon, text }: { icon: LucideIcon; text: string }) {
     return (
         <div className="flex items-center gap-3 p-4 text-sm font-bold text-[#64736e]">
             <span className="grid h-11 w-11 shrink-0 place-items-center rounded-2xl bg-[#eef5f0] text-[#6a7b75]">

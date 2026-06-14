@@ -1,7 +1,9 @@
+import { SchoolAppInstallBanner } from '@/components/school-app-install-banner';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Input } from '@/components/ui/input';
 import { Spinner } from '@/components/ui/spinner';
 import { store } from '@/routes/login';
+import { manifest } from '@/routes/school-app';
 import type { SharedData } from '@/types';
 
 import { Form, Head, useForm, usePage } from '@inertiajs/react';
@@ -29,16 +31,6 @@ export default function Login({ status }: LoginProps) {
     const hasBg = !!school?.loginBg;
     const [lockoutSeconds, setLockoutSeconds] = useState(0);
     const [parentModalOpen, setParentModalOpen] = useState(false);
-
-    useEffect(() => {
-        if (!('serviceWorker' in navigator)) {
-            return;
-        }
-
-        navigator.serviceWorker
-            .register('/student/service-worker.js', { scope: '/' })
-            .catch(() => undefined);
-    }, []);
 
     useEffect(() => {
         if (lockoutSeconds <= 0) {
@@ -79,7 +71,7 @@ export default function Login({ status }: LoginProps) {
             )}
             <Head title="Log in" />
             <Head>
-                <link rel="manifest" href="/student/manifest.webmanifest" />
+                <link rel="manifest" href={manifest.url()} />
                 <meta name="theme-color" content="#009c7f" />
                 <meta name="mobile-web-app-capable" content="yes" />
                 <meta name="apple-mobile-web-app-capable" content="yes" />
@@ -294,6 +286,7 @@ export default function Login({ status }: LoginProps) {
                     onClose={() => setParentModalOpen(false)}
                 />
             )}
+            <SchoolAppInstallBanner />
         </div>
     );
 }
@@ -439,8 +432,8 @@ function ParentAccessModal({
                                 padding: '11px 13px',
                             }}
                         >
-                            If this phone exists, we sent a parent access link. /
-                            ប្រសិនបើលេខទូរស័ព្ទនេះមាននៅក្នុងប្រព័ន្ធ
+                            If this phone exists, we sent a parent access link.
+                            / ប្រសិនបើលេខទូរស័ព្ទនេះមាននៅក្នុងប្រព័ន្ធ
                             យើងបានផ្ញើតំណចូលប្រើទៅកាន់ទូរស័ព្ទរបស់អ្នក។
                         </div>
                     )}
@@ -458,7 +451,9 @@ function ParentAccessModal({
                     <Input
                         id="parent-phone"
                         value={data.phone}
-                        onChange={(event) => setData('phone', event.target.value)}
+                        onChange={(event) =>
+                            setData('phone', event.target.value)
+                        }
                         placeholder="012 345 678"
                         autoFocus
                         inputMode="tel"
@@ -518,10 +513,9 @@ function ParentAccessModal({
                             fontWeight: 700,
                         }}
                     >
-                        The SMS link is private and expires automatically. Do not
-                        share it with anyone. /
-                        តំណ SMS នេះជាព័ត៌មានឯកជន និងផុតកំណត់ដោយស្វ័យប្រវត្តិ។
-                        សូមកុំចែករំលែកទៅអ្នកផ្សេង។
+                        The SMS link is private and expires automatically. Do
+                        not share it with anyone. / តំណ SMS នេះជាព័ត៌មានឯកជន
+                        និងផុតកំណត់ដោយស្វ័យប្រវត្តិ។ សូមកុំចែករំលែកទៅអ្នកផ្សេង។
                     </p>
                 </form>
             </div>

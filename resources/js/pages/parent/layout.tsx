@@ -1,7 +1,9 @@
+import { SchoolAppInstallBanner } from '@/components/school-app-install-banner';
 import { useParentDomTranslations } from '@/hooks/use-parent-dom-translations';
 import { useParentTranslation } from '@/hooks/use-parent-translation';
-import type { SharedData } from '@/types';
 import { dashboard } from '@/routes/parent';
+import { manifest } from '@/routes/school-app';
+import type { SharedData } from '@/types';
 import { Head, Link, usePage } from '@inertiajs/react';
 import { Home, ShieldCheck, type LucideIcon } from 'lucide-react';
 import type { ReactNode } from 'react';
@@ -56,10 +58,13 @@ export function ParentLayout({ title, profile, children }: Props) {
     return (
         <>
             <Head title={`${title} - Parent Portal`}>
-                <link rel="manifest" href="/parent/manifest.webmanifest" />
+                <link rel="manifest" href={manifest.url()} />
                 <meta name="theme-color" content="#0f2f2a" />
                 <meta name="apple-mobile-web-app-capable" content="yes" />
-                <meta name="apple-mobile-web-app-title" content="Parent Portal" />
+                <meta
+                    name="apple-mobile-web-app-title"
+                    content="Parent Portal"
+                />
             </Head>
 
             <main className="parent-wrap min-h-dvh bg-[#dfe3dc] text-[#10201c]">
@@ -121,6 +126,7 @@ export function ParentLayout({ title, profile, children }: Props) {
                     </section>
                 </div>
             </main>
+            <SchoolAppInstallBanner />
         </>
     );
 }

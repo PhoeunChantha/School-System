@@ -1,6 +1,8 @@
 <?php
 
+use App\Http\Controllers\AppInstallationPublicController;
 use App\Http\Controllers\Backends\ActivityLogController;
+use App\Http\Controllers\Backends\AppInstallationController;
 use App\Http\Controllers\Backends\AttendanceSessionController;
 use App\Http\Controllers\Backends\CertificateController;
 use App\Http\Controllers\Backends\DashboardController;
@@ -28,10 +30,12 @@ use App\Http\Controllers\Backends\UserController;
 use App\Http\Controllers\Parent\ParentAccessController;
 use App\Http\Controllers\Parent\ParentPortalController;
 use App\Http\Controllers\Parent\ParentPwaController;
+use App\Http\Controllers\SchoolPwaController;
 use App\Http\Controllers\Student\StudentPortalController;
 use App\Http\Controllers\Student\StudentPushSubscriptionController;
 use App\Http\Controllers\Student\StudentPwaController;
 use App\Models\ActivityLog;
+use App\Models\AppInstallationLink;
 use App\Models\AttendanceSession;
 use App\Models\Certificate;
 use App\Models\Exam;
@@ -72,6 +76,18 @@ Route::get('/', function (Request $request) {
         'canRegister' => Features::enabled(Features::registration()),
     ]);
 })->name('home');
+
+Route::controller(SchoolPwaController::class)->group(function () {
+    Route::get('/manifest.webmanifest', 'manifest')->name('school-app.manifest');
+    Route::get('/service-worker.js', 'serviceWorker')->name('school-app.service-worker');
+    Route::get('/offline', 'offline')->name('school-app.offline');
+});
+
+Route::controller(AppInstallationPublicController::class)->group(function () {
+    Route::get('/app', 'launch')->name('school-app.launch');
+    Route::get('/install/{token}', 'show')->middleware('throttle:30,1')->name('app-install.show');
+    Route::post('/install/{token}/events', 'track')->middleware('throttle:30,1')->name('app-install.track');
+});
 
 Route::middleware(['auth', 'verified'])->group(function () {
     Route::get('dashboard', [DashboardController::class, 'index'])
@@ -117,6 +133,14 @@ Route::middleware(['auth', 'verified'])->prefix('admin')->name('admin.')->group(
         Route::post('/{smsCommunication}/retry', [SmsCommunicationController::class, 'retry'])
             ->can('update', 'smsCommunication')
             ->name('sms-communications.retry');
+    });
+
+    Route::prefix('app-installations')->group(function () {
+        Route::get('/', [AppInstallationController::class, 'index'])->can('view', AppInstallationLink::class)->name('app-installations');
+        Route::post('/', [AppInstallationController::class, 'store'])->can('create', AppInstallationLink::class)->name('app-installations.store');
+        Route::get('/{appInstallationLink}/qr', [AppInstallationController::class, 'qr'])->can('view', 'appInstallationLink')->name('app-installations.qr');
+        Route::post('/{appInstallationLink}/regenerate', [AppInstallationController::class, 'regenerate'])->can('update', 'appInstallationLink')->name('app-installations.regenerate');
+        Route::put('/{appInstallationLink}/revoke', [AppInstallationController::class, 'revoke'])->can('update', 'appInstallationLink')->name('app-installations.revoke');
     });
 
     // Teachers

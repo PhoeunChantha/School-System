@@ -4,6 +4,7 @@ namespace App\Http\Middleware;
 
 use App\Models\HomeworkSubmission;
 use App\Models\SchoolSetting;
+use App\Services\AppInstallationTracker;
 use App\Support\HomeworkSubmissionAlerts;
 use App\Support\ParentAccessSettings;
 use App\Support\SchoolProfile;
@@ -44,6 +45,8 @@ class HandleInertiaRequests extends Middleware
      */
     public function share(Request $request): array
     {
+        app(AppInstallationTracker::class)->confirmPending($request);
+
         [$message, $author] = str(Inspiring::quotes()->random())->explode('-');
         $user = $request->user();
 
