@@ -30,9 +30,9 @@ class AppInstallationPublicController extends Controller
             'recipient' => $link->student->name_en ?: $link->student->name_kh,
             'audience' => $link->audience,
             'expiresAt' => $link->expires_at->toIso8601String(),
-            'manifestUrl' => route('school-app.manifest', ['installation' => $token]),
-            'trackUrl' => route('app-install.track', ['token' => $token]),
-            'launchUrl' => route('school-app.launch', ['installation' => $token]),
+            'manifestUrl' => route('school-app.manifest', ['installation' => $token], false),
+            'trackUrl' => route('app-install.track', ['token' => $token], false),
+            'launchUrl' => route('school-app.launch', ['installation' => $token], false),
         ]);
     }
 
@@ -58,14 +58,14 @@ class AppInstallationPublicController extends Controller
         }
 
         $target = match (true) {
-            $request->session()->has('parent_access_phone') => route('parent.dashboard'),
-            $request->user()?->hasRole('student') === true => route('student.dashboard'),
-            $request->user() !== null => url('/dashboard'),
-            default => url('/'),
+            $request->session()->has('parent_access_phone') => route('parent.dashboard', absolute: false),
+            $request->user()?->hasRole('student') === true => route('student.dashboard', absolute: false),
+            $request->user() !== null => '/dashboard',
+            default => '/',
         };
 
         return Inertia::render('app-install/launcher', [
-            'trackUrl' => $token !== '' ? route('app-install.track', ['token' => $token]) : null,
+            'trackUrl' => $token !== '' ? route('app-install.track', ['token' => $token], false) : null,
             'targetUrl' => $target,
         ]);
     }

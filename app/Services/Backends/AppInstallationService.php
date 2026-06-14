@@ -15,7 +15,7 @@ use Illuminate\Support\Str;
 class AppInstallationService
 {
     /** @return array<string, mixed> */
-    public function indexData(): array
+    public function indexData(Request $request): array
     {
         $links = AppInstallationLink::query()
             ->with(['student:id,school_class_id,code,name_en,name_kh', 'student.schoolClass:id,name', 'creator:id,name'])
@@ -23,7 +23,7 @@ class AppInstallationService
             ->get();
 
         return [
-            'links' => $links->map(fn (AppInstallationLink $link): array => $this->payload($link)),
+            'links' => $links->map(fn (AppInstallationLink $link): array => $this->payload($link, $request)),
             'students' => Student::query()->active()->orderBy('name_en')->get(['id', 'school_class_id', 'code', 'name_en', 'name_kh'])->map(fn (Student $student): array => [
                 'id' => $student->id,
                 'name' => $student->name_en ?: $student->name_kh,
@@ -115,7 +115,7 @@ class AppInstallationService
     }
 
     /** @return array<string, mixed> */
-    private function payload(AppInstallationLink $link): array
+    private function payload(AppInstallationLink $link, Request $request): array
     {
         return [
             'routeKey' => $link->routeKey(),
@@ -124,7 +124,7 @@ class AppInstallationService
             'className' => $link->student?->schoolClass?->name,
             'audience' => $link->audience,
             'status' => $link->status(),
-            'shareUrl' => route('app-install.show', ['token' => $link->token]),
+            'shareUrl' => $request->root().route('app-install.show', ['token' => $link->token], false),
             'generatedAt' => $link->created_at?->toIso8601String(),
             'expiresAt' => $link->expires_at->toIso8601String(),
             'lastOpenedAt' => $link->last_opened_at?->toIso8601String(),

@@ -20,9 +20,9 @@ class AppInstallationController extends Controller
 {
     public function __construct(private readonly AppInstallationService $service) {}
 
-    public function index(): InertiaResponse
+    public function index(Request $request): InertiaResponse
     {
-        return Inertia::render('admin/app-installations/index', $this->service->indexData());
+        return Inertia::render('admin/app-installations/index', $this->service->indexData($request));
     }
 
     public function store(StoreAppInstallationRequest $request): RedirectResponse
@@ -35,7 +35,7 @@ class AppInstallationController extends Controller
     public function qr(Request $request, AppInstallationLink $appInstallationLink): Response
     {
         $svg = (new Writer(new ImageRenderer(new RendererStyle(360, 2), new SvgImageBackEnd)))
-            ->writeString(route('app-install.show', ['token' => $appInstallationLink->token]));
+            ->writeString($request->root().route('app-install.show', ['token' => $appInstallationLink->token], false));
         $disposition = $request->boolean('download') ? 'attachment; filename="school-app-qr.svg"' : 'inline';
 
         return response($svg, 200, ['Content-Type' => 'image/svg+xml', 'Content-Disposition' => $disposition]);
