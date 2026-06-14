@@ -81,6 +81,20 @@ class SchoolAppPwaTest extends TestCase
 
     public function test_app_without_session_opens_common_login_target(): void
     {
-        $this->get(route('school-app.launch'))->assertOk()->assertInertia(fn ($page) => $page->component('app-install/launcher')->where('targetUrl', url('/')));
+        $this->get(route('school-app.launch'))->assertOk()->assertInertia(fn ($page) => $page->component('app-install/launcher')->where('targetUrl', '/'));
+    }
+
+    public function test_installation_page_uses_same_origin_relative_pwa_urls(): void
+    {
+        config()->set('app.url', 'https://www.franiaschool.dev');
+        $link = AppInstallationLink::factory()->create();
+
+        $this->get('https://franiaschool.dev/install/'.$link->token)
+            ->assertOk()
+            ->assertInertia(fn ($page) => $page
+                ->component('app-install/index')
+                ->where('manifestUrl', '/manifest.webmanifest?installation='.$link->token)
+                ->where('trackUrl', '/install/'.$link->token.'/events')
+                ->where('launchUrl', '/app?installation='.$link->token));
     }
 }
