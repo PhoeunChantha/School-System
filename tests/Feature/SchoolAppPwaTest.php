@@ -22,7 +22,7 @@ class SchoolAppPwaTest extends TestCase
 
         $this->get(route('school-app.manifest', ['installation' => $link->token]))
             ->assertOk()->assertJsonPath('name', 'Test School School App')->assertJsonPath('scope', '/')
-            ->assertJsonPath('start_url', route('school-app.launch', ['installation' => $link->token], false));
+            ->assertJsonPath('start_url', route('home', ['installation' => $link->token], false));
     }
 
     public function test_installation_open_and_tracking_events_are_recorded(): void
@@ -58,7 +58,7 @@ class SchoolAppPwaTest extends TestCase
         $student = Student::factory()->create(['user_id' => $studentUser->id, 'parent_phone' => '012345678']);
         $studentLink = AppInstallationLink::factory()->for($student)->create(['audience' => 'student']);
 
-        $this->actingAs($studentUser)->get(route('school-app.launch', ['installation' => $studentLink->token]))->assertOk();
+        $this->actingAs($studentUser)->get(route('home', ['installation' => $studentLink->token]))->assertRedirect();
         $this->assertNotNull($studentLink->refresh()->confirmed_at);
 
         $otherStudent = Student::factory()->create(['parent_phone' => '098765432']);
@@ -95,6 +95,16 @@ class SchoolAppPwaTest extends TestCase
                 ->component('app-install/index')
                 ->where('manifestUrl', '/manifest.webmanifest?installation='.$link->token)
                 ->where('trackUrl', '/install/'.$link->token.'/events')
-                ->where('launchUrl', '/app?installation='.$link->token));
+                ->where('launchUrl', '/?installation='.$link->token));
+    }
+
+    public function test_installation_start_url_opens_login_and_remembers_the_link(): void
+    {
+        $link = AppInstallationLink::factory()->create();
+
+        $this->get(route('home', ['installation' => $link->token]))
+            ->assertOk()
+            ->assertSessionHas('app_installation_token_hash', $link->token_hash)
+            ->assertInertia(fn ($page) => $page->component('auth/login'));
     }
 }

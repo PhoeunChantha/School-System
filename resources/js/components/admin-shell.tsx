@@ -41,6 +41,7 @@ import {
     GraduationCap,
     History,
     Home,
+    Languages,
     Layers3,
     LogOut,
     Medal,
@@ -150,6 +151,7 @@ const NAV_PERMISSIONS: Record<string, string[]> = {
     users: ['users.view'],
     'roles-permissions': ['roles.view', 'permissions.view'],
     settings: ['settings.view'],
+    translations: ['translations.view'],
 };
 
 const LOCKED_NAV_ITEMS = new Set(['dashboard']);
@@ -319,6 +321,12 @@ const NAV: NavEntry[] = [
         href: '/admin/roles-permissions',
     },
     {
+        id: 'translations',
+        icon: Languages,
+        labelKey: 'translations',
+        href: '/admin/translations',
+    },
+    {
         id: 'settings',
         icon: Settings,
         labelKey: 'settings',
@@ -353,6 +361,7 @@ const PAGE_TITLE_KEYS: Record<string, string> = {
     'activity-logs': 'activity-logs',
     users: 'users',
     'roles-permissions': 'roles-permissions',
+    translations: 'translations',
     settings: 'settings',
 };
 

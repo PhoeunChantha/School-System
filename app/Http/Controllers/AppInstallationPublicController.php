@@ -32,7 +32,7 @@ class AppInstallationPublicController extends Controller
             'expiresAt' => $link->expires_at->toIso8601String(),
             'manifestUrl' => route('school-app.manifest', ['installation' => $token], false),
             'trackUrl' => route('app-install.track', ['token' => $token], false),
-            'launchUrl' => route('school-app.launch', ['installation' => $token], false),
+            'launchUrl' => route('home', ['installation' => $token], false),
         ]);
     }
 

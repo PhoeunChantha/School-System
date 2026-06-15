@@ -40,6 +40,27 @@ class LessonPlanController extends Controller
         ]));
     }
 
+    public function show(LessonPlan $lessonPlan): Response
+    {
+        $lessonPlan->load([
+            'teacher:id,name_en,profile_photo',
+            'schoolClass:id,name,room,starts_at,ends_at',
+            'attachments',
+            'creator:id,name',
+            'updater:id,name',
+        ]);
+
+        return Inertia::render('admin/lesson-plans/show', [
+            'lessonPlan' => [
+                ...$this->lessonPlanService->lessonPlanPayload($lessonPlan),
+                'createdBy' => $lessonPlan->creator?->name,
+                'updatedBy' => $lessonPlan->updater?->name,
+                'createdAt' => $lessonPlan->created_at?->toIso8601String(),
+                'updatedAt' => $lessonPlan->updated_at?->toIso8601String(),
+            ],
+        ]);
+    }
+
     public function edit(LessonPlan $lessonPlan): Response
     {
         $data = $this->lessonPlanService->indexData();
@@ -60,7 +81,9 @@ class LessonPlanController extends Controller
         } catch (Throwable $exception) {
             report($exception);
 
-            return back()->with('error', 'Unable to create lesson plan. Please try again.');
+            return back()
+                ->withInput()
+                ->withErrors(['form' => 'Unable to create lesson plan. Please try again.']);
         }
     }
 
@@ -73,7 +96,9 @@ class LessonPlanController extends Controller
         } catch (Throwable $exception) {
             report($exception);
 
-            return back()->with('error', 'Unable to update lesson plan. Please try again.');
+            return back()
+                ->withInput()
+                ->withErrors(['form' => 'Unable to update lesson plan. Please try again.']);
         }
     }
 

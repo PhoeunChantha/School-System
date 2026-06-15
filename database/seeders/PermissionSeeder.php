@@ -43,6 +43,7 @@ class PermissionSeeder extends Seeder
         'roles' => ['view', 'create', 'update', 'delete'],
         'permissions' => ['view', 'create', 'update', 'delete'],
         'settings' => ['view', 'update'],
+        'translations' => ['view', 'create', 'update', 'delete'],
         'sidebar' => ['view', 'update'],
     ];
 

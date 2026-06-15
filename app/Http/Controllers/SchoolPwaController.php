@@ -20,8 +20,8 @@ class SchoolPwaController extends Controller
         $school = $this->schoolProfile->data();
         $token = $request->string('installation')->toString();
         $startUrl = $token !== '' && $this->tracker->findUsable($token)
-            ? route('school-app.launch', ['installation' => $token], false)
-            : route('school-app.launch', absolute: false);
+            ? route('home', ['installation' => $token], false)
+            : route('home', absolute: false);
 
         return response()->json([
             'name' => "{$school['nameEn']} School App",

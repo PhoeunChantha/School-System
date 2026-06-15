@@ -7,6 +7,7 @@ use Database\Factories\LessonPlanFactory;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\SoftDeletes;
 
 class LessonPlan extends Model
@@ -24,6 +25,7 @@ class LessonPlan extends Model
         'materials',
         'homework',
         'status',
+        'input_mode',
         'created_by',
         'updated_by',
     ];
@@ -58,5 +60,10 @@ class LessonPlan extends Model
     public function updater(): BelongsTo
     {
         return $this->belongsTo(User::class, 'updated_by');
+    }
+
+    public function attachments(): HasMany
+    {
+        return $this->hasMany(LessonPlanAttachment::class)->orderBy('sort_order');
     }
 }
