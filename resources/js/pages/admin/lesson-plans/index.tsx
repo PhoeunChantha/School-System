@@ -1,16 +1,17 @@
 import { FormEvent, useEffect, useMemo, useState } from 'react';
-import { destroy, edit, store, update } from '@/routes/admin/lesson-plans';
+import { destroy, edit, show, store, update } from '@/routes/admin/lesson-plans';
 import { DatePicker } from '@/components/ui/date-picker';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import AdminShell from '@/pages/admin/shell';
 import { Avatar, Badge, Pagination, RowActions } from '@/pages/admin/ui';
 import { Link, router, useForm } from '@inertiajs/react';
-import { CalendarCheck, Check, Edit3, Plus, Trash2, X } from 'lucide-react';
+import { BookOpenText, CalendarCheck, Edit3, Eye, FileText, Image, Plus, Trash2, UploadCloud, X } from 'lucide-react';
 import { toast } from 'sonner';
 
 type View = 'list' | 'add' | 'edit';
 type FilterKey = 'today' | 'tomorrow' | 'upcoming' | 'all';
 type LessonStatus = 'planned' | 'taught' | 'cancelled';
+type LessonInputMode = 'details' | 'files';
 type OrderKey = 'date-asc' | 'date-desc' | 'teacher-asc' | 'class-asc' | 'status-asc';
 
 interface LessonPlan {
@@ -31,6 +32,17 @@ interface LessonPlan {
     materials: string;
     homework: string;
     status: LessonStatus;
+    inputMode: LessonInputMode;
+    attachments: LessonAttachment[];
+}
+
+interface LessonAttachment {
+    id: number;
+    name: string;
+    url: string;
+    mimeType: string;
+    size: number;
+    isImage: boolean;
 }
 
 interface TeacherOption {
@@ -76,6 +88,9 @@ interface LessonPlanFormData {
     materials: string;
     homework: string;
     status: LessonStatus;
+    input_mode: LessonInputMode;
+    attachments: File[];
+    removed_attachment_ids: number[];
 }
 
 interface FormProps {
@@ -277,6 +292,7 @@ export default function LessonPlansPage({ lessonPlans, teachers, classes, today,
                                             <RowActions
                                                 ariaLabel={`Actions for ${lessonPlan.title}`}
                                                 actions={[
+                                                    { key: 'view', label: 'View details', icon: Eye, href: show.url((lessonPlan.routeKey ?? lessonPlan.id) as never) },
                                                     { key: 'edit', label: 'Edit', icon: Edit3, href: edit.url((lessonPlan.routeKey ?? lessonPlan.id) as never) },
                                                     { key: 'delete', label: 'Delete', icon: Trash2, onSelect: () => setDeleteTarget(lessonPlan), variant: 'destructive', separatorBefore: true },
                                                 ]}
@@ -305,6 +321,7 @@ export default function LessonPlansPage({ lessonPlans, teachers, classes, today,
                                             <RowActions
                                                 ariaLabel={`Actions for ${lessonPlan.title}`}
                                                 actions={[
+                                                    { key: 'view', label: 'View details', icon: Eye, href: show.url((lessonPlan.routeKey ?? lessonPlan.id) as never) },
                                                     { key: 'edit', label: 'Edit', icon: Edit3, href: edit.url((lessonPlan.routeKey ?? lessonPlan.id) as never) },
                                                     { key: 'delete', label: 'Delete', icon: Trash2, onSelect: () => setDeleteTarget(lessonPlan), variant: 'destructive', separatorBefore: true },
                                                 ]}
@@ -367,7 +384,7 @@ export default function LessonPlansPage({ lessonPlans, teachers, classes, today,
 
 function LessonPlanForm({ mode, lessonPlan, teachers, classes, today, onBack }: FormProps) {
     const isEdit = mode === 'edit';
-    const { data, setData, post, put, processing, errors, transform } = useForm<LessonPlanFormData>({
+    const { data, setData, post, processing, progress, errors, transform } = useForm<LessonPlanFormData>({
         teacher_id: lessonPlan?.teacherId ?? null,
         school_class_id: lessonPlan?.classId ?? null,
         lesson_date: lessonPlan?.date ?? today,
@@ -377,6 +394,9 @@ function LessonPlanForm({ mode, lessonPlan, teachers, classes, today, onBack }: 
         materials: lessonPlan?.materials ?? '',
         homework: lessonPlan?.homework ?? '',
         status: lessonPlan?.status ?? 'planned',
+        input_mode: lessonPlan?.inputMode ?? 'details',
+        attachments: [],
+        removed_attachment_ids: [],
     });
 
     const availableClasses = data.teacher_id
@@ -395,7 +415,8 @@ function LessonPlanForm({ mode, lessonPlan, teachers, classes, today, onBack }: 
             content: formData.content || null,
             materials: formData.materials || null,
             homework: formData.homework || null,
-        }));
+            ...(isEdit ? { _method: 'put' } : {}),
+        }) as LessonPlanFormData);
 
         const options = {
             preserveScroll: true,
@@ -403,14 +424,34 @@ function LessonPlanForm({ mode, lessonPlan, teachers, classes, today, onBack }: 
                 toast.success(isEdit ? 'Lesson plan updated successfully!' : 'Lesson plan created successfully!', { description: data.title });
                 onBack();
             },
+            onError: (formErrors: Record<string, string>) => {
+                if (formErrors.form) {
+                    toast.error(formErrors.form);
+                }
+            },
         };
 
         if (isEdit && lessonPlan) {
-            put(update.url((lessonPlan.routeKey ?? lessonPlan.id) as never), options);
+            post(update.url((lessonPlan.routeKey ?? lessonPlan.id) as never), {
+                ...options,
+                forceFormData: true,
+            });
             return;
         }
 
-        post(store.url(), options);
+        post(store.url(), { ...options, forceFormData: true });
+    };
+
+    const activeAttachments = (lessonPlan?.attachments ?? []).filter(
+        attachment => !data.removed_attachment_ids.includes(attachment.id),
+    );
+    const totalFiles = activeAttachments.length + data.attachments.length;
+
+    const addFiles = (files: FileList | null) => {
+        if (!files) return;
+
+        const availableSlots = Math.max(0, 10 - totalFiles);
+        setData('attachments', [...data.attachments, ...Array.from(files).slice(0, availableSlots)]);
     };
 
     return (
@@ -477,35 +518,119 @@ function LessonPlanForm({ mode, lessonPlan, teachers, classes, today, onBack }: 
                     {inputError(errors.status)}
                 </div>
 
-                <div className={`${fieldGroupClass} col-span-2`}>
-                    <label className={fieldLabelClass}>Lesson Topic *</label>
-                    <input className={fieldInputClass} value={data.title} onChange={event => setData('title', event.target.value)} placeholder="e.g. Present Simple Tense" />
-                    {inputError(errors.title)}
+                <div className="col-span-2 grid w-full max-w-md grid-cols-2 gap-1 rounded-xl bg-slate-100 p-1 dark:bg-slate-950">
+                    <button
+                        type="button"
+                        aria-pressed={data.input_mode === 'details'}
+                        onClick={() => setData('input_mode', 'details')}
+                        className={`flex min-h-9 items-center justify-center gap-1.5 rounded-lg px-2.5 text-xs font-black transition ${data.input_mode === 'details' ? 'bg-white text-blue-600 shadow-sm dark:bg-slate-800 dark:text-blue-400' : 'text-slate-500 hover:text-slate-800 dark:text-slate-400 dark:hover:text-slate-200'}`}
+                    >
+                        <BookOpenText size={15} />
+                        Lesson Details
+                    </button>
+                    <button
+                        type="button"
+                        aria-pressed={data.input_mode === 'files'}
+                        onClick={() => setData('input_mode', 'files')}
+                        className={`flex min-h-9 items-center justify-center gap-1.5 rounded-lg px-2.5 text-xs font-black transition ${data.input_mode === 'files' ? 'bg-white text-blue-600 shadow-sm dark:bg-slate-800 dark:text-blue-400' : 'text-slate-500 hover:text-slate-800 dark:text-slate-400 dark:hover:text-slate-200'}`}
+                    >
+                        <UploadCloud size={15} />
+                        Upload Files
+                    </button>
                 </div>
 
-                <div className={`${fieldGroupClass} col-span-2`}>
-                    <label className={fieldLabelClass}>Students Learn / Objective</label>
-                    <textarea className={`${fieldInputClass} min-h-24 resize-y`} value={data.objective} onChange={event => setData('objective', event.target.value)} rows={3} placeholder="Students can use present simple positive and negative sentences." />
-                    {inputError(errors.objective)}
-                </div>
+                {data.input_mode === 'details' ? (
+                    <>
+                        <div className={`${fieldGroupClass} col-span-2`}>
+                            <label className={fieldLabelClass}>Lesson Topic *</label>
+                            <input className={fieldInputClass} value={data.title} onChange={event => setData('title', event.target.value)} placeholder="e.g. Present Simple Tense" />
+                            {inputError(errors.title)}
+                        </div>
 
-                <div className={`${fieldGroupClass} col-span-2`}>
-                    <label className={fieldLabelClass}>Teaching Content</label>
-                    <textarea className={`${fieldInputClass} min-h-28 resize-y`} value={data.content} onChange={event => setData('content', event.target.value)} rows={4} placeholder="Warm-up, explanation, examples, guided practice..." />
-                    {inputError(errors.content)}
-                </div>
+                        <div className={`${fieldGroupClass} col-span-2`}>
+                            <label className={fieldLabelClass}>Students Learn / Objective</label>
+                            <textarea className={`${fieldInputClass} min-h-24 resize-y`} value={data.objective} onChange={event => setData('objective', event.target.value)} rows={3} placeholder="Students can use present simple positive and negative sentences." />
+                            {inputError(errors.objective)}
+                        </div>
 
-                <div className={fieldGroupClass}>
-                    <label className={fieldLabelClass}>Materials</label>
-                    <textarea className={`${fieldInputClass} min-h-24 resize-y`} value={data.materials} onChange={event => setData('materials', event.target.value)} rows={3} placeholder="Workbook page, flashcards, audio..." />
-                    {inputError(errors.materials)}
-                </div>
+                        <div className={`${fieldGroupClass} col-span-2`}>
+                            <label className={fieldLabelClass}>Teaching Content</label>
+                            <textarea className={`${fieldInputClass} min-h-28 resize-y`} value={data.content} onChange={event => setData('content', event.target.value)} rows={4} placeholder="Warm-up, explanation, examples, guided practice..." />
+                            {inputError(errors.content)}
+                        </div>
 
-                <div className={fieldGroupClass}>
-                    <label className={fieldLabelClass}>Homework</label>
-                    <textarea className={`${fieldInputClass} min-h-24 resize-y`} value={data.homework} onChange={event => setData('homework', event.target.value)} rows={3} placeholder="Workbook page 12, exercise A-B..." />
-                    {inputError(errors.homework)}
-                </div>
+                        <div className={fieldGroupClass}>
+                            <label className={fieldLabelClass}>Materials</label>
+                            <textarea className={`${fieldInputClass} min-h-24 resize-y`} value={data.materials} onChange={event => setData('materials', event.target.value)} rows={3} placeholder="Workbook page, flashcards, audio..." />
+                            {inputError(errors.materials)}
+                        </div>
+
+                        <div className={fieldGroupClass}>
+                            <label className={fieldLabelClass}>Homework</label>
+                            <textarea className={`${fieldInputClass} min-h-24 resize-y`} value={data.homework} onChange={event => setData('homework', event.target.value)} rows={3} placeholder="Workbook page 12, exercise A-B..." />
+                            {inputError(errors.homework)}
+                        </div>
+                    </>
+                ) : (
+                    <section className="col-span-2 rounded-[22px] border border-slate-200 bg-slate-50 p-3 dark:border-slate-700 dark:bg-slate-900/70 md:p-4">
+                        <div className="mb-3 flex items-start justify-between gap-3">
+                            <div>
+                                <h3 className="text-sm font-black text-slate-900 dark:text-slate-50">Lesson images and documents</h3>
+                                <p className="mt-1 text-xs font-semibold leading-5 text-slate-500 dark:text-slate-400">Upload up to 10 images, PDFs, Word, PowerPoint, Excel, or text files. Maximum 15 MB each.</p>
+                            </div>
+                            <span className="shrink-0 rounded-lg bg-white px-2 py-1 text-xs font-black text-slate-500 shadow-sm dark:bg-slate-800 dark:text-slate-300">{totalFiles}/10</span>
+                        </div>
+
+                        <label className="flex min-h-32 cursor-pointer flex-col items-center justify-center rounded-2xl border-2 border-dashed border-blue-200 bg-white px-4 py-5 text-center transition hover:border-blue-400 hover:bg-blue-50/50 dark:border-slate-700 dark:bg-slate-950 dark:hover:border-blue-500 dark:hover:bg-blue-950/20">
+                            <UploadCloud className="mb-2 text-blue-600" size={28} />
+                            <strong className="text-sm font-black text-slate-900 dark:text-slate-50">Choose multiple files</strong>
+                            <span className="mt-1 text-xs font-semibold text-slate-400">Photos, scans, worksheets, slides, and documents</span>
+                            <input
+                                type="file"
+                                multiple
+                                accept="image/jpeg,image/png,image/webp,.pdf,.doc,.docx,.ppt,.pptx,.xls,.xlsx,.txt"
+                                className="sr-only"
+                                disabled={totalFiles >= 10}
+                                onChange={event => {
+                                    addFiles(event.target.files);
+                                    event.target.value = '';
+                                }}
+                            />
+                        </label>
+                        {inputError(errors.attachments)}
+
+                        {totalFiles > 0 && (
+                            <div className="mt-3 grid gap-2 md:grid-cols-2">
+                                {activeAttachments.map(attachment => (
+                                    <FileRow
+                                        key={`existing-${attachment.id}`}
+                                        name={attachment.name}
+                                        size={attachment.size}
+                                        isImage={attachment.isImage}
+                                        url={attachment.url}
+                                        onRemove={() => setData('removed_attachment_ids', [...data.removed_attachment_ids, attachment.id])}
+                                    />
+                                ))}
+                                {data.attachments.map((file, index) => (
+                                    <FileRow
+                                        key={`${file.name}-${file.lastModified}-${index}`}
+                                        name={file.name}
+                                        size={file.size}
+                                        isImage={file.type.startsWith('image/')}
+                                        onRemove={() => setData('attachments', data.attachments.filter((_, fileIndex) => fileIndex !== index))}
+                                    />
+                                ))}
+                            </div>
+                        )}
+
+                        {progress && (
+                            <div className="mt-3">
+                                <div className="mb-1 flex justify-between text-[11px] font-black text-slate-500"><span>Uploading files</span><span>{progress.percentage}%</span></div>
+                                <div className="h-2 overflow-hidden rounded-full bg-slate-200 dark:bg-slate-700"><div className="h-full rounded-full bg-blue-600 transition-all" style={{ width: `${progress.percentage}%` }} /></div>
+                            </div>
+                        )}
+                    </section>
+                )}
 
                 <div className="col-span-2 mt-1 grid grid-cols-[1fr_2fr] gap-2 rounded-[22px] border border-slate-200 bg-white p-2 dark:border-slate-700 dark:bg-slate-800 md:border-0 md:bg-transparent md:p-0">
                     <button type="button" onClick={onBack} className="inline-flex min-h-12 items-center justify-center rounded-2xl bg-slate-100 px-4 py-3 text-sm font-black text-slate-600 transition hover:bg-slate-200 dark:bg-slate-950 dark:text-slate-300 dark:hover:bg-slate-900">Cancel</button>
@@ -516,4 +641,31 @@ function LessonPlanForm({ mode, lessonPlan, teachers, classes, today, onBack }: 
             </form>
         </div>
     );
+}
+
+function FileRow({ name, size, isImage, url, onRemove }: { name: string; size: number; isImage: boolean; url?: string; onRemove: () => void }) {
+    return (
+        <div className="flex min-w-0 items-center gap-3 rounded-2xl border border-slate-200 bg-white p-2.5 dark:border-slate-700 dark:bg-slate-800">
+            {isImage && url ? (
+                <img src={url} alt="" className="h-11 w-11 shrink-0 rounded-xl object-cover" />
+            ) : (
+                <div className={`flex h-11 w-11 shrink-0 items-center justify-center rounded-xl ${isImage ? 'bg-emerald-50 text-emerald-600 dark:bg-emerald-950/40' : 'bg-blue-50 text-blue-600 dark:bg-blue-950/40'}`}>
+                    {isImage ? <Image size={19} /> : <FileText size={19} />}
+                </div>
+            )}
+            <div className="min-w-0 flex-1">
+                <div className="truncate text-xs font-black text-slate-800 dark:text-slate-100">{name}</div>
+                <div className="mt-0.5 text-[11px] font-bold text-slate-400">{formatFileSize(size)}</div>
+            </div>
+            <button type="button" onClick={onRemove} className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl text-slate-400 transition hover:bg-red-50 hover:text-red-500 dark:hover:bg-red-950/30" aria-label={`Remove ${name}`}>
+                <X size={16} />
+            </button>
+        </div>
+    );
+}
+
+function formatFileSize(bytes: number): string {
+    if (bytes < 1024 * 1024) return `${Math.max(1, Math.round(bytes / 1024))} KB`;
+
+    return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
 }

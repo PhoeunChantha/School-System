@@ -373,7 +373,7 @@ export default function AppInstallationsPage({
                                     title="Regenerate"
                                     onClick={() =>
                                         router.post(
-                                            regenerate.url(link.routeKey),
+                                            regenerate.url(link.routeKey as never),
                                             {},
                                             { preserveScroll: true },
                                         )
@@ -388,7 +388,7 @@ export default function AppInstallationsPage({
                                     disabled={link.status === 'revoked'}
                                     onClick={() =>
                                         router.put(
-                                            revoke.url(link.routeKey),
+                                            revoke.url(link.routeKey as never),
                                             {},
                                             { preserveScroll: true },
                                         )
@@ -530,12 +530,12 @@ export default function AppInstallationsPage({
                     {qrLink && (
                         <>
                             <img
-                                src={qr.url(qrLink.routeKey)}
+                                src={qr.url(qrLink.routeKey as never)}
                                 alt="Installation QR code"
                                 className="mx-auto aspect-square w-full max-w-72"
                             />
                             <a
-                                href={qr.url(qrLink.routeKey, {
+                                href={qr.url(qrLink.routeKey as never, {
                                     query: { download: 1 },
                                 })}
                                 className="inline-flex h-11 items-center justify-center gap-2 rounded-lg bg-blue-600 px-4 text-sm font-black text-white"

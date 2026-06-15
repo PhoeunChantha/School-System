@@ -9,7 +9,12 @@ use App\Models\SchoolSetting;
 use App\Models\Student;
 use App\Models\Teacher;
 use App\Models\User;
+use App\Services\Backends\LessonPlanService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Http\UploadedFile;
+use Illuminate\Support\Facades\File;
+use Mockery\MockInterface;
+use RuntimeException;
 use Tests\TestCase;
 
 class AdminLessonPlanCrudTest extends TestCase
@@ -39,6 +44,36 @@ class AdminLessonPlanCrudTest extends TestCase
                 ->where('lessonPlans.0.teacher', 'Mr. Vuthy')
                 ->where('lessonPlans.0.className', 'Beginner 1A')
                 ->where('summary.today', 1));
+    }
+
+    public function test_admin_can_view_lesson_plan_detail_page(): void
+    {
+        $user = User::factory()->create();
+        $teacher = Teacher::factory()->create(['name_en' => 'Ms. Lina']);
+        $schoolClass = SchoolClass::factory()->for($teacher)->create([
+            'name' => 'Advanced A',
+            'room' => 'R08',
+        ]);
+        $lessonPlan = LessonPlan::factory()
+            ->for($teacher)
+            ->for($schoolClass)
+            ->create([
+                'created_by' => $user->id,
+                'updated_by' => $user->id,
+                'title' => 'Speaking Practice',
+                'objective' => 'Students can introduce themselves clearly.',
+            ]);
+
+        $this->actingAs($user)
+            ->get(route('admin.lesson-plans.show', $lessonPlan))
+            ->assertOk()
+            ->assertInertia(fn ($page) => $page
+                ->component('admin/lesson-plans/show')
+                ->where('lessonPlan.title', 'Speaking Practice')
+                ->where('lessonPlan.teacher', 'Ms. Lina')
+                ->where('lessonPlan.className', 'Advanced A')
+                ->where('lessonPlan.room', 'R08')
+                ->where('lessonPlan.createdBy', $user->name));
     }
 
     public function test_admin_can_create_lesson_plan(): void
@@ -86,6 +121,82 @@ class AdminLessonPlanCrudTest extends TestCase
         $this->assertSame('class_message', $notification->data['type']);
         $this->assertSame($lessonPlan->id, $notification->data['lesson_plan_id']);
         $this->assertStringNotContainsString($lessonPlan->title, $notification->body);
+    }
+
+    public function test_admin_can_create_file_based_lesson_plan_with_multiple_attachments(): void
+    {
+        $user = User::factory()->create();
+        $teacher = Teacher::factory()->create();
+        $schoolClass = SchoolClass::factory()->for($teacher)->create();
+
+        $response = $this->actingAs($user)
+            ->post(route('admin.lesson-plans.store'), [
+                'teacher_id' => $teacher->id,
+                'school_class_id' => $schoolClass->id,
+                'lesson_date' => today()->toDateString(),
+                'input_mode' => 'files',
+                'title' => null,
+                'status' => 'planned',
+                'attachments' => [
+                    UploadedFile::fake()->image('lesson-page.jpg'),
+                    UploadedFile::fake()->create('worksheet.pdf', 250, 'application/pdf'),
+                ],
+            ]);
+
+        $response->assertRedirect(route('admin.lesson-plans'));
+
+        $lessonPlan = LessonPlan::query()->where('input_mode', 'files')->firstOrFail();
+        $this->assertSame('lesson-page', $lessonPlan->title);
+        $this->assertCount(2, $lessonPlan->attachments);
+        $this->assertNull($lessonPlan->objective);
+
+        foreach ($lessonPlan->attachments as $attachment) {
+            $this->assertFileExists(public_path($attachment->path));
+            File::delete(public_path($attachment->path));
+        }
+    }
+
+    public function test_file_based_lesson_plan_requires_an_attachment(): void
+    {
+        $teacher = Teacher::factory()->create();
+        $schoolClass = SchoolClass::factory()->for($teacher)->create();
+
+        $this->actingAs(User::factory()->create())
+            ->from(route('admin.lesson-plans.create'))
+            ->post(route('admin.lesson-plans.store'), [
+                'teacher_id' => $teacher->id,
+                'school_class_id' => $schoolClass->id,
+                'lesson_date' => today()->toDateString(),
+                'input_mode' => 'files',
+                'status' => 'planned',
+            ])
+            ->assertRedirect(route('admin.lesson-plans.create'))
+            ->assertSessionHasErrors('attachments');
+    }
+
+    public function test_create_failure_returns_a_form_error_instead_of_success(): void
+    {
+        $teacher = Teacher::factory()->create();
+        $schoolClass = SchoolClass::factory()->for($teacher)->create();
+
+        $this->mock(LessonPlanService::class, function (MockInterface $mock): void {
+            $mock->shouldReceive('create')
+                ->once()
+                ->andThrow(new RuntimeException('Upload failed.'));
+        });
+
+        $this->actingAs(User::factory()->create())
+            ->from(route('admin.lesson-plans.create'))
+            ->post(route('admin.lesson-plans.store'), [
+                'teacher_id' => $teacher->id,
+                'school_class_id' => $schoolClass->id,
+                'lesson_date' => today()->toDateString(),
+                'title' => 'Present Simple Tense',
+                'status' => 'planned',
+            ])
+            ->assertRedirect(route('admin.lesson-plans.create'))
+            ->assertSessionHasErrors('form')
+            ->assertSessionMissing('success');
     }
 
     public function test_admin_can_update_lesson_plan(): void

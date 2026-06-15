@@ -1122,7 +1122,7 @@ class StudentPortalService
 
         if (($data['type'] ?? null) === 'class_message' && isset($data['lesson_plan_id'])) {
             $lessonPlan = LessonPlan::query()
-                ->with('teacher:id,name_en,name_kh')
+                ->with(['teacher:id,name_en,name_kh', 'attachments'])
                 ->whereKey($data['lesson_plan_id'])
                 ->where('school_class_id', $student->school_class_id)
                 ->first();
@@ -1180,6 +1180,13 @@ class StudentPortalService
             'materials' => $lessonPlan->materials ?? '',
             'homework' => $lessonPlan->homework ?? '',
             'status' => $lessonPlan->status,
+            'inputMode' => $lessonPlan->input_mode ?? 'details',
+            'attachments' => $lessonPlan->attachments->map(fn ($attachment): array => [
+                'name' => $attachment->original_name,
+                'url' => asset($attachment->path),
+                'mimeType' => $attachment->mime_type,
+                'size' => $attachment->size,
+            ])->values()->all(),
         ];
     }
 

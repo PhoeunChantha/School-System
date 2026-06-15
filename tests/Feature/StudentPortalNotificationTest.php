@@ -4,6 +4,7 @@ namespace Tests\Feature;
 
 use App\Models\HomeworkAssignment;
 use App\Models\LessonPlan;
+use App\Models\LessonPlanAttachment;
 use App\Models\Notification;
 use App\Models\SchoolClass;
 use App\Models\Student;
@@ -135,6 +136,51 @@ class StudentPortalNotificationTest extends TestCase
                 ->where('detail.teacher', 'Bou Vanna')
                 ->where('detail.objective', 'Students can form positive sentences.')
                 ->where('detail.content', 'Warm-up and guided practice.'));
+    }
+
+    public function test_student_can_open_file_based_lesson_plan_attachments(): void
+    {
+        $user = User::factory()->create();
+        $teacher = Teacher::factory()->create(['name_en' => 'Bou Vanna']);
+        $schoolClass = SchoolClass::factory()->for($teacher)->create();
+        $student = Student::factory()->for($schoolClass)->create(['user_id' => $user->id]);
+        $lessonPlan = LessonPlan::factory()->for($teacher)->for($schoolClass)->create([
+            'title' => 'Lesson pages',
+            'input_mode' => 'files',
+            'objective' => null,
+            'content' => null,
+            'materials' => null,
+            'homework' => null,
+        ]);
+        LessonPlanAttachment::factory()->for($lessonPlan)->create([
+            'original_name' => 'lesson-page.pdf',
+            'path' => 'uploads/lesson-plans/1/lesson-page.pdf',
+            'mime_type' => 'application/pdf',
+            'size' => 2048,
+        ]);
+        $notification = Notification::factory()->create([
+            'category' => 'message',
+            'title' => 'Class message',
+            'student_id' => $student->id,
+            'user_id' => $user->id,
+            'data' => [
+                'type' => 'class_message',
+                'lesson_plan_id' => $lessonPlan->id,
+                'school_class_id' => $schoolClass->id,
+            ],
+        ]);
+
+        $this->actingAs($user)
+            ->get(route('student.notifications.show', $notification))
+            ->assertOk()
+            ->assertInertia(fn ($page) => $page
+                ->component('student/notifications/show')
+                ->where('detail.type', 'lesson_plan')
+                ->where('detail.inputMode', 'files')
+                ->has('detail.attachments', 1)
+                ->where('detail.attachments.0.name', 'lesson-page.pdf')
+                ->where('detail.attachments.0.mimeType', 'application/pdf')
+                ->where('detail.attachments.0.size', 2048));
     }
 
     public function test_student_cannot_open_another_students_message_detail(): void

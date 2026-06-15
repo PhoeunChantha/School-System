@@ -26,6 +26,7 @@ use App\Http\Controllers\Backends\StudentController;
 use App\Http\Controllers\Backends\StudentEnrollmentHistoryController;
 use App\Http\Controllers\Backends\TeacherController;
 use App\Http\Controllers\Backends\TeacherGradeController;
+use App\Http\Controllers\Backends\TranslationController;
 use App\Http\Controllers\Backends\UserController;
 use App\Http\Controllers\Parent\ParentAccessController;
 use App\Http\Controllers\Parent\ParentPortalController;
@@ -57,6 +58,7 @@ use App\Models\Student;
 use App\Models\StudentEnrollmentHistory;
 use App\Models\Teacher;
 use App\Models\User;
+use App\Services\AppInstallationTracker;
 use App\Support\RoleRedirect;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
@@ -65,7 +67,14 @@ use Laravel\Fortify\Features;
 use Spatie\Permission\Models\Permission;
 use Spatie\Permission\Models\Role;
 
-Route::get('/', function (Request $request) {
+Route::get('/', function (Request $request, AppInstallationTracker $appInstallationTracker) {
+    $installationToken = $request->string('installation')->toString();
+
+    if ($installationToken !== '' && ($installationLink = $appInstallationTracker->findUsable($installationToken)) !== null) {
+        $appInstallationTracker->remember($request, $installationLink);
+        $appInstallationTracker->confirmPending($request);
+    }
+
     $user = $request->user() ?? auth()->user();
 
     if ($user) {
@@ -220,6 +229,7 @@ Route::middleware(['auth', 'verified'])->prefix('admin')->name('admin.')->group(
         Route::get('/create', [LessonPlanController::class, 'create'])->can('create', LessonPlan::class)->name('lesson-plans.create');
         Route::get('/{lessonPlan}/edit', [LessonPlanController::class, 'edit'])->can('update', 'lessonPlan')->name('lesson-plans.edit');
         Route::get('/', [LessonPlanController::class, 'index'])->can('view', LessonPlan::class)->name('lesson-plans');
+        Route::get('/{lessonPlan}', [LessonPlanController::class, 'show'])->can('view', 'lessonPlan')->name('lesson-plans.show');
         Route::post('/', [LessonPlanController::class, 'store'])->can('create', LessonPlan::class)->name('lesson-plans.store');
         Route::put('/{lessonPlan}', [LessonPlanController::class, 'update'])->can('update', 'lessonPlan')->name('lesson-plans.update');
         Route::delete('/{lessonPlan}', [LessonPlanController::class, 'destroy'])->can('delete', 'lessonPlan')->name('lesson-plans.destroy');
@@ -343,6 +353,13 @@ Route::middleware(['auth', 'verified'])->prefix('admin')->name('admin.')->group(
         Route::put('/{group}', [SchoolSettingController::class, 'update'])->can('update', SchoolSetting::class)->name('settings.update');
         Route::post('/upload-image', [SchoolSettingController::class, 'uploadImage'])->can('update', SchoolSetting::class)->name('settings.upload-image');
         Route::post('/search-console-file', [SchoolSettingController::class, 'uploadSearchConsoleFile'])->can('update', SchoolSetting::class)->name('settings.search-console-file');
+    });
+
+    Route::prefix('translations')->group(function () {
+        Route::get('/', [TranslationController::class, 'index'])->middleware('can:translations.view')->name('translations');
+        Route::post('/', [TranslationController::class, 'store'])->middleware('can:translations.create')->name('translations.store');
+        Route::put('/{group}/{key}', [TranslationController::class, 'update'])->middleware('can:translations.update')->where(['group' => '[A-Za-z0-9_-]+', 'key' => '[A-Za-z0-9_.-]+'])->name('translations.update');
+        Route::delete('/{group}/{key}', [TranslationController::class, 'destroy'])->middleware('can:translations.delete')->where(['group' => '[A-Za-z0-9_-]+', 'key' => '[A-Za-z0-9_.-]+'])->name('translations.destroy');
     });
 });
 

@@ -53,6 +53,13 @@ interface LessonPlanDetail {
     materials: string;
     homework: string;
     status: string;
+    inputMode: 'details' | 'files';
+    attachments: Array<{
+        name: string;
+        url: string;
+        mimeType: string;
+        size: number;
+    }>;
 }
 
 interface Props {
@@ -238,24 +245,56 @@ export default function StudentNotificationShow({
 
                     <DetailRow label="Teacher" value={detail.teacher} />
 
-                    <div className="student-detail-section">
-                        <span>Objective</span>
-                        <p>{detail.objective || 'No objective added.'}</p>
-                    </div>
-                    <div className="student-detail-section">
-                        <span>Lesson Content</span>
-                        <p>{detail.content || 'No lesson content added.'}</p>
-                    </div>
-                    <div className="student-detail-section">
-                        <span>Materials</span>
-                        <p>{detail.materials || 'No materials added.'}</p>
-                    </div>
-                    <div className="student-detail-section">
-                        <span>Homework</span>
-                        <p>{detail.homework || 'No lesson homework added.'}</p>
-                    </div>
+                    {detail.inputMode === 'files' ? (
+                        <div className="student-detail-section">
+                            <span>Lesson Files</span>
+                            <div className="mt-2 grid gap-2">
+                                {detail.attachments.map(attachment => (
+                                    <a
+                                        key={attachment.url}
+                                        href={attachment.url}
+                                        target="_blank"
+                                        rel="noreferrer"
+                                        className="flex items-center gap-3 rounded-2xl border border-slate-200 bg-slate-50 p-3 text-left no-underline transition active:scale-[0.99]"
+                                    >
+                                        <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-blue-100 text-blue-600"><FileText size={18} /></div>
+                                        <div className="min-w-0 flex-1">
+                                            <strong className="block truncate text-sm text-slate-900">{attachment.name}</strong>
+                                            <small className="mt-0.5 block font-bold text-slate-400">{formatFileSize(attachment.size)}</small>
+                                        </div>
+                                        <Paperclip className="shrink-0 text-slate-400" size={17} />
+                                    </a>
+                                ))}
+                            </div>
+                        </div>
+                    ) : (
+                        <>
+                            <div className="student-detail-section">
+                                <span>Objective</span>
+                                <p>{detail.objective || 'No objective added.'}</p>
+                            </div>
+                            <div className="student-detail-section">
+                                <span>Lesson Content</span>
+                                <p>{detail.content || 'No lesson content added.'}</p>
+                            </div>
+                            <div className="student-detail-section">
+                                <span>Materials</span>
+                                <p>{detail.materials || 'No materials added.'}</p>
+                            </div>
+                            <div className="student-detail-section">
+                                <span>Homework</span>
+                                <p>{detail.homework || 'No lesson homework added.'}</p>
+                            </div>
+                        </>
+                    )}
                 </div>
             )}
         </StudentShell>
     );
+}
+
+function formatFileSize(bytes: number): string {
+    if (bytes < 1024 * 1024) return `${Math.max(1, Math.round(bytes / 1024))} KB`;
+
+    return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
 }
