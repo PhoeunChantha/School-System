@@ -1,9 +1,17 @@
 import { Button } from '@/components/ui/button';
 import { Calendar } from '@/components/ui/calendar';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
+import {
+    Select,
+    SelectContent,
+    SelectItem,
+    SelectTrigger,
+    SelectValue,
+} from '@/components/ui/select';
 import { cn } from '@/lib/utils';
-import { format, parse } from 'date-fns';
+import { format, isValid, parse } from 'date-fns';
 import { CalendarIcon } from 'lucide-react';
+import { useEffect, useMemo, useState } from 'react';
 
 interface DatePickerProps {
     value: string;
@@ -11,13 +19,60 @@ interface DatePickerProps {
     placeholder?: string;
     className?: string;
     disabled?: boolean;
+    startYear?: number;
+    endYear?: number;
 }
 
-export function DatePicker({ value, onChange, placeholder = 'Pick a date', className, disabled }: DatePickerProps) {
-    const selected = value ? parse(value, 'yyyy-MM-dd', new Date()) : undefined;
+export function DatePicker({
+    value,
+    onChange,
+    placeholder = 'Pick a date',
+    className,
+    disabled,
+    startYear,
+    endYear,
+}: DatePickerProps) {
+    const parsedDate = value ? parse(value, 'yyyy-MM-dd', new Date()) : undefined;
+    const selected = parsedDate && isValid(parsedDate) ? parsedDate : undefined;
+    const currentYear = new Date().getFullYear();
+    const startYearValue = startYear ?? currentYear - 100;
+    const endYearValue = endYear ?? currentYear + 10;
+    const startMonth = new Date(startYearValue, 0);
+    const endMonth = new Date(endYearValue, 11);
+    const monthOptions = useMemo(
+        () =>
+            Array.from({ length: 12 }, (_, monthIndex) => ({
+                value: monthIndex.toString(),
+                label: format(new Date(2024, monthIndex, 1), 'MMMM'),
+            })),
+        [],
+    );
+    const yearOptions = useMemo(
+        () =>
+            Array.from(
+                { length: endYearValue - startYearValue + 1 },
+                (_, yearIndex) => startYearValue + yearIndex,
+            ),
+        [endYearValue, startYearValue],
+    );
+    const [calendarMonth, setCalendarMonth] = useState(selected ?? new Date());
+
+    useEffect(() => {
+        if (selected) {
+            setCalendarMonth(selected);
+        }
+    }, [value]);
 
     const handleSelect = (date: Date | undefined) => {
         onChange(date ? format(date, 'yyyy-MM-dd') : '');
+    };
+
+    const handleMonthChange = (month: string) => {
+        setCalendarMonth((date) => new Date(date.getFullYear(), Number(month), 1));
+    };
+
+    const handleYearChange = (year: string) => {
+        setCalendarMonth((date) => new Date(Number(year), date.getMonth(), 1));
     };
 
     return (
@@ -33,11 +88,45 @@ export function DatePicker({ value, onChange, placeholder = 'Pick a date', class
                     {selected ? format(selected, 'PPP') : <span>{placeholder}</span>}
                 </Button>
             </PopoverTrigger>
-            <PopoverContent className="w-auto p-0" align="start">
+            <PopoverContent className="w-[360px] rounded-2xl border-slate-200 p-4 shadow-xl dark:border-slate-700 dark:bg-slate-900" align="start">
+                <div className="mb-3 flex items-center justify-center gap-2">
+                    <Select value={calendarMonth.getMonth().toString()} onValueChange={handleMonthChange}>
+                        <SelectTrigger className="h-10 w-[120px] rounded-xl border-slate-200 bg-slate-50 px-3 text-sm font-bold text-slate-900 shadow-none dark:border-slate-700 dark:bg-slate-800 dark:text-slate-100">
+                            <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent className="max-h-64 rounded-xl">
+                            {monthOptions.map((month) => (
+                                <SelectItem key={month.value} value={month.value}>
+                                    {month.label}
+                                </SelectItem>
+                            ))}
+                        </SelectContent>
+                    </Select>
+                    <Select value={calendarMonth.getFullYear().toString()} onValueChange={handleYearChange}>
+                        <SelectTrigger className="h-10 w-[112px] rounded-xl border-slate-200 bg-slate-50 px-3 text-sm font-bold text-slate-900 shadow-none dark:border-slate-700 dark:bg-slate-800 dark:text-slate-100">
+                            <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent className="max-h-64 rounded-xl">
+                            {yearOptions.map((year) => (
+                                <SelectItem key={year} value={year.toString()}>
+                                    {year}
+                                </SelectItem>
+                            ))}
+                        </SelectContent>
+                    </Select>
+                </div>
                 <Calendar
                     mode="single"
                     selected={selected}
                     onSelect={handleSelect}
+                    month={calendarMonth}
+                    onMonthChange={setCalendarMonth}
+                    startMonth={startMonth}
+                    endMonth={endMonth}
+                    className="p-0"
+                    classNames={{
+                        month_caption: 'hidden',
+                    }}
                     initialFocus
                 />
             </PopoverContent>
