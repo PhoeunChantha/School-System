@@ -1,16 +1,25 @@
 import { Button } from '@/components/ui/button';
+import { DatePicker } from '@/components/ui/date-picker';
 import {
     Dialog,
     DialogContent,
     DialogDescription,
+    DialogFooter,
     DialogHeader,
     DialogTitle,
 } from '@/components/ui/dialog';
+import {
+    Select,
+    SelectContent,
+    SelectItem,
+    SelectTrigger,
+    SelectValue,
+} from '@/components/ui/select';
 import AdminShell from '@/pages/admin/shell';
 import {
+    destroy,
     qr,
     regenerate,
-    revoke,
     store,
 } from '@/routes/admin/app-installations';
 import { router, useForm } from '@inertiajs/react';
@@ -101,6 +110,8 @@ export default function AppInstallationsPage({
 }: Props) {
     const [generateOpen, setGenerateOpen] = useState(false);
     const [qrLink, setQrLink] = useState<InstallationLink | null>(null);
+    const [deleteLink, setDeleteLink] = useState<InstallationLink | null>(null);
+    const [deleting, setDeleting] = useState(false);
     const [search, setSearch] = useState('');
     const [status, setStatus] = useState('all');
     const [audience, setAudience] = useState('all');
@@ -181,6 +192,21 @@ export default function AppInstallationsPage({
         });
     };
 
+    const confirmDelete = () => {
+        if (!deleteLink) {
+            return;
+        }
+        router.delete(destroy.url(deleteLink.routeKey as never), {
+            preserveScroll: true,
+            onStart: () => setDeleting(true),
+            onSuccess: () => {
+                toast.success('Installation link deleted.');
+                setDeleteLink(null);
+            },
+            onFinish: () => setDeleting(false),
+        });
+    };
+
     const copy = async (link: InstallationLink) => {
         await navigator.clipboard.writeText(link.shareUrl);
         toast.success('Link copied.');
@@ -249,52 +275,53 @@ export default function AppInstallationsPage({
                             className="w-full bg-transparent text-sm font-semibold outline-none"
                         />
                     </label>
-                    <select
-                        value={status}
-                        onChange={(e) => setStatus(e.target.value)}
-                        className="h-11 rounded-lg border border-slate-200 bg-transparent px-3 text-sm font-bold"
-                    >
-                        <option value="all">All statuses</option>
-                        {Object.keys(statusTone).map((item) => (
-                            <option key={item} value={item}>
-                                {formatStatus(item as Status)}
-                            </option>
-                        ))}
-                    </select>
-                    <select
-                        value={audience}
-                        onChange={(e) => setAudience(e.target.value)}
-                        className="h-11 rounded-lg border border-slate-200 bg-transparent px-3 text-sm font-bold"
-                    >
-                        <option value="all">All audiences</option>
-                        <option value="student">Student</option>
-                        <option value="parent">Parent</option>
-                    </select>
-                    <select
-                        value={classId}
-                        onChange={(e) => setClassId(e.target.value)}
-                        className="h-11 rounded-lg border border-slate-200 bg-transparent px-3 text-sm font-bold"
-                    >
-                        <option value="all">All classes</option>
-                        {classes.map((item) => (
-                            <option key={item.id} value={item.id}>
-                                {item.name}
-                            </option>
-                        ))}
-                    </select>
-                    <input
-                        type="date"
-                        aria-label="Generated from"
+                    <Select value={status} onValueChange={setStatus}>
+                        <SelectTrigger className="h-11 rounded-lg border-slate-200 px-3 text-sm font-bold">
+                            <SelectValue placeholder="All statuses" />
+                        </SelectTrigger>
+                        <SelectContent>
+                            <SelectItem value="all">All statuses</SelectItem>
+                            {Object.keys(statusTone).map((item) => (
+                                <SelectItem key={item} value={item} className="capitalize">
+                                    {formatStatus(item as Status)}
+                                </SelectItem>
+                            ))}
+                        </SelectContent>
+                    </Select>
+                    <Select value={audience} onValueChange={setAudience}>
+                        <SelectTrigger className="h-11 rounded-lg border-slate-200 px-3 text-sm font-bold">
+                            <SelectValue placeholder="All audiences" />
+                        </SelectTrigger>
+                        <SelectContent>
+                            <SelectItem value="all">All audiences</SelectItem>
+                            <SelectItem value="student">Student</SelectItem>
+                            <SelectItem value="parent">Parent</SelectItem>
+                        </SelectContent>
+                    </Select>
+                    <Select value={classId} onValueChange={setClassId}>
+                        <SelectTrigger className="h-11 rounded-lg border-slate-200 px-3 text-sm font-bold">
+                            <SelectValue placeholder="All classes" />
+                        </SelectTrigger>
+                        <SelectContent>
+                            <SelectItem value="all">All classes</SelectItem>
+                            {classes.map((item) => (
+                                <SelectItem key={item.id} value={String(item.id)}>
+                                    {item.name}
+                                </SelectItem>
+                            ))}
+                        </SelectContent>
+                    </Select>
+                    <DatePicker
                         value={dateFrom}
-                        onChange={(event) => setDateFrom(event.target.value)}
-                        className="h-11 rounded-lg border border-slate-200 bg-transparent px-3 text-sm font-bold"
+                        onChange={setDateFrom}
+                        placeholder="Generated from"
+                        className="h-11 rounded-lg border-slate-200 text-sm font-bold"
                     />
-                    <input
-                        type="date"
-                        aria-label="Generated through"
+                    <DatePicker
                         value={dateTo}
-                        onChange={(event) => setDateTo(event.target.value)}
-                        className="h-11 rounded-lg border border-slate-200 bg-transparent px-3 text-sm font-bold"
+                        onChange={setDateTo}
+                        placeholder="Generated to"
+                        className="h-11 rounded-lg border-slate-200 text-sm font-bold"
                     />
                 </section>
 
@@ -384,15 +411,8 @@ export default function AppInstallationsPage({
                                 <Button
                                     size="icon"
                                     variant="outline"
-                                    title="Revoke"
-                                    disabled={link.status === 'revoked'}
-                                    onClick={() =>
-                                        router.put(
-                                            revoke.url(link.routeKey as never),
-                                            {},
-                                            { preserveScroll: true },
-                                        )
-                                    }
+                                    title="Delete"
+                                    onClick={() => setDeleteLink(link)}
                                 >
                                     <Trash2 className="text-red-600" />
                                 </Button>
@@ -513,6 +533,41 @@ export default function AppInstallationsPage({
                             {form.processing ? 'Generating…' : 'Generate Links'}
                         </Button>
                     </form>
+                </DialogContent>
+            </Dialog>
+
+            <Dialog
+                open={deleteLink !== null}
+                onOpenChange={(open) => !open && setDeleteLink(null)}
+            >
+                <DialogContent className="max-w-md rounded-lg">
+                    <DialogHeader>
+                        <DialogTitle>Delete installation link</DialogTitle>
+                        <DialogDescription>
+                            This permanently removes the link for{' '}
+                            <strong className="text-slate-900 dark:text-slate-100">
+                                {deleteLink?.recipient}
+                            </strong>{' '}
+                            ({deleteLink?.audience}) from the list. This action
+                            cannot be undone.
+                        </DialogDescription>
+                    </DialogHeader>
+                    <DialogFooter>
+                        <Button
+                            variant="outline"
+                            onClick={() => setDeleteLink(null)}
+                            className="h-11 rounded-lg font-black"
+                        >
+                            Cancel
+                        </Button>
+                        <Button
+                            onClick={confirmDelete}
+                            disabled={deleting}
+                            className="h-11 rounded-lg bg-red-600 font-black hover:bg-red-700"
+                        >
+                            {deleting ? 'Deleting…' : 'Delete'}
+                        </Button>
+                    </DialogFooter>
                 </DialogContent>
             </Dialog>
 

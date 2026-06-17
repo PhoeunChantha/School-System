@@ -82,16 +82,18 @@ export function DatePicker({
                     type="button"
                     variant="outline"
                     disabled={disabled}
-                    className={cn('w-full justify-start text-left font-normal', !value && 'text-muted-foreground', className)}
+                    className={cn('w-full min-w-0 justify-start text-left font-normal', !value && 'text-muted-foreground', className)}
                 >
-                    <CalendarIcon className="mr-2 h-4 w-4" />
-                    {selected ? format(selected, 'PPP') : <span>{placeholder}</span>}
+                    <CalendarIcon className="mr-2 h-4 w-4 shrink-0" />
+                    <span className="min-w-0 truncate">
+                        {selected ? format(selected, 'PPP') : placeholder}
+                    </span>
                 </Button>
             </PopoverTrigger>
-            <PopoverContent className="w-[360px] rounded-2xl border-slate-200 p-4 shadow-xl dark:border-slate-700 dark:bg-slate-900" align="start">
-                <div className="mb-3 flex items-center justify-center gap-2">
+            <PopoverContent className="w-[340px] rounded-2xl border-slate-200/80 p-3 shadow-2xl shadow-slate-900/10 dark:border-slate-700 dark:bg-slate-900" align="start">
+                <div className="mb-3 grid grid-cols-2 gap-2">
                     <Select value={calendarMonth.getMonth().toString()} onValueChange={handleMonthChange}>
-                        <SelectTrigger className="h-10 w-[120px] rounded-xl border-slate-200 bg-slate-50 px-3 text-sm font-bold text-slate-900 shadow-none dark:border-slate-700 dark:bg-slate-800 dark:text-slate-100">
+                        <SelectTrigger className="h-10 w-full rounded-xl border-transparent bg-slate-100 px-3 text-sm font-semibold text-slate-900 shadow-none transition-colors hover:bg-slate-200/70 focus:ring-2 focus:ring-primary/30 dark:bg-slate-800 dark:text-slate-100 dark:hover:bg-slate-700">
                             <SelectValue />
                         </SelectTrigger>
                         <SelectContent className="max-h-64 rounded-xl">
@@ -103,7 +105,7 @@ export function DatePicker({
                         </SelectContent>
                     </Select>
                     <Select value={calendarMonth.getFullYear().toString()} onValueChange={handleYearChange}>
-                        <SelectTrigger className="h-10 w-[112px] rounded-xl border-slate-200 bg-slate-50 px-3 text-sm font-bold text-slate-900 shadow-none dark:border-slate-700 dark:bg-slate-800 dark:text-slate-100">
+                        <SelectTrigger className="h-10 w-full rounded-xl border-transparent bg-slate-100 px-3 text-sm font-semibold text-slate-900 shadow-none transition-colors hover:bg-slate-200/70 focus:ring-2 focus:ring-primary/30 dark:bg-slate-800 dark:text-slate-100 dark:hover:bg-slate-700">
                             <SelectValue />
                         </SelectTrigger>
                         <SelectContent className="max-h-64 rounded-xl">

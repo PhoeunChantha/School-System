@@ -99,6 +99,17 @@ class AppInstallationService
         });
     }
 
+    public function destroy(AppInstallationLink $link, User $user, Request $request): void
+    {
+        DB::transaction(function () use ($link, $user, $request): void {
+            $linkId = $link->id;
+            $this->activity($user, $request, 'app_installation_link_deleted', 'Deleted an app installation link.', [
+                'link_id' => $linkId,
+            ]);
+            $link->delete();
+        });
+    }
+
     private function createLink(Student $student, string $audience, int $expiresDays, User $user, ?AppInstallationLink $previous = null): AppInstallationLink
     {
         $token = Str::random(64);
