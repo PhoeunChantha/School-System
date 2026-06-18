@@ -73,8 +73,10 @@ interface StudentFormPageProps {
 }
 
 const fieldGroupClass = 'grid gap-1.5';
-const fieldLabelClass = 'text-[11px] font-black uppercase text-slate-500 dark:text-slate-400';
-const fieldInputClass = 'min-h-12 w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm font-bold text-slate-900 outline-none transition focus:border-blue-400 focus:ring-2 focus:ring-blue-500/15 dark:border-slate-700 dark:bg-slate-950 dark:text-slate-100';
+const fieldLabelClass =
+    'text-[11px] font-black uppercase text-slate-500 dark:text-slate-400';
+const fieldInputClass =
+    'min-h-12 w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm font-bold text-slate-900 outline-none transition focus:border-blue-400 focus:ring-2 focus:ring-blue-500/15 dark:border-slate-700 dark:bg-slate-950 dark:text-slate-100';
 
 export default function StudentFormPage({
     mode,
@@ -83,6 +85,7 @@ export default function StudentFormPage({
     classes,
 }: StudentFormPageProps) {
     const isEdit = mode === 'edit';
+    const currentYear = new Date().getFullYear();
     const { translateText } = useAdminTranslation();
     const [step, setStep] = useState(1);
     const [photoPreview, setPhotoPreview] = useState<string | null>(
@@ -99,28 +102,28 @@ export default function StudentFormPage({
         setError,
         clearErrors,
     } = useForm<StudentFormData>({
-            level_id: student?.level_id ?? null,
-            school_class_id: student?.school_class_id ?? null,
-            code: student?.code ?? '',
-            profile_photo: null,
-            name_kh: student?.name_kh ?? '',
-            name_en: student?.name_en ?? '',
-            date_of_birth: student?.date_of_birth ?? '',
-            gender: student?.gender ?? '',
-            province: student?.province ?? '',
-            district: student?.district ?? '',
-            commune: student?.commune ?? '',
-            village: student?.village ?? '',
-            parent_phone: student?.parent_phone ?? '',
-            telegram_username: student?.telegram_username ?? '',
-            parent_telegram_id: student?.parent_telegram_id ?? '',
-            monthly_fee: student?.monthly_fee ?? 0,
-            scholarship_amount: student?.scholarship_amount ?? 0,
-            fee_status: student?.fee_status ?? 'unpaid',
-            status: student?.status ?? 'active',
-            enrolled_on:
-                student?.enrolled_on ?? new Date().toISOString().slice(0, 10),
-        });
+        level_id: student?.level_id ?? null,
+        school_class_id: student?.school_class_id ?? null,
+        code: student?.code ?? '',
+        profile_photo: null,
+        name_kh: student?.name_kh ?? '',
+        name_en: student?.name_en ?? '',
+        date_of_birth: student?.date_of_birth ?? '',
+        gender: student?.gender ?? '',
+        province: student?.province ?? '',
+        district: student?.district ?? '',
+        commune: student?.commune ?? '',
+        village: student?.village ?? '',
+        parent_phone: student?.parent_phone ?? '',
+        telegram_username: student?.telegram_username ?? '',
+        parent_telegram_id: student?.parent_telegram_id ?? '',
+        monthly_fee: student?.monthly_fee ?? 0,
+        scholarship_amount: student?.scholarship_amount ?? 0,
+        fee_status: student?.fee_status ?? 'unpaid',
+        status: student?.status ?? 'active',
+        enrolled_on:
+            student?.enrolled_on ?? new Date().toISOString().slice(0, 10),
+    });
 
     const filteredClasses = data.level_id
         ? classes.filter((schoolClass) => schoolClass.levelId === data.level_id)
@@ -142,7 +145,10 @@ export default function StudentFormPage({
         }
 
         if (!data.school_class_id) {
-            setError('school_class_id', translateText('Please select a class.'));
+            setError(
+                'school_class_id',
+                translateText('Please select a class.'),
+            );
         }
 
         return Boolean(data.level_id && data.school_class_id);
@@ -220,14 +226,16 @@ export default function StudentFormPage({
 
     return (
         <AdminShell>
-            <div className="fade-in bg-slate-50 p-6 dark:bg-slate-950 max-md:bg-[radial-gradient(circle_at_100%_0,rgba(37,99,235,0.12),transparent_34%),linear-gradient(180deg,#f7f9fc_0%,#eef3f8_100%)] max-md:px-2.5 max-md:py-3 max-md:pb-[calc(104px+env(safe-area-inset-bottom))] dark:max-md:bg-[radial-gradient(circle_at_100%_0,rgba(96,165,250,0.14),transparent_34%),linear-gradient(180deg,#0f172a_0%,#111827_100%)]">
+            <div className="bg-slate-50 p-6 fade-in max-md:bg-[radial-gradient(circle_at_100%_0,rgba(37,99,235,0.12),transparent_34%),linear-gradient(180deg,#f7f9fc_0%,#eef3f8_100%)] max-md:px-2.5 max-md:py-3 max-md:pb-[calc(104px+env(safe-area-inset-bottom))] dark:bg-slate-950 dark:max-md:bg-[radial-gradient(circle_at_100%_0,rgba(96,165,250,0.14),transparent_34%),linear-gradient(180deg,#0f172a_0%,#111827_100%)]">
                 <form
                     data-no-translate="true"
-                    className="mx-auto w-full max-w-[720px] rounded-[24px] border border-slate-200 bg-white p-7 shadow-[0_18px_42px_rgba(15,23,42,0.08)] dark:border-slate-700 dark:bg-slate-800/90 max-md:border-0 max-md:bg-transparent max-md:p-0 max-md:shadow-none"
+                    className="mx-auto w-full max-w-[720px] rounded-[24px] border border-slate-200 bg-white p-7 shadow-[0_18px_42px_rgba(15,23,42,0.08)] max-md:border-0 max-md:bg-transparent max-md:p-0 max-md:shadow-none dark:border-slate-700 dark:bg-slate-800/90"
                     onSubmit={preventNativeSubmit}
                 >
-                    <div className="mb-5 flex items-center gap-3 rounded-[24px] border border-slate-200 bg-white p-4 shadow-[0_14px_36px_rgba(15,23,42,0.07)] dark:border-slate-700 dark:bg-slate-800/90 md:border-0 md:bg-transparent md:p-0 md:shadow-none">
-                        <div className={`grid h-11 w-11 shrink-0 place-items-center rounded-2xl text-sm font-black ${isEdit ? 'bg-blue-50 text-blue-600 dark:bg-blue-500/15 dark:text-blue-300' : 'bg-emerald-50 text-emerald-600 dark:bg-emerald-500/15 dark:text-emerald-300'}`}>
+                    <div className="mb-5 flex items-center gap-3 rounded-[24px] border border-slate-200 bg-white p-4 shadow-[0_14px_36px_rgba(15,23,42,0.07)] md:border-0 md:bg-transparent md:p-0 md:shadow-none dark:border-slate-700 dark:bg-slate-800/90">
+                        <div
+                            className={`grid h-11 w-11 shrink-0 place-items-center rounded-2xl text-sm font-black ${isEdit ? 'bg-blue-50 text-blue-600 dark:bg-blue-500/15 dark:text-blue-300' : 'bg-emerald-50 text-emerald-600 dark:bg-emerald-500/15 dark:text-emerald-300'}`}
+                        >
                             {isEdit
                                 ? translateText('Edit')
                                 : translateText('Add')}
@@ -267,12 +275,8 @@ export default function StudentFormPage({
                     </div>
 
                     {step === 1 && (
-                        <div
-                            className="grid grid-cols-[repeat(auto-fit,minmax(240px,1fr))] gap-4"
-                        >
-                            <div
-                                className="col-span-full mb-1 flex flex-col items-center gap-2.5 rounded-[22px] border border-slate-200 bg-white p-4 dark:border-slate-700 dark:bg-slate-800/90"
-                            >
+                        <div className="grid grid-cols-[repeat(auto-fit,minmax(240px,1fr))] gap-4">
+                            <div className="col-span-full mb-1 flex flex-col items-center gap-2.5 rounded-[22px] border border-slate-200 bg-white p-4 dark:border-slate-700 dark:bg-slate-800/90">
                                 <div
                                     onClick={() =>
                                         fileInputRef.current?.click()
@@ -288,15 +292,11 @@ export default function StudentFormPage({
                                     ) : (
                                         <User size={36} color="#94a3b8" />
                                     )}
-                                    <div
-                                        className="absolute bottom-1 right-1 grid h-6 w-6 place-items-center rounded-full bg-blue-600"
-                                    >
+                                    <div className="absolute right-1 bottom-1 grid h-6 w-6 place-items-center rounded-full bg-blue-600">
                                         <Camera size={12} color="white" />
                                     </div>
                                 </div>
-                                <div
-                                    className="text-center text-xs font-extrabold text-slate-400"
-                                >
+                                <div className="text-center text-xs font-extrabold text-slate-400">
                                     {data.profile_photo
                                         ? data.profile_photo.name
                                         : translateText(
@@ -386,6 +386,8 @@ export default function StudentFormPage({
                                     onChange={(value) =>
                                         setData('date_of_birth', value)
                                     }
+                                    startYear={currentYear - 100}
+                                    endYear={currentYear}
                                     placeholder={translateText(
                                         'Pick date of birth',
                                     )}
@@ -427,9 +429,7 @@ export default function StudentFormPage({
                     )}
 
                     {step === 2 && (
-                        <div
-                            className="grid grid-cols-[repeat(auto-fit,minmax(240px,1fr))] gap-4"
-                        >
+                        <div className="grid grid-cols-[repeat(auto-fit,minmax(240px,1fr))] gap-4">
                             <div className={fieldGroupClass}>
                                 <label className={fieldLabelClass}>
                                     {translateText('Level')} *
@@ -562,9 +562,7 @@ export default function StudentFormPage({
                     )}
 
                     {step === 3 && (
-                        <div
-                            className="grid grid-cols-[repeat(auto-fit,minmax(240px,1fr))] gap-4"
-                        >
+                        <div className="grid grid-cols-[repeat(auto-fit,minmax(240px,1fr))] gap-4">
                             <div className={fieldGroupClass}>
                                 <label className={fieldLabelClass}>
                                     {translateText('Province')}
@@ -664,9 +662,7 @@ export default function StudentFormPage({
                                     }
                                     placeholder="e.g. 123456789"
                                 />
-                                <div
-                                    className="mt-1 text-[11px] font-bold text-slate-400"
-                                >
+                                <div className="mt-1 text-[11px] font-bold text-slate-400">
                                     {translateText(
                                         'Numeric ID from Telegram. Parent must message the school bot first to get their ID.',
                                     )}
@@ -721,4 +717,3 @@ export default function StudentFormPage({
         </AdminShell>
     );
 }
-

@@ -150,6 +150,7 @@ Route::middleware(['auth', 'verified'])->prefix('admin')->name('admin.')->group(
         Route::get('/{appInstallationLink}/qr', [AppInstallationController::class, 'qr'])->can('view', 'appInstallationLink')->name('app-installations.qr');
         Route::post('/{appInstallationLink}/regenerate', [AppInstallationController::class, 'regenerate'])->can('update', 'appInstallationLink')->name('app-installations.regenerate');
         Route::put('/{appInstallationLink}/revoke', [AppInstallationController::class, 'revoke'])->can('update', 'appInstallationLink')->name('app-installations.revoke');
+        Route::delete('/{appInstallationLink}', [AppInstallationController::class, 'destroy'])->can('delete', 'appInstallationLink')->name('app-installations.destroy');
     });
 
     // Teachers

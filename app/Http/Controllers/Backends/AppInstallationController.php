@@ -54,4 +54,11 @@ class AppInstallationController extends Controller
 
         return back()->with('success', 'Installation link revoked.');
     }
+
+    public function destroy(Request $request, AppInstallationLink $appInstallationLink): RedirectResponse
+    {
+        $this->service->destroy($appInstallationLink, $request->user(), $request);
+
+        return back()->with('success', 'Installation link deleted.');
+    }
 }
